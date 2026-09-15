@@ -236,7 +236,7 @@ class Preheater:
         state.Hgas_preheater_in = state.Hgas_calciner_out
 
         state.Hsolid_preheater_in = (
-            state.m_dot_s
+            state.m_dot_s_preheater
             * self.Cp_s
             * (state.Feed_temperature - self.T_ref)
         )

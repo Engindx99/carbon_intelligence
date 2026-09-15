@@ -584,4 +584,5 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         energy_in,
         energy_out,
         total_energy_balance,
+        Q_wall_loss,
     )

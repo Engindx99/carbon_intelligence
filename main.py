@@ -10,6 +10,7 @@ from physics.steady_state_mass import SteadyStateMassFlow
 
 
 from validators.energy import validate_energy
+from validators.mass import validate_mass
 from reporter.validation import report_validation
 
 import numpy as np
@@ -347,6 +348,137 @@ class Twin:
 
         print("=" * 58)
 
+    def _validate_global_mass_balance(self):
+
+        mass_flow = self.mass_flow
+
+        result = validate_mass(
+            mass_in=mass_flow.mass_flow_in,
+            mass_out=mass_flow.mass_flow_out,
+            mass_source=0.0,
+        )
+
+        report_validation(
+            result,
+            equipment="Pyroprocess",
+            balance_type="global_mass",
+        )
+
+        print()
+        print("========== PYROPROCESS MASS CLOSURE ==========")
+        print()
+        print("EXTERNAL INPUT")
+        print(
+            f"    Raw meal          = "
+            f"{mass_flow.m_dot_raw_meal:.6e} kg/s"
+        )
+        print(
+            f"    Fuel              = "
+            f"{mass_flow.m_dot_fuel:.6e} kg/s"
+        )
+        print(
+            f"    Air               = "
+            f"{mass_flow.m_dot_air:.6e} kg/s"
+        )
+        print(
+            f"    Mass in           = "
+            f"{mass_flow.mass_flow_in:.6e} kg/s"
+        )
+
+        print()
+        print("EXTERNAL OUTPUT")
+        print(
+            f"    Clinker           = "
+            f"{mass_flow.m_dot_clinker:.6e} kg/s"
+        )
+        print(
+            f"    Exhaust gas       = "
+            f"{mass_flow.m_dot_exhaust:.6e} kg/s"
+        )
+        print(
+            f"    Mass out          = "
+            f"{mass_flow.mass_flow_out:.6e} kg/s"
+        )
+
+        print()
+        print("GLOBAL BALANCE")
+        print(
+            f"    Residual          = "
+            f"{result['residual']:.6e} kg/s"
+        )
+        print(
+            f"    Relative residual = "
+            f"{result['relative_residual']:.6e}"
+        )
+        print(
+            f"    Status            = "
+            f"{'PASS' if result['converged'] else 'FAIL'}"
+        )
+
+        print("=" * 58)
+
+    def _validate_co2_species_balance(self):
+
+        mass_flow = self.mass_flow
+
+        co2_generated_total = (
+            mass_flow.m_dot_CO2_generated
+            + mass_flow.m_dot_CO2_generated_transition
+        )
+
+        co2_in_gas_stream = (
+            mass_flow.m_dot_exhaust
+            - mass_flow.m_dot_g_burning
+        )
+
+        result = validate_mass(
+            mass_in=co2_generated_total,
+            mass_out=co2_in_gas_stream,
+            mass_source=0.0,
+        )
+
+        report_validation(
+            result,
+            equipment="Pyroprocess",
+            balance_type="global_co2_species",
+        )
+
+        print()
+        print("========== PYROPROCESS CO2 SPECIES CLOSURE ==========")
+        print()
+        print(
+            f"    CO2 generated (calciner)   = "
+            f"{mass_flow.m_dot_CO2_generated:.6e} kg/s"
+        )
+        print(
+            f"    CO2 generated (transition) = "
+            f"{mass_flow.m_dot_CO2_generated_transition:.6e} kg/s"
+        )
+        print(
+            f"    CO2 generated (total)      = "
+            f"{co2_generated_total:.6e} kg/s"
+        )
+        print(
+            f"    CO2 present in gas stream  = "
+            f"{co2_in_gas_stream:.6e} kg/s"
+        )
+        print(
+            f"    Residual                   = "
+            f"{result['residual']:.6e} kg/s"
+        )
+        print(
+            f"    Status                     = "
+            f"{'PASS' if result['converged'] else 'FAIL'}"
+        )
+        print(
+            "    NOTE: this checks the bulk CO2 bookkeeping "
+            "chain for internal consistency only. Both sides "
+            "are derived from the same m_dot_CO2_generated_* "
+            "scalars, so it cannot detect a stoichiometry error "
+            "(e.g. a wrong CO2_ratio) shared by both terms."
+        )
+
+        print("=" * 58)
 
     # ==========================================================
     # STEADY-STATE STATE SNAPSHOT
@@ -525,10 +657,22 @@ class Twin:
 
         # ======================================================
         # GAS: BURNING -> TRANSITION
+        #
+        # Residual (in-flight) calcination in the transition
+        # zone adds its own CO2 to the gas stream before it
+        # reaches the calciner.
         # ======================================================
 
-        self.mass_flow.m_dot_g_transition = (
-            self.mass_flow.m_dot_g_burning
+        m_dot_CO2_generated_transition = float(
+            getattr(
+                self.state,
+                "m_dot_CO2_generated_transition",
+                0.0,
+            )
+        )
+
+        self.mass_flow.calculate_transition_flow(
+            m_dot_CO2_generated=m_dot_CO2_generated_transition
         )
 
         # ======================================================
@@ -552,10 +696,15 @@ class Twin:
 
         # ======================================================
         # SOLID DOWNSTREAM
+        #
+        # Residual (in-flight) calcination in the transition
+        # zone removes its own reacted CaCO3 mass from the
+        # solid stream on top of the calciner's reduction.
         # ======================================================
 
         self.mass_flow.m_dot_s_transition = (
             m_dot_s_calciner_out
+            - self.mass_flow.m_dot_CO2_generated_transition
         )
 
         self.mass_flow.m_dot_s_burning = (
@@ -600,12 +749,47 @@ class Twin:
             self.mass_flow.m_dot_s_burning
         )
 
+        self.state.m_dot_s_preheater = (
+            self.mass_flow.m_dot_s_preheater
+        )
+
+        self.state.m_dot_s_calciner = (
+            self.mass_flow.m_dot_s_calciner_in
+        )
+
+        self.state.m_dot_s_transition = (
+            self.mass_flow.m_dot_s_transition_in
+        )
+
         self.state.m_dot_g = (
             self.mass_flow.m_dot_g_burning
         )
 
+        self.state.m_dot_g_transition = (
+            self.mass_flow.m_dot_g_transition
+        )
+
+        self.state.m_dot_g_calciner = (
+            self.mass_flow.m_dot_g_calciner
+        )
+
+        self.state.m_dot_g_preheater = (
+            self.mass_flow.m_dot_g_preheater
+        )
+
         self.state.Global_mass_balance = (
             self.mass_flow.steady_state_mass_residual
+        )
+
+        mass_scale = max(
+            abs(self.mass_flow.mass_flow_in),
+            abs(self.mass_flow.mass_flow_out),
+            1.0,
+        )
+
+        self.state.Global_mass_balance_relative = (
+            abs(self.state.Global_mass_balance)
+            / mass_scale
         )
 
         return self.state
@@ -1189,6 +1373,8 @@ class Twin:
                 self._validate_solid_handoffs()
                 self._validate_energy_balances()
                 self._validate_global_energy_balance()
+                self._validate_global_mass_balance()
+                self._validate_co2_species_balance()
 
                 return self.state
 

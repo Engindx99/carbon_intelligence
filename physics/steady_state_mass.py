@@ -25,6 +25,7 @@ class SteadyStateMassFlow:
     m_dot_s_preheater: float = 0.0
     m_dot_s_calciner_in: float = 0.0
     m_dot_s_calciner_out: float = 0.0
+    m_dot_s_transition_in: float = 0.0
     m_dot_s_transition: float = 0.0
     m_dot_s_burning: float = 0.0
     m_dot_s_cooler: float = 0.0
@@ -45,6 +46,7 @@ class SteadyStateMassFlow:
     # ======================================================
 
     m_dot_CO2_generated: float = 0.0
+    m_dot_CO2_generated_transition: float = 0.0
     m_dot_H2O_generated: float = 0.0
 
     # ======================================================
@@ -77,6 +79,29 @@ class SteadyStateMassFlow:
 
         return self.m_dot_g_burning
 
+    def calculate_transition_flow(
+        self,
+        m_dot_CO2_generated,
+    ):
+        """
+        Residual (in-flight) calcination continuing in the
+        transition zone transfers additional CO2 mass from
+        solid phase to gas phase.
+
+        CaCO3 -> CaO + CO2
+        """
+
+        self.m_dot_CO2_generated_transition = float(
+            m_dot_CO2_generated
+        )
+
+        self.m_dot_g_transition = (
+            self.m_dot_g_burning
+            + self.m_dot_CO2_generated_transition
+        )
+
+        return self.m_dot_g_transition
+
     def calculate_calciner_flow(
         self,
         m_dot_CO2_generated,
@@ -93,6 +118,10 @@ class SteadyStateMassFlow:
         self.m_dot_s_calciner_out = (
             self.m_dot_s_calciner_in
             - self.m_dot_CO2_generated
+        )
+
+        self.m_dot_s_transition_in = (
+            self.m_dot_s_calciner_out
         )
 
         self.m_dot_g_calciner = (

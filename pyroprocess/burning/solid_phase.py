@@ -1,6 +1,5 @@
 import numpy as np
 
-from physics.physics import solid_mass_flow
 from physics.physics import residence_time
 from physics.physics import solid_axial_velocity
 
@@ -43,10 +42,6 @@ def resolve_solid_motion(burning, state, inputs):
     state.residence_time = tau
     state.u_s = u_s
     state.solid_velocity = u_s
-
-    state.m_dot_s = solid_mass_flow(
-        inputs.get("Feed_rate_kg_s", 0.0)
-    )
 
     return u_s
 

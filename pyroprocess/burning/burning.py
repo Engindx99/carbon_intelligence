@@ -280,6 +280,7 @@ class Burning:
             energy_in,
             energy_out,
             total_energy_balance,
+            Q_wall_loss,
         ) = self.thermal_step(
             state.Tg_burning,
             state.Ts_burning,
@@ -322,6 +323,11 @@ class Burning:
         # ======================================================
         state.Q_petcoke = Q_petcoke
         state.Q_burning = Q_burning
+
+        # ======================================================
+        # WALL LOSS
+        # ======================================================
+        state.Wall_loss_burning = float(Q_wall_loss)
 
         # ======================================================
         # GAS ENTHALPY OUT

@@ -490,7 +490,7 @@ class Calciner:
 
 
         state.Hg_calciner = (
-            state.m_dot_g
+            state.m_dot_g_calciner
             * h_gas(
                 state.Tg_calciner,
                 self.T_ref,
@@ -503,7 +503,7 @@ class Calciner:
         # ======================================================
 
         state.Hs_calciner = (
-            state.m_dot_s
+            state.m_dot_s_calciner
             * self.Cp_s
             * (
                 state.Ts_calciner

@@ -12,7 +12,7 @@ from physics.physics import h_gas
 # ======================================================
 def gas_temperature_from_enthalpy(calciner, H, state):
 
-    m_dot_g = state.m_dot_g
+    m_dot_g = state.m_dot_g_calciner
 
     # H = m_dot_g * h_gas(T, T_ref)
     #
@@ -74,7 +74,7 @@ def solid_temperature_from_enthalpy(
     return (
         H
         / (
-            state.m_dot_s
+            state.m_dot_s_calciner
             * calciner.Cp_s
             + calciner.eps
         )

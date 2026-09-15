@@ -43,8 +43,8 @@ def thermal_step(
     # INPUTS
     # ======================================================
 
-    m_dot_g = state.m_dot_g
-    m_dot_s = state.m_dot_s
+    m_dot_g = state.m_dot_g_preheater
+    m_dot_s = state.m_dot_s_preheater
 
     # ======================================================
     # GAS INLET TEMPERATURE FROM ENTHALPY

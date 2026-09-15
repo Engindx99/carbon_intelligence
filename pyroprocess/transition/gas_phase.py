@@ -12,7 +12,7 @@ from physics.physics import h_gas
 # ======================================================
 def gas_inlet_temperature_from_enthalpy(transition, H, state):
 
-    m_dot_g = state.m_dot_g
+    m_dot_g = state.m_dot_g_transition
 
     if m_dot_g <= transition.eps:
         return transition.T_ref

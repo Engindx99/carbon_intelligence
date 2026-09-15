@@ -7,7 +7,7 @@
 def solid_enthalpy_out(preheater, Ts, state):
 
     H_solid_out = (
-        state.m_dot_s
+        state.m_dot_s_preheater
         * preheater.Cp_s
         * (Ts[0] - preheater.T_ref)
     )

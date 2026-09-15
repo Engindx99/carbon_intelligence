@@ -13,13 +13,26 @@ def report_validation(
         else "FAIL"
     )
 
+    if "mass_in" in result:
+        flow_in, flow_source, flow_out = (
+            "mass_in",
+            "mass_source",
+            "mass_out",
+        )
+    else:
+        flow_in, flow_source, flow_out = (
+            "energy_in",
+            "energy_source",
+            "energy_out",
+        )
+
     validation = {
         "equipment": equipment,
         "balance_type": balance_type,
         "status": status,
-        "energy_in": result["energy_in"],
-        "energy_source": result["energy_source"],
-        "energy_out": result["energy_out"],
+        flow_in: result[flow_in],
+        flow_source: result[flow_source],
+        flow_out: result[flow_out],
         "residual": result["residual"],
         "relative_residual": result["relative_residual"],
         "absolute_tolerance": result[

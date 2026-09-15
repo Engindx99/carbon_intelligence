@@ -11,7 +11,7 @@ def solid_inlet_temperature_from_enthalpy(transition, H, state):
     return (
         H
         / (
-            state.m_dot_s
+            state.m_dot_s_transition
             * transition.Cp_s
             + transition.eps
         )

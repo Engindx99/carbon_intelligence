@@ -31,8 +31,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     u_g = state.u_g
     u_s = state.u_s
 
-    m_dot_g = state.m_dot_g
-    m_dot_s = state.m_dot_s
+    m_dot_g = state.m_dot_g_transition
+    m_dot_s = state.m_dot_s_transition
 
     # ======================================================
     # SOLID THERMAL CAPACITY
@@ -612,6 +612,11 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     state.m_dot_CaCO3_reacted_transition = float(
         m_dot_CaCO3_transition_in
         - m_dot_CaCO3_out_transition
+    )
+
+    state.m_dot_CO2_generated_transition = float(
+        state.m_dot_CaCO3_reacted_transition
+        * transition.chemistry.CO2_ratio
     )
 
     state.Calcination_Q_transition_cells = (

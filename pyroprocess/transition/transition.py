@@ -148,15 +148,15 @@ class Transition:
             self.u_s,
         )
 
-        state.m_dot_g = getattr(
+        state.m_dot_g_transition = getattr(
             state,
-            "m_dot_g",
+            "m_dot_g_transition",
             0.0,
         )
 
-        state.m_dot_s = getattr(
+        state.m_dot_s_transition = getattr(
             state,
-            "m_dot_s",
+            "m_dot_s_transition",
             0.0,
         )
 
@@ -230,7 +230,7 @@ class Transition:
         # ======================================================
 
         state.Hg_transition = (
-            state.m_dot_g
+            state.m_dot_g_transition
             * h_gas(
                 state.Tg_transition,
                 self.T_ref,
@@ -238,7 +238,7 @@ class Transition:
         )
 
         state.Hs_transition = (
-            state.m_dot_s
+            state.m_dot_s_transition
             * self.Cp_s
             * (
                 state.Ts_transition

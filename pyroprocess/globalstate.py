@@ -60,6 +60,9 @@ class GlobalState:
     # GAS / MASS FLOW STATE
     # ======================================================
     m_dot_g: float = 0.0
+    m_dot_g_transition: float = 0.0
+    m_dot_g_calciner: float = 0.0
+    m_dot_g_preheater: float = 0.0
     rho_g: float = 1.2
 
     Hgas_burning_in: float = 0.0
@@ -191,6 +194,9 @@ class GlobalState:
     # SOLID PHASE
     # ======================================================
     m_dot_s: float = 0.0
+    m_dot_s_preheater: float = 0.0
+    m_dot_s_calciner: float = 0.0
+    m_dot_s_transition: float = 0.0
 
     
     # ======================================================

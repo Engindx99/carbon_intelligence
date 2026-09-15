@@ -15,7 +15,7 @@ from physics.physics import h_gas
 # ======================================================
 def gas_temperature_from_enthalpy(preheater, H, state):
 
-    target_h = H / (state.m_dot_g + preheater.eps)
+    target_h = H / (state.m_dot_g_preheater + preheater.eps)
 
     T = 1200.0
 
@@ -49,7 +49,7 @@ def gas_temperature_from_enthalpy(preheater, H, state):
 def gas_enthalpy_out(preheater, Tg, state):
 
     H_gas_out = (
-        state.m_dot_g
+        state.m_dot_g_preheater
         * float(h_gas(Tg[-1], preheater.T_ref))
     )
 

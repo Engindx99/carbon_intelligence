@@ -32,8 +32,8 @@ def thermal_step(
 
     T_ref = calciner.T_ref
 
-    m_dot_g = state.m_dot_g
-    m_dot_s = state.m_dot_s
+    m_dot_g = state.m_dot_g_calciner
+    m_dot_s = state.m_dot_s_calciner
 
     # ======================================================
     # SOLID THERMAL CAPACITY
