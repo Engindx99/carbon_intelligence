@@ -1,7 +1,7 @@
 from pyroprocess.globalstate import GlobalState
 from pyroprocess.burning import Burning
 from pyroprocess.transition import Transition
-from pyroprocess.calciner import Calciner
+from pyroprocess.precalciner import Calciner
 from pyroprocess.preheater import Preheater
 from pyroprocess.cooler import Cooler
 
