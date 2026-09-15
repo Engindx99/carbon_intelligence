@@ -10,6 +10,20 @@ from . import solid_phase
 
 
 # ======================================================
+# INSULATION FACTOR
+#
+# Wall-loss calibration factor used by the wall rows of the
+# linear system. Previously written as the literal 0.27 in
+# two separate places in the wall-row assembly; bound to a
+# single name here so the matrix and the residual
+# decomposition diagnostic cannot silently diverge. Value is
+# unchanged, and matches the `insulation_factor=0.27` default
+# of physics.wall_losses().
+# ======================================================
+_INSULATION_FACTOR = 0.27
+
+
+# ======================================================
 # THERMAL STEP
 #
 # Moved from Cooler.thermal_step() (pyroprocess/cooler.py).
@@ -140,6 +154,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             Tg_iter,
             Ts_iter,
             Tw_iter,
+            cooler.T_ref,
             m_dot_g,
             V_cell,
             K_gs,
@@ -196,7 +211,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             A[row, wall_i] += (
                 -V_cell * K_gw
                 -V_cell * K_ws
-                -0.27 / R_total
+                -_INSULATION_FACTOR / R_total
             )
 
             q_rad_gw = (
@@ -220,7 +235,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
                     q_rad_gw
                     + q_rad_ws
                 )
-                -0.27 * cooler.T_amb / R_total
+                -_INSULATION_FACTOR * cooler.T_amb / R_total
             )
 
             row += 1
@@ -404,6 +419,117 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     total_energy_balance = (
         energy_in
         - energy_out
+    )
+
+    # ======================================================
+    # RESIDUAL DECOMPOSITION (DIAGNOSTIC)
+    #
+    # Summing the discrete rows of the linear system accounts
+    # for the reported residual exactly:
+    #
+    #     R = -WL_0 - gas_gap - solid_gap + wall_mismatch
+    #
+    # Nothing else survives: the K_gs/K_gw/K_ws terms cancel
+    # identically between the rows and the fluxes.
+    #
+    # WL_0     Inlet-cell wall loss. The gas and solid rows are
+    #          written for i = 1..N-1 (row 0 is Dirichlet), but
+    #          the wall loop above runs over i = 0..N-1. Cell 0
+    #          therefore feeds the wall, and that heat leaves
+    #          through wall_loss without ever being debited
+    #          from the gas or solid stream enthalpy. This is
+    #          the one remaining structural defect.
+    #
+    # gas_gap  Closure gap of the gas rows, evaluated at the
+    #          converged state against the final fluxes. Zero
+    #          at the exact fixed point: the enthalpy-
+    #          linearized rows (gas_phase.py) telescope to
+    #          m_dot_g*(h_gas(Tg_out) - h_gas(Tg_in)), which is
+    #          exactly Hg_out - Hg_in above. What is left is
+    #          the Picard gap, bounded by `tol`.
+    #
+    # solid_gap  Same for the solid rows. Cp_s is constant, so
+    #          those telescope exactly too; again only the
+    #          Picard gap remains.
+    #
+    # wall_mismatch  The wall rows dissipate via
+    #          _INSULATION_FACTOR/R_total while the reported
+    #          wall_loss comes from physics.wall_losses(),
+    #          which divides by (R_total + eps). With
+    #          eps = 1e-9 this is ~1e-7 relative.
+    #
+    # This block is purely additive: it reads the converged
+    # state and changes no equation, boundary condition or
+    # returned value.
+    # ======================================================
+
+    gas_gap = (
+        Hg_out
+        - Hg_in
+        + V_cell * float(
+            np.sum(
+                q_gs[1:]
+                + q_gw[1:]
+            )
+        )
+    )
+
+    solid_gap = (
+        Hs_out
+        - Hs_in
+        - V_cell * float(
+            np.sum(
+                q_gs[1:]
+                - q_ws[1:]
+            )
+        )
+    )
+
+    wall_loss_cell0 = (
+        _INSULATION_FACTOR
+        / R_total
+        * (Tw_ss[0] - cooler.T_amb)
+    )
+
+    wall_loss_matrix = (
+        _INSULATION_FACTOR
+        / R_total
+        * float(
+            np.sum(Tw_ss - cooler.T_amb)
+        )
+    )
+
+    wall_mismatch = (
+        wall_loss_matrix
+        - wall_loss
+    )
+
+    residual_decomposition_check = (
+        -wall_loss_cell0
+        - gas_gap
+        - solid_gap
+        + wall_mismatch
+        - total_energy_balance
+    )
+
+    cooler.residual_gas_gap = float(
+        gas_gap
+    )
+
+    cooler.residual_solid_gap = float(
+        solid_gap
+    )
+
+    cooler.residual_wall_cell0 = float(
+        wall_loss_cell0
+    )
+
+    cooler.residual_wall_mismatch = float(
+        wall_mismatch
+    )
+
+    cooler.residual_decomposition_check = float(
+        residual_decomposition_check
     )
 
     # ======================================================

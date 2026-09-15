@@ -10,15 +10,22 @@ from physics.physics import h_gas
 # renamed to `cooler` since this is now a free function
 # taking the owning Cooler instance explicitly.
 #
-# Cooler's own formulation is preserved exactly: a
-# Dirichlet inlet row (Tg[0] = Tg_in) followed by a
-# co-current per-cell loop (gas flows 0 -> N-1, same
-# direction as the solid). This is intentionally NOT the
-# counter-current, enthalpy-linearized formulation used by
+# Cooler keeps its own co-current geometry: a Dirichlet
+# inlet row (Tg[0] = Tg_in) followed by a per-cell loop
+# (gas flows 0 -> N-1, same direction as the solid), unlike
+# the counter-current sweep of
 # pyroprocess/transition/gas_phase.py and
-# pyroprocess/burning/gas_phase.py -- porting that
-# formulation onto Cooler would change the numerics, not
-# just the file layout.
+# pyroprocess/burning/gas_phase.py.
+#
+# The convective term, however, is now written in ENTHALPY
+# like those two siblings. It used to be a bare
+# right-endpoint m_dot_g*cp_gas(Tg_i)*(Tg_i - Tg_up), whose
+# fixed point does not satisfy the finite-control-volume
+# first law m_dot_g*(h_out - h_in) = Q that
+# heat_transfer.py's energy balance assumes. That gap was
+# the dominant part of the Cooler energy residual; the
+# residual decomposition diagnostic in heat_transfer.py now
+# reports what is left of it as `gas_gap`.
 # ======================================================
 def apply_gas_energy_balance(
     A,
@@ -29,6 +36,7 @@ def apply_gas_energy_balance(
     Tg_iter,
     Ts_iter,
     Tw_iter,
+    T_ref,
     m_dot_g,
     V_cell,
     K_gs,
@@ -49,10 +57,6 @@ def apply_gas_energy_balance(
 
     for i in range(1, N):
 
-        Cg = m_dot_g * float(
-            cp_gas(Tg_iter[i])
-        )
-
         gas_i = i
         solid_i = N + i
         wall_i = 2 * N + i
@@ -60,20 +64,77 @@ def apply_gas_energy_balance(
         gas_up = i - 1
 
         # ----------------------------------------------
-        # m_dot_g Cp_g (Tg_i - Tg_up)
+        # m_dot_g (h_g,i - h_g,up)
         #
         # + Q_gs
         # + Q_gw
         # = 0
+        #
+        # h_gas is cubic in T, so it cannot enter the
+        # linear system directly. Each node instead carries
+        # a first-order Taylor expansion of h_gas about the
+        # frozen Picard iterate,
+        #
+        #   h_lin(T) = Cp_g * T + h_linear_const
+        #
+        # which is EXACT at the fixed point, where
+        # T == Tg_iter and h_lin collapses back onto
+        # h_gas. The linearization slope therefore sets the
+        # convergence rate, not the converged answer.
+        # Summed over the cells this telescopes exactly to
+        # m_dot_g * (h_gas(Tg[-1]) - h_gas(Tg_in)), which is
+        # what heat_transfer.py uses for Hg_out - Hg_in.
+        #
+        # Same construction as burning/gas_phase.py and
+        # transition/gas_phase.py, with the upstream node
+        # taken as i - 1 for Cooler's co-current flow.
+        #
+        # Node 0 needs no special case: the Dirichlet row
+        # above pins Tg[0] = Tg_in, and Tg_iter[0] is seeded
+        # to Tg_in (cooler.py) and preserved by every solve
+        # and by the Picard blend, so h_lin at node 0 is
+        # exactly h_gas(Tg_in, T_ref).
         # ----------------------------------------------
 
+        Cp_g_i = float(
+            cp_gas(Tg_iter[i])
+        )
+
+        Cg_i = m_dot_g * Cp_g_i
+
+        h_linear_const_i = (
+            float(
+                h_gas(
+                    Tg_iter[i],
+                    T_ref,
+                )
+            )
+            - Cp_g_i * Tg_iter[i]
+        )
+
+        Cp_g_up = float(
+            cp_gas(Tg_iter[gas_up])
+        )
+
+        Cg_up = m_dot_g * Cp_g_up
+
+        h_linear_const_up = (
+            float(
+                h_gas(
+                    Tg_iter[gas_up],
+                    T_ref,
+                )
+            )
+            - Cp_g_up * Tg_iter[gas_up]
+        )
+
         A[row, gas_i] += (
-            Cg
+            Cg_i
             + V_cell * K_gs
             + V_cell * K_gw
         )
 
-        A[row, gas_up] += -Cg
+        A[row, gas_up] += -Cg_up
 
         A[row, solid_i] += (
             -V_cell * K_gs
@@ -103,9 +164,13 @@ def apply_gas_energy_balance(
             )
         )
 
-        b[row] = -V_cell * (
-            q_rad_gs
-            + q_rad_gw
+        b[row] = (
+            -V_cell * (
+                q_rad_gs
+                + q_rad_gw
+            )
+            - m_dot_g * h_linear_const_i
+            + m_dot_g * h_linear_const_up
         )
 
         row += 1

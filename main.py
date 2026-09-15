@@ -1084,6 +1084,30 @@ class Twin:
                     f"{self.state.Cooler_energy_balance:.12e} W"
                 )
 
+                # Exact accounting of the Cooler residual,
+                # R = -WL_0 - gas_gap - solid_gap + wall_mismatch.
+                # See pyroprocess/cooler/heat_transfer.py.
+                print(
+                    f"  WL_0 (inlet cell)   = "
+                    f"{self.cooler.residual_wall_cell0:.12e} W"
+                )
+                print(
+                    f"  gas_gap (Picard)    = "
+                    f"{self.cooler.residual_gas_gap:.12e} W"
+                )
+                print(
+                    f"  solid_gap (Picard)  = "
+                    f"{self.cooler.residual_solid_gap:.12e} W"
+                )
+                print(
+                    f"  wall_mismatch       = "
+                    f"{self.cooler.residual_wall_mismatch:.12e} W"
+                )
+                print(
+                    f"  decomposition check = "
+                    f"{self.cooler.residual_decomposition_check:.12e} W"
+                )
+
                 print("\n--- REACTION TERMS ---")
                 print(
                     f"Calcination sink      = "
