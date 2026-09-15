@@ -1,7 +1,5 @@
 import numpy as np
 
-from physics.physics import cp_gas
-from physics.physics import h_gas
 from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
@@ -9,6 +7,10 @@ from physics.physics import ZONE_HT_CONFIG
 
 from chemistry.phases import copy_solid_phases
 from chemistry.reactions import ChemistryModel
+
+from . import gas_phase
+from . import solid_phase
+from . import heat_transfer
 
 from .stage1 import Stage1
 from .stage2 import Stage2
@@ -168,6 +170,12 @@ class Preheater:
 
     # ======================================================
     # STEADY-STATE THERMAL STEP
+    #
+    # Delegates to heat_transfer.thermal_step(). Kept as a
+    # bound method (rather than deleted) so the public
+    # interface Preheater.thermal_step(...) is unchanged,
+    # matching the pattern used by the other zone classes
+    # (burning.py, transition.py, cooler.py, precalciner).
     # ======================================================
     def thermal_step(
         self,
@@ -179,344 +187,31 @@ class Preheater:
         reaction_heat_cells=None,
     ):
 
-        # ======================================================
-        # INPUTS
-        # ======================================================
-
-        m_dot_g = state.m_dot_g
-        m_dot_s = state.m_dot_s
-
-        # ======================================================
-        # GAS INLET TEMPERATURE FROM ENTHALPY
-        # ======================================================
-        # Zone-to-zone gas energy handoff is defined by enthalpy.
-
-        H_in = state.Hgas_preheater_in
-
-        if H_in <= 0.0:
-            raise RuntimeError(
-                "Preheater gas inlet enthalpy is zero or negative: "
-                f"Hgas_preheater_in={H_in:.6e} W, "
-                f"Hgas_calciner_out={state.Hgas_calciner_out:.6e} W"
-            )
-
-        Tg_in = self.gas_temperature_from_enthalpy(
-            H_in,
+        return heat_transfer.thermal_step(
+            self,
+            Tg,
+            Ts,
+            Tw,
             state,
-        )
-
-        # Fresh raw meal enters Stage 5.
-        Ts_feed = float(state.Feed_temperature)
-
-        # ======================================================
-        # INITIAL ARRAYS
-        # ======================================================
-
-        Tg_new = np.empty(self.N, dtype=float)
-        Ts_new = np.empty(self.N, dtype=float)
-        Tw_new = np.empty(self.N, dtype=float)
-
-        # ======================================================
-        # REACTION HEAT CELLS
-        # ======================================================
-
-        if reaction_heat_cells is None:
-            reaction_heat_cells = np.zeros(self.N)
-
-        if len(reaction_heat_cells) != self.N:
-            raise ValueError(
-                "reaction_heat_cells must have length equal to N"
-            )
-            
-        # ======================================================
-        # RESET HANDOFF DIAGNOSTICS
-        # ======================================================
-
-        self.gas_handoff_residuals = []
-        self.solid_handoff_residuals = []
-        
-        # ======================================================
-        # COUNTER-CURRENT STAGE SOLUTION
-        # ======================================================
-
-        # Gas:
-        # Stage 1 -> Stage 2 -> Stage 3 -> Stage 4 -> Stage 5
-        #
-        # Solid:
-        # Fresh feed -> Stage 5 -> Stage 4 -> Stage 3
-        #            -> Stage 2 -> Stage 1
-
-        max_iterations = 50
-        tolerance = 1e-5
-
-        # Initial guesses for solid inlet temperature of
-        # each stage.
-        solid_in_guess = np.full(
-            self.N,
-            Ts_feed,
-            dtype=float,
-        )
-
-        solid_out = np.empty(
-            self.N,
-            dtype=float,
-        )
-
-        # ======================================================
-        # FIXED-POINT ITERATION
-        # ======================================================
-
-        for iteration in range(max_iterations):
-
-            Tg_current = Tg_in
-
-            # --------------------------------------------------
-            # GAS SWEEP: Stage 1 -> Stage 5
-            # --------------------------------------------------
-
-            for i, stage in enumerate(self.stages):
-
-                # Fresh feed enters Stage 5.
-                if i == self.N - 1:
-                    Ts_current = Ts_feed
-                else:
-                    # Solid comes from the next stage.
-                    Ts_current = solid_in_guess[i]
-
-                stage.solve(
-                    gas_inlet_temperature=Tg_current,
-                    solid_inlet_temperature=Ts_current,
-                    m_dot_g=m_dot_g,
-                    m_dot_s=m_dot_s,
-                    state=state,
-                    model=self,
-                    reaction_power=-reaction_heat_cells[i],
-                )
-
-                solid_out[i] = (
-                    stage.solid_outlet_temperature
-                )
-
-                Tg_current = (
-                    stage.gas_outlet_temperature
-                )
-
-            # --------------------------------------------------
-            # UPDATE SOLID INLET PROFILE
-            # --------------------------------------------------
-
-            new_solid_in = np.empty(
-                self.N,
-                dtype=float,
-            )
-
-            # Fresh feed enters Stage 5.
-            new_solid_in[-1] = Ts_feed
-
-            # Stage i receives solids from Stage i+1.
-            new_solid_in[:-1] = solid_out[1:]
-
-            # --------------------------------------------------
-            # CONVERGENCE
-            # --------------------------------------------------
-
-            solid_error = np.max(
-                np.abs(
-                    new_solid_in
-                    - solid_in_guess
-                )
-            )
-
-            solid_in_guess = new_solid_in
-
-            if solid_error < tolerance:
-                break
-
-        else:
-            raise RuntimeError(
-                "Preheater counter-current solution did not converge: "
-                f"solid_error={solid_error:.6e} K"
-            )
-
-        # ======================================================
-        # FINAL CONSISTENT SWEEP
-        # ======================================================
-
-        Tg_current = Tg_in
-
-        for i, stage in enumerate(self.stages):
-
-            if i == self.N - 1:
-                Ts_current = Ts_feed
-            else:
-                Ts_current = solid_in_guess[i]
-
-            stage.solve(
-                gas_inlet_temperature=Tg_current,
-                solid_inlet_temperature=Ts_current,
-                m_dot_g=m_dot_g,
-                m_dot_s=m_dot_s,
-                state=state,
-                model=self,
-                reaction_power=-reaction_heat_cells[i],
-            )
-
-            Tg_new[i] = (
-                stage.gas_outlet_temperature
-            )
-
-            Ts_new[i] = (
-                stage.solid_outlet_temperature
-            )
-
-            Tw_new[i] = (
-                stage.wall_temperature
-            )
-
-            Tg_current = (
-                stage.gas_outlet_temperature
-            )
-
-
-        # ======================================================
-        # ENTHALPY HANDOFF VALIDATION
-        # ======================================================
-
-        self.gas_handoff_residuals = []
-        self.solid_handoff_residuals = []
-
-        for i, stage in enumerate(self.stages):
-
-            if i == 0:
-                Hgas_expected = H_in
-            else:
-                Hgas_expected = (
-                    self.stages[i - 1].gas_outlet_enthalpy
-                )
-
-            if i == self.N - 1:
-                Hsolid_expected = (
-                    m_dot_s
-                    * self.Cp_s
-                    * (Ts_feed - self.T_ref)
-                )
-            else:
-                Hsolid_expected = (
-                    self.stages[i + 1].solid_outlet_enthalpy
-                )
-
-            gas_handoff_residual = (
-                stage.gas_inlet_enthalpy
-                - Hgas_expected
-            )
-
-            solid_handoff_residual = (
-                stage.solid_inlet_enthalpy
-                - Hsolid_expected
-            )
-
-            self.gas_handoff_residuals.append(
-                float(gas_handoff_residual)
-            )
-
-            self.solid_handoff_residuals.append(
-                float(solid_handoff_residual)
-            )
-
-        # ======================================================
-        # TOTAL STAGE ENERGY TRANSFERS
-        # ======================================================
-
-        self.Q_reaction_total = sum(
-            stage.Q_reaction
-            for stage in self.stages
-        )
-
-        Q_wall_loss_total = sum(
-            stage.Q_wall_loss
-            for stage in self.stages
+            reaction_sink,
+            reaction_heat_cells,
         )
 
 
-
-        # ======================================================
-        # GLOBAL PREHEATER ENERGY BALANCE
-        # ======================================================
-
-        Hgas_in = state.Hgas_preheater_in
-
-        Hsolid_in = (
-            m_dot_s
-            * self.Cp_s
-            * (Ts_feed - self.T_ref)
-        )
-
-        Hgas_out = self.stages[-1].gas_outlet_enthalpy
-
-        Hsolid_out = self.stages[0].solid_outlet_enthalpy
-
-        self.energy_in = (
-            Hgas_in
-            + Hsolid_in
-        )
-
-        self.energy_out = (
-            Hgas_out
-            + Hsolid_out
-            + Q_wall_loss_total
-        )
-
-        self.energy_residual = (
-            self.energy_in
-            + self.Q_reaction_total
-            - self.energy_out
-        )
-
-        # ======================================================
-        # WALL LOSS
-        # ======================================================
-
-        wall_loss = Q_wall_loss_total
-        wall_debug = {}
-
-        # ======================================================
-        # RETURN
-        # ======================================================
-
-        return (
-            Tg_new,
-            Ts_new,
-            Tw_new,
-            float(wall_loss),
-            wall_debug,
-        )
-        
-        
+    # ======================================================
+    # GAS INLET TEMPERATURE FROM ENTHALPY
+    #
+    # Delegates to gas_phase.gas_temperature_from_enthalpy().
+    # Kept as a bound method (rather than deleted) so the
+    # public interface is unchanged.
+    # ======================================================
     def gas_temperature_from_enthalpy(self, H, state):
 
-        target_h = H / (state.m_dot_g + self.eps)
-
-        T = 1200.0
-
-        for _ in range(50):
-
-            h = float(h_gas(T, self.T_ref))
-            cp = float(cp_gas(T))
-
-            residual = h - target_h
-
-            if abs(residual) < 1e-6:
-                break
-
-            T_new = T - residual / (cp + self.eps)
-
-            T = np.clip(
-                T_new,
-                250.0,
-                4000.0,
-            )
-
-        return float(T)
+        return gas_phase.gas_temperature_from_enthalpy(
+            self,
+            H,
+            state,
+        )
 
 
     # ======================================================
@@ -666,27 +361,32 @@ class Preheater:
 
     # ======================================================
     # GAS ENTHALPY TO NEXT ZONE
+    #
+    # Delegates to gas_phase.gas_enthalpy_out(). Kept as a
+    # bound method (rather than deleted) so the public
+    # interface is unchanged.
     # ======================================================
     def gas_enthalpy_out(self, Tg, state):
 
-        H_gas_out = (
-            state.m_dot_g
-            * float(h_gas(Tg[-1], self.T_ref))
+        return gas_phase.gas_enthalpy_out(
+            self,
+            Tg,
+            state,
         )
-
-        return H_gas_out
 
 
     # ======================================================
     # SOLID ENTHALPY TO NEXT ZONE
+    #
+    # Delegates to solid_phase.solid_enthalpy_out(). Kept as
+    # a bound method (rather than deleted) so the public
+    # interface is unchanged.
     # ======================================================
     def solid_enthalpy_out(self, Ts, state):
 
-        H_solid_out = (
-            state.m_dot_s
-            * self.Cp_s
-            * (Ts[0] - self.T_ref)
+        return solid_phase.solid_enthalpy_out(
+            self,
+            Ts,
+            state,
         )
-
-        return H_solid_out
     
