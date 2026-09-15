@@ -109,6 +109,35 @@ def thermal_step(
     max_iterations = 50
     tolerance = 1e-5
 
+    # ======================================================
+    # ENERGY CLOSURE TOLERANCE
+    #
+    # The loop below exits on a solid inlet TEMPERATURE
+    # criterion, so each of the (N-1) internal solid
+    # handoffs may still carry up to `tolerance` kelvin of
+    # slop when it breaks. The zone energy balance further
+    # down reads only the terminal stages
+    # (stages[-1].gas_outlet_enthalpy and
+    # stages[0].solid_outlet_enthalpy), assuming the
+    # internal handoffs telescope exactly, so that slop
+    # cannot cancel and lands directly in
+    # preheater.energy_residual.
+    #
+    # Its enthalpy equivalent is therefore the tightest
+    # closure this formulation can deliver. Exposed so the
+    # energy validator can be held to what the solver
+    # actually converges to, rather than to a fixed
+    # absolute figure. Tightening `tolerance` above
+    # tightens this in step.
+    # ======================================================
+
+    preheater.energy_closure_tolerance = float(
+        (preheater.N - 1)
+        * m_dot_s
+        * preheater.Cp_s
+        * tolerance
+    )
+
     # Initial guesses for solid inlet temperature of
     # each stage.
     solid_in_guess = np.full(

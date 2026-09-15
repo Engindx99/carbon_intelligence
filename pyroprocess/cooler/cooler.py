@@ -139,8 +139,11 @@ class Cooler:
         state.Tg_cooler_in = Tg_in
         state.Ts_cooler_in = Ts_in
 
-        state.Tg_cooler[0] = Tg_in
-        state.Ts_cooler[0] = Ts_in
+        # Cell 0 is a control volume, not a boundary node:
+        # the inlet streams enter its balance as a flux
+        # (gas_phase/solid_phase), so Tg_cooler[0] and
+        # Ts_cooler[0] are cell averages and must NOT be
+        # overwritten with the inlet temperatures here.
 
         # ======================================================
         # STEADY-STATE THERMAL SOLVE

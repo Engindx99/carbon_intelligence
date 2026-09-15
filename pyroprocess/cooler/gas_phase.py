@@ -45,23 +45,11 @@ def apply_gas_energy_balance(
     q_gw,
 ):
 
-    # ==================================================
-    # Inlet boundary:
-    #
-    # Tg[0] = Tg_in
-    # ==================================================
-    A[row, 0] = 1.0
-    b[row] = Tg_in
-
-    row += 1
-
-    for i in range(1, N):
+    for i in range(N):
 
         gas_i = i
         solid_i = N + i
         wall_i = 2 * N + i
-
-        gas_up = i - 1
 
         # ----------------------------------------------
         # m_dot_g (h_g,i - h_g,up)
@@ -89,11 +77,11 @@ def apply_gas_energy_balance(
         # transition/gas_phase.py, with the upstream node
         # taken as i - 1 for Cooler's co-current flow.
         #
-        # Node 0 needs no special case: the Dirichlet row
-        # above pins Tg[0] = Tg_in, and Tg_iter[0] is seeded
-        # to Tg_in (cooler.py) and preserved by every solve
-        # and by the Picard blend, so h_lin at node 0 is
-        # exactly h_gas(Tg_in, T_ref).
+        # Cell 0 is a full control volume like every other
+        # cell, not a boundary node: its upstream enthalpy
+        # is the known inlet stream h_gas(Tg_in), injected
+        # as a flux in b[row]. Tg[0] is therefore the cell
+        # average, which is warmer than Tg_in.
         # ----------------------------------------------
 
         Cp_g_i = float(
@@ -112,29 +100,11 @@ def apply_gas_energy_balance(
             - Cp_g_i * Tg_iter[i]
         )
 
-        Cp_g_up = float(
-            cp_gas(Tg_iter[gas_up])
-        )
-
-        Cg_up = m_dot_g * Cp_g_up
-
-        h_linear_const_up = (
-            float(
-                h_gas(
-                    Tg_iter[gas_up],
-                    T_ref,
-                )
-            )
-            - Cp_g_up * Tg_iter[gas_up]
-        )
-
         A[row, gas_i] += (
             Cg_i
             + V_cell * K_gs
             + V_cell * K_gw
         )
-
-        A[row, gas_up] += -Cg_up
 
         A[row, solid_i] += (
             -V_cell * K_gs
@@ -164,14 +134,58 @@ def apply_gas_energy_balance(
             )
         )
 
-        b[row] = (
-            -V_cell * (
-                q_rad_gs
-                + q_rad_gw
+        if i == 0:
+
+            # Inlet face: the upstream enthalpy is the known
+            # inlet stream, so it is a constant flux rather
+            # than a coupling to a neighbouring cell.
+
+            h_in = float(
+                h_gas(
+                    Tg_in,
+                    T_ref,
+                )
             )
-            - m_dot_g * h_linear_const_i
-            + m_dot_g * h_linear_const_up
-        )
+
+            b[row] = (
+                -V_cell * (
+                    q_rad_gs
+                    + q_rad_gw
+                )
+                - m_dot_g * h_linear_const_i
+                + m_dot_g * h_in
+            )
+
+        else:
+
+            gas_up = i - 1
+
+            Cp_g_up = float(
+                cp_gas(Tg_iter[gas_up])
+            )
+
+            Cg_up = m_dot_g * Cp_g_up
+
+            h_linear_const_up = (
+                float(
+                    h_gas(
+                        Tg_iter[gas_up],
+                        T_ref,
+                    )
+                )
+                - Cp_g_up * Tg_iter[gas_up]
+            )
+
+            A[row, gas_up] += -Cg_up
+
+            b[row] = (
+                -V_cell * (
+                    q_rad_gs
+                    + q_rad_gw
+                )
+                - m_dot_g * h_linear_const_i
+                + m_dot_g * h_linear_const_up
+            )
 
         row += 1
 

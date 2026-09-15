@@ -168,6 +168,12 @@ class Preheater:
         self.gas_handoff_residuals = []
         self.solid_handoff_residuals = []
 
+        # Enthalpy equivalent of the inter-stage handoff
+        # convergence criterion. Recomputed every solve in
+        # heat_transfer.thermal_step(), where the criterion
+        # itself lives; the validator reads it from there.
+        self.energy_closure_tolerance = 0.0
+
     # ======================================================
     # STEADY-STATE THERMAL STEP
     #

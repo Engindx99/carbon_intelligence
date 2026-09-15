@@ -178,6 +178,11 @@ class Twin:
         # PREHEATER GLOBAL ENERGY BALANCE
         # ======================================================
 
+        # The zone balance cannot close tighter than the
+        # inter-stage handoff criterion the solver stops on,
+        # so it is held to that instead of the 1e-3 W default.
+        # Derived in preheater/heat_transfer.py from the solid
+        # handoff tolerance, the stream capacity and N.
         result = validate_energy(
             energy_in=self.preheater.energy_in,
             energy_out=self.preheater.energy_out,
@@ -185,6 +190,7 @@ class Twin:
                 stage.Q_reaction
                 for stage in self.preheater.stages
             ),
+            absolute_tolerance=self.preheater.energy_closure_tolerance,
         )
 
         report_validation(
@@ -1085,12 +1091,8 @@ class Twin:
                 )
 
                 # Exact accounting of the Cooler residual,
-                # R = -WL_0 - gas_gap - solid_gap + wall_mismatch.
+                # R = -gas_gap - solid_gap + wall_mismatch.
                 # See pyroprocess/cooler/heat_transfer.py.
-                print(
-                    f"  WL_0 (inlet cell)   = "
-                    f"{self.cooler.residual_wall_cell0:.12e} W"
-                )
                 print(
                     f"  gas_gap (Picard)    = "
                     f"{self.cooler.residual_gas_gap:.12e} W"

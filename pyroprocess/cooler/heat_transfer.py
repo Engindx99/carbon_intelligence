@@ -346,6 +346,16 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
     # ======================================================
     # FINAL WALL LOSS
+    #
+    # eps=0.0: wall_losses() divides by (R_total + eps) and
+    # by (V_cell + eps), while the wall rows of the matrix
+    # above divide by R_total alone. Passing cooler.eps
+    # (1e-9) therefore biased the reported wall loss away
+    # from the energy the matrix actually removes, by
+    # eps/R_total ~ 4e-7 relative. Both denominators are
+    # strictly positive for any physical geometry
+    # (R_total = t/(k*A) + 1/(h*A), V_cell > 0), so the
+    # guard protects against nothing and is dropped here.
     # ======================================================
 
     (
@@ -362,7 +372,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         N=N,
         refractory_thickness=cooler.refractory_thickness,
         refractory_conductivity=cooler.refractory_conductivity,
-        eps=cooler.eps,
+        eps=0.0,
     )
 
     # ======================================================
@@ -427,18 +437,12 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # Summing the discrete rows of the linear system accounts
     # for the reported residual exactly:
     #
-    #     R = -WL_0 - gas_gap - solid_gap + wall_mismatch
+    #     R = -gas_gap - solid_gap + wall_mismatch
     #
     # Nothing else survives: the K_gs/K_gw/K_ws terms cancel
-    # identically between the rows and the fluxes.
-    #
-    # WL_0     Inlet-cell wall loss. The gas and solid rows are
-    #          written for i = 1..N-1 (row 0 is Dirichlet), but
-    #          the wall loop above runs over i = 0..N-1. Cell 0
-    #          therefore feeds the wall, and that heat leaves
-    #          through wall_loss without ever being debited
-    #          from the gas or solid stream enthalpy. This is
-    #          the one remaining structural defect.
+    # identically between the rows and the fluxes. Every cell
+    # i = 0..N-1 now carries a gas row, a solid row and a
+    # wall row, so the sums below run over the whole array.
     #
     # gas_gap  Closure gap of the gas rows, evaluated at the
     #          converged state against the final fluxes. Zero
@@ -454,9 +458,8 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     #
     # wall_mismatch  The wall rows dissipate via
     #          _INSULATION_FACTOR/R_total while the reported
-    #          wall_loss comes from physics.wall_losses(),
-    #          which divides by (R_total + eps). With
-    #          eps = 1e-9 this is ~1e-7 relative.
+    #          wall_loss comes from physics.wall_losses().
+    #          Kept as a guard that the two stay in step.
     #
     # This block is purely additive: it reads the converged
     # state and changes no equation, boundary condition or
@@ -468,8 +471,8 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         - Hg_in
         + V_cell * float(
             np.sum(
-                q_gs[1:]
-                + q_gw[1:]
+                q_gs
+                + q_gw
             )
         )
     )
@@ -479,16 +482,10 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         - Hs_in
         - V_cell * float(
             np.sum(
-                q_gs[1:]
-                - q_ws[1:]
+                q_gs
+                - q_ws
             )
         )
-    )
-
-    wall_loss_cell0 = (
-        _INSULATION_FACTOR
-        / R_total
-        * (Tw_ss[0] - cooler.T_amb)
     )
 
     wall_loss_matrix = (
@@ -505,8 +502,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     )
 
     residual_decomposition_check = (
-        -wall_loss_cell0
-        - gas_gap
+        -gas_gap
         - solid_gap
         + wall_mismatch
         - total_energy_balance
@@ -518,10 +514,6 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
     cooler.residual_solid_gap = float(
         solid_gap
-    )
-
-    cooler.residual_wall_cell0 = float(
-        wall_loss_cell0
     )
 
     cooler.residual_wall_mismatch = float(

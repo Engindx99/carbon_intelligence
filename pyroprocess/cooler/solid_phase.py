@@ -30,23 +30,11 @@ def apply_solid_energy_balance(
     q_ws,
 ):
 
-    # ==================================================
-    # Inlet boundary:
-    #
-    # Ts[0] = Ts_in
-    # ==================================================
-    A[row, N] = 1.0
-    b[row] = Ts_in
-
-    row += 1
-
-    for i in range(1, N):
+    for i in range(N):
 
         gas_i = i
         solid_i = N + i
         wall_i = 2 * N + i
-
-        solid_up = N + i - 1
 
         # ----------------------------------------------
         # m_dot_s Cp_s (Ts_i - Ts_up)
@@ -54,6 +42,18 @@ def apply_solid_energy_balance(
         # - Q_gs
         # + Q_ws
         # = 0
+        #
+        # Cell 0 is a full control volume like every other
+        # cell, not a boundary node: its upstream term is
+        # the known inlet stream, injected as the constant
+        # flux Cs * Ts_in in b[row]. Same form as
+        # burning/solid_phase.py and
+        # transition/solid_phase.py. T_ref cancels because
+        # the interior rows are a pure Cs*(Ts_i - Ts_up)
+        # difference, so no reference offset is needed here.
+        #
+        # Ts[0] is therefore the cell average, which is
+        # cooler than Ts_in.
         # ----------------------------------------------
 
         A[row, gas_i] += (
@@ -66,7 +66,10 @@ def apply_solid_energy_balance(
             + V_cell * K_ws
         )
 
-        A[row, solid_up] += -Cs
+        if i > 0:
+            solid_up = N + i - 1
+
+            A[row, solid_up] += -Cs
 
         A[row, wall_i] += (
             -V_cell * K_ws
@@ -88,10 +91,22 @@ def apply_solid_energy_balance(
             )
         )
 
-        b[row] = V_cell * (
-            q_rad_gs
-            - q_rad_ws
-        )
+        if i == 0:
+
+            b[row] = (
+                V_cell * (
+                    q_rad_gs
+                    - q_rad_ws
+                )
+                + Cs * Ts_in
+            )
+
+        else:
+
+            b[row] = V_cell * (
+                q_rad_gs
+                - q_rad_ws
+            )
 
         row += 1
 
