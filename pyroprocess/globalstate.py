@@ -411,6 +411,8 @@ class GlobalState:
             "Tg_cooler_old", "Ts_cooler_old", "Tw_cooler_old",
             "Hg_cooler", "Hs_cooler",
             "Hg_cooler_old", "Hs_cooler_old",
+
+            "Burning_Q_sink_cells",
         ):
             _resize(name, self.N)
 
@@ -474,7 +476,49 @@ class GlobalState:
 
             "cooler": build_zone_material(N, empty_cell),
         }
-        
+
+        # ======================================================
+        # STEADY-STATE SPECIES MASS FLOWS [kg/s]
+        # ------------------------------------------------------
+        # Same SolidPhases/GasPhases layout as `materials`, but
+        # each entry is the species mass FLOW leaving that cell
+        # (or cyclone stage), not a held-up mass. This is the
+        # track the clinkering chemistry runs on: its reacted
+        # amounts are kg/s and its heats W, which is what the
+        # steady-state energy balances consume.
+        #
+        # `materials` above is a held-up inventory advanced by
+        # state.dt. Feeding it into the steady-state balances
+        # made the clinkering heat scale with dt (a J-per-step
+        # figure read as W) and with 1/N (a per-cell local
+        # conversion applied to an inventory spread over N
+        # cells), so it did not converge under mesh refinement.
+        # It is kept unchanged for its existing diagnostics.
+        #
+        # Solids: flow leaving the cell. Gases: flow GENERATED in
+        # the cell. Populated by the zones during a step; zeros
+        # until the first pass through each zone.
+        # ======================================================
+
+        empty_flow = lambda key: np.zeros(N, dtype=float)
+
+        empty_stage_flow = lambda key: np.zeros(
+            self.N_preheater,
+            dtype=float,
+        )
+
+        self.material_flows = {
+            "preheater": build_zone_material(self.N_preheater, empty_stage_flow),
+
+            "calciner": build_zone_material(N, empty_flow),
+
+            "transition": build_zone_material(N, empty_flow),
+
+            "burning": build_zone_material(N, empty_flow),
+
+            "cooler": build_zone_material(N, empty_flow),
+        }
+
         
         
         # ======================================================
@@ -628,6 +672,10 @@ class GlobalState:
     # ======================================================
 
     Drying_Q_sink: float = 0.0
+
+    # Free moisture evaporated in the preheater [kg/s]; leaves
+    # the solid stream and joins the exhaust gas.
+    m_dot_H2O_evaporated_preheater: float = 0.0
     
     Drying_Q_sink_cells: np.ndarray = field(
     default_factory=lambda: np.zeros(5)
@@ -644,6 +692,12 @@ class GlobalState:
     C3A_Q_sink: float = 0.0
 
     C4AF_Q_sink: float = 0.0
+
+    # Clinkering heat absorbed in each burning cell [W]
+    # (sum of the four reactions above, per cell).
+    Burning_Q_sink_cells: np.ndarray = field(
+        default_factory=lambda: np.zeros(5)
+    )
 
     Reaction_Q_sink: float = 0.0
     

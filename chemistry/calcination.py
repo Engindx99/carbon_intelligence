@@ -2,6 +2,7 @@ import numpy as np
 
 from chemistry.base import ReactionBase
 from chemistry.phases import copy_solid_phases
+from chemistry.phases import set_cell_solid_flow
 from chemistry.composition import RAW_MEAL_COMPOSITION
 
 
@@ -614,3 +615,73 @@ class CalcinationModel(ReactionBase):
             )
 
         return state
+
+    # ======================================================
+    # SOLID FLOW PROFILE (STEADY-STATE)
+    #
+    # Species mass flows [kg/s] leaving each cell of a zone
+    # whose CaCO3 flow has already been marched by the
+    # kinetics above (m_dot_CaCO3_out_cells). Every kg/s of
+    # CaCO3 that has reacted up to and including cell i is
+    # converted CUMULATIVELY -- CaO gains CaO_ratio of it and
+    # CO2_ratio leaves the solid -- so the profile is the
+    # flow-consistent counterpart of the kinetic march and,
+    # unlike the per-cell inventory update in apply(), does
+    # not depend on how finely the zone is divided.
+    #
+    # All other species pass through unchanged. The solid
+    # flow sum therefore drops by exactly the CO2 released,
+    # matching physics/steady_state_mass.py.
+    #
+    # inlet_flow : dict {phase: kg/s} entering cell 0
+    # solids     : SolidPhases of per-cell outflows, filled
+    #              in place
+    # gases      : GasPhases, CO2 generated per cell [kg/s]
+    # ======================================================
+    def solid_flow_profile(
+        self,
+        inlet_flow,
+        m_dot_CaCO3_out_cells,
+        solids,
+        gases,
+    ):
+
+        m_dot_CaCO3_out_cells = np.asarray(
+            m_dot_CaCO3_out_cells,
+            dtype=float,
+        )
+
+        CaCO3_in = inlet_flow["CaCO3"]
+
+        CaCO3_upstream = CaCO3_in
+
+        for i, CaCO3_out in enumerate(m_dot_CaCO3_out_cells):
+
+            # The kinetic march starts from the same inlet
+            # flow, so this can differ from CaCO3_in only by
+            # rounding; never let it create CaCO3.
+            CaCO3_out = min(float(CaCO3_out), CaCO3_in)
+
+            reacted_cumulative = CaCO3_in - CaCO3_out
+
+            cell_flow = dict(inlet_flow)
+
+            cell_flow["CaCO3"] = CaCO3_out
+
+            cell_flow["CaO"] = (
+                inlet_flow["CaO"]
+                + reacted_cumulative * self.CaO_ratio
+            )
+
+            set_cell_solid_flow(
+                solids,
+                i,
+                cell_flow,
+            )
+
+            gases.CO2[i] = (
+                max(CaCO3_upstream - CaCO3_out, 0.0)
+                * self.CO2_ratio
+            )
+
+            CaCO3_upstream = CaCO3_out

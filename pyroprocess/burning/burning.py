@@ -281,7 +281,14 @@ class Burning:
         # BURNING CHEMISTRY
         # ======================================================
 
-        state = self.chemistry.apply_burning(state)
+        # Steady-state flow form: reacts the solid stream
+        # handed over by Transition over this zone's own cell
+        # residence time dz / u_s.
+        state = self.chemistry.apply_burning(
+            state,
+            self.dz,
+            u_s,
+        )
 
         # ======================================================
         # STEADY-STATE THERMAL SOLUTION

@@ -7,6 +7,9 @@ from physics.physics import wall_geometry
 from physics.physics import ZONE_HT_CONFIG
 from physics.physics import h_gas
 
+from chemistry.phases import get_cell_solid_flow
+from chemistry.phases import set_cell_solid_flow
+
 from . import gas_phase
 from . import solid_phase
 from . import heat_transfer
@@ -166,6 +169,23 @@ class Cooler:
 
         state.Hgas_cooler_in = state.m_dot_air_cooler * float(h_gas(Tg_in, self.T_ref))
         state.Hsolid_cooler_in = state.Hsolid_burning_out
+
+        # Clinker species flows [kg/s]: no reaction in the
+        # cooler, so every cell carries the stream discharged
+        # by the last Burning cell unchanged.
+        burning_solid_flows = state.material_flows["burning"].solids
+
+        clinker_flow = get_cell_solid_flow(
+            burning_solid_flows,
+            burning_solid_flows.CaCO3.size - 1,
+        )
+
+        for cooler_cell in range(self.N):
+            set_cell_solid_flow(
+                state.material_flows["cooler"].solids,
+                cooler_cell,
+                clinker_flow,
+            )
 
         # Clinker inlet temperature is derived from the ENTHALPY
         # handoff rather than read back from state.Ts_burning[-1].

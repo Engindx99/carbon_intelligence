@@ -1,6 +1,8 @@
 from dataclasses import dataclass, fields
 import numpy as np
 
+from chemistry.composition import RAW_MEAL_COMPOSITION
+
 
 @dataclass
 class SolidPhases:
@@ -95,3 +97,50 @@ def resample_solid_phases(
             resampled *= total_source / total_resampled
 
         target_array[:] = resampled
+
+
+# ======================================================
+# STEADY-STATE SPECIES FLOW HELPERS [kg/s]
+#
+# A single cell's solid flow is handled as a plain dict
+# {phase name: kg/s} so the reaction models can march it
+# cell by cell; these move it in and out of the per-cell
+# SolidPhases arrays held in state.material_flows.
+# ======================================================
+def raw_meal_solid_flow(m_dot_raw_meal):
+    """
+    Species mass flows [kg/s] of a raw-meal stream of total
+    mass flow m_dot_raw_meal [kg/s], split by
+    chemistry.composition.RAW_MEAL_COMPOSITION (a 100 000 kg
+    mass basis). The species sum equals m_dot_raw_meal.
+    """
+
+    basis = sum(RAW_MEAL_COMPOSITION.values())
+
+    return {
+        f.name: (
+            float(m_dot_raw_meal)
+            * RAW_MEAL_COMPOSITION[f.name]
+            / basis
+        )
+        for f in fields(SolidPhases)
+    }
+
+
+def get_cell_solid_flow(solids: SolidPhases, i):
+
+    return {
+        f.name: float(getattr(solids, f.name)[i])
+        for f in fields(SolidPhases)
+    }
+
+
+def set_cell_solid_flow(solids: SolidPhases, i, flow):
+
+    for f in fields(SolidPhases):
+        getattr(solids, f.name)[i] = flow[f.name]
+
+
+def total_solid_flow(flow):
+
+    return float(sum(flow.values()))

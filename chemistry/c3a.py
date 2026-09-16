@@ -26,7 +26,14 @@ class C3AModel(ReactionBase):
 
 
     # ======================================================
-    # APPLY
+    # APPLY (HELD-UP INVENTORY FORM)
+    #
+    # Advances state.materials["burning"] by one state.dt.
+    # Its reacted mass is kg per time step, so its heat is J
+    # per step rather than W, and it scales with dt; it is no
+    # longer called by ChemistryModel.apply_burning(), which
+    # runs the steady-state flow form react_flow() below.
+    # Kept unchanged for the inventory interface.
     # ======================================================
     def apply(self, state):
 
@@ -84,3 +91,41 @@ class C3AModel(ReactionBase):
         )
 
         return state
+
+
+    # ======================================================
+    # REACT FLOW (STEADY-STATE, ONE CELL)
+    #
+    # Species flows `flow` [kg/s] pass through a cell at solid
+    # temperature T [K] for a residence time tau [s]. The same
+    # first-order kinetics as apply() are integrated exactly
+    # over that exposure time,
+    #
+    #   reacted = available * (1 - exp(-k(T) * tau))   [kg/s]
+    #
+    # so the heat returned is kg/s * J/kg = W. `flow` is
+    # updated in place; stoichiometry is identical to apply().
+    #
+    # `rate` [1/s] may be passed in when the caller already
+    # evaluated reaction_rate(T) for this cell, since it is
+    # constant over the sub-steps of one cell.
+    # ======================================================
+    def react_flow(self, flow, T, tau, rate=None):
+
+        if rate is None:
+            rate = float(self.reaction_rate(T))
+
+        available = min(
+            flow["Al2O3"],
+            flow["CaO"] / self.CaO_required,
+        )
+
+        reacted = float(
+            self.reacted_mass(available, rate, tau)
+        )
+
+        flow["Al2O3"] -= reacted
+        flow["CaO"] -= reacted * self.CaO_required
+        flow["C3A"] += reacted * self.C3A_produced
+
+        return float(self.heat_sink(reacted))

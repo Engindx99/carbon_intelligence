@@ -135,6 +135,16 @@ class Preheater:
         self.u_s = 0.0
         self.fill_fraction = 0.10
 
+        # Solid held up in one stage [kg]. Sets the stage solid
+        # residence time (hold-up / solid mass flow) used by the
+        # steady-state drying kinetics; derived from the stage
+        # geometry and bed properties above, no new parameter.
+        self.solid_holdup_mass = (
+            self.rho_s
+            * self.fill_fraction
+            * self.V_cell
+        )
+
         # ================= HEAT TRANSFER =================
         cfg = ZONE_HT_CONFIG[self.zone]
 
@@ -211,12 +221,13 @@ class Preheater:
     # Kept as a bound method (rather than deleted) so the
     # public interface is unchanged.
     # ======================================================
-    def gas_temperature_from_enthalpy(self, H, state):
+    def gas_temperature_from_enthalpy(self, H, state, m_dot_g=None):
 
         return gas_phase.gas_temperature_from_enthalpy(
             self,
             H,
             state,
+            m_dot_g,
         )
 
 
@@ -248,17 +259,32 @@ class Preheater:
         )
 
         # ======================================================
+        # PREHEATER CHEMISTRY (STEADY-STATE DRYING)
+        #
+        # Species flows through the five stages, with free
+        # moisture evaporated per stage into the gas stream.
+        # Runs BEFORE the boundary assignments below: those
+        # overwrite Ts_preheater[-1] with the feed temperature,
+        # which would evaluate stage 5's drying kinetics at the
+        # cold feed (below the drying window) instead of at the
+        # stage's own solid temperature. The thermal step does
+        # not read those two entries (it takes the gas inlet
+        # from enthalpy and the feed temperature directly), so
+        # moving the chemistry ahead of them changes nothing
+        # else.
+        # ======================================================
+
+        state = self.chemistry.apply_preheater(
+            state,
+            self.solid_holdup_mass,
+        )
+
+        # ======================================================
         # BOUNDARY CONDITIONS
         # ======================================================
 
         state.Tg_preheater[0] = state.Tg_calciner[0]
         state.Ts_preheater[-1] = state.Feed_temperature
-
-        # ======================================================
-        # PREHEATER CHEMISTRY
-        # ======================================================
-
-        state = self.chemistry.apply_preheater(state)
 
         # ======================================================
         # THERMAL STEP

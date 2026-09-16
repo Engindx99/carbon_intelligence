@@ -789,8 +789,30 @@ class Twin:
             m_dot_raw_meal
         )
 
+        # ======================================================
+        # PREHEATER DRYING
+        #
+        # Free moisture evaporated in the cyclone stages
+        # (chemistry.reactions.ChemistryModel.apply_preheater)
+        # leaves the solid stream before the calciner and
+        # leaves the plant with the exhaust gas.
+        # ======================================================
+
+        m_dot_H2O_evaporated = float(
+            getattr(
+                self.state,
+                "m_dot_H2O_evaporated_preheater",
+                0.0,
+            )
+        )
+
+        self.mass_flow.m_dot_H2O_generated = (
+            m_dot_H2O_evaporated
+        )
+
         self.mass_flow.m_dot_s_calciner_in = (
             self.mass_flow.m_dot_s_preheater
+            - m_dot_H2O_evaporated
         )
 
         # ======================================================
@@ -862,8 +884,11 @@ class Twin:
             self.mass_flow.m_dot_g_calciner
         )
 
+        # m_dot_g_preheater is the gas ENTERING the preheater;
+        # the exhaust also carries the evaporated moisture.
         self.mass_flow.m_dot_exhaust = (
             self.mass_flow.m_dot_g_preheater
+            + self.mass_flow.m_dot_H2O_generated
         )
 
         # ======================================================

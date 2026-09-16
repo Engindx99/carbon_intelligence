@@ -4,6 +4,7 @@ from physics.physics import h_gas
 from physics.physics import ZONE_HT_CONFIG
 
 from chemistry.phases import copy_solid_phases
+from chemistry.phases import get_cell_solid_flow
 from chemistry.calcination import CalcinationModel
 
 from . import gas_phase
@@ -301,6 +302,28 @@ class Transition:
             self.solid_enthalpy_out(
                 state.Hs_transition
             )
+        )
+
+        # ======================================================
+        # STEADY-STATE SOLID SPECIES FLOWS [kg/s]
+        #
+        # Inlet: the flow leaving the last calciner cell.
+        # Residual in-flight calcination is converted
+        # cumulatively along the CaCO3 flow marched by
+        # calcination.resolve_transition_calcination(); the
+        # flow leaving the last cell is what Burning receives.
+        # ======================================================
+
+        calciner_solid_flows = state.material_flows["calciner"].solids
+
+        self.chemistry.solid_flow_profile(
+            get_cell_solid_flow(
+                calciner_solid_flows,
+                calciner_solid_flows.CaCO3.size - 1,
+            ),
+            state.m_dot_CaCO3_out_transition_cells,
+            state.material_flows["transition"].solids,
+            state.material_flows["transition"].gases,
         )
 
         # ======================================================

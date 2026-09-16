@@ -140,6 +140,51 @@ def thermal_step(
         * tolerance
     )
 
+    # ======================================================
+    # PER-STAGE MASS FLOWS
+    #
+    # Free moisture evaporated in stage i
+    # (state.material_flows["preheater"].gases.H2O[i], from
+    # ChemistryModel.apply_preheater) leaves the solid and
+    # joins the gas there. Solid enters stage 5 (index N-1)
+    # as fresh feed and flows towards stage 1; gas enters
+    # stage 1 (index 0) and flows towards stage 5. Hence, for
+    # the flows ENTERING stage i,
+    #
+    #   m_dot_s_in[i] = m_dot_s - sum(vapor[j], j > i)
+    #   m_dot_g_in[i] = m_dot_g + sum(vapor[j], j < i)
+    #
+    # With no evaporation both reduce to the zone flows.
+    # ======================================================
+
+    vapor = np.asarray(
+        state.material_flows["preheater"].gases.H2O,
+        dtype=float,
+    )
+
+    if vapor.shape != (preheater.N,):
+        raise ValueError(
+            "preheater vapor flows must have length equal to N"
+        )
+
+    vapor_downstream_of_gas = np.concatenate(
+        ([0.0], np.cumsum(vapor)[:-1])
+    )
+
+    vapor_upstream_of_solid = np.concatenate(
+        (np.cumsum(vapor[::-1])[::-1][1:], [0.0])
+    )
+
+    m_dot_g_in = m_dot_g + vapor_downstream_of_gas
+
+    m_dot_s_in = m_dot_s - vapor_upstream_of_solid
+
+    # Outlet flows handed to the next units: exhaust gas from
+    # stage 5, solid to the calciner from stage 1.
+    preheater.m_dot_g_out = float(m_dot_g + np.sum(vapor))
+
+    preheater.m_dot_s_out = float(m_dot_s - np.sum(vapor))
+
     # Initial guesses for solid inlet temperature of
     # each stage.
     solid_in_guess = np.full(
@@ -177,11 +222,12 @@ def thermal_step(
             stage.solve(
                 gas_inlet_temperature=Tg_current,
                 solid_inlet_temperature=Ts_current,
-                m_dot_g=m_dot_g,
-                m_dot_s=m_dot_s,
+                m_dot_g=m_dot_g_in[i],
+                m_dot_s=m_dot_s_in[i],
                 state=state,
                 model=preheater,
                 reaction_power=-reaction_heat_cells[i],
+                m_dot_vapor=vapor[i],
             )
 
             solid_out[i] = (
@@ -245,11 +291,12 @@ def thermal_step(
         stage.solve(
             gas_inlet_temperature=Tg_current,
             solid_inlet_temperature=Ts_current,
-            m_dot_g=m_dot_g,
-            m_dot_s=m_dot_s,
+            m_dot_g=m_dot_g_in[i],
+            m_dot_s=m_dot_s_in[i],
             state=state,
             model=preheater,
             reaction_power=-reaction_heat_cells[i],
+            m_dot_vapor=vapor[i],
         )
 
         Tg_new[i] = (
@@ -398,8 +445,23 @@ def thermal_step(
 # in the other zone packages.
 #
 # IMPORTANT:
-#     The equations are intentionally kept identical to the
-#     previous PreheaterStage implementation.
+#     The heat-transfer and wall equations are kept identical
+#     to the previous PreheaterStage implementation.
+#
+# OPEN-SYSTEM STAGE (moisture evaporation):
+#     m_dot_g and m_dot_s are the gas and solid mass flows
+#     ENTERING the stage; m_dot_vapor [kg/s] of free moisture
+#     leaves the solid and joins the gas inside it, so the
+#     outlet flows are m_dot_s - m_dot_vapor and
+#     m_dot_g + m_dot_vapor. The solid energy balance on the
+#     inlet mass gives the common outlet temperature Ts_out;
+#     the vapor leaves the solid at Ts_out carrying
+#     H_vapor = m_dot_vapor * Cp_s * (Ts_out - T_ref) into the
+#     gas, and the latent heat is the (negative)
+#     reaction_power drawn from the gas as before. Summing the
+#     two balances, H_vapor cancels and the stage closes
+#     exactly as the closed stage did. With m_dot_vapor = 0
+#     every expression reduces to the previous one.
 # ======================================================
 def solve_stage(
     stage,
@@ -410,6 +472,7 @@ def solve_stage(
     state,
     model,
     reaction_power=0.0,
+    m_dot_vapor=0.0,
 ):
 
     stage.reset_diagnostics()
@@ -656,6 +719,32 @@ def solve_stage(
     stage.Q_wall_loss = float(wall_loss)
 
     # ==========================================================
+    # SOLID ENTHALPY
+    #
+    # Solved before the gas: the evaporated moisture leaves the
+    # solid at Ts_out and its enthalpy is a gas-side input.
+    # ==========================================================
+
+    H_solid_in, H_solid_out, Ts_out = solid_phase.apply_stage_solid_energy_balance(
+        model,
+        m_dot_s,
+        Ts_in,
+        stage.Q_gs,
+        stage.Q_ws,
+        T_ref,
+        eps,
+    )
+
+    H_vapor = (
+        m_dot_vapor
+        * model.Cp_s
+        * (Ts_out - T_ref)
+    )
+
+    # Enthalpy of the solid stream actually leaving the stage.
+    H_solid_out = H_solid_out - H_vapor
+
+    # ==========================================================
     # GAS ENTHALPY
     # ==========================================================
 
@@ -668,20 +757,8 @@ def solve_stage(
         stage.Q_gs,
         stage.Q_gw,
         T_ref,
-    )
-
-    # ==========================================================
-    # SOLID ENTHALPY
-    # ==========================================================
-
-    H_solid_in, H_solid_out, Ts_out = solid_phase.apply_stage_solid_energy_balance(
-        model,
-        m_dot_s,
-        Ts_in,
-        stage.Q_gs,
-        stage.Q_ws,
-        T_ref,
-        eps,
+        m_dot_vapor,
+        H_vapor,
     )
 
     # ==========================================================

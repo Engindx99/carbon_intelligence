@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 
@@ -124,6 +126,26 @@ class ReactionBase:
         rate,
         dt,
     ):
+
+        # Scalar fast path, taken by the steady-state flow
+        # march (react_flow), which evaluates one cell at a
+        # time many times per solve. Same formula and the same
+        # physical limits as the array path below.
+        if (
+            isinstance(available, float)
+            and isinstance(rate, float)
+            and isinstance(dt, float)
+        ):
+
+            if not (math.isfinite(rate) and math.isfinite(available)):
+                raise FloatingPointError(
+                    f"{self.__class__.__name__}: "
+                    "invalid reaction rate"
+                )
+
+            reacted = available * (1.0 - math.exp(-rate * dt))
+
+            return min(max(reacted, 0.0), max(available, 0.0))
 
 
         if np.any(~np.isfinite(rate)):

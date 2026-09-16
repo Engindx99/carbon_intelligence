@@ -6,6 +6,9 @@ from physics.physics import kiln_geometry
 from physics.physics import outlet_face_value
 from physics.physics import solid_axial_velocity
 
+from chemistry.phases import get_cell_solid_flow
+from chemistry.phases import raw_meal_solid_flow
+from chemistry.phases import total_solid_flow
 from chemistry.reactions import ChemistryModel
 from physics.physics import ZONE_HT_CONFIG
 
@@ -283,6 +286,33 @@ class Calciner:
         coupling_converged = False
 
         # ======================================================
+        # SOLID SPECIES INLET [kg/s]
+        #
+        # The calciner receives the single solid stream that
+        # leaves cyclone stage 1 (index 0 of the preheater
+        # stage flows) -- not a spatial interpolation of all
+        # five stages. The preheater fills those flows later in
+        # the same step, so on the very first pass they are
+        # still zero; the raw-meal stream it would receive
+        # before any drying is used then.
+        #
+        # Its CaCO3 is passed to the kinetics explicitly: with
+        # moisture removed upstream, m_dot_s_calciner times the
+        # raw-meal CaCO3 fraction no longer equals the CaCO3
+        # actually arriving.
+        # ======================================================
+
+        calciner_inlet_flow = get_cell_solid_flow(
+            state.material_flows["preheater"].solids,
+            0,
+        )
+
+        if total_solid_flow(calciner_inlet_flow) <= 0.0:
+            calciner_inlet_flow = raw_meal_solid_flow(
+                state.m_dot_s_preheater
+            )
+
+        # ======================================================
         # OUTER STEADY-STATE ITERATION
         # ======================================================
 
@@ -307,6 +337,7 @@ class Calciner:
                 self.dz,
                 self.u_s,
                 commit_phases=False,
+                m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
             )
 
             Q_reaction = float(
@@ -448,6 +479,22 @@ class Calciner:
             self.dz,
             self.u_s,
             commit_phases=True,
+            m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
+        )
+
+        # ======================================================
+        # STEADY-STATE SOLID SPECIES FLOWS [kg/s]
+        #
+        # Profile from the inlet stream resolved above; the
+        # CaCO3 marched by the committed kinetics is converted
+        # cumulatively, cell by cell.
+        # ======================================================
+
+        self.chemistry.calcination.solid_flow_profile(
+            calciner_inlet_flow,
+            state.m_dot_CaCO3_out_cells,
+            state.material_flows["calciner"].solids,
+            state.material_flows["calciner"].gases,
         )
 
         # ======================================================

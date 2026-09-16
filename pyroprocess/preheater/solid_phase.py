@@ -2,12 +2,17 @@
 # SOLID ENTHALPY TO NEXT ZONE
 #
 # Moved from Preheater.solid_enthalpy_out()
-# (pyroprocess/preheater/preheater.py). Logic is unchanged.
+# (pyroprocess/preheater/preheater.py).
+#
+# The solid leaving stage 1 has lost the moisture evaporated
+# in the stages, so it is that outlet flow
+# (preheater.m_dot_s_out, stored by
+# heat_transfer.thermal_step()) that multiplies the enthalpy.
 # ======================================================
 def solid_enthalpy_out(preheater, Ts, state):
 
     H_solid_out = (
-        state.m_dot_s_preheater
+        getattr(preheater, "m_dot_s_out", state.m_dot_s_preheater)
         * preheater.Cp_s
         * (Ts[0] - preheater.T_ref)
     )

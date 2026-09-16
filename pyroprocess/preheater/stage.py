@@ -87,6 +87,7 @@ class PreheaterStage:
         state,
         model,
         reaction_power=0.0,
+        m_dot_vapor=0.0,
     ):
 
         return heat_transfer.solve_stage(
@@ -98,4 +99,5 @@ class PreheaterStage:
             state,
             model,
             reaction_power,
+            m_dot_vapor,
         )
