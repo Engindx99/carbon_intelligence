@@ -334,12 +334,28 @@ class Twin:
 
         # ======================================================
         # GLOBAL ENERGY VALIDATION
+        #
+        # Unlike the mass balance (an exact algebraic species
+        # closure, ~1e-12 relative), this sums Hgas/Hsolid/wall
+        # loss/reaction-sink terms from 5 zones that each
+        # converged their OWN Picard loop independently, so it
+        # cannot reach the shared 1e-9 relative_tolerance default
+        # (see Preheater's own energy check, main.py above, which
+        # is held to its own derived energy_closure_tolerance for
+        # the same reason). Observed residual here is 0.2-0.5 W;
+        # the outer solve's own convergence criterion
+        # (thermal_tolerance = 1e-3 K) would permit up to ~62 W on
+        # the exhaust stream alone, so 1.0 W is a tight bound that
+        # still leaves ~2x margin over the observed numerical
+        # noise floor while remaining far below the scale (kW-MW)
+        # of any real missing or double-counted term.
         # ======================================================
 
         result = validate_energy(
             energy_in=global_energy_in,
             energy_out=global_energy_out,
             energy_source=0.0,
+            absolute_tolerance=1.0,
         )
 
         report_validation(
@@ -559,10 +575,20 @@ class Twin:
             + mass_flow.m_dot_CO2_generated_transition
         )
 
+        # m_dot_exhaust also carries two H2O mass-flow terms
+        # that leave the solid stream and join the gas stream
+        # the same way CO2 does: free moisture evaporated in
+        # the preheater (m_dot_H2O_generated) and dehydroxylation
+        # water released in the calciner
+        # (m_dot_H2O_generated_calciner). Both must be subtracted
+        # to isolate CO2, or this check reports their combined
+        # mass as an apparent CO2 shortfall.
         co2_in_gas_stream = (
             mass_flow.m_dot_exhaust
             - mass_flow.m_dot_g_burning
             - mass_flow.m_dot_tertiary_air
+            - mass_flow.m_dot_H2O_generated
+            - mass_flow.m_dot_H2O_generated_calciner
         )
 
         result = validate_mass(
