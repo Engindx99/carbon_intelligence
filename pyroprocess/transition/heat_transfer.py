@@ -1,6 +1,8 @@
 import numpy as np
 
 from physics.physics import h_gas
+from physics.physics import outlet_face_value
+from physics.physics import second_order_upwind_correction
 from physics.physics import wall_thermal_resistance
 from physics.physics import radiation
 
@@ -113,6 +115,14 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     tol = 1.0e-6
     relaxation = 0.5
 
+    # Inlet face enthalpy of the incoming gas stream. It is a
+    # known handoff, not a reconstruction, so it is the one
+    # face that carries no second-order correction.
+    h_gas_in = h_gas(
+        Tg_in,
+        T_ref,
+    )
+
     Tg_iter = np.asarray(Tg, dtype=float).copy()
     Ts_iter = np.asarray(Ts, dtype=float).copy()
     Tw_iter = np.asarray(Tw, dtype=float).copy()
@@ -156,6 +166,33 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             Tw_iter,
             zone=transition.zone,
             area=a_ws,
+        )
+
+        # ==================================================
+        # SECOND-ORDER ADVECTION CORRECTION
+        #
+        # van Leer limited reconstruction of the axial face
+        # values, applied by deferred correction: A stays the
+        # first-order upwind operator and these per-cell terms
+        # enter b only, frozen at the current iterate, so the
+        # converged fixed point satisfies the second-order
+        # equation. Gas is reconstructed in ENTHALPY (its flux
+        # is m_dot_g * h), solid in TEMPERATURE (its flux is
+        # affine in Ts). Same construction as
+        # pyroprocess/burning/heat_transfer.py; see
+        # physics.second_order_upwind_correction.
+        # ==================================================
+
+        adv_corr_g = second_order_upwind_correction(
+            h_gas(Tg_iter, T_ref),
+            h_gas_in,
+            reverse=True,
+        )
+
+        adv_corr_s = second_order_upwind_correction(
+            Ts_iter,
+            Ts_in,
+            reverse=False,
         )
 
         # ==================================================
@@ -208,6 +245,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 K_gw,
                 radiation_gas_sink,
                 Tg_in,
+                adv_corr_g[i],
             )
 
             # ======================================================
@@ -269,6 +307,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 radiation_solid_source,
                 Q_calcination_cell,
                 Ts_in,
+                adv_corr_s[i],
             )
 
             # ==================================================
@@ -531,11 +570,21 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         state.Hsolid_transition_in
     )
 
+    # Outlet values are read at the outlet FACE, not at the
+    # last cell CENTRE: these are the reconstructed values the
+    # second-order fluxes actually transport out of the end
+    # cells, and the same ones gas_phase.gas_enthalpy_out()
+    # and solid_phase.solid_enthalpy_out() hand to the next
+    # unit. Reading the centres here would leak exactly that
+    # difference out of this balance.
     Hg_out = (
         m_dot_g
-        * h_gas(
-            Tg_ss[0],
-            T_ref
+        * outlet_face_value(
+            h_gas(
+                Tg_ss,
+                T_ref
+            ),
+            reverse=True,
         )
     )
 
@@ -543,7 +592,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         m_dot_s
         * Cp_s
         * (
-            Ts_ss[-1]
+            outlet_face_value(
+                Ts_ss,
+                reverse=False,
+            )
             - T_ref
         )
     )

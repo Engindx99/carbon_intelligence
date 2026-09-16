@@ -1,5 +1,6 @@
 from physics.physics import cp_gas
 from physics.physics import h_gas
+from physics.physics import outlet_face_value
 from physics.physics import T_gas_from_h
 
 
@@ -32,11 +33,23 @@ def gas_inlet_temperature_from_enthalpy(transition, H, state):
 # GAS ENTHALPY TO NEXT ZONE
 #
 # Moved from Transition.gas_enthalpy_out()
-# (pyroprocess/transition.py). Logic is unchanged.
+# (pyroprocess/transition.py).
+#
+# This used to return Hg[0], the last CELL CENTRE. The gas
+# leaves through the outlet FACE half a cell further
+# downstream, so that was a systematic O(dz) bias in the
+# handoff to the precalciner. It is the reconstructed
+# outlet face value that the second-order flux in
+# apply_gas_energy_balance() transports out of cell 0, so
+# returning anything else would leak that difference out of
+# the zone energy balance. Hg is m_dot_g * h_gas(Tg)
+# elementwise, i.e. affine in h, so the extrapolation may be
+# taken on Hg directly. Same construction as
+# pyroprocess/burning/gas_phase.py.
 # ======================================================
 def gas_enthalpy_out(Hg):
 
-    return Hg[0]
+    return outlet_face_value(Hg, reverse=True)
 
 
 # ======================================================
@@ -49,6 +62,14 @@ def gas_enthalpy_out(Hg):
 # Picard solve is numerically unchanged.
 #
 # Gas direction: N-1 -> 0.
+#
+# `advection_correction` is the per-cell van Leer deferred
+# correction from physics.second_order_upwind_correction,
+# in enthalpy units (J/kg). It defaults to zero, which
+# leaves this row exactly first-order upwind, and it enters
+# b only so that A stays the diagonally dominant upwind
+# M-matrix. Same construction as
+# pyroprocess/burning/gas_phase.py.
 # ======================================================
 def apply_gas_energy_balance(
     A,
@@ -64,6 +85,7 @@ def apply_gas_energy_balance(
     K_gw,
     radiation_gas_sink,
     Tg_in,
+    advection_correction=0.0,
 ):
 
     Tg_i = i
@@ -114,6 +136,7 @@ def apply_gas_energy_balance(
             -radiation_gas_sink
             + m_dot_g * h_in
             - m_dot_g * h_linear_const_i
+            - m_dot_g * advection_correction
         )
 
     else:
@@ -142,6 +165,7 @@ def apply_gas_energy_balance(
             -radiation_gas_sink
             - m_dot_g * h_linear_const_i
             + m_dot_g * h_linear_const_up
+            - m_dot_g * advection_correction
         )
 
     return row + 1

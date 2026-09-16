@@ -3,6 +3,7 @@ import numpy as np
 from physics.physics import h_gas
 from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
+from physics.physics import outlet_face_value
 from physics.physics import solid_axial_velocity
 
 from chemistry.reactions import ChemistryModel
@@ -512,15 +513,30 @@ class Calciner:
         # ENTHALPY TO NEXT ZONE
         # ======================================================
 
-        state.Hgas_calciner_out = state.Hg_calciner[0]
+        # Read at the outlet FACE, not at the last cell CENTRE
+        # (Hg_calciner[0]) half a cell upstream of it: this is
+        # the reconstructed value the second-order flux in
+        # thermal_solver.thermal_step() transports out of cell
+        # 0, so handing off anything else would leak the
+        # difference out of the energy balance. Hg_calciner is
+        # m_dot_g * h elementwise, i.e. affine in h, so the
+        # extrapolation may be taken on it directly.
+        state.Hgas_calciner_out = outlet_face_value(
+            state.Hg_calciner,
+            reverse=True,
+        )
 
 
         # ======================================================
         # SOLID ENTHALPY TO NEXT ZONE
+        #
+        # Outlet FACE for the same reason; Hs_calciner is affine
+        # in Ts.
         # ======================================================
 
-        state.Hsolid_calciner_out = (
-            state.Hs_calciner[-1]
+        state.Hsolid_calciner_out = outlet_face_value(
+            state.Hs_calciner,
+            reverse=False,
         )
 
         # ======================================================
