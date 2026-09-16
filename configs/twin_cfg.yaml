@@ -1,5 +1,5 @@
 plant:
-  N: 10
+  N: 20
   length: 60.0   # m
 
 transition:

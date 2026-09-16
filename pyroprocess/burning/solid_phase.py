@@ -1,5 +1,6 @@
 import numpy as np
 
+from physics.physics import outlet_face_value
 from physics.physics import residence_time
 from physics.physics import solid_axial_velocity
 
@@ -69,11 +70,24 @@ def resolve_solid_inlet(burning, state):
 # SOLID ENTHALPY TO NEXT ZONE
 #
 # Moved from Burning.solid_enthalpy_out()
-# (pyroprocess/burning.py). Logic is unchanged.
+# (pyroprocess/burning.py).
+#
+# This used to return Hs[-1], the last CELL CENTRE, while
+# the clinker actually discharges through the outlet FACE
+# half a cell further on -- a systematic O(dz) bias in the
+# kiln's single most important handoff, since this value
+# becomes state.Hsolid_cooler_in. It is also the flux the
+# second-order scheme in apply_solid_energy_balance()
+# transports out of the last cell, so it must be the value
+# handed off or the difference leaks.
+#
+# Hs is m_dot_s * Cp_s * (Ts - T_ref) elementwise, i.e.
+# affine in Ts, so the extrapolation may be taken on Hs
+# directly.
 # ======================================================
 def solid_enthalpy_out(Hs):
 
-    return Hs[-1]
+    return outlet_face_value(Hs, reverse=False)
 
 
 # ======================================================
@@ -86,6 +100,15 @@ def solid_enthalpy_out(Hs):
 # Picard solve is numerically unchanged.
 #
 # Solid direction: 0 -> N-1.
+#
+# `advection_correction` is the per-cell van Leer deferred
+# correction from physics.second_order_upwind_correction,
+# in temperature units (K) -- the solid flux
+# Cs * (Ts - T_ref) is affine in Ts, so the reconstruction
+# is done on Ts directly. It is zero by default, which
+# leaves this row exactly first-order upwind as before, and
+# it enters b only so that A stays the diagonally dominant
+# upwind M-matrix. See the gas-side note in gas_phase.py.
 # ======================================================
 def apply_solid_energy_balance(
     A,
@@ -99,6 +122,7 @@ def apply_solid_energy_balance(
     K_ws,
     radiation_solid_source,
     Ts_in,
+    advection_correction=0.0,
 ):
 
     Tg_i = i
@@ -124,6 +148,7 @@ def apply_solid_energy_balance(
         b[row] = (
             Cs * Ts_in
             + radiation_solid_source
+            - Cs * advection_correction
         )
 
     else:
@@ -136,6 +161,7 @@ def apply_solid_energy_balance(
 
         b[row] = (
             radiation_solid_source
+            - Cs * advection_correction
         )
 
     return row + 1

@@ -1,5 +1,6 @@
 from physics.physics import cp_gas
 from physics.physics import h_gas
+from physics.physics import T_gas_from_h
 
 
 # ======================================================
@@ -19,24 +20,12 @@ def gas_inlet_temperature_from_enthalpy(transition, H, state):
 
     h_target = H / m_dot_g
 
-    T_low = transition.T_ref
-    T_high = 4000.0
-
-    for _ in range(100):
-
-        T_mid = 0.5 * (T_low + T_high)
-
-        h_mid = h_gas(
-            T_mid,
-            transition.T_ref
-        )
-
-        if h_mid < h_target:
-            T_low = T_mid
-        else:
-            T_high = T_mid
-
-    return 0.5 * (T_low + T_high)
+    return T_gas_from_h(
+        h_target,
+        transition.T_ref,
+        transition.T_ref,
+        4000.0,
+    )
 
 
 # ======================================================

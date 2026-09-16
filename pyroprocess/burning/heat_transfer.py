@@ -1,7 +1,10 @@
 import numpy as np
 
 from physics.physics import cp_gas, h_gas
+from physics.physics import outlet_face_value
 from physics.physics import radiation
+from physics.physics import second_order_upwind_correction
+from physics.physics import T_gas_from_h
 from physics.physics import wall_thermal_resistance
 
 from . import combustion
@@ -116,6 +119,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     tol = 1e-6
     relaxation = 0.5
 
+    # Inlet face enthalpy of the incoming gas stream. It is a
+    # known handoff, not a reconstruction, so it is the one
+    # face that carries no second-order correction.
+    h_gas_in = h_gas(
+        state.Tg_burning_in,
+        T_ref,
+    )
+
     Tg_iter = np.asarray(Tg, dtype=float).copy()
     Ts_iter = np.asarray(Ts, dtype=float).copy()
     Tw_iter = np.asarray(Tw, dtype=float).copy()
@@ -154,6 +165,35 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             Tw_iter,
             zone="burning",
             area=a_ws
+        )
+
+        # ==================================================
+        # SECOND-ORDER ADVECTION CORRECTION
+        #
+        # van Leer limited reconstruction of the axial face
+        # values, applied by deferred correction: A stays the
+        # first-order upwind operator and these per-cell terms
+        # enter b only, frozen at the current iterate. At the
+        # fixed point the iterate equals the solution, so the
+        # converged answer satisfies the second-order
+        # equation. See physics.second_order_upwind_correction.
+        #
+        # The gas is reconstructed in ENTHALPY, since the gas
+        # flux is m_dot_g * h and h is cubic in T; the solid
+        # is reconstructed in TEMPERATURE, since its flux
+        # Cs * (Ts - T_ref) is affine in Ts.
+        # ==================================================
+
+        adv_corr_g = second_order_upwind_correction(
+            h_gas(Tg_iter, T_ref),
+            h_gas_in,
+            reverse=True,
+        )
+
+        adv_corr_s = second_order_upwind_correction(
+            Ts_iter,
+            state.Ts_burning_in,
+            reverse=False,
         )
 
         # ==================================================
@@ -205,6 +245,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 reaction_q_cell,
                 radiation_gas_sink,
                 state.Tg_burning_in,
+                adv_corr_g[i],
             )
 
             # ==================================================
@@ -231,6 +272,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 K_ws,
                 radiation_solid_source,
                 state.Ts_burning_in,
+                adv_corr_s[i],
             )
 
             # ==================================================
@@ -328,8 +370,41 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     Tg_in = state.Tg_burning_in
     Ts_in = state.Ts_burning_in
 
-    Tg_out = Tg_ss[0]
-    Ts_out = Ts_ss[-1]
+    # Outlet values are taken at the outlet FACE, not at the
+    # last cell CENTRE. The face sits half a cell downstream
+    # of that centre, so reading the centre biased every
+    # handoff by O(dz) no matter how well the interior was
+    # resolved. These are the same reconstructed values the
+    # second-order flux actually transports out of the end
+    # cells, so using them here keeps this energy balance
+    # consistent with gas_phase.gas_enthalpy_out() and
+    # solid_phase.solid_enthalpy_out(); reading the centres
+    # instead would leak exactly that difference.
+    #
+    # The gas is reconstructed in enthalpy (its flux is
+    # m_dot_g * h), so Hg_out comes straight from the face
+    # enthalpy below and Tg_out is its inverse -- reporting
+    # the outlet temperature the next zone actually sees.
+    h_gas_out_face = outlet_face_value(
+        h_gas(Tg_ss, T_ref),
+        reverse=True,
+    )
+
+    Tg_out = T_gas_from_h(
+        h_gas_out_face,
+        T_ref,
+        T_ref,
+        4000.0,
+    )
+
+    # The solid flux is affine in Ts, so extrapolating the
+    # temperature is identical to extrapolating its enthalpy.
+    Ts_out = outlet_face_value(
+        Ts_ss,
+        reverse=False,
+    )
+
+    # The wall does not advect, so it has no outlet face.
     Tw_out = Tw_ss[-1]
 
     # ======================================================
@@ -420,12 +495,13 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         )
     )
 
+    # Taken from the reconstructed face enthalpy directly
+    # rather than from h_gas(Tg_out): the two agree only to
+    # the inversion tolerance of T_gas_from_h, and this is the
+    # quantity the flux and the handoff both use.
     Hg_out = (
         m_dot_g
-        * h_gas(
-            Tg_out,
-            T_ref
-        )
+        * h_gas_out_face
     )
 
     gas_energy_change = (

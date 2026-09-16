@@ -1,5 +1,7 @@
 from physics.physics import cp_gas
 from physics.physics import h_gas
+from physics.physics import outlet_face_value
+from physics.physics import second_order_upwind_correction
 
 
 # ======================================================
@@ -52,6 +54,42 @@ def apply_gas_energy_balance(
     q_gs,
     q_gw,
 ):
+
+    # ----------------------------------------------
+    # SECOND-ORDER ADVECTION CORRECTION
+    #
+    # The face enthalpies below are upstream cell centres,
+    # i.e. first-order upwind, whose O(dz) truncation error
+    # acts as a numerical diffusion across the steep axial
+    # gradient the recuperator is made of. These per-cell
+    # terms upgrade the faces to a van Leer limited linear
+    # reconstruction by deferred correction: they enter
+    # b[row] only, so A stays the diagonally dominant upwind
+    # M-matrix, and the converged fixed point satisfies the
+    # second-order equation. See
+    # physics.second_order_upwind_correction.
+    #
+    # The gas is reconstructed in ENTHALPY, since the gas
+    # flux is m_dot_g * h and h is cubic in T. The inlet face
+    # carries no correction: its value is the known incoming
+    # cooling-air stream, not a reconstruction.
+    # ----------------------------------------------
+
+    h_iter = h_gas(
+        Tg_iter,
+        T_ref,
+    )
+
+    advection_correction = second_order_upwind_correction(
+        h_iter,
+        float(
+            h_gas(
+                Tg_in,
+                T_ref,
+            )
+        ),
+        reverse=True,
+    )
 
     for i in range(N - 1, -1, -1):
 
@@ -165,6 +203,7 @@ def apply_gas_energy_balance(
                 )
                 - m_dot_g * h_linear_const_i
                 + m_dot_g * h_in
+                - m_dot_g * advection_correction[i]
             )
 
         else:
@@ -196,11 +235,45 @@ def apply_gas_energy_balance(
                 )
                 - m_dot_g * h_linear_const_i
                 + m_dot_g * h_linear_const_up
+                - m_dot_g * advection_correction[i]
             )
 
         row += 1
 
     return row
+
+
+# ======================================================
+# HOT-END FACE ENTHALPY
+#
+# Specific enthalpy of the gas where it actually leaves the
+# cooler: the OUTLET FACE at the clinker-inlet end, not the
+# centre of cell 0. The face sits half a cell further
+# downstream, so reading the centre understated the
+# recuperated air enthalpy by O(dz) no matter how fine the
+# mesh was -- and that value is the secondary air the kiln
+# burns with, so the bias propagated straight into
+# Hgas_burning_in.
+#
+# This is also the flux the second-order scheme in
+# apply_gas_energy_balance() transports out of cell 0, so
+# using anything else here would leak exactly that
+# difference out of the cooler energy balance.
+#
+# Shared by gas_enthalpy_out() and gas_enthalpy_split()
+# below so the two cannot drift apart: the file's own
+# invariant is that the three split streams sum to the
+# outlet, which holds only if both read the same h_hot.
+# ======================================================
+def hot_end_face_enthalpy(cooler, Tg):
+
+    return outlet_face_value(
+        h_gas(
+            Tg,
+            cooler.T_ref,
+        ),
+        reverse=True,
+    )
 
 
 # ======================================================
@@ -223,11 +296,9 @@ def gas_enthalpy_out(cooler, Tg, state):
 
     H_gas_out = (
         state.m_dot_air_cooler
-        * float(
-            h_gas(
-                Tg[0],
-                cooler.T_ref,
-            )
+        * hot_end_face_enthalpy(
+            cooler,
+            Tg,
         )
     )
 
@@ -252,11 +323,9 @@ def gas_enthalpy_out(cooler, Tg, state):
 # ======================================================
 def gas_enthalpy_split(cooler, Tg, state):
 
-    h_hot = float(
-        h_gas(
-            Tg[0],
-            cooler.T_ref,
-        )
+    h_hot = hot_end_face_enthalpy(
+        cooler,
+        Tg,
     )
 
     H_secondary = state.m_dot_secondary_air * h_hot

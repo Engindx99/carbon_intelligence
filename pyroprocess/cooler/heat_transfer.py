@@ -1,6 +1,7 @@
 import numpy as np
 
 from physics.physics import heat_transfer
+from physics.physics import outlet_face_value
 from physics.physics import wall_losses
 from physics.physics import wall_thermal_resistance
 from physics.physics import h_gas
@@ -393,13 +394,18 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         )
     )
 
+    # Outlet values are read at the outlet FACE, not at the
+    # last cell CENTRE -- the same reconstructed values the
+    # second-order fluxes actually transport out of the end
+    # cells, and the same ones gas_phase.gas_enthalpy_out()
+    # and solid_phase.solid_enthalpy_out() hand to the next
+    # unit. Reading the centres here instead would show up as
+    # a spurious gas_gap/solid_gap in the decomposition below.
     Hg_out = (
         m_dot_g
-        * float(
-            h_gas(
-                Tg_ss[0],
-                cooler.T_ref,
-            )
+        * gas_phase.hot_end_face_enthalpy(
+            cooler,
+            Tg_ss,
         )
     )
 
@@ -412,7 +418,13 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     Hs_out = (
         m_dot_s
         * cooler.Cp_s
-        * (Ts_ss[-1] - cooler.T_ref)
+        * (
+            outlet_face_value(
+                Ts_ss,
+                reverse=False,
+            )
+            - cooler.T_ref
+        )
     )
 
     # ======================================================

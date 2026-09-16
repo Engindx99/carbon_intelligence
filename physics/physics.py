@@ -158,6 +158,259 @@ def h_gas(T, T_ref):
     return h
 
 
+def T_gas_from_h(h_target, T_ref, T_min, T_max):
+    """
+    Invert h_gas: solve h_gas(T, T_ref) = h_target for T,
+    restricted to [T_min, T_max].
+
+    SI units:
+        h_target : J/kg
+        T_*      : K
+
+    h_gas is a cubic whose derivative is exactly cp_gas
+    (1050 + 0.18*T - 3e-5*T^2, strictly positive over any
+    physical range here), so h_gas is strictly increasing, the
+    root is unique, and Newton on cp_gas converges
+    quadratically -- typically 4 evaluations.
+
+    The bracket is carried along and a Newton step that would
+    leave it degrades to a bisection step, so convergence is
+    never worse than the plain bisection this replaces.
+
+    Out-of-range targets return the corresponding bound, which
+    is what a bisection on [T_min, T_max] collapses to.
+
+    This replaces three separate 100-step bisections (burning,
+    transition and calciner gas inlets). Those spent half their
+    work below double precision: halving [200, 4000] K 100
+    times passes the resolution of a double at ~52 steps.
+    """
+
+    T_low = float(T_min)
+    T_high = float(T_max)
+
+    if h_target <= h_gas(T_low, T_ref):
+        return T_low
+
+    if h_target >= h_gas(T_high, T_ref):
+        return T_high
+
+    T = 0.5 * (T_low + T_high)
+
+    for _ in range(60):
+
+        if T_high - T_low <= 1.0e-12 * T_high:
+            break
+
+        residual = h_gas(T, T_ref) - h_target
+
+        if residual < 0.0:
+            T_low = T
+        elif residual > 0.0:
+            T_high = T
+        else:
+            return T
+
+        cp = cp_gas(T)
+
+        T_newton = (
+            T - residual / cp
+            if cp > 0.0
+            else 0.5 * (T_low + T_high)
+        )
+
+        if not (T_low < T_newton < T_high):
+            T_newton = 0.5 * (T_low + T_high)
+
+        if T_newton == T:
+            break
+
+        T = T_newton
+
+    return T
+
+
+# ======================================================
+# SECOND-ORDER ADVECTION CORRECTION (van Leer TVD)
+#
+# Every zone discretises axial transport in conservative
+# flux form and takes each face value as the UPSTREAM CELL
+# CENTRE:
+#
+#   m_dot * (phi_face_out - phi_face_in) = sources
+#   phi_face := phi[upstream cell]
+#
+# That is first-order upwind. Its truncation error is
+# O(dz) and, worse, that error acts as a numerical
+# DIFFUSION which smears exactly the steep axial gradients
+# the cold end of the kiln is made of. The N=10/20/40 grid
+# study measured the resulting observed order at ~0.83.
+#
+# This helper upgrades the face value to a limited linear
+# reconstruction (MUSCL, kappa = -1):
+#
+#   phi_face = phi_U + 0.5 * psi(r) * (phi_U - phi_UU)
+#   r        = (phi_D - phi_U) / (phi_U - phi_UU)
+#
+# with U the upstream cell, UU the cell upstream of U and D
+# the downstream cell. psi is the van Leer limiter, written
+# here in its equivalent harmonic form
+#
+#   0.5 * psi(r) * b = a * b / (a + b)   for a * b > 0
+#                    = 0                 otherwise
+#
+# (a = phi_D - phi_U, b = phi_U - phi_UU). That form needs
+# no division guard: a and b share a sign wherever the
+# branch is taken, so a + b cannot be zero there. van Leer
+# is TVD, so the reconstruction creates no new extremum --
+# it cannot introduce an unphysical temperature over- or
+# undershoot -- and wherever the profile is not smooth
+# (a * b <= 0) it degrades continuously back to the current
+# first-order scheme.
+#
+# APPLICATION. The correction is returned PER CELL and is
+# meant to be applied by DEFERRED CORRECTION: the caller
+# leaves its matrix exactly as it is -- still the
+# first-order upwind operator, still diagonally dominant --
+# and subtracts (flux capacity) * correction[i] from b[i].
+# The anti-diffusive part is therefore frozen at the Picard
+# iterate, and at the fixed point, where the iterate equals
+# the solution, the converged answer satisfies the full
+# second-order equation. Keeping the implicit operator
+# first-order is deliberate: moving the reconstruction into
+# A introduces a POSITIVE off-diagonal and destroys the
+# M-matrix property the existing Picard loop relies on.
+#
+# CONSERVATION. An interior face contributes +D to one cell
+# and -D to its neighbour, so the corrections telescope and
+# the scheme stays exactly conservative cell to cell. The
+# inlet face carries no correction (its value is the known
+# handoff stream, not a reconstruction), so
+#
+#   sum(corrections) == outlet face correction
+#
+# which is precisely the amount by which the zone's outlet
+# flux changes. The caller MUST therefore feed the same
+# reconstructed outlet value into its handoff, or that
+# difference leaks out of the energy balance.
+# outlet_face_value() below returns it, and is defined to
+# agree with the last entry of this function bit for bit.
+#
+# ORIENTATION. `reverse=False` means the stream enters at
+# index 0 and leaves at index N-1 (the solid phase in every
+# zone). `reverse=True` means it enters at N-1 and leaves
+# at 0 (the gas phase in burning, transition and cooler).
+#
+# The quantity reconstructed must be the one the flux is
+# linear in: gas enthalpy h for the gas phase (h is cubic
+# in T, so reconstructing T would not be conservative), and
+# temperature for the solid phase, whose flux
+# m_dot_s * Cp_s * (Ts - T_ref) is affine in Ts.
+# ======================================================
+def second_order_upwind_correction(phi, phi_in, reverse=False):
+
+    phi = np.asarray(phi, dtype=float)
+
+    N = phi.size
+
+    # Two cells are the minimum needed to form an upstream
+    # gradient; below that the scheme stays first-order.
+    if N < 2:
+        return np.zeros(N)
+
+    if reverse:
+        phi = phi[::-1]
+
+    # --------------------------------------------------
+    # INTERIOR FACES
+    #
+    # Face f (1 .. N-1) separates cell f-1 (upstream) from
+    # cell f (downstream).
+    # --------------------------------------------------
+
+    a = phi[1:] - phi[:-1]
+
+    b = np.empty(N - 1)
+
+    # The first interior face has no cell upstream of its
+    # upstream cell -- the inlet FACE sits there instead,
+    # half a cell further up. Its one-sided gradient is
+    # therefore (phi[0] - phi_in) / (dz/2), i.e. twice the
+    # per-cell difference, which keeps the reconstruction
+    # second-order right at the inlet rather than dropping
+    # to first order on the face where the incoming stream
+    # is still steepest.
+    b[0] = 2.0 * (phi[0] - phi_in)
+
+    b[1:] = phi[1:-1] - phi[:-2]
+
+    ab = a * b
+
+    D = np.zeros(N + 1)
+
+    np.divide(
+        ab,
+        a + b,
+        out=D[1:N],
+        where=ab > 0.0,
+    )
+
+    # --------------------------------------------------
+    # OUTLET FACE
+    #
+    # Nothing lies downstream, so there is no ratio to
+    # limit against; the standard second-order outflow
+    # condition is a plain linear extrapolation of the last
+    # cell-centre gradient onto the boundary face, half a
+    # cell away. This is the term that removes the
+    # half-cell bias in the zone handoff enthalpies.
+    # --------------------------------------------------
+
+    D[N] = 0.5 * (phi[N - 1] - phi[N - 2])
+
+    # Cell i gains its outflow face correction and loses
+    # its inflow face correction.
+    correction = D[1:] - D[:-1]
+
+    if reverse:
+        correction = correction[::-1]
+
+    return correction
+
+
+# ======================================================
+# RECONSTRUCTED OUTLET FACE VALUE
+#
+# The boundary value matching second_order_upwind_correction
+# above. Zones hand off to the next unit with the value at
+# their outlet FACE, but the solution array only holds cell
+# CENTRES, and the last centre sits half a cell short of
+# that face -- a systematic O(dz) bias in exactly the
+# handoff quantities the grid study found worst converged.
+#
+# Returns the linear extrapolation used as the outlet flux
+# by the correction above, so the zone's internal energy
+# balance and its handoff stay consistent to the last bit.
+#
+# Since the argument may be any quantity affine in the
+# reconstructed one (gas ENTHALPY per unit mass or the
+# enthalpy FLOW m_dot * h, solid TEMPERATURE or the flow
+# m_dot_s * Cp_s * (Ts - T_ref)), the extrapolation may be
+# taken directly on whichever of those the caller holds.
+# ======================================================
+def outlet_face_value(phi, reverse=False):
+
+    phi = np.asarray(phi, dtype=float)
+
+    if phi.size < 2:
+        return float(phi[-1]) if phi.size else 0.0
+
+    if reverse:
+        return float(phi[0] + 0.5 * (phi[0] - phi[1]))
+
+    return float(phi[-1] + 0.5 * (phi[-1] - phi[-2]))
+
+
 def gas_mass_balance(
     fuel_rate_total,
     O2,

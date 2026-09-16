@@ -1,5 +1,7 @@
 from physics.physics import cp_gas
 from physics.physics import h_gas
+from physics.physics import outlet_face_value
+from physics.physics import T_gas_from_h
 
 
 # ======================================================
@@ -55,37 +57,37 @@ def gas_inlet_temperature_from_enthalpy(burning, H, state):
 
     h_target = H / m_dot_g
 
-    T_low = burning.T_ref
-    T_high = 4000.0
-
-    for _ in range(100):
-
-        T_mid = 0.5 * (T_low + T_high)
-
-        h_mid = float(
-            h_gas(
-                T_mid,
-                burning.T_ref,
-            )
-        )
-
-        if h_mid < h_target:
-            T_low = T_mid
-        else:
-            T_high = T_mid
-
-    return 0.5 * (T_low + T_high)
+    return T_gas_from_h(
+        h_target,
+        burning.T_ref,
+        burning.T_ref,
+        4000.0,
+    )
 
 
 # ======================================================
 # GAS ENTHALPY TO NEXT ZONE
 #
 # Moved from Burning.gas_enthalpy_out()
-# (pyroprocess/burning.py). Logic is unchanged.
+# (pyroprocess/burning.py).
+#
+# This used to return Hg[0], the last CELL CENTRE. The gas
+# leaves through the outlet FACE, which sits half a cell
+# further downstream, so that was a systematic O(dz) bias
+# in the handoff itself -- independent of how well the
+# interior profile was resolved. It is the reconstructed
+# outlet face value that the second-order flux in
+# apply_gas_energy_balance() actually transports out of
+# cell 0, so returning anything else would leak exactly
+# that difference out of the zone energy balance.
+#
+# Hg is m_dot_g * h_gas(Tg) elementwise, i.e. affine in the
+# reconstructed enthalpy, so the extrapolation may be taken
+# on Hg directly.
 # ======================================================
 def gas_enthalpy_out(Hg):
 
-    return Hg[0]
+    return outlet_face_value(Hg, reverse=True)
 
 
 # ======================================================
@@ -98,6 +100,16 @@ def gas_enthalpy_out(Hg):
 # Picard solve is numerically unchanged.
 #
 # Gas direction: N-1 -> 0.
+#
+# `advection_correction` is the per-cell van Leer deferred
+# correction from physics.second_order_upwind_correction,
+# in enthalpy units (J/kg). It is zero by default, which
+# leaves this row exactly first-order upwind as before. The
+# matrix A is untouched by it on purpose: the correction is
+# frozen at the Picard iterate and enters b only, so the
+# implicit operator stays the diagonally dominant upwind
+# M-matrix the Picard loop relies on, while the converged
+# fixed point satisfies the second-order equation.
 # ======================================================
 def apply_gas_energy_balance(
     A,
@@ -115,6 +127,7 @@ def apply_gas_energy_balance(
     reaction_q_cell,
     radiation_gas_sink,
     Tg_in,
+    advection_correction=0.0,
 ):
 
     Tg_i = i
@@ -162,6 +175,7 @@ def apply_gas_energy_balance(
             - radiation_gas_sink
             + m_dot_g * h_in
             - m_dot_g * h_linear_const_i
+            - m_dot_g * advection_correction
         )
 
     else:
@@ -192,6 +206,7 @@ def apply_gas_energy_balance(
             - radiation_gas_sink
             - m_dot_g * h_linear_const_i
             + m_dot_g * h_linear_const_up
+            - m_dot_g * advection_correction
         )
 
     return row + 1

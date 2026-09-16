@@ -163,10 +163,27 @@ class Cooler:
         # ======================================================
 
         Tg_in = self.T_amb
-        Ts_in = state.Ts_burning[-1]
 
         state.Hgas_cooler_in = state.m_dot_air_cooler * float(h_gas(Tg_in, self.T_ref))
         state.Hsolid_cooler_in = state.Hsolid_burning_out
+
+        # Clinker inlet temperature is derived from the ENTHALPY
+        # handoff rather than read back from state.Ts_burning[-1].
+        # The two were the same number only as long as the kiln
+        # handed off its last cell CENTRE. Burning now discharges
+        # through its reconstructed outlet FACE
+        # (pyroprocess/burning/solid_phase.py), so reading the
+        # centre would start the cooler from a hotter stream than
+        # the enthalpy it is credited with and create energy at
+        # the handoff -- worth 2.3 MW, 2.8% of fuel input, at
+        # N=20. Deriving T from H is also what every other zone
+        # already does; see burning/solid_phase.resolve_solid_inlet
+        # and precalciner/raw_meal_inlet.solid_temperature_from_enthalpy.
+        Ts_in = (
+            self.T_ref
+            + state.Hsolid_cooler_in
+            / (state.m_dot_s * self.Cp_s)
+        )
 
         state.Tg_cooler_in = Tg_in
         state.Ts_cooler_in = Ts_in

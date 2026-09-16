@@ -1,3 +1,7 @@
+from physics.physics import outlet_face_value
+from physics.physics import second_order_upwind_correction
+
+
 # ======================================================
 # SOLID PHASE ENERGY BALANCE ROWS
 #
@@ -29,6 +33,25 @@ def apply_solid_energy_balance(
     q_gs,
     q_ws,
 ):
+
+    # ----------------------------------------------
+    # SECOND-ORDER ADVECTION CORRECTION
+    #
+    # van Leer limited reconstruction of the clinker-side
+    # face values, applied by deferred correction so that A
+    # stays the first-order upwind M-matrix. The solid flux
+    # Cs * (Ts - T_ref) is affine in Ts, so the
+    # reconstruction is done on TEMPERATURE directly. The
+    # inlet face carries no correction: Ts_in is the known
+    # kiln-discharge handoff, not a reconstruction. See
+    # physics.second_order_upwind_correction.
+    # ----------------------------------------------
+
+    advection_correction = second_order_upwind_correction(
+        Ts_iter,
+        Ts_in,
+        reverse=False,
+    )
 
     for i in range(N):
 
@@ -99,13 +122,17 @@ def apply_solid_energy_balance(
                     - q_rad_ws
                 )
                 + Cs * Ts_in
+                - Cs * advection_correction[i]
             )
 
         else:
 
-            b[row] = V_cell * (
-                q_rad_gs
-                - q_rad_ws
+            b[row] = (
+                V_cell * (
+                    q_rad_gs
+                    - q_rad_ws
+                )
+                - Cs * advection_correction[i]
             )
 
         row += 1
@@ -117,19 +144,32 @@ def apply_solid_energy_balance(
 # SOLID ENTHALPY TO NEXT ZONE
 #
 # Moved from Cooler.solid_enthalpy_out()
-# (pyroprocess/cooler.py). Logic is unchanged. Note this
-# takes the temperature array `Ts` and recomputes the
-# enthalpy from `Ts[-1]`, unlike
+# (pyroprocess/cooler.py). Note this takes the temperature
+# array `Ts` and recomputes the enthalpy from it, unlike
 # pyroprocess/transition/solid_phase.py's same-named
 # function, which indexes a pre-computed enthalpy array --
 # that signature difference is intentional and preserved.
+#
+# This used to read Ts[-1], the last CELL CENTRE, while the
+# clinker actually discharges through the outlet FACE half a
+# cell further on -- a systematic O(dz) bias in the cooled
+# clinker enthalpy. It is also the flux the second-order
+# scheme in apply_solid_energy_balance() transports out of
+# the last cell, so it must be the value handed off or the
+# difference leaks out of the energy balance.
 # ======================================================
 def solid_enthalpy_out(cooler, Ts, state):
 
     H_solid_out = (
         state.m_dot_s
         * cooler.Cp_s
-        * (Ts[-1] - cooler.T_ref)
+        * (
+            outlet_face_value(
+                Ts,
+                reverse=False,
+            )
+            - cooler.T_ref
+        )
     )
 
     return H_solid_out
