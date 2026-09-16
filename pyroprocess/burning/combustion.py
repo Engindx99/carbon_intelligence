@@ -3,6 +3,7 @@ import numpy as np
 from physics.physics import fuel_heat_release
 from physics.physics import combustion_axial_distribution
 from physics.physics import ZONE_ENERGY_WEIGHTS
+from physics.physics import resample_axial_weights
 
 
 # ======================================================
@@ -56,13 +57,10 @@ def reaction_heat_sink(state):
 # ======================================================
 def axial_heat_distribution(N, Q_burning, Burning_Q_sink):
 
-    weights = ZONE_ENERGY_WEIGHTS["burning"]["axial"]
-
-    if len(weights) != N:
-        raise ValueError(
-            f"Burning axial weights length ({len(weights)}) "
-            f"must match N ({N})."
-        )
+    weights = resample_axial_weights(
+        ZONE_ENERGY_WEIGHTS["burning"]["axial"],
+        N,
+    )
 
     q_cell = combustion_axial_distribution(
         Q_total=Q_burning,

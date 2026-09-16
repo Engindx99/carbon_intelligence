@@ -12,9 +12,10 @@ from physics.steady_state_mass import SteadyStateMassFlow
 from validators.energy import validate_energy
 from validators.mass import validate_mass
 from reporter.validation import report_validation
+from visualization.zone_profiles import plot_zone_temperature_profiles
 
 import numpy as np
-import yaml 
+import yaml
 
 
 
@@ -49,7 +50,6 @@ class Twin:
         )
 
         self.preheater = Preheater(
-            N=cfg["plant"]["N"],
             L=cfg["preheater"]["length"],
         )
 
@@ -789,7 +789,7 @@ class Twin:
 
         (
             m_dot_s_calciner_out,
-            m_dot_g_calciner,
+            _,
         ) = self.mass_flow.calculate_calciner_flow(
             m_dot_CO2_generated=m_dot_CO2_generated,
             m_dot_tertiary_air=self.state.m_dot_tertiary_air,
@@ -1296,6 +1296,7 @@ class Twin:
                 # ==================================================
 
                 idx = self.state.Tg_burning.shape[0] // 2
+                idx_preheater = self.state.Tg_preheater.shape[0] // 2
 
                 print(
                     "\n========== FINAL STEADY-STATE PHYSICAL CHECK ==========",
@@ -1392,17 +1393,17 @@ class Twin:
                 print("Preheater:", flush=True)
                 print(
                     f"    Tg_mid = "
-                    f"{self.state.Tg_preheater[idx]:.6f} K",
+                    f"{self.state.Tg_preheater[idx_preheater]:.6f} K",
                     flush=True,
                 )
                 print(
                     f"    Ts_mid = "
-                    f"{self.state.Ts_preheater[idx]:.6f} K",
+                    f"{self.state.Ts_preheater[idx_preheater]:.6f} K",
                     flush=True,
                 )
                 print(
                     f"    Tw_mid = "
-                    f"{self.state.Tw_preheater[idx]:.6f} K",
+                    f"{self.state.Tw_preheater[idx_preheater]:.6f} K",
                     flush=True,
                 )
 
@@ -1587,7 +1588,7 @@ if __name__ == "__main__":
     # ======================================================
     # STATE INIT
     # ======================================================
-    state = GlobalState()
+    state = GlobalState(N=twin_cfg["plant"]["N"])
 
     # ======================================================
     # TWIN INIT
@@ -1601,4 +1602,8 @@ if __name__ == "__main__":
     # RUN
     # ======================================================
     twin.run()
-    
+
+    # ======================================================
+    # VISUALIZATION
+    # ======================================================
+    plot_zone_temperature_profiles(twin)

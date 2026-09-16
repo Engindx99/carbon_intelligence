@@ -34,34 +34,6 @@ class GasPhases:
     H2O: np.ndarray
 
 
-def initialize_raw_meal(
-    solids,
-    total_mass,
-    composition,
-):
-
-    # ================= MOISTURE =================
-    solids.H2O[:] = total_mass * composition["H2O"]
-
-    # ================= BOUND WATER =================
-    solids.Bound_H2O[:] = total_mass * composition["Bound_H2O"]
-
-    # ================= CARBONATES =================
-    solids.CaCO3[:] = total_mass * composition["CaCO3"]
-
-    # ================= OXIDES =================
-    solids.CaO[:] = total_mass * composition["CaO"]
-    solids.SiO2[:] = total_mass * composition["SiO2"]
-    solids.Al2O3[:] = total_mass * composition["Al2O3"]
-    solids.Fe2O3[:] = total_mass * composition["Fe2O3"]
-
-    # ================= CLINKER PHASES =================
-    solids.C2S[:] = total_mass * composition["C2S"]
-    solids.C3S[:] = total_mass * composition["C3S"]
-    solids.C3A[:] = total_mass * composition["C3A"]
-    solids.C4AF[:] = total_mass * composition["C4AF"]
-
-
 def copy_solid_phases(
     source: SolidPhases,
     target: SolidPhases,
@@ -85,3 +57,41 @@ def copy_solid_phases(
             )
 
         target_array[:] = source_array
+
+
+def resample_solid_phases(
+    source: SolidPhases,
+    target: SolidPhases,
+):
+    """
+    Transfer solid-phase composition from a source zone to a
+    target zone with a different cell count. The source array
+    is treated as a profile sampled at its own cell centers
+    and linearly interpolated onto the target's cell centers,
+    then rescaled so the target's total mass per species
+    exactly matches the source's total mass per species.
+
+    Reduces to copy_solid_phases when source and target share
+    the same cell count.
+    """
+
+    for field in fields(SolidPhases):
+
+        source_array = getattr(source, field.name)
+        target_array = getattr(target, field.name)
+
+        n_src = source_array.shape[0]
+        n_tgt = target_array.shape[0]
+
+        x_src = (np.arange(n_src) + 0.5) / n_src
+        x_tgt = (np.arange(n_tgt) + 0.5) / n_tgt
+
+        resampled = np.interp(x_tgt, x_src, source_array)
+
+        total_source = np.sum(source_array)
+        total_resampled = np.sum(resampled)
+
+        if total_resampled > 0.0:
+            resampled *= total_source / total_resampled
+
+        target_array[:] = resampled

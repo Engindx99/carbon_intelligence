@@ -5,7 +5,7 @@ from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
 from physics.physics import ZONE_HT_CONFIG
 
-from chemistry.phases import copy_solid_phases
+from chemistry.phases import resample_solid_phases
 from chemistry.reactions import ChemistryModel
 
 from . import gas_phase
@@ -269,7 +269,7 @@ class Preheater:
             Ts_new,
             Tw_new,
             wall_loss,
-            wall_debug,
+            _,
         ) = self.thermal_step(
             state.Tg_preheater,
             state.Ts_preheater,
@@ -306,7 +306,7 @@ class Preheater:
         # SOLID PHASE HANDOFF: PREHEATER -> CALCINER
         # ======================================================
 
-        copy_solid_phases(
+        resample_solid_phases(
             state.materials["preheater"].solids,
             state.materials["calciner"].solids,
         )
@@ -340,7 +340,7 @@ class Preheater:
                 phase,
             )
 
-            diff = np.sum(calciner - preheater)
+            diff = np.sum(calciner) - np.sum(preheater)
 
             print(
                 f"{phase:10s}: "

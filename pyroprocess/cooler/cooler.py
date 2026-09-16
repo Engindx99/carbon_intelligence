@@ -191,7 +191,7 @@ class Cooler:
             Ts,
             Tw,
             wall_loss,
-            wall_debug,
+            _,
             Qgs,
             Qgw,
             Qws,

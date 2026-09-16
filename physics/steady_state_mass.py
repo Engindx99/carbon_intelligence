@@ -74,18 +74,6 @@ class SteadyStateMassFlow:
         self.m_dot_fuel = float(m_dot_fuel)
         self.m_dot_air = float(m_dot_air)
 
-    def calculate_burning_inlet(self):
-        """
-        Burning receives combustion air and fuel.
-        """
-
-        self.m_dot_g_burning = (
-            self.m_dot_air
-            + self.m_dot_fuel
-        )
-
-        return self.m_dot_g_burning
-
     def calculate_transition_flow(
         self,
         m_dot_CO2_generated,

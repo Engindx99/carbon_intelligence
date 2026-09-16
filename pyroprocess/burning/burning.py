@@ -293,8 +293,8 @@ class Burning:
             Tw_new,
             Q_petcoke,
             Q_burning,
-            energy_in,
-            energy_out,
+            _,
+            _,
             total_energy_balance,
             Q_wall_loss,
         ) = self.thermal_step(
@@ -474,13 +474,6 @@ class Burning:
     # ======================================================
     def gas_enthalpy_out(self, Hg):
         return gas_phase.gas_enthalpy_out(Hg)
-
-    def gas_inlet_temperature_from_enthalpy(self, H, state):
-        return gas_phase.gas_inlet_temperature_from_enthalpy(
-            self,
-            H,
-            state,
-        )
 
     # ======================================================
     # SOLID ENTHALPY TO NEXT ZONE

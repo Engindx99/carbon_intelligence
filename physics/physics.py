@@ -54,20 +54,26 @@ ZONE_ENERGY_WEIGHTS = {
 
 
 # ======================================================
-# FLOW
+# AXIAL PROFILE RESAMPLING
+#
+# Resample a calibrated axial profile (given at its own
+# cell-center positions) onto N new cell centers via linear
+# interpolation, then renormalize so the weights still sum
+# to 1 (total energy is conserved regardless of N). This
+# lets a profile calibrated at one mesh resolution be reused
+# at a finer one without inventing new physics.
 # ======================================================
+def resample_axial_weights(weights, N):
 
-def solid_mass_flow(feed_rate):
-    """
-    Solid mass flow rate.
+    weights = np.asarray(weights, dtype=float)
+    n_ref = len(weights)
 
-    SI:
-        feed_rate : kg/s
-        m_dot_s   : kg/s
-    """
-    m_dot_s = feed_rate
+    x_ref = (np.arange(n_ref) + 0.5) / n_ref
+    x_new = (np.arange(N) + 0.5) / N
 
-    return m_dot_s
+    resampled = np.interp(x_new, x_ref, weights)
+
+    return resampled / np.sum(resampled)
 
 
 # ======================================================
@@ -453,11 +459,7 @@ def heat_transfer(Tg, Ts, Tw, hv_gs, hv_gw, hv_ws, a_gs, a_gw, a_ws, zone=None):
     # ======================================================
     # CONVECTION
     # ======================================================
-    
-    dT_gs = Tg - Ts
-    dT_gw = Tg - Tw
-    dT_ws = Ts - Tw
-    
+
     q_gs_conv = hv_gs * a_gs * (Tg - Ts)
     q_gw_conv = hv_gw * a_gw * (Tg - Tw)
     q_ws_conv = hv_ws * a_ws * (Ts - Tw)
@@ -551,29 +553,7 @@ def wall_losses(
     }
 
     return q_loss, wall_loss, wall_debug
-    
-# ======================================================
-# THERMAL CAPACITIES
-# ======================================================
-def thermal_capacities(
-    rho_g_Vcell_Cp_g,
-    rho_s_Vcell_Cp_s,
-    rho_wall_Vwall_cell_Cp,
-    effective=1.0,
-):
 
-    C_s = rho_s_Vcell_Cp_s
-    effective_C_s = effective * C_s
-
-    C_g = rho_g_Vcell_Cp_g
-    C_w = rho_wall_Vwall_cell_Cp
-
-    return (
-        C_g,
-        effective_C_s,
-        C_w,
-    )
-    
 # ======================================================
 # GEOMETRY
 # ======================================================

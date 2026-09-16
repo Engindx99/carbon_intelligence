@@ -2,7 +2,6 @@ from dataclasses import dataclass, field, fields
 import numpy as np
 from typing import Dict
 from chemistry.phases import SolidPhases, GasPhases
-from physics.zone_material import ZoneMaterial
 from physics.zone_material import build_zone_material
 from chemistry.composition import RAW_MEAL_COMPOSITION
 
@@ -15,6 +14,21 @@ class GlobalState:
     # ======================================================
     t: float = 0.0
     dt: float = 0.05
+
+    # ======================================================
+    # DISCRETIZATION
+    #
+    # N: shared axial cell count for the continuous kiln
+    # zones (Precalciner, Transition, Burning, Cooler).
+    #
+    # N_preheater: number of preheater cyclone stages. This
+    # is a physical equipment count (5 real stages, each with
+    # its own operating temperature band — see
+    # pyroprocess/preheater/preheater.py), not a numerical
+    # mesh resolution, so it is kept independent of N.
+    # ======================================================
+    N: int = 5
+    N_preheater: int = 5
 
     # ======================================================
     # OPERATION
@@ -362,7 +376,54 @@ class GlobalState:
     # ======================================================
 
     def __post_init__(self):
-        N = self.Tg_burning.size
+
+        # ======================================================
+        # RESIZE PER-CELL ARRAYS TO N / N_preheater
+        #
+        # Field defaults above are declared at a reference
+        # length of 5 purely to document each array's initial
+        # value; the arrays are resized here to their actual
+        # zone cell count while preserving that same initial
+        # value (arr[0] is uniform across the default array).
+        # ======================================================
+
+        def _resize(name, n):
+            arr = getattr(self, name)
+            setattr(self, name, np.full(n, arr[0]))
+
+        for name in (
+            "Tg_burning", "Ts_burning", "Tw_burning",
+            "Tg_burning_old", "Ts_burning_old", "Tw_burning_old",
+            "Hg_burning", "Hs_burning",
+            "Hg_burning_old", "Hs_burning_old",
+
+            "Tg_transition", "Ts_transition", "Tw_transition",
+            "Tg_transition_old", "Ts_transition_old", "Tw_transition_old",
+            "Hg_transition", "Hs_transition",
+            "Hg_transition_old", "Hs_transition_old",
+
+            "Tg_calciner", "Ts_calciner", "Tw_calciner",
+            "Tg_calciner_old", "Ts_calciner_old", "Tw_calciner_old",
+            "Hg_calciner", "Hs_calciner",
+            "Hg_calciner_old", "Hs_calciner_old",
+
+            "Tg_cooler", "Ts_cooler", "Tw_cooler",
+            "Tg_cooler_old", "Ts_cooler_old", "Tw_cooler_old",
+            "Hg_cooler", "Hs_cooler",
+            "Hg_cooler_old", "Hs_cooler_old",
+        ):
+            _resize(name, self.N)
+
+        for name in (
+            "Tg_preheater", "Ts_preheater", "Tw_preheater",
+            "Tg_preheater_old", "Ts_preheater_old", "Tw_preheater_old",
+            "Hg_preheater", "Hs_preheater",
+            "Hg_preheater_old", "Hs_preheater_old",
+            "Drying_Q_sink_cells",
+        ):
+            _resize(name, self.N_preheater)
+
+        N = self.N
 
         # ======================================================
         # TOTAL PYROPROCESS SOLID INVENTORY
@@ -387,8 +448,8 @@ class GlobalState:
             )
 
             return np.full(
-                N,
-                component_mass / N,
+                self.N_preheater,
+                component_mass / self.N_preheater,
                 dtype=float,
             )
 
@@ -403,7 +464,7 @@ class GlobalState:
         empty_cell = lambda key: np.zeros(N, dtype=float)
 
         self.materials = {
-            "preheater": build_zone_material(N, make_cell),
+            "preheater": build_zone_material(self.N_preheater, make_cell),
 
             "calciner": build_zone_material(N, empty_cell),
 

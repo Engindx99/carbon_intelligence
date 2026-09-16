@@ -22,15 +22,3 @@ RAW_MEAL_COMPOSITION = {
     "C3A":0.0,
     "C4AF":0.0,
 }
-
-
-# ======================================================
-# VALIDATION
-# ======================================================
-
-#total = sum(RAW_MEAL_COMPOSITION.values())
-
-#if abs(total - 100000.0) > 1e-6:
-    #raise ValueError(
-       # f"Raw meal composition must sum to 1.0 (current = {total:.6f})"
-   # )

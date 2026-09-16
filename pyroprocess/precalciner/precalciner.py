@@ -323,7 +323,7 @@ class Calciner:
                 Ts_new,
                 Tw_new,
                 wall_loss_new,
-                wall_debug_new,
+                _,
             ) = self.thermal_step(
                 Tg_iter,
                 Ts_iter,
@@ -485,10 +485,6 @@ class Calciner:
         # used by thermal_step().
         # ======================================================
 
-        h0 = h_gas(state.Tg_calciner[0], self.T_ref)
-        hN = h_gas(state.Tg_calciner[-1], self.T_ref)
-
-
         state.Hg_calciner = (
             state.m_dot_g_calciner
             * h_gas(
@@ -552,34 +548,3 @@ class Calciner:
         )
 
         return state
-
-
-    # ======================================================
-    # TEMPERATURE FROM ENTHALPY
-    #
-    # Delegates to raw_meal_inlet. Kept as bound methods
-    # (rather than deleted) so the public interface is
-    # unchanged; preheater/stage.py calls the equivalent
-    # method on Preheater the same way.
-    # ======================================================
-
-    def gas_temperature_from_enthalpy(self, H, state):
-
-        return raw_meal_inlet.gas_temperature_from_enthalpy(
-            self,
-            H,
-            state,
-        )
-
-
-    def solid_temperature_from_enthalpy(
-        self,
-        H,
-        state,
-    ):
-
-        return raw_meal_inlet.solid_temperature_from_enthalpy(
-            self,
-            H,
-            state,
-        )

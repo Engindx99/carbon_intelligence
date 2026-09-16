@@ -128,7 +128,7 @@ class Transition:
         if not isinstance(state.Tg_transition, np.ndarray):
             raise TypeError("Tg_transition must be np.ndarray")
 
-        if state.Tg_transition.shape != (5,):
+        if state.Tg_transition.shape != (self.N,):
             raise ValueError(
                 f"Transition shape corrupted: {state.Tg_transition.shape}"
             )
@@ -177,24 +177,6 @@ class Transition:
         state.Hsolid_transition_in = (
             state.Hsolid_calciner_out
         )
-
-        # ======================================================
-        # INLET TEMPERATURE FROM ENTHALPY
-        # ======================================================
-        Tg_in = self.gas_inlet_temperature_from_enthalpy(
-            state.Hgas_transition_in,
-            state,
-        )
-
-        Ts_in = self.solid_inlet_temperature_from_enthalpy(
-            state.Hsolid_transition_in,
-            state,
-        )
-
-        # ======================================================
-        # APPLY INLET BOUNDARY CONDITIONS
-        # ======================================================
-
 
         # ======================================================
         # STEADY-STATE THERMAL STEP
@@ -394,27 +376,6 @@ class Transition:
 
         return state
 
-
-    # ======================================================
-    # TEMPERATURE FROM INLET ENTHALPY
-    #
-    # Delegates to gas_phase/solid_phase. Kept as bound
-    # methods (rather than deleted) so the public interface
-    # is unchanged.
-    # ======================================================
-    def gas_inlet_temperature_from_enthalpy(self, H, state):
-        return gas_phase.gas_inlet_temperature_from_enthalpy(
-            self,
-            H,
-            state,
-        )
-
-    def solid_inlet_temperature_from_enthalpy(self, H, state):
-        return solid_phase.solid_inlet_temperature_from_enthalpy(
-            self,
-            H,
-            state,
-        )
 
     # ======================================================
     # GAS ENTHALPY TO NEXT ZONE

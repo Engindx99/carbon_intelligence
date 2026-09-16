@@ -66,39 +66,4 @@ def compute_energy_balance(calciner, state):
         / energy_scale
     )
 
-    # ======================================================
-    # ENERGY IN
-    # ======================================================
-
-    calciner_energy_in = (
-        state.Hgas_calciner_in
-        + state.Hsolid_calciner_in
-    )
-
-    # ======================================================
-    # ENERGY OUT
-    #
-    # Includes:
-    #   gas
-    #   solid
-    #   wall loss
-    #   calcination reaction
-    # ======================================================
-
-    calciner_energy_out = (
-        state.Hgas_calciner_out
-        + state.Hsolid_calciner_out
-        + state.Wall_loss_calciner
-        + state.Calcination_Q_sink
-    )
-
-    # ======================================================
-    # ENERGY RESIDUAL
-    # ======================================================
-
-    calciner_residual = (
-        calciner_energy_in
-        - calciner_energy_out
-    )
-
     return state

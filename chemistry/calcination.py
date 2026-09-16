@@ -472,11 +472,6 @@ class CalcinationModel(ReactionBase):
             - np.sum(CaO_before)
         )
 
-        CaCO3_expected_for_CaO = (
-            CaO_generated_from_state
-            / self.CaO_ratio
-        )
-
         state.CaCO3_material_reacted = float(
             CaCO3_reacted_from_state
         )
