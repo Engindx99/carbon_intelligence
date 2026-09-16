@@ -495,7 +495,20 @@ def wall_losses(
     refractory_conductivity,
     eps,
     insulation_factor=0.27,   # default calibration
+    debug=True,
 ):
+    """
+    Wall heat loss through the refractory/convection network.
+
+    debug=True (default) also returns the wall_debug dict, so
+    every existing caller is unaffected. debug=False returns
+    None in its place and skips building it: the dict costs two
+    np.mean, one np.max and ~14 float() calls per invocation,
+    which is pure overhead on the iterative wall-temperature
+    solves that call this millions of times per steady-state
+    run and discard the dict. The returned q_loss and wall_loss
+    are identical either way.
+    """
 
     # ======================================================
     # THERMAL RESISTANCE NETWORK
@@ -520,7 +533,15 @@ def wall_losses(
     # ======================================================
     # APPLY INSULATION FACTOR
     # ======================================================
-    insulation_factor = np.clip(insulation_factor, 0.1, 1.0)
+    # insulation_factor is a scalar calibration constant -- the
+    # debug dict below already assumed that via float(...) -- so
+    # the clamp is done in plain Python. np.clip on a scalar
+    # routes through the array-function machinery and dominated
+    # this function's cost in the iterative wall solves.
+    insulation_factor = min(
+        max(float(insulation_factor), 0.1),
+        1.0,
+    )
 
     wall_loss = insulation_factor * wall_loss_raw
 
@@ -532,6 +553,9 @@ def wall_losses(
     # ======================================================
     # DEBUG
     # ======================================================
+    if not debug:
+        return q_loss, wall_loss, None
+
     wall_debug = {
         "R_ref": float(R_ref),
         "R_conv": float(R_conv),

@@ -454,6 +454,7 @@ def solve_stage(
             refractory_thickness=model.refractory_thickness,
             refractory_conductivity=model.refractory_conductivity,
             eps=eps,
+            debug=False,
         )
 
         return (
@@ -512,6 +513,7 @@ def solve_stage(
         refractory_thickness=model.refractory_thickness,
         refractory_conductivity=model.refractory_conductivity,
         eps=eps,
+        debug=False,
     )
 
     def wall_residual_slope_stage(Tw_trial):
@@ -648,6 +650,7 @@ def solve_stage(
         refractory_thickness=model.refractory_thickness,
         refractory_conductivity=model.refractory_conductivity,
         eps=eps,
+        debug=False,
     )
 
     stage.Q_wall_loss = float(wall_loss)
