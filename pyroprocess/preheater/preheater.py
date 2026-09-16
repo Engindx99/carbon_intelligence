@@ -21,11 +21,19 @@ from .stage5 import Stage5
 
 class Preheater:
 
-    def __init__(self, N=5, L=25.0):
+    def __init__(self, N=5, L=25.0, nodes_per_stage=20):
 
         self.N = N
         self.L = L
         self.dz = L / N
+
+        # Equal sub-volumes each stage's heat transfer is marched
+        # through (heat_transfer.solve_stage). Numerical, not a
+        # stage count: N stays the number of cyclone stages.
+        if int(nodes_per_stage) != nodes_per_stage or nodes_per_stage < 1:
+            raise ValueError("nodes_per_stage must be an integer >= 1")
+
+        self.nodes_per_stage = int(nodes_per_stage)
 
         self.zone = "preheater"
         

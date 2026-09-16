@@ -431,7 +431,149 @@ def thermal_step(
 
 
 # ======================================================
-# SOLVE ONE PREHEATER STAGE
+# SOLVE ONE PREHEATER STAGE (NODAL)
+#
+# A stage is marched through preheater.nodes_per_stage equal
+# sub-volumes, gas and solid co-current inside the stage
+# (riser duct); the stages themselves stay counter-current
+# (thermal_step above). Each node is the lumped balance of
+# solve_stage_node() on 1/n of the stage volume and wall
+# area, fed by the previous node's outlet temperatures.
+#
+# Why: the lumped balance evaluates the gas-solid, gas-wall
+# and solid-wall fluxes at the stage INLET temperatures over
+# the whole stage volume. With a large inlet temperature
+# difference that overshoots equilibrium (solid could leave
+# a stage hotter than the gas with no heat source). Marching
+# the same equations in n nodes integrates the decaying
+# driving force, so stage outlets converge as n grows.
+# n = 1 reproduces the lumped stage exactly.
+#
+# The stage's free-moisture evaporation and its (negative)
+# reaction power are spread uniformly over the nodes, so
+# the stage totals are unchanged.
+#
+# Stage-level results are those of the stage boundaries:
+# inlet from the first node, outlet from the last node,
+# transfer rates summed; wall_temperature is the node
+# (equal-volume) mean. Node outlet temperatures are kept on
+# the stage as diagnostics.
+# ======================================================
+def solve_stage(
+    stage,
+    gas_inlet_temperature,
+    solid_inlet_temperature,
+    m_dot_g,
+    m_dot_s,
+    state,
+    model,
+    reaction_power=0.0,
+    m_dot_vapor=0.0,
+):
+
+    # Local import: stage.py imports this module at load time.
+    from .stage import PreheaterStage
+
+    n = model.nodes_per_stage
+    volume_fraction = 1.0 / n
+
+    stage.reset_diagnostics()
+
+    Tg = float(gas_inlet_temperature)
+    Ts = float(solid_inlet_temperature)
+
+    # None at the stage inlet: the stage boundary handoff is unchanged.
+    H_gas = None
+
+    nodes = []
+
+    for k in range(n):
+
+        node = PreheaterStage(stage_id=stage.stage_id)
+
+        solve_stage_node(
+            node,
+            Tg,
+            Ts,
+            m_dot_g + k * m_dot_vapor * volume_fraction,
+            m_dot_s - k * m_dot_vapor * volume_fraction,
+            state,
+            model,
+            reaction_power * volume_fraction,
+            m_dot_vapor * volume_fraction,
+            volume_fraction,
+            H_gas,
+        )
+
+        nodes.append(node)
+
+        Tg = node.gas_outlet_temperature
+        Ts = node.solid_outlet_temperature
+        H_gas = node.gas_outlet_enthalpy
+
+    first = nodes[0]
+    last = nodes[-1]
+
+    stage.gas_inlet_temperature = first.gas_inlet_temperature
+    stage.solid_inlet_temperature = first.solid_inlet_temperature
+
+    stage.gas_outlet_temperature = last.gas_outlet_temperature
+    stage.solid_outlet_temperature = last.solid_outlet_temperature
+
+    stage.gas_inlet_enthalpy = first.gas_inlet_enthalpy
+    stage.solid_inlet_enthalpy = first.solid_inlet_enthalpy
+
+    stage.gas_outlet_enthalpy = last.gas_outlet_enthalpy
+    stage.solid_outlet_enthalpy = last.solid_outlet_enthalpy
+
+    stage.wall_temperature = float(
+        np.mean([node.wall_temperature for node in nodes])
+    )
+
+    stage.Q_gs = float(sum(node.Q_gs for node in nodes))
+    stage.Q_gw = float(sum(node.Q_gw for node in nodes))
+    stage.Q_ws = float(sum(node.Q_ws for node in nodes))
+    stage.Q_wall_loss = float(sum(node.Q_wall_loss for node in nodes))
+    stage.Q_reaction = float(sum(node.Q_reaction for node in nodes))
+
+    stage.energy_in = float(
+        stage.gas_inlet_enthalpy
+        + stage.solid_inlet_enthalpy
+    )
+
+    stage.energy_out = float(
+        stage.gas_outlet_enthalpy
+        + stage.solid_outlet_enthalpy
+        + stage.Q_wall_loss
+        - stage.Q_reaction
+    )
+
+    stage.energy_residual = stage.energy_in - stage.energy_out
+
+    stage.gas_T_min = min(
+        stage.gas_inlet_temperature,
+        stage.gas_outlet_temperature,
+    )
+    stage.gas_T_max = max(
+        stage.gas_inlet_temperature,
+        stage.gas_outlet_temperature,
+    )
+
+    stage.node_gas_temperatures = np.array(
+        [node.gas_outlet_temperature for node in nodes]
+    )
+    stage.node_solid_temperatures = np.array(
+        [node.solid_outlet_temperature for node in nodes]
+    )
+    stage.node_wall_temperatures = np.array(
+        [node.wall_temperature for node in nodes]
+    )
+
+    return stage
+
+
+# ======================================================
+# SOLVE ONE PREHEATER STAGE NODE
 #
 # Moved from PreheaterStage.solve()
 # (pyroprocess/preheater/stage.py). Logic is unchanged;
@@ -448,6 +590,12 @@ def thermal_step(
 #     The heat-transfer and wall equations are kept identical
 #     to the previous PreheaterStage implementation.
 #
+# NODE VOLUME:
+#     The balance is applied to volume_fraction of the stage:
+#     V_cell, A_wall_cell and A_wall are scaled by it. All
+#     volumetric fluxes and the wall loss are linear in these,
+#     so volume_fraction = 1 is the whole lumped stage.
+#
 # OPEN-SYSTEM STAGE (moisture evaporation):
 #     m_dot_g and m_dot_s are the gas and solid mass flows
 #     ENTERING the stage; m_dot_vapor [kg/s] of free moisture
@@ -463,7 +611,7 @@ def thermal_step(
 #     exactly as the closed stage did. With m_dot_vapor = 0
 #     every expression reduces to the previous one.
 # ======================================================
-def solve_stage(
+def solve_stage_node(
     stage,
     gas_inlet_temperature,
     solid_inlet_temperature,
@@ -473,6 +621,8 @@ def solve_stage(
     model,
     reaction_power=0.0,
     m_dot_vapor=0.0,
+    volume_fraction=1.0,
+    gas_inlet_enthalpy=None,
 ):
 
     stage.reset_diagnostics()
@@ -480,6 +630,10 @@ def solve_stage(
     eps = model.eps
     T_ref = model.T_ref
     T_amb = model.T_amb
+
+    V_cell = model.V_cell * volume_fraction
+    A_wall_cell = model.A_wall_cell * volume_fraction
+    A_wall = model.A_wall * volume_fraction
 
     Tg_in = float(gas_inlet_temperature)
     Ts_in = float(solid_inlet_temperature)
@@ -509,10 +663,10 @@ def solve_stage(
         _, Q_wall_loss_trial, _ = wall_losses(
             Tw=np.array([Tw_trial]),
             h_ext=model.h_ext,
-            A_wall_cell=model.A_wall_cell,
-            V_cell=model.V_cell,
+            A_wall_cell=A_wall_cell,
+            V_cell=V_cell,
             T_amb=T_amb,
-            A_wall_total=model.A_wall,
+            A_wall_total=A_wall,
             N=1,
             refractory_thickness=model.refractory_thickness,
             refractory_conductivity=model.refractory_conductivity,
@@ -522,7 +676,7 @@ def solve_stage(
 
         return (
             float(q_gw_trial[0] + q_ws_trial[0])
-            * model.V_cell
+            * V_cell
             - Q_wall_loss_trial
         )
 
@@ -568,10 +722,10 @@ def solve_stage(
     _, wall_loss_slope, _ = wall_losses(
         Tw=np.array([T_amb + 1.0]),
         h_ext=model.h_ext,
-        A_wall_cell=model.A_wall_cell,
-        V_cell=model.V_cell,
+        A_wall_cell=A_wall_cell,
+        V_cell=V_cell,
         T_amb=T_amb,
-        A_wall_total=model.A_wall,
+        A_wall_total=A_wall,
         N=1,
         refractory_thickness=model.refractory_thickness,
         refractory_conductivity=model.refractory_conductivity,
@@ -582,7 +736,7 @@ def solve_stage(
     def wall_residual_slope_stage(Tw_trial):
 
         return (
-            -model.V_cell
+            -V_cell
             * (
                 model.hv_gw * model.a_gw
                 + model.hv_ws * model.a_ws
@@ -694,9 +848,9 @@ def solve_stage(
         zone=model.zone,
     )
 
-    stage.Q_gs = float(q_gs[0]) * model.V_cell
-    stage.Q_gw = float(q_gw[0]) * model.V_cell
-    stage.Q_ws = float(q_ws[0]) * model.V_cell
+    stage.Q_gs = float(q_gs[0]) * V_cell
+    stage.Q_gw = float(q_gw[0]) * V_cell
+    stage.Q_ws = float(q_ws[0]) * V_cell
 
     # ==========================================================
     # WALL LOSS
@@ -705,10 +859,10 @@ def solve_stage(
     _, wall_loss, _ = wall_losses(
         Tw=np.array([Tw]),
         h_ext=model.h_ext,
-        A_wall_cell=model.A_wall_cell,
-        V_cell=model.V_cell,
+        A_wall_cell=A_wall_cell,
+        V_cell=V_cell,
         T_amb=T_amb,
-        A_wall_total=model.A_wall,
+        A_wall_total=A_wall,
         N=1,
         refractory_thickness=model.refractory_thickness,
         refractory_conductivity=model.refractory_conductivity,
@@ -759,6 +913,7 @@ def solve_stage(
         T_ref,
         m_dot_vapor,
         H_vapor,
+        gas_inlet_enthalpy,
     )
 
     # ==========================================================

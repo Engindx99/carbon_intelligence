@@ -10,6 +10,7 @@ calciner:
 
 preheater:
   length: 25.0
+  nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
 
 cooler:
   length: 25.0

@@ -98,12 +98,17 @@ def apply_stage_gas_energy_balance(
     T_ref,
     m_dot_vapor=0.0,
     H_vapor=0.0,
+    H_gas_in=None,
 ):
 
-    H_gas_in = m_dot_g * h_gas(
-        Tg_in,
-        T_ref,
-    )
+    # A node inside a stage receives the previous node's exact
+    # outlet enthalpy; re-deriving it from Tg_in would add the
+    # enthalpy -> temperature inversion error at every node.
+    if H_gas_in is None:
+        H_gas_in = m_dot_g * h_gas(
+            Tg_in,
+            T_ref,
+        )
 
     H_gas_out = (
         H_gas_in

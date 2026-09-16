@@ -1,4 +1,6 @@
-from dataclasses import dataclass
+from dataclasses import dataclass, field
+
+import numpy as np
 
 from . import heat_transfer
 
@@ -50,6 +52,18 @@ class PreheaterStage:
 
     gas_T_min: float = 0.0
     gas_T_max: float = 0.0
+
+    # Node outlet temperatures [K] along the stage (co-current
+    # march in heat_transfer.solve_stage); diagnostics only.
+    node_gas_temperatures: np.ndarray = field(
+        default_factory=lambda: np.zeros(0)
+    )
+    node_solid_temperatures: np.ndarray = field(
+        default_factory=lambda: np.zeros(0)
+    )
+    node_wall_temperatures: np.ndarray = field(
+        default_factory=lambda: np.zeros(0)
+    )
 
     def __post_init__(self):
         if self.stage_id < 1:

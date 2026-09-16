@@ -51,6 +51,7 @@ from validators.energy import validate_energy
 from validators.mass import validate_mass
 from reporter.validation import report_validation
 from visualization.zone_profiles import plot_zone_temperature_profiles
+from visualization.mass_flow_profiles import plot_mass_flow_profiles
 
 import numpy as np
 import yaml
@@ -89,6 +90,7 @@ class Twin:
 
         self.preheater = Preheater(
             L=cfg["preheater"]["length"],
+            nodes_per_stage=cfg["preheater"]["nodes_per_stage"],
         )
 
         self.cooler = Cooler(
@@ -1708,3 +1710,4 @@ if __name__ == "__main__":
     # VISUALIZATION
     # ======================================================
     plot_zone_temperature_profiles(twin)
+    plot_mass_flow_profiles(twin)
