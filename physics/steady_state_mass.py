@@ -41,6 +41,13 @@ class SteadyStateMassFlow:
     m_dot_g_preheater: float = 0.0
     m_dot_exhaust: float = 0.0
 
+    # ================= SECONDARY / TERTIARY AIR =================
+    m_dot_air_cooler: float = 0.0
+    m_dot_primary_air: float = 0.0
+    m_dot_secondary_air: float = 0.0
+    m_dot_tertiary_air: float = 0.0
+    m_dot_vent_air: float = 0.0
+
     # ======================================================
     # CHEMICAL MASS GENERATION
     # ======================================================
@@ -105,15 +112,19 @@ class SteadyStateMassFlow:
     def calculate_calciner_flow(
         self,
         m_dot_CO2_generated,
+        m_dot_tertiary_air=0.0,
     ):
         """
         Calcination transfers CO2 mass from solid phase
-        to gas phase.
+        to gas phase. Tertiary air from the cooler is ducted
+        directly into the calciner's gas inlet (mass + enthalpy
+        only; no calciner combustion model).
 
         CaCO3 -> CaO + CO2
         """
 
         self.m_dot_CO2_generated = float(m_dot_CO2_generated)
+        self.m_dot_tertiary_air = float(m_dot_tertiary_air)
 
         self.m_dot_s_calciner_out = (
             self.m_dot_s_calciner_in
@@ -127,6 +138,7 @@ class SteadyStateMassFlow:
         self.m_dot_g_calciner = (
             self.m_dot_g_transition
             + self.m_dot_CO2_generated
+            + self.m_dot_tertiary_air
         )
 
         return (
@@ -138,21 +150,36 @@ class SteadyStateMassFlow:
         """
         Global steady-state mass balance:
 
-            raw meal + fuel + air
+            raw meal + fuel + primary_air + air_cooler
             -
-            clinker - exhaust
+            clinker - exhaust - vent_air
             = 0
+
+        Kiln combustion air (self.m_dot_air = primary + secondary)
+        is no longer an independent ambient intake on its own:
+        secondary air's mass already originates from the cooler's
+        own ambient draw (self.m_dot_air_cooler = secondary +
+        tertiary + vent), so the two independent ambient intakes
+        are primary_air (at the burner) and air_cooler (at the
+        cooler fan) -- self.m_dot_air is intentionally NOT added
+        here to avoid double-counting secondary air's mass.
+        vent_air appears on both sides (drawn in at the cooler,
+        exhausted straight back to atmosphere without ever
+        entering the process gas train), which is a deliberate,
+        transparent pass-through, not a bug.
         """
 
         self.mass_flow_in = (
             self.m_dot_raw_meal
             + self.m_dot_fuel
-            + self.m_dot_air
+            + self.m_dot_primary_air
+            + self.m_dot_air_cooler
         )
 
         self.mass_flow_out = (
             self.m_dot_clinker
             + self.m_dot_exhaust
+            + self.m_dot_vent_air
         )
 
         self.steady_state_mass_residual = (

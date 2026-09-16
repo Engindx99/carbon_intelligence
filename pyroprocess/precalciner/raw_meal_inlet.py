@@ -95,6 +95,7 @@ def resolve_inlet_conditions(calciner, state):
 
     state.Hgas_calciner_in = (
         state.Hgas_transition_out
+        + getattr(state, "Hgas_cooler_tertiary", 0.0)
     )
 
     state.Hsolid_calciner_in = (

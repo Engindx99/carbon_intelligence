@@ -1,4 +1,5 @@
 import numpy as np
+import yaml
 
 from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
@@ -9,6 +10,12 @@ from physics.physics import h_gas
 from . import gas_phase
 from . import solid_phase
 from . import heat_transfer
+
+
+def load_cfg(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
+
 
 class Cooler:
 
@@ -91,6 +98,31 @@ class Cooler:
         self.hv_gw = cfg["hv_gw"]
         self.hv_ws = cfg["hv_ws"]
 
+        # ================= COOLER AIR (secondary/tertiary/vent split) =================
+        cooler_air_cfg = load_cfg("configs/twin_cfg.yaml").get("cooler_air", {})
+
+        self.cooling_air_rate = cooler_air_cfg.get(
+            "cooling_air_rate_kg_per_kg_clinker",
+            2.2
+        )
+
+        self.tertiary_air_fraction = cooler_air_cfg.get(
+            "tertiary_air_fraction",
+            0.0
+        )
+
+        if self.cooling_air_rate <= 0.0:
+            raise ValueError(
+                "cooler_air.cooling_air_rate_kg_per_kg_clinker must be > 0, "
+                f"got {self.cooling_air_rate}"
+            )
+
+        if not (0.0 <= self.tertiary_air_fraction < 1.0):
+            raise ValueError(
+                "cooler_air.tertiary_air_fraction must be in [0, 1), "
+                f"got {self.tertiary_air_fraction}"
+            )
+
 
     # ======================================================
     # THERMAL STEP
@@ -133,17 +165,22 @@ class Cooler:
         Tg_in = self.T_amb
         Ts_in = state.Ts_burning[-1]
 
-        state.Hgas_cooler_in = state.m_dot_g * float(h_gas(Tg_in, self.T_ref))
+        state.Hgas_cooler_in = state.m_dot_air_cooler * float(h_gas(Tg_in, self.T_ref))
         state.Hsolid_cooler_in = state.Hsolid_burning_out
 
         state.Tg_cooler_in = Tg_in
         state.Ts_cooler_in = Ts_in
 
-        # Cell 0 is a control volume, not a boundary node:
-        # the inlet streams enter its balance as a flux
-        # (gas_phase/solid_phase), so Tg_cooler[0] and
-        # Ts_cooler[0] are cell averages and must NOT be
-        # overwritten with the inlet temperatures here.
+        # Cells are control volumes, not boundary nodes: the
+        # inlet streams enter their balance as a flux
+        # (gas_phase/solid_phase), so temperatures at the
+        # inlet cell are cell averages and must NOT be
+        # overwritten with the inlet temperatures here. Gas
+        # is counter-current to the solid: gas enters (Tg_in)
+        # at Tg_cooler[N-1] (clinker-discharge end) and exits
+        # hottest at Tg_cooler[0]; solid enters (Ts_in) at
+        # Ts_cooler[0] (clinker-inlet end) and exits coolest
+        # at Ts_cooler[-1].
 
         # ======================================================
         # STEADY-STATE THERMAL SOLVE
@@ -187,6 +224,15 @@ class Cooler:
             state,
         )
 
+        (
+            state.Hgas_cooler_secondary,
+            state.Hgas_cooler_tertiary,
+            state.Hgas_cooler_vent,
+        ) = self.gas_enthalpy_split(
+            state.Tg_cooler,
+            state,
+        )
+
         state.Hsolid_cooler_out = self.solid_enthalpy_out(
             state.Ts_cooler,
             state,
@@ -221,6 +267,21 @@ class Cooler:
     def gas_enthalpy_out(self, Tg, state):
 
         return gas_phase.gas_enthalpy_out(
+            self,
+            Tg,
+            state,
+        )
+
+
+    # ======================================================
+    # GAS ENTHALPY SPLIT (secondary / tertiary / vent)
+    #
+    # Delegates to gas_phase.gas_enthalpy_split(). See that
+    # function for the split model.
+    # ======================================================
+    def gas_enthalpy_split(self, Tg, state):
+
+        return gas_phase.gas_enthalpy_split(
             self,
             Tg,
             state,

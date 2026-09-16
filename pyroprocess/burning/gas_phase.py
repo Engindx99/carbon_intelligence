@@ -5,18 +5,37 @@ from physics.physics import h_gas
 # ======================================================
 # GAS INLET HANDOFF
 #
-# Moved from Burning.apply() (pyroprocess/burning.py).
-# Logic is unchanged; `self` was renamed to `burning`
-# since these are now free functions taking the owning
-# Burning instance explicitly.
+# Moved from Burning.apply() (pyroprocess/burning.py);
+# `self` was renamed to `burning` since these are now free
+# functions taking the owning Burning instance explicitly.
+#
+# The kiln's inlet gas is now a mix of two streams: primary
+# air (ambient T, carries the fuel, sized by
+# burning.primary_air_fraction) and secondary air (preheated
+# by the cooler, pyroprocess/cooler/gas_phase.py's hot-end
+# split). Both masses sum to state.m_dot_air by construction
+# (main.py::_update_steady_state_mass_flow), so mixing is a
+# plain enthalpy sum -- no new mixing formula is needed.
 # ======================================================
 def resolve_gas_inlet(burning, state):
 
-    state.Hgas_burning_in = getattr(
+    H_secondary = getattr(
         state,
-        "Hgas_cooler_out",
+        "Hgas_cooler_secondary",
         0.0,
     )
+
+    H_primary = (
+        state.m_dot_primary_air
+        * float(
+            h_gas(
+                burning.T_amb,
+                burning.T_ref,
+            )
+        )
+    )
+
+    state.Hgas_burning_in = H_primary + H_secondary
 
     state.Tg_burning_in = gas_inlet_temperature_from_enthalpy(
         burning,

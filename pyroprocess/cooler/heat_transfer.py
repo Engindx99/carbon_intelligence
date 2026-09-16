@@ -36,12 +36,16 @@ _INSULATION_FACTOR = 0.27
 # here since heat_transfer.py owns the overall gas-solid-wall
 # heat transfer network (same split boundary used by
 # pyroprocess/transition/heat_transfer.py and
-# pyroprocess/burning/heat_transfer.py). Cooler's own
-# co-current, Dirichlet-inlet formulation (three separate
-# blocked row loops: gas, then solid, then wall) is preserved
-# exactly and is NOT converted to the interleaved,
-# counter-current, enthalpy-linearized formulation used by
-# the Transition/Burning siblings.
+# pyroprocess/burning/heat_transfer.py). Cooler's gas is now
+# counter-current to the solid (secondary/tertiary air
+# recuperation: cold air enters at the clinker-discharge end
+# and exits hottest at the clinker-inlet end), matching the
+# gas direction used by the Transition/Burning siblings. Its
+# own row-assembly ARCHITECTURE (three separate blocked row
+# loops: gas, then solid, then wall, each self-contained) is
+# preserved exactly and is NOT converted to the interleaved,
+# per-cell-driven formulation used by the Transition/Burning
+# siblings -- only the flow direction changed.
 # ======================================================
 def thermal_step(cooler, Tg, Ts, Tw, state):
 
@@ -49,7 +53,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # MASS FLOW
     # ======================================================
 
-    m_dot_g = state.m_dot_g
+    m_dot_g = state.m_dot_air_cooler
     m_dot_s = state.m_dot_s
 
     N = cooler.N
@@ -393,7 +397,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         m_dot_g
         * float(
             h_gas(
-                Tg_ss[-1],
+                Tg_ss[0],
                 cooler.T_ref,
             )
         )

@@ -26,6 +26,15 @@ fuel:
   O2: 3.5
 
 
+burning:
+  primary_air_fraction: 0.10   # fraction of kiln combustion air carried in with the fuel (ambient T)
+
+
+cooler_air:
+  cooling_air_rate_kg_per_kg_clinker: 2.2   # total cooler (fan) air, kg air / kg clinker
+  tertiary_air_fraction: 0.28               # fraction of cooler air routed to precalciner (tertiary air)
+
+
 motion:
   rpm_default: 1.5
   rpm_min: 1.0

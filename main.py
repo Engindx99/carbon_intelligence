@@ -227,11 +227,26 @@ class Twin:
 
         H_rawmeal_in = state.Hsolid_preheater_in
         H_air_in = getattr(state, "Hgas_cooler_in", 0.0)
+
+        # Primary air is an independent ambient intake at the
+        # burner (not drawn through the cooler), so it is not
+        # part of H_air_in. Derived from already-computed fields
+        # rather than recomputing m_dot_primary_air * h_gas(...)
+        # a second time: state.Hgas_burning_in = H_primary +
+        # H_secondary (pyroprocess/burning/gas_phase.py), so
+        # subtracting the secondary share recovers H_primary
+        # exactly.
+        H_primary_in = (
+            state.Hgas_burning_in
+            - getattr(state, "Hgas_cooler_secondary", 0.0)
+        )
+
         Q_burning = state.Q_burning
 
         global_energy_in = (
             H_rawmeal_in
             + H_air_in
+            + H_primary_in
             + Q_burning
         )
 
@@ -241,6 +256,12 @@ class Twin:
 
         H_exhaust_out = state.Hgas_preheater_out
         H_clinker_out = state.Hsolid_cooler_out
+
+        # Vent air leaves the cooler directly to atmosphere and
+        # never enters the process gas train, so its (hot) exit
+        # enthalpy does not show up anywhere inside H_exhaust_out
+        # and must be accounted separately.
+        H_vent_out = getattr(state, "Hgas_cooler_vent", 0.0)
 
         Q_wall_total = (
             state.Wall_loss_burning
@@ -268,6 +289,7 @@ class Twin:
         global_energy_out = (
             H_exhaust_out
             + H_clinker_out
+            + H_vent_out
             + Q_wall_total
             + Q_reaction_total
         )
@@ -306,6 +328,10 @@ class Twin:
             f"{H_air_in:.6e} W"
         )
         print(
+            f"    Primary air       = "
+            f"{H_primary_in:.6e} W"
+        )
+        print(
             f"    Burning heat      = "
             f"{Q_burning:.6e} W"
         )
@@ -323,6 +349,10 @@ class Twin:
         print(
             f"    Clinker           = "
             f"{H_clinker_out:.6e} W"
+        )
+        print(
+            f"    Vent air          = "
+            f"{H_vent_out:.6e} W"
         )
         print(
             f"    Wall losses       = "
@@ -383,8 +413,13 @@ class Twin:
             f"{mass_flow.m_dot_fuel:.6e} kg/s"
         )
         print(
-            f"    Air               = "
-            f"{mass_flow.m_dot_air:.6e} kg/s"
+            f"    Primary air       = "
+            f"{mass_flow.m_dot_primary_air:.6e} kg/s"
+        )
+        print(
+            f"    Cooler air        = "
+            f"{mass_flow.m_dot_air_cooler:.6e} kg/s "
+            f"(secondary + tertiary + vent)"
         )
         print(
             f"    Mass in           = "
@@ -400,6 +435,10 @@ class Twin:
         print(
             f"    Exhaust gas       = "
             f"{mass_flow.m_dot_exhaust:.6e} kg/s"
+        )
+        print(
+            f"    Vent air          = "
+            f"{mass_flow.m_dot_vent_air:.6e} kg/s"
         )
         print(
             f"    Mass out          = "
@@ -423,6 +462,56 @@ class Twin:
 
         print("=" * 58)
 
+    def _validate_cooler_air_split(self):
+
+        state = self.state
+
+        result = validate_mass(
+            mass_in=state.m_dot_air_cooler,
+            mass_out=(
+                state.m_dot_secondary_air
+                + state.m_dot_tertiary_air
+                + state.m_dot_vent_air
+            ),
+            mass_source=0.0,
+        )
+
+        report_validation(
+            result,
+            equipment="Cooler",
+            balance_type="air_split",
+        )
+
+        print()
+        print("========== COOLER AIR SPLIT CLOSURE ==========")
+        print()
+        print(
+            f"    Cooler air (total) = "
+            f"{state.m_dot_air_cooler:.6e} kg/s"
+        )
+        print(
+            f"    Secondary air      = "
+            f"{state.m_dot_secondary_air:.6e} kg/s"
+        )
+        print(
+            f"    Tertiary air       = "
+            f"{state.m_dot_tertiary_air:.6e} kg/s"
+        )
+        print(
+            f"    Vent air           = "
+            f"{state.m_dot_vent_air:.6e} kg/s"
+        )
+        print(
+            f"    Residual           = "
+            f"{result['residual']:.6e} kg/s"
+        )
+        print(
+            f"    Status             = "
+            f"{'PASS' if result['converged'] else 'FAIL'}"
+        )
+
+        print("=" * 58)
+
     def _validate_co2_species_balance(self):
 
         mass_flow = self.mass_flow
@@ -435,6 +524,7 @@ class Twin:
         co2_in_gas_stream = (
             mass_flow.m_dot_exhaust
             - mass_flow.m_dot_g_burning
+            - mass_flow.m_dot_tertiary_air
         )
 
         result = validate_mass(
@@ -649,6 +739,10 @@ class Twin:
             m_dot_g_burning
         )
 
+        self.state.m_dot_air = (
+            self.mass_flow.m_dot_air
+        )
+
         # ======================================================
         # SOLID STREAM
         # ======================================================
@@ -697,7 +791,8 @@ class Twin:
             m_dot_s_calciner_out,
             m_dot_g_calciner,
         ) = self.mass_flow.calculate_calciner_flow(
-            m_dot_CO2_generated=m_dot_CO2_generated
+            m_dot_CO2_generated=m_dot_CO2_generated,
+            m_dot_tertiary_air=self.state.m_dot_tertiary_air,
         )
 
         # ======================================================
@@ -740,6 +835,64 @@ class Twin:
         self.mass_flow.m_dot_clinker = (
             self.mass_flow.m_dot_s_cooler
         )
+
+        # ======================================================
+        # COOLER AIR SPLIT (secondary / tertiary / vent)
+        #
+        # Cooler air is independent of the kiln's own combustion
+        # gas flow (state.m_dot_g), sized from clinker throughput.
+        # It splits three ways: secondary air (derived from kiln
+        # stoichiometry, i.e. the non-primary share of the kiln's
+        # own combustion air), tertiary air (an independent
+        # cooler-side fraction routed to the precalciner), and
+        # vent air (whatever remains, exhausted to atmosphere).
+        #
+        # Computed here (before the global mass balance) so both
+        # self.mass_flow and self.state carry the same, internally
+        # consistent secondary+tertiary+vent split -- the global
+        # balance below needs self.mass_flow.m_dot_air_cooler and
+        # self.mass_flow.m_dot_vent_air to close correctly.
+        # ======================================================
+
+        self.mass_flow.m_dot_air_cooler = (
+            self.cooler.cooling_air_rate
+            * self.mass_flow.m_dot_clinker
+        )
+
+        self.mass_flow.m_dot_primary_air = (
+            self.burning.primary_air_fraction
+            * self.state.m_dot_air
+        )
+
+        self.mass_flow.m_dot_secondary_air = (
+            self.state.m_dot_air
+            - self.mass_flow.m_dot_primary_air
+        )
+
+        self.mass_flow.m_dot_tertiary_air = (
+            self.cooler.tertiary_air_fraction
+            * self.mass_flow.m_dot_air_cooler
+        )
+
+        self.mass_flow.m_dot_vent_air = (
+            self.mass_flow.m_dot_air_cooler
+            - self.mass_flow.m_dot_secondary_air
+            - self.mass_flow.m_dot_tertiary_air
+        )
+
+        if self.mass_flow.m_dot_vent_air < 0.0:
+            raise ValueError(
+                "Cooler air split infeasible: secondary + tertiary "
+                "air demand exceeds total cooler air flow. Increase "
+                "cooler_air.cooling_air_rate_kg_per_kg_clinker or "
+                "reduce tertiary_air_fraction / primary_air_fraction."
+            )
+
+        self.state.m_dot_air_cooler = self.mass_flow.m_dot_air_cooler
+        self.state.m_dot_primary_air = self.mass_flow.m_dot_primary_air
+        self.state.m_dot_secondary_air = self.mass_flow.m_dot_secondary_air
+        self.state.m_dot_tertiary_air = self.mass_flow.m_dot_tertiary_air
+        self.state.m_dot_vent_air = self.mass_flow.m_dot_vent_air
 
         # ======================================================
         # GLOBAL MASS BALANCE
@@ -880,8 +1033,17 @@ class Twin:
 
         # ======================================================
         # STEADY-STATE SOLVER
+        #
+        # 150 (was 100): the cooler air split (secondary/tertiary/
+        # vent) adds one more coupled dependency -- tertiary air
+        # depends on clinker mass, which itself only settles after
+        # the calciner/transition solid chain converges -- so the
+        # solid_handoff residual now needs a handful more Picard
+        # iterations to clear its tolerance. The residual decays
+        # smoothly and geometrically (~0.75x/iteration); 100 was
+        # cutting it off just before it crossed the threshold.
         # ======================================================
-        max_iterations = 100
+        max_iterations = 150
 
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6
@@ -1400,6 +1562,7 @@ class Twin:
                 self._validate_energy_balances()
                 self._validate_global_energy_balance()
                 self._validate_global_mass_balance()
+                self._validate_cooler_air_split()
                 self._validate_co2_species_balance()
 
                 return self.state

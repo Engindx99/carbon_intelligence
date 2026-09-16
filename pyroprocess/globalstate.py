@@ -65,6 +65,18 @@ class GlobalState:
     m_dot_g_preheater: float = 0.0
     rho_g: float = 1.2
 
+    # ================= SECONDARY / TERTIARY AIR =================
+    m_dot_air: float = 0.0
+    m_dot_air_cooler: float = 0.0
+    m_dot_primary_air: float = 0.0
+    m_dot_secondary_air: float = 0.0
+    m_dot_tertiary_air: float = 0.0
+    m_dot_vent_air: float = 0.0
+
+    Hgas_cooler_secondary: float = 0.0
+    Hgas_cooler_tertiary: float = 0.0
+    Hgas_cooler_vent: float = 0.0
+
     Hgas_burning_in: float = 0.0
     Hgas_burning_out: float = 0.0
 

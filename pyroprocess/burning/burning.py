@@ -175,6 +175,22 @@ class Burning:
         self.O2_sigma2 = 25.0
 
         # ======================================================
+        # SECONDARY AIR (primary/secondary split at kiln inlet)
+        # ======================================================
+        burning_cfg = cfg.get("burning", {})
+
+        self.primary_air_fraction = burning_cfg.get(
+            "primary_air_fraction",
+            0.10
+        )
+
+        if not (0.0 <= self.primary_air_fraction <= 1.0):
+            raise ValueError(
+                "burning.primary_air_fraction must be in [0, 1], "
+                f"got {self.primary_air_fraction}"
+            )
+
+        # ======================================================
         # BUFFERS & CACHE
         # ======================================================
         self._dTg_dz = np.zeros(self.N)
