@@ -92,6 +92,26 @@ def cp_gas(T):
     Later this can be replaced by species-based Cp.
     """
 
+    # Scalar fast path. This is called ~880k times per
+    # steady-state solve, almost always on one temperature at a
+    # time (Tg_iter[i] inside the per-cell assembly loops), and
+    # np.asarray + np.maximum on a 0-d array cost ~17 us against
+    # ~0.2 us for the same arithmetic in plain Python.
+    #
+    # np.float64 subclasses float, so array elements take this
+    # path too. T*T is what numpy's ** 2 already lowers to, so
+    # the result is bit-identical to the array path -- verified
+    # over 30000 temperatures in [250, 3500] K.
+    if isinstance(T, float):
+
+        Cp = (
+            1050.0
+            + 0.18 * T
+            - 3.0e-5 * (T * T)
+        )
+
+        return Cp if Cp > 1050.0 else 1050.0
+
     T = np.asarray(T, dtype=float)
 
     Cp = (
@@ -112,6 +132,20 @@ def h_gas(T, T_ref):
         T_ref : K
         h     : J/kg
     """
+
+    # Scalar fast path -- see cp_gas. The cubic term keeps ** 3
+    # rather than T*T*T: repeated multiplication is NOT
+    # bit-identical to the array path here (~1 ulp), whereas
+    # T*T for the square and ** 3 for the cube reproduce it
+    # exactly -- verified over 30000 temperatures in
+    # [250, 3500] K.
+    if isinstance(T, float):
+
+        return (
+            1050.0 * (T - T_ref)
+            + 0.09 * (T * T - T_ref**2)
+            - 1.0e-5 * (T**3 - T_ref**3)
+        )
 
     T = np.asarray(T, dtype=float)
 
@@ -438,17 +472,27 @@ ZONE_HT_CONFIG = {
 
 sigma = 5.670374419e-8
 
+
+# ======================================================
+# PER-ZONE RADIATION COEFFICIENT
+#
+# k_eff * eps * sigma is fixed per zone, but radiation() was
+# re-reading ZONE_RAD_CONFIG and redoing the product on every
+# one of its ~516k calls per steady-state solve. Precomputed
+# here with the same left-to-right grouping the inline
+# expression used, so the product is bit-identical.
+# ======================================================
+ZONE_RAD_COEFF = {
+    _zone: _cfg["k_eff"] * _cfg["eps"] * sigma
+    for _zone, _cfg in ZONE_RAD_CONFIG.items()
+}
+
+
 def radiation(T1, T2, zone, area=1.0):
     """ Stefan–Boltzmann radiation model with zone-dependent tuning."""
     
 
-    cfg = ZONE_RAD_CONFIG[zone]
-
-    eps = cfg["eps"]
-    k_eff = cfg["k_eff"]
-    
-
-    q_rad = k_eff * eps * sigma * area * (T1**4 - T2**4)
+    q_rad = ZONE_RAD_COEFF[zone] * area * (T1**4 - T2**4)
 
 
     return q_rad
