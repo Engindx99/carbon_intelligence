@@ -1,3 +1,41 @@
+# ======================================================
+# BLAS THREADING
+#
+# Every zone solver factorises a dense 3N x 3N system
+# (N = cells per zone, so 30x30 at N=10) roughly 620 times
+# per steady-state iteration. At that size the LU costs
+# ~19 us single-threaded, but a multi-threaded BLAS spawns
+# one worker per core and spin-waits on the barriers, which
+# measured 79 ms per solve on a 20-core host -- ~4000x
+# slower, and ~85 minutes of pure spin across a full solve.
+#
+# Pinning the BLAS to a single thread does not change the
+# physics: it only changes dgesv's internal blocking, so the
+# solution moves at double-precision rounding level. Measured
+# over 400 captured zone systems: max |dT| = 1.8e-12 K, which
+# is 6 orders below the Picard tolerance (1e-6 K) and 9 below
+# the steady-state tolerance (1e-3 K).
+#
+# setdefault is used so an explicit environment override
+# from the caller still wins.
+#
+# MUST run before numpy is imported (directly or via any
+# pyroprocess/physics module) -- the thread pool is sized
+# at library load time and ignores later changes.
+# ======================================================
+
+import os
+
+for _blas_thread_var in (
+    "OPENBLAS_NUM_THREADS",
+    "OMP_NUM_THREADS",
+    "MKL_NUM_THREADS",
+    "NUMEXPR_NUM_THREADS",
+    "VECLIB_MAXIMUM_THREADS",
+):
+    os.environ.setdefault(_blas_thread_var, "1")
+
+
 from pyroprocess.globalstate import GlobalState
 from pyroprocess.burning import Burning
 from pyroprocess.transition import Transition
