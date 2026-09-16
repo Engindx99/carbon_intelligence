@@ -55,6 +55,7 @@ class SteadyStateMassFlow:
     m_dot_CO2_generated: float = 0.0
     m_dot_CO2_generated_transition: float = 0.0
     m_dot_H2O_generated: float = 0.0
+    m_dot_H2O_generated_calciner: float = 0.0
 
     # ======================================================
     # GLOBAL BALANCE
@@ -101,22 +102,28 @@ class SteadyStateMassFlow:
         self,
         m_dot_CO2_generated,
         m_dot_tertiary_air=0.0,
+        m_dot_H2O_generated=0.0,
     ):
         """
-        Calcination transfers CO2 mass from solid phase
-        to gas phase. Tertiary air from the cooler is ducted
-        directly into the calciner's gas inlet (mass + enthalpy
-        only; no calciner combustion model).
+        Calcination transfers CO2 mass from solid phase to gas
+        phase; dehydroxylation transfers Bound_H2O mass from
+        solid phase to gas phase the same way. Tertiary air from
+        the cooler is ducted directly into the calciner's gas
+        inlet (mass + enthalpy only; no calciner combustion
+        model).
 
         CaCO3 -> CaO + CO2
+        Bound_H2O -> H2O
         """
 
         self.m_dot_CO2_generated = float(m_dot_CO2_generated)
+        self.m_dot_H2O_generated_calciner = float(m_dot_H2O_generated)
         self.m_dot_tertiary_air = float(m_dot_tertiary_air)
 
         self.m_dot_s_calciner_out = (
             self.m_dot_s_calciner_in
             - self.m_dot_CO2_generated
+            - self.m_dot_H2O_generated_calciner
         )
 
         self.m_dot_s_transition_in = (
@@ -126,6 +133,7 @@ class SteadyStateMassFlow:
         self.m_dot_g_calciner = (
             self.m_dot_g_transition
             + self.m_dot_CO2_generated
+            + self.m_dot_H2O_generated_calciner
             + self.m_dot_tertiary_air
         )
 

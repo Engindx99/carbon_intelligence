@@ -311,14 +311,14 @@ class Twin:
 
         Q_reaction_total = (
             state.Calcination_Q_transition
-            + state.Calcination_Q_sink
+            + state.Calciner_Q_sink
             + state.Preheater_Q_sink
             + state.Burning_Q_sink
         )
-        
+
         print("\n========== GLOBAL REACTION DEBUG ==========")
         print(f"Calcination_Q_transition = {state.Calcination_Q_transition:.12e} W")
-        print(f"Calcination_Q_sink       = {state.Calcination_Q_sink:.12e} W")
+        print(f"Calciner_Q_sink          = {state.Calciner_Q_sink:.12e} W")
         print(f"Preheater_Q_sink         = {state.Preheater_Q_sink:.12e} W")
         print(f"Burning_Q_sink           = {state.Burning_Q_sink:.12e} W")
         print(f"Q_reaction_total         = {Q_reaction_total:.12e} W")
@@ -847,12 +847,24 @@ class Twin:
             )
         )
 
+        # Dehydroxylation transfers Bound_H2O mass from the
+        # solid stream to the gas stream in the calciner, the
+        # same way calcination transfers CO2.
+        m_dot_H2O_generated_dehydroxylation = float(
+            getattr(
+                self.state,
+                "m_dot_H2O_generated_dehydroxylation",
+                0.0,
+            )
+        )
+
         (
             m_dot_s_calciner_out,
             _,
         ) = self.mass_flow.calculate_calciner_flow(
             m_dot_CO2_generated=m_dot_CO2_generated,
             m_dot_tertiary_air=self.state.m_dot_tertiary_air,
+            m_dot_H2O_generated=m_dot_H2O_generated_dehydroxylation,
         )
 
         # ======================================================

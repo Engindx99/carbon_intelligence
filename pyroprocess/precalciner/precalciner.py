@@ -338,10 +338,11 @@ class Calciner:
                 self.u_s,
                 commit_phases=False,
                 m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
+                m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
             )
 
             Q_reaction = float(
-                state.Calcination_Q_sink
+                state.Calciner_Q_sink
             )
 
 
@@ -366,6 +367,7 @@ class Calciner:
                 reaction_sink=Q_reaction,
                 reaction_heat_cells=(
                     state.Calcination_Q_cells
+                    + state.Dehydroxylation_Q_sink_cells
                 ),
             )
 
@@ -480,6 +482,7 @@ class Calciner:
             self.u_s,
             commit_phases=True,
             m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
+            m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
         )
 
         # ======================================================
@@ -487,12 +490,21 @@ class Calciner:
         #
         # Profile from the inlet stream resolved above; the
         # CaCO3 marched by the committed kinetics is converted
-        # cumulatively, cell by cell.
+        # cumulatively, cell by cell. The Bound_H2O profile is
+        # applied afterwards since it only overwrites its own
+        # column, reading back the CaCO3/CaO already written.
         # ======================================================
 
         self.chemistry.calcination.solid_flow_profile(
             calciner_inlet_flow,
             state.m_dot_CaCO3_out_cells,
+            state.material_flows["calciner"].solids,
+            state.material_flows["calciner"].gases,
+        )
+
+        self.chemistry.dehydroxylation.solid_flow_profile(
+            calciner_inlet_flow,
+            state.m_dot_BoundH2O_out_cells,
             state.material_flows["calciner"].solids,
             state.material_flows["calciner"].gases,
         )

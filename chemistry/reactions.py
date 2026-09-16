@@ -140,7 +140,25 @@ class ChemistryModel:
         u_s,
         commit_phases=True,
         m_dot_CaCO3_in=None,
+        m_dot_BoundH2O_in=None,
     ):
+
+        # Dehydroxylation runs first: it only touches Bound_H2O,
+        # but CalcinationModel.apply()'s handoff to the transition
+        # zone (copy_solid_phases) copies every solid species, so
+        # Bound_H2O must already be reacted before that copy runs.
+        #
+        # m_dot_BoundH2O_in [kg/s]: Bound_H2O entering the
+        # calciner. When None it falls back to m_dot_s_calciner
+        # times the raw-meal Bound_H2O fraction, the same
+        # fallback CalcinationModel.apply() uses for CaCO3.
+        state = self.dehydroxylation.apply_spatial(
+            state,
+            dz,
+            u_s,
+            m_dot_BoundH2O_in=m_dot_BoundH2O_in,
+            commit_phases=commit_phases,
+        )
 
         # m_dot_CaCO3_in [kg/s]: CaCO3 entering the calciner.
         # When None the calcination model falls back to
@@ -157,6 +175,7 @@ class ChemistryModel:
 
         state.Calciner_Q_sink = (
             state.Calcination_Q_sink
+            + state.Dehydroxylation_Q_sink
         )
 
         return state

@@ -25,6 +25,7 @@ def compute_energy_balance(calciner, state):
     # + Hsolid_out
     # + Q_wall_loss
     # + Q_calcination
+    # + Q_dehydroxylation
     #
     # Residual:
     #
@@ -41,7 +42,7 @@ def compute_energy_balance(calciner, state):
         - state.Hgas_calciner_out
         - state.Hsolid_calciner_out
         - state.Wall_loss_calciner
-        - state.Calcination_Q_sink
+        - state.Calciner_Q_sink
     )
 
     # ======================================================
@@ -56,7 +57,7 @@ def compute_energy_balance(calciner, state):
             state.Hsolid_calciner_in
         )
         + abs(
-            state.Calcination_Q_sink
+            state.Calciner_Q_sink
         )
         + calciner.eps
     )
