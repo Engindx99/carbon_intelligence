@@ -20,12 +20,25 @@ ZONES = [
 PREHEATER_STAGE_XLABEL = "Cyclone stage (gas: 1 → 5, solid feed: 5 → 1)"
 
 
-def preheater_stage_axis(ax, preheater):
+AXIAL_XLABEL = "Axial position along solid path z [m]"
+
+
+def preheater_stage_axis(ax, preheater, x=None):
     # Preheater cells are cyclone stages, not an axial mesh.
-    x = np.arange(preheater.N)
-    ax.set_xticks(x)
-    ax.set_xticklabels([f"Stage {s.stage_id}" for s in preheater.stages])
-    ax.set_xlabel(PREHEATER_STAGE_XLABEL)
+    stage_labels = [f"Stage {s.stage_id}" for s in preheater.stages]
+
+    if x is None:
+        x = np.arange(preheater.N)
+        ax.set_xticks(x)
+        ax.set_xticklabels(stage_labels)
+        ax.set_xlabel(PREHEATER_STAGE_XLABEL)
+        return x
+
+    # Stages placed on the global axis: metres below, stage names on top.
+    top = ax.secondary_xaxis("top")
+    top.set_xticks(x)
+    top.set_xticklabels(stage_labels)
+    top.set_xlabel(PREHEATER_STAGE_XLABEL)
     return x
 
 
@@ -46,12 +59,14 @@ def plot_zone_temperature_profiles(twin, output_dir=None):
 
         zone = getattr(twin, key)
 
+        segment = twin.axial_layout[key]
+        x = segment.z_at_index
+
         if key == "preheater":
-            x = preheater_stage_axis(ax, zone)
-        else:
-            dz = zone.L / zone.N
-            x = (np.arange(zone.N) + 0.5) * dz
-            ax.set_xlabel("Axial position [m]")
+            preheater_stage_axis(ax, zone, x=x)
+
+        ax.set_xlim(segment.z_start, segment.z_end)
+        ax.set_xlabel(AXIAL_XLABEL)
 
         Tg = getattr(state, f"Tg_{key}")
         Ts = getattr(state, f"Ts_{key}")
