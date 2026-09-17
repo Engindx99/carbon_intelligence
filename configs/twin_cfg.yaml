@@ -1,19 +1,22 @@
+# Zone lengths [m]. Zones are laid end to end along the solid path
+# (physics/axial_coordinate.py): preheater -> calciner -> transition
+# -> burning -> cooler, z = 0 at the preheater feed inlet.
 plant:
   N: 20
-  length: 60.0   # m
+  length: 60.0   # m, burning zone length
 
 transition:
-  length: 25.0
+  length: 25.0   # m
 
 calciner:
-  length: 25.0
+  length: 25.0   # m
 
 preheater:
-  length: 25.0
+  length: 25.0   # m, equivalent solid path length (stage volume sizing)
   nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
 
 cooler:
-  length: 25.0
+  length: 25.0   # m
 
 
 simulation:
