@@ -45,6 +45,7 @@ from pyroprocess.cooler import Cooler
 
 from physics.physics import gas_mass_balance
 from physics.steady_state_mass import SteadyStateMassFlow
+from physics.axial_coordinate import SOLID_FLOW_ZONE_ORDER, build_axial_layout
 
 
 from validators.energy import validate_energy
@@ -97,7 +98,18 @@ class Twin:
             N=cfg["plant"]["N"],
             L=cfg["cooler"]["length"],
         )
-        
+
+        # ======================================================
+        # GLOBAL AXIAL COORDINATE (diagnostic, not read by solvers)
+        #
+        # Built from the L and N each zone actually uses, so it
+        # cannot drift from the solver meshes.
+        # ======================================================
+        self.axial_layout = build_axial_layout(
+            lengths={z: getattr(self, z).L for z in SOLID_FLOW_ZONE_ORDER},
+            cell_counts={z: getattr(self, z).N for z in SOLID_FLOW_ZONE_ORDER},
+        )
+
         # ======================================================
         # NUMERICAL
         # ======================================================
