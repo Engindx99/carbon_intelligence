@@ -231,6 +231,64 @@ def T_gas_from_h(h_target, T_ref, T_min, T_max):
 
 
 # ======================================================
+# GAS TRANSPORT PROPERTIES (SUTHERLAND'S LAW)
+#
+#   mu(T) = mu_0 (T/T_0)^1.5 (T_0 + S_mu) / (T + S_mu)
+#   k(T)  = k_0  (T/T_0)^1.5 (T_0 + S_k)  / (T + S_k)
+#
+# Air constants (White, Viscous Fluid Flow; as tabulated in
+# the COMSOL CFD Module guide): mu_0 = 1.716e-5 Pa s,
+# k_0 = 0.0241 W/(m K), T_0 = 273 K, S_mu = 111 K,
+# S_k = 194 K.
+#
+# Against tabulated air data (Incropera, Table A.4) the
+# deviation is within 2 % for 300-1000 K but grows with T:
+# at 1500 K mu is ~5 % and k ~14 % low. Burning-zone gas
+# runs well above 1000 K, so this closure under-predicts k_g
+# there.
+#
+# The kiln gas is represented by air, the same representative-
+# gas closure cp_gas() uses. Where high-T accuracy or CO2/H2O
+# fractions matter, a species-based closure should replace it.
+# ======================================================
+SUTHERLAND_AIR = {
+    "mu_0": 1.716e-5,   # Pa s
+    "k_0": 0.0241,      # W/(m K)
+    "T_0": 273.0,       # K
+    "S_mu": 111.0,      # K
+    "S_k": 194.0,       # K
+}
+
+
+def _sutherland(T, ref_value, T_0, S):
+
+    T = np.asarray(T, dtype=float)
+
+    if np.any(T <= 0.0):
+        raise ValueError("Sutherland's law needs T > 0 K")
+
+    value = ref_value * (T / T_0) ** 1.5 * (T_0 + S) / (T + S)
+
+    return float(value) if value.ndim == 0 else value
+
+
+def mu_gas(T):
+    """Dynamic viscosity of the representative gas [Pa s], T in K."""
+
+    c = SUTHERLAND_AIR
+
+    return _sutherland(T, c["mu_0"], c["T_0"], c["S_mu"])
+
+
+def k_gas(T):
+    """Thermal conductivity of the representative gas [W/(m K)], T in K."""
+
+    c = SUTHERLAND_AIR
+
+    return _sutherland(T, c["k_0"], c["T_0"], c["S_k"])
+
+
+# ======================================================
 # SECOND-ORDER ADVECTION CORRECTION (van Leer TVD)
 #
 # Every zone discretises axial transport in conservative
@@ -953,6 +1011,175 @@ def interfacial_areas(
         a_gs,
         a_ws,
     )
+
+# ======================================================
+# BED FILL FRACTION FROM HOLDUP
+#
+# Steady-state mass continuity of the solid stream through
+# a cross-section: m_dot_s = rho_bulk * u_s * A_bed, with
+# A_bed = fill_fraction * A_cross. A fill fraction outside
+# [0, 1) means the inputs are physically inconsistent, so
+# it is rejected rather than clamped.
+# ======================================================
+def fill_fraction_from_holdup(
+    m_dot_s,     # kg/s
+    rho_bulk,    # kg/m³
+    u_s,         # m/s
+    A_cross,     # m²
+):
+
+    if m_dot_s < 0.0:
+        raise ValueError(f"m_dot_s must be >= 0 kg/s, got {m_dot_s}")
+
+    if rho_bulk <= 0.0 or u_s <= 0.0 or A_cross <= 0.0:
+        raise ValueError(
+            "rho_bulk, u_s and A_cross must be > 0, got "
+            f"rho_bulk={rho_bulk}, u_s={u_s}, A_cross={A_cross}"
+        )
+
+    fill_fraction = m_dot_s / (rho_bulk * u_s * A_cross)
+
+    if fill_fraction >= 1.0:
+        raise ValueError(
+            f"solid holdup exceeds the kiln cross-section: "
+            f"fill_fraction={fill_fraction}"
+        )
+
+    return fill_fraction
+
+# ======================================================
+# BED SEGMENT GEOMETRY
+#
+# Rotary-kiln bed as a circular segment of the cross-section
+# (flat bed surface, D = inner diameter). theta is the central
+# angle the bed subtends:
+#
+#   fill_fraction = (theta - sin theta) / (2 pi)
+#
+# Area densities per unit kiln volume (m²/m³), A = pi D² / 4:
+#
+#   a_gs = D sin(theta/2) / A          bed surface (chord)
+#   a_ws = (theta D / 2) / A           wall covered by the bed
+#   a_gw = ((2 pi - theta) D / 2) / A  wall exposed to the gas
+#
+# a_ws + a_gw = 4 / D: the wall area is split, never created.
+# D_e = 4 A_gas / P_gas is the hydraulic diameter of the gas
+# passage (exposed arc + bed chord).
+# ======================================================
+def bed_segment_geometry(
+    D,               # m
+    fill_fraction,   # -
+    tol=1e-14,
+):
+
+    if D <= 0.0:
+        raise ValueError(f"D must be > 0 m, got {D}")
+
+    if not (0.0 <= fill_fraction < 1.0):
+        raise ValueError(
+            f"fill_fraction must be in [0, 1), got {fill_fraction}"
+        )
+
+    # theta - sin(theta) is monotonic on [0, 2 pi]
+    # (derivative 1 - cos(theta) >= 0), so bisection is exact
+    # to tol and cannot pick a wrong root.
+    target = 2.0 * np.pi * fill_fraction
+
+    lo = 0.0
+    hi = 2.0 * np.pi
+
+    while hi - lo > tol:
+
+        mid = 0.5 * (lo + hi)
+
+        if mid - np.sin(mid) < target:
+            lo = mid
+        else:
+            hi = mid
+
+    theta = 0.5 * (lo + hi)
+
+    A_cross = np.pi * D**2 / 4.0
+
+    chord = D * np.sin(0.5 * theta)
+    arc_covered = 0.5 * theta * D
+    arc_exposed = 0.5 * (2.0 * np.pi - theta) * D
+
+    a_gs = chord / A_cross
+    a_ws = arc_covered / A_cross
+    a_gw = arc_exposed / A_cross
+
+    A_gas = (1.0 - fill_fraction) * A_cross
+    P_gas = arc_exposed + chord
+
+    D_e = 4.0 * A_gas / P_gas
+
+    return (
+        theta,
+        a_gs,
+        a_ws,
+        a_gw,
+        D_e,
+    )
+
+# ======================================================
+# COVERED WALL -> BED CONTACT HEAT TRANSFER
+#
+# Extended penetration theory (Li et al., Chem. Eng. Technol.
+# 2005): a bed element touches the covered wall for the
+# contact time t_c = theta / omega, during which heat
+# penetrates the bed as into a semi-infinite solid. Averaged
+# over t_c this gives
+#
+#   h_pen = 2 sqrt(k_b rho_b cp_b / (pi t_c))
+#
+# in series with the gas gap between the wall and the first
+# particle layer, chi d_p / k_g:
+#
+#   h_ws = 1 / (chi d_p / k_g + 1 / h_pen),  0.096 < chi < 0.198
+#
+# chi outside its fitted range is rejected, not clamped.
+# ======================================================
+CONTACT_GAP_CHI_RANGE = (0.096, 0.198)
+
+
+def wall_bed_contact_coefficient(
+    theta,     # rad, bed central angle (bed_segment_geometry)
+    rpm,       # 1/min
+    k_b,       # W/(m K), effective bed conductivity
+    rho_b,     # kg/m³, bed bulk density
+    cp_b,      # J/(kg K)
+    d_p,       # m, particle diameter
+    k_g,       # W/(m K), gas conductivity in the gap
+    chi,       # -, gas gap thickness / d_p
+):
+
+    if theta <= 0.0 or rpm <= 0.0:
+        raise ValueError(
+            f"theta and rpm must be > 0, got theta={theta}, rpm={rpm}"
+        )
+
+    if min(k_b, rho_b, cp_b, d_p, k_g) <= 0.0:
+        raise ValueError("k_b, rho_b, cp_b, d_p and k_g must be > 0")
+
+    chi_min, chi_max = CONTACT_GAP_CHI_RANGE
+
+    if not (chi_min <= chi <= chi_max):
+        raise ValueError(
+            f"chi must be in [{chi_min}, {chi_max}], got {chi}"
+        )
+
+    omega = 2.0 * np.pi * rpm / 60.0    # rad/s
+
+    t_contact = theta / omega           # s
+
+    h_pen = 2.0 * np.sqrt(
+        k_b * rho_b * cp_b / (np.pi * t_contact)
+    )
+
+    R_gap = chi * d_p / k_g
+
+    return 1.0 / (R_gap + 1.0 / h_pen)
 
 # ======================================================
 # WALL THERMAL RESISTANCE
