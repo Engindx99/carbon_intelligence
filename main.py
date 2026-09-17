@@ -51,7 +51,10 @@ from physics.axial_coordinate import SOLID_FLOW_ZONE_ORDER, build_axial_layout
 from validators.energy import validate_energy
 from validators.mass import validate_mass
 from reporter.validation import report_validation
-from visualization.zone_profiles import plot_zone_temperature_profiles
+from visualization.zone_profiles import (
+    plot_zone_temperature_profiles,
+    plot_global_temperature_profile,
+)
 from visualization.mass_flow_profiles import plot_mass_flow_profiles
 
 import numpy as np
@@ -1722,4 +1725,5 @@ if __name__ == "__main__":
     # VISUALIZATION
     # ======================================================
     plot_zone_temperature_profiles(twin)
+    plot_global_temperature_profile(twin)
     plot_mass_flow_profiles(twin)

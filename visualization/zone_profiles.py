@@ -88,3 +88,66 @@ def plot_zone_temperature_profiles(twin, output_dir=None):
     plt.close(fig)
 
     return out_path
+
+
+def plot_global_temperature_profile(twin, output_dir=None):
+
+    output_dir = Path(output_dir) if output_dir is not None else OUTPUT_DIR
+    output_dir.mkdir(parents=True, exist_ok=True)
+
+    state = twin.state
+    layout = twin.axial_layout
+
+    series = (
+        ("Tg", "Gas", "C0"),
+        ("Ts", "Solid", "C1"),
+        ("Tw", "Wall", "C2"),
+    )
+
+    fig, ax = plt.subplots(figsize=(12, 5))
+
+    for i, (key, label) in enumerate(ZONES):
+
+        segment = layout[key]
+        x = segment.z_at_index
+
+        # Each zone is drawn separately: handoffs between zones are
+        # face values, so joining the last and first cell centres of
+        # neighbouring zones would invent an interpolated profile.
+        for prefix, series_label, color in series:
+            ax.plot(
+                x,
+                getattr(state, f"{prefix}_{key}"),
+                color=color,
+                marker="." if segment.N < 10 else None,
+                label=series_label if i == 0 else None,
+            )
+
+        if i > 0:
+            ax.axvline(segment.z_start, color="0.5", linestyle="--", linewidth=0.8)
+
+        ax.text(
+            0.5 * (segment.z_start + segment.z_end),
+            1.01,
+            label,
+            transform=ax.get_xaxis_transform(),
+            ha="center",
+            va="bottom",
+        )
+
+    first = layout[ZONES[0][0]]
+    last = layout[ZONES[-1][0]]
+    ax.set_xlim(first.z_start, last.z_end)
+
+    ax.set_xlabel(AXIAL_XLABEL + "  (gas flows in -z)")
+    ax.set_ylabel("Temperature [K]")
+    ax.legend(loc="upper left")
+    ax.grid(True, alpha=0.3)
+
+    fig.tight_layout()
+
+    out_path = output_dir / "global_temperature_profile.png"
+    fig.savefig(out_path, dpi=150)
+    plt.close(fig)
+
+    return out_path
