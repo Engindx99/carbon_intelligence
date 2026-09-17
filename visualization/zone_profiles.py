@@ -119,7 +119,6 @@ def plot_global_temperature_profile(twin, output_dir=None):
                 x,
                 getattr(state, f"{prefix}_{key}"),
                 color=color,
-                marker="." if segment.N < 10 else None,
                 label=series_label if i == 0 else None,
             )
 
