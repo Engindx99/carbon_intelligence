@@ -5,7 +5,7 @@ import matplotlib.pyplot as plt
 import numpy as np
 from pathlib import Path
 
-from visualization.zone_profiles import OUTPUT_DIR, preheater_stage_axis
+from visualization.zone_profiles import AXIAL_XLABEL, OUTPUT_DIR, preheater_stage_axis
 
 
 # ======================================================
@@ -70,9 +70,8 @@ def plot_clinker_phase_profile(twin, output_dir=None):
     output_dir.mkdir(parents=True, exist_ok=True)
 
     state = twin.state
-    zone = twin.burning
-    dz = zone.L / zone.N
-    x = (np.arange(zone.N) + 0.5) * dz
+    segment = twin.axial_layout["burning"]
+    x = segment.z_at_index
 
     solids = state.material_flows["burning"].solids
 
@@ -84,7 +83,8 @@ def plot_clinker_phase_profile(twin, output_dir=None):
     ax.plot(x, solids.C4AF, label="C4AF")
 
     ax.set_title("Burning Zone – Clinker Mineral Phase Formation")
-    ax.set_xlabel("Axial position [m]")
+    ax.set_xlim(segment.z_start, segment.z_end)
+    ax.set_xlabel(AXIAL_XLABEL)
     ax.set_ylabel("Solid phase flow [kg/s]")
     ax.legend(loc="center left", bbox_to_anchor=(1.02, 0.5))
     ax.grid(True, alpha=0.3)
@@ -132,12 +132,14 @@ def plot_gas_generation_profile(twin, output_dir=None):
 
         zone = getattr(twin, key)
 
+        segment = twin.axial_layout[key]
+        x = segment.z_at_index
+
         if key == "preheater":
-            x = preheater_stage_axis(ax, zone)
-        else:
-            dz = zone.L / zone.N
-            x = (np.arange(zone.N) + 0.5) * dz
-            ax.set_xlabel("Axial position [m]")
+            preheater_stage_axis(ax, zone, x=x)
+
+        ax.set_xlim(segment.z_start, segment.z_end)
+        ax.set_xlabel(AXIAL_XLABEL)
 
         gases = state.material_flows[key].gases
 
