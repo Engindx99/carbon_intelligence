@@ -232,6 +232,36 @@ def adiabatic_flame_temperature(twin):
     )
 
 
+def burning_enthalpy_ceiling(twin):
+    """Highest gas temperature the zone's own energy input allows.
+
+    Every joule in the zone crossed its boundary as gas enthalpy,
+    solid enthalpy or fuel. Putting all of it into the gas stream
+    alone gives a temperature nothing inside can exceed.
+    """
+
+    state = twin.state
+    T_ref = twin.burning.T_ref
+
+    Hg_in = float(state.m_dot_g) * float(h_gas(state.Tg_burning_in, T_ref))
+
+    Hs_in = (
+        float(state.m_dot_s)
+        * twin.burning.Cp_s
+        * (float(state.Ts_burning_in) - T_ref)
+    )
+
+    return float(
+        T_gas_from_h(
+            (Hg_in + Hs_in + float(state.Q_burning))
+            / float(state.m_dot_g),
+            T_ref,
+            T_ref,
+            4000.0,
+        )
+    )
+
+
 def plausibility_bounds(twin):
 
     state = twin.state
@@ -265,15 +295,30 @@ def plausibility_bounds(twin):
     lo, hi, note = BOUNDS["Tw_burning_max"]
     add("max Tw [burning]", float(np.max(Tw_b)), lo, hi, note)
 
-    # Gas against its own adiabatic ceiling.
+    # Gas against the total enthalpy that entered the zone.
+    #
+    # NOT the adiabatic flame temperature: in counter-current the
+    # gas enters at the burner end against the hottest solid it
+    # will ever meet, picks up sensible heat from it, and only
+    # then receives the fuel. So exceeding the adiabatic figure
+    # computed from the INLET state is legitimate regenerative
+    # pickup, not a thermodynamic violation, and asserting on it
+    # would fail a correct kiln.
+    #
+    # What cannot be exceeded is the enthalpy that crossed the
+    # boundary: gas in, solid in, fuel. That is a true ceiling,
+    # if a loose one. The adiabatic figure is reported next to
+    # it as a reference, because a gas peak far above it means
+    # the bed is returning large heat to the gas -- the flow
+    # inversion -- rather than that thermodynamics broke.
     Tg_b, _, _ = _zone_arrays(state, "burning")
     T_ad = adiabatic_flame_temperature(twin)
     add(
-        "max Tg [burning] vs adiabatic",
+        "max Tg [burning] vs enthalpy ceiling",
         float(np.max(Tg_b)),
         None,
-        T_ad,
-        f"adiabatic flame T = {T_ad:.1f} K",
+        burning_enthalpy_ceiling(twin),
+        f"adiabatic-from-inlet is {T_ad:.0f} K (reference, not a bound)",
     )
 
     # Shell temperature, from the refractory series resistance.

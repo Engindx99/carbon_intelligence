@@ -199,6 +199,26 @@ class Burning:
             )
 
         # ======================================================
+        # FUEL SPLIT (kiln burner vs precalciner)
+        #
+        # Lives on Burning because this is the zone that spends
+        # it, but it partitions a plant-level input, so the
+        # precalciner reads the complement from the same key.
+        # ======================================================
+        fuel_cfg = cfg.get("fuel", {})
+
+        self.kiln_fuel_fraction = fuel_cfg.get(
+            "kiln_fraction",
+            0.40,
+        )
+
+        if not (0.0 < self.kiln_fuel_fraction <= 1.0):
+            raise ValueError(
+                "fuel.kiln_fraction must be in (0, 1], "
+                f"got {self.kiln_fuel_fraction}"
+            )
+
+        # ======================================================
         # BUFFERS & CACHE
         # ======================================================
         self._dTg_dz = np.zeros(self.N)

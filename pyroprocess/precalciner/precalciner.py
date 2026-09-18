@@ -1,4 +1,5 @@
 import numpy as np
+import yaml
 
 from physics.physics import h_gas
 from physics.physics import interfacial_areas
@@ -15,6 +16,12 @@ from physics.physics import ZONE_HT_CONFIG
 from . import thermal_solver
 from . import raw_meal_inlet
 from . import energy_diagnostics
+from . import combustion
+
+
+def load_cfg(path):
+    with open(path, "r", encoding="utf-8") as f:
+        return yaml.safe_load(f)
 
 
 class Calciner:
@@ -110,6 +117,33 @@ class Calciner:
         self.hv_gw = cfg["hv_gw"]
         self.hv_ws = cfg["hv_ws"]
 
+        # ================= FIRING =================
+        #
+        # The calciner burns whatever share of the plant's fuel
+        # the kiln burner does not. Both zones read the same
+        # fuel.kiln_fraction, so the split cannot drift.
+        #
+        # O2_opt/O2_sigma2 match the kiln burner's: the Gaussian
+        # is a combustion-efficiency knob on the plant's single
+        # dry stack O2 figure, so the same target applies to both
+        # firings, and at the design point it returns exactly 1.
+        plant_cfg = load_cfg("configs/twin_cfg.yaml")
+        fuel_cfg = plant_cfg.get("fuel", {})
+
+        kiln_fraction = fuel_cfg.get("kiln_fraction", 0.40)
+
+        if not (0.0 < kiln_fraction <= 1.0):
+            raise ValueError(
+                "fuel.kiln_fraction must be in (0, 1], "
+                f"got {kiln_fraction}"
+            )
+
+        self.calciner_fuel_fraction = 1.0 - kiln_fraction
+
+        self.O2 = fuel_cfg.get("O2", 3.5)
+        self.O2_opt = 3.5
+        self.O2_sigma2 = 25.0
+
         # ================= BUFFERS =================
         self._dTg_dz = np.zeros(N)
         self._dTs_dz = np.zeros(N)
@@ -138,6 +172,8 @@ class Calciner:
         Ts_in,
         reaction_sink=0.0,
         reaction_heat_cells=None,
+        q_fuel_cells=None,
+        Q_calciner=0.0,
     ):
 
         return thermal_solver.thermal_step(
@@ -150,6 +186,8 @@ class Calciner:
             Ts_in,
             reaction_sink=reaction_sink,
             reaction_heat_cells=reaction_heat_cells,
+            q_fuel_cells=q_fuel_cells,
+            Q_calciner=Q_calciner,
         )
 
     # ======================================================
@@ -252,6 +290,28 @@ class Calciner:
         max_coupling_iter = 50
         coupling_tol = 1.0e-5
         coupling_relaxation = 0.5
+
+        # ------------------------------------------------------
+        # FUEL HEAT RELEASE
+        #
+        # Fixed across the coupling loop: it depends only on the
+        # fuel split and the stack O2 target, neither of which
+        # the loop moves. Computed once here rather than inside
+        # so the iteration cannot drift it.
+        # ------------------------------------------------------
+
+        Q_petcoke_calciner, Q_calciner = combustion.fuel_heat_release_for(
+            self,
+            state,
+        )
+
+        q_fuel_cells = combustion.axial_heat_distribution(
+            self.N,
+            Q_calciner,
+        )
+
+        state.Q_petcoke_calciner = float(Q_petcoke_calciner)
+        state.Q_calciner = float(Q_calciner)
 
         # ------------------------------------------------------
         # INITIAL GUESS
@@ -369,6 +429,8 @@ class Calciner:
                     state.Calcination_Q_cells
                     + state.Dehydroxylation_Q_sink_cells
                 ),
+                q_fuel_cells=q_fuel_cells,
+                Q_calciner=Q_calciner,
             )
 
             # ==================================================

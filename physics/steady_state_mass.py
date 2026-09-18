@@ -18,6 +18,16 @@ class SteadyStateMassFlow:
     m_dot_fuel: float = 0.0
     m_dot_air: float = 0.0
 
+    # Fuel and combustion air split between the two firings.
+    # The totals above stay the plant's; these partition them in
+    # the same ratio, so both firings run at one excess-air level
+    # and the dry stack O2 target is unaffected by where the fuel
+    # burns (see main._update_steady_state_mass_flow).
+    m_dot_fuel_kiln: float = 0.0
+    m_dot_fuel_calciner: float = 0.0
+    m_dot_air_kiln: float = 0.0
+    m_dot_air_calciner: float = 0.0
+
     # ======================================================
     # SOLID STREAM
     # ======================================================
@@ -103,14 +113,15 @@ class SteadyStateMassFlow:
         m_dot_CO2_generated,
         m_dot_tertiary_air=0.0,
         m_dot_H2O_generated=0.0,
+        m_dot_fuel_calciner=0.0,
     ):
         """
         Calcination transfers CO2 mass from solid phase to gas
         phase; dehydroxylation transfers Bound_H2O mass from
         solid phase to gas phase the same way. Tertiary air from
-        the cooler is ducted directly into the calciner's gas
-        inlet (mass + enthalpy only; no calciner combustion
-        model).
+        the cooler is ducted into the calciner's gas inlet, and
+        the calciner's own fuel is injected there and burns, so
+        both add to the gas stream leaving this unit.
 
         CaCO3 -> CaO + CO2
         Bound_H2O -> H2O
@@ -119,6 +130,7 @@ class SteadyStateMassFlow:
         self.m_dot_CO2_generated = float(m_dot_CO2_generated)
         self.m_dot_H2O_generated_calciner = float(m_dot_H2O_generated)
         self.m_dot_tertiary_air = float(m_dot_tertiary_air)
+        self.m_dot_fuel_calciner = float(m_dot_fuel_calciner)
 
         self.m_dot_s_calciner_out = (
             self.m_dot_s_calciner_in
@@ -135,6 +147,7 @@ class SteadyStateMassFlow:
             + self.m_dot_CO2_generated
             + self.m_dot_H2O_generated_calciner
             + self.m_dot_tertiary_air
+            + self.m_dot_fuel_calciner
         )
 
         return (

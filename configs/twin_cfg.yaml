@@ -27,7 +27,15 @@ simulation:
 
 fuel:
   Fuel_rate_total: 2.5
-  O2: 3.5
+  O2: 3.5              # dry STACK O2 [%], sizing the plant's total combustion air
+
+  # Share of the total fuel burned at the kiln burner; the rest fires
+  # in the precalciner. In-line calciner (ILC) plants run 35-45% at the
+  # kiln, so 0.40 is the mid-range literature value for the generic
+  # reference kiln this config describes. Firing 100% at the kiln (the
+  # previous behaviour) puts 3892 kJ/kg clinker into the kiln alone,
+  # more than a whole plant's specific heat consumption.
+  kiln_fraction: 0.40
 
 
 burning:
@@ -36,7 +44,13 @@ burning:
 
 cooler_air:
   cooling_air_rate_kg_per_kg_clinker: 2.2   # total cooler (fan) air, kg air / kg clinker
-  tertiary_air_fraction: 0.28               # fraction of cooler air routed to precalciner (tertiary air)
+
+  # SUPERSEDED by fuel.kiln_fraction and no longer read.
+  # Tertiary air is now the precalciner's own combustion air, so it is
+  # the complement of the kiln's share of the total air rather than an
+  # independent fraction of the cooler flow. Setting both would
+  # over-determine the split and break the dry stack O2 target.
+  tertiary_air_fraction: 0.28
 
 
 motion:

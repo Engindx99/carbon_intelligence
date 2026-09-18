@@ -297,13 +297,20 @@ class Twin:
             - getattr(state, "Hgas_cooler_secondary", 0.0)
         )
 
+        # Both firings release fuel energy into the process, so
+        # both belong on the input side. Counting only Q_burning
+        # was correct while the kiln burner was the plant's only
+        # heat source; with fuel.kiln_fraction < 1 the calciner
+        # supplies the rest.
         Q_burning = state.Q_burning
+        Q_calciner = getattr(state, "Q_calciner", 0.0)
 
         global_energy_in = (
             H_rawmeal_in
             + H_air_in
             + H_primary_in
             + Q_burning
+            + Q_calciner
         )
 
         # ======================================================
@@ -601,10 +608,16 @@ class Twin:
         # (m_dot_H2O_generated_calciner). Both must be subtracted
         # to isolate CO2, or this check reports their combined
         # mass as an apparent CO2 shortfall.
+        # The precalciner's own fuel is injected into its gas
+        # stream too (physics.steady_state_mass), so its mass is
+        # in m_dot_exhaust exactly as tertiary air is and has to
+        # come off here as well. The kiln's fuel needs no term of
+        # its own: it is already inside m_dot_g_burning.
         co2_in_gas_stream = (
             mass_flow.m_dot_exhaust
             - mass_flow.m_dot_g_burning
             - mass_flow.m_dot_tertiary_air
+            - mass_flow.m_dot_fuel_calciner
             - mass_flow.m_dot_H2O_generated
             - mass_flow.m_dot_H2O_generated_calciner
         )
@@ -800,16 +813,47 @@ class Twin:
         # COMBUSTION GAS
         # ======================================================
 
-        m_dot_g_burning = gas_mass_balance(
-            fuel_rate_total=m_dot_fuel,
-            O2=inputs["O2"],
-            eps=self.eps,
-        )
+        # ======================================================
+        # FUEL SPLIT
+        #
+        # The total air is still sized from the TOTAL fuel
+        # against the dry stack O2 target -- that target is a
+        # plant-level measurement and both firings share the
+        # same exhaust. The air is then partitioned in the same
+        # ratio as the fuel, which gives each firing the same
+        # excess-air level and keeps the stack figure exact.
+        # ======================================================
+
+        kiln_fraction = self.burning.kiln_fuel_fraction
+
+        m_dot_fuel_kiln = kiln_fraction * m_dot_fuel
+        m_dot_fuel_calciner = m_dot_fuel - m_dot_fuel_kiln
 
         m_dot_air = (
-            m_dot_g_burning
+            gas_mass_balance(
+                fuel_rate_total=m_dot_fuel,
+                O2=inputs["O2"],
+                eps=self.eps,
+            )
             - m_dot_fuel
         )
+
+        m_dot_air_kiln = kiln_fraction * m_dot_air
+        m_dot_air_calciner = m_dot_air - m_dot_air_kiln
+
+        # The kiln burner now carries only its own share.
+        m_dot_g_burning = (
+            m_dot_air_kiln
+            + m_dot_fuel_kiln
+        )
+
+        self.mass_flow.m_dot_fuel_kiln = m_dot_fuel_kiln
+        self.mass_flow.m_dot_fuel_calciner = m_dot_fuel_calciner
+        self.mass_flow.m_dot_air_kiln = m_dot_air_kiln
+        self.mass_flow.m_dot_air_calciner = m_dot_air_calciner
+
+        self.state.m_dot_fuel_kiln = m_dot_fuel_kiln
+        self.state.m_dot_fuel_calciner = m_dot_fuel_calciner
 
         self.mass_flow.set_external_inputs(
             m_dot_raw_meal=m_dot_raw_meal,
@@ -909,6 +953,7 @@ class Twin:
             m_dot_CO2_generated=m_dot_CO2_generated,
             m_dot_tertiary_air=self.state.m_dot_tertiary_air,
             m_dot_H2O_generated=m_dot_H2O_generated_dehydroxylation,
+            m_dot_fuel_calciner=self.mass_flow.m_dot_fuel_calciner,
         )
 
         # ======================================================
@@ -978,19 +1023,25 @@ class Twin:
             * self.mass_flow.m_dot_clinker
         )
 
+        # Primary and secondary air serve the KILN burner, so
+        # they are shares of the kiln's air, not of the plant's.
         self.mass_flow.m_dot_primary_air = (
             self.burning.primary_air_fraction
-            * self.state.m_dot_air
+            * self.mass_flow.m_dot_air_kiln
         )
 
         self.mass_flow.m_dot_secondary_air = (
-            self.state.m_dot_air
+            self.mass_flow.m_dot_air_kiln
             - self.mass_flow.m_dot_primary_air
         )
 
+        # Tertiary air IS the precalciner's combustion air, so it
+        # is set by the calciner's fuel share rather than by an
+        # independent fraction of the cooler flow. Reading
+        # cooler_air.tertiary_air_fraction as well would
+        # over-determine the split and break the stack O2 target.
         self.mass_flow.m_dot_tertiary_air = (
-            self.cooler.tertiary_air_fraction
-            * self.mass_flow.m_dot_air_cooler
+            self.mass_flow.m_dot_air_calciner
         )
 
         self.mass_flow.m_dot_vent_air = (

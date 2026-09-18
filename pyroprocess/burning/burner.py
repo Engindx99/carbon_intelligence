@@ -16,10 +16,26 @@ def resolve_gas_flow(burning, state, inputs):
     fuel_rate_total = inputs.get("Fuel_rate_total", 0.0)
     O2 = inputs.get("O2", 3.5)
 
-    m_dot_g = gas_mass_balance(
-        fuel_rate_total=fuel_rate_total,
-        O2=O2,
-        eps=burning.eps,
+    # The stoichiometric solve is a PLANT-level one: the dry O2
+    # target is measured at the stack, which both firings share.
+    # The kiln burner then carries its own fuel plus the same
+    # share of the air, so its excess-air level matches the
+    # plant's. Sizing the kiln on the total fuel, as this did,
+    # gave the kiln every kg of the plant's combustion air.
+    kiln_fraction = burning.kiln_fuel_fraction
+
+    m_dot_air_total = (
+        gas_mass_balance(
+            fuel_rate_total=fuel_rate_total,
+            O2=O2,
+            eps=burning.eps,
+        )
+        - fuel_rate_total
+    )
+
+    m_dot_g = kiln_fraction * (
+        m_dot_air_total
+        + fuel_rate_total
     )
 
     state.m_dot_g = float(m_dot_g)

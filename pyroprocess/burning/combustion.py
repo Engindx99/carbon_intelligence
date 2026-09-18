@@ -14,7 +14,15 @@ from physics.physics import resample_axial_weights
 # ======================================================
 def fuel_heat_release_for(burning, inputs):
 
-    fuel_rate_total = inputs.get("Fuel_rate_total", 1.0)
+    # Only the kiln burner's share. The rest fires in the
+    # precalciner (pyroprocess/precalciner), so passing the
+    # plant total here would release the whole plant's fuel
+    # energy twice over once the calciner is fired too.
+    fuel_rate_total = (
+        burning.kiln_fuel_fraction
+        * inputs.get("Fuel_rate_total", 1.0)
+    )
+
     O2 = inputs.get("O2", 3.5)
 
     return fuel_heat_release(

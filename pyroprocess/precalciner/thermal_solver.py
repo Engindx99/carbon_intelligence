@@ -27,6 +27,8 @@ def thermal_step(
     Ts_in,
     reaction_sink=0.0,
     reaction_heat_cells=None,
+    q_fuel_cells=None,
+    Q_calciner=0.0,
 ):
 
     # ======================================================
@@ -37,6 +39,26 @@ def thermal_step(
 
     m_dot_g = state.m_dot_g_calciner
     m_dot_s = state.m_dot_s_calciner
+
+    # ======================================================
+    # FUEL HEAT RELEASE
+    #
+    # Per-cell [W], from precalciner.combustion. Enters the GAS
+    # row, like the kiln burner's does: the fuel burns in the
+    # gas stream and the bed receives it through the gas-solid
+    # network, not as a source on the solid.
+    # ======================================================
+
+    if q_fuel_cells is None:
+        q_fuel_cells = np.zeros(len(Tg))
+
+    q_fuel_cells = np.asarray(q_fuel_cells, dtype=float)
+
+    if q_fuel_cells.size != len(Tg):
+        raise ValueError(
+            "q_fuel_cells has wrong length: "
+            f"{q_fuel_cells.size}, expected N={len(Tg)}"
+        )
 
     # ======================================================
     # SOLID THERMAL CAPACITY
@@ -377,6 +399,7 @@ def thermal_step(
                     - radiation_gas_sink
                     - m_dot_g
                     * adv_corr_g[i]
+                    + q_fuel_cells[i]
                 )
 
             # --------------------------------------------------
@@ -417,6 +440,7 @@ def thermal_step(
                     - radiation_gas_sink
                     - m_dot_g
                     * adv_corr_g[i]
+                    + q_fuel_cells[i]
                 )
 
             row += 1
@@ -878,6 +902,7 @@ def thermal_step(
     total_energy_balance = (
         Hg_in
         + Hs_in
+        + Q_calciner
         - Hg_out
         - Hs_out
         - Q_wall_loss
@@ -887,6 +912,7 @@ def thermal_step(
     calciner.energy_in = (
         Hg_in
         + Hs_in
+        + Q_calciner
     )
 
     calciner.energy_out = (
