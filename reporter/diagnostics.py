@@ -18,6 +18,7 @@ Nothing here is a tuning target. Bounds are physical limits
 
 import numpy as np
 
+from chemistry.calcination import CalcinationModel
 from physics.physics import h_gas
 from physics.physics import T_gas_from_h
 
@@ -95,6 +96,19 @@ ELEMENT_MASS = {"Ca": A_Ca, "Si": A_Si, "Al": A_Al, "Fe": A_Fe}
 #     grate cooler at 340-480 K
 #   - secondary air off a grate cooler runs 1050-1350 K
 # ======================================================
+# Calcination enthalpy, read from the reaction that owns it rather
+# than restated here, so D11 can never drift from the chemistry.
+DH_CALCINATION = CalcinationModel().deltaH
+
+# Petcoke LHV as pyroprocess/{burning,precalciner}/combustion.py fire it.
+FUEL_LHV = 32.0e6
+
+# Specific heat consumption of a modern ILC preheater/precalciner
+# plant [J/kg clinker]. This is a BAND, not a target: it says what
+# a plant of this configuration is built to achieve, and is used
+# only to report how far the fixed fuel input sits from it.
+SHC_BAND = (2900.0e3, 3300.0e3)
+
 BOUNDS = {
     "Ts_any_zone_max": (None, 1773.0, "clinker liquidus"),
     "Tw_burning_max": (None, 1900.0, "refractory hot-face limit"),
@@ -117,12 +131,34 @@ def _solid_build_flow(twin, zone):
     """The mass flow a zone actually multiplies into the solid enthalpy
     it hands downstream, with the attribute it came from.
 
-    The preheater already resolves this correctly: it publishes
-    `m_dot_s_out` and uses it (pyroprocess/preheater/solid_phase.py:12-20),
-    because mass leaves the solid inside the zone. Zones that have not
-    adopted that pattern fall back to their inlet-side state scalar,
-    which is what makes the handoff temperature inconsistent.
+    Three patterns exist in the plant, in decreasing order of fidelity,
+    and this must follow whichever one the zone genuinely solved on --
+    reporting a flow the solver did not use would invent a mismatch
+    that is not there, which is exactly the error this diagnostic is
+    meant to catch in the model.
+
+      1. `state.m_dot_s_<zone>_cells`: the zone carries a per-cell flow
+         profile because mass leaves the solid as it goes. The enthalpy
+         handed downstream crosses the OUTLET face, so the flow that
+         built it is the profile's last entry, not its first.
+      2. `zone.m_dot_s_out`: a single, correct outlet scalar. The
+         preheater has always done this
+         (pyroprocess/preheater/solid_phase.py:12-20).
+      3. the inlet-side state scalar: no outlet notion at all. This is
+         what makes a handoff temperature-inconsistent, and reading it
+         here is the symptom, not the cause.
     """
+
+    cells = getattr(twin.state, f"m_dot_s_{zone}_cells", None)
+
+    if cells is not None:
+        cells = np.asarray(cells, dtype=float)
+
+        if cells.size:
+            return (
+                float(cells[-1]),
+                f"state.m_dot_s_{zone}_cells[-1]",
+            )
 
     z = _zone_object(twin, zone)
 
@@ -685,6 +721,127 @@ def picard_convergence(state):
 
 
 # ======================================================
+# D11. THERMAL DEMAND vs FUEL SUPPLY
+#
+# Every other diagnostic here asks whether the plant is
+# self-consistent. This one asks a question no balance can:
+# whether the fuel rate is the right SIZE for the meal being
+# fed. It is an input, fixed in the config, while a real kiln
+# modulates it against burning-zone temperature and free lime
+# -- so nothing in the model can push back on a wrong value,
+# and a surplus has nowhere to go except temperature.
+#
+# The two figures are deliberately independent:
+#
+#   demand  - what the feed's chemistry must absorb, from the
+#             raw meal composition alone. Does not look at the
+#             fuel, the temperatures, or any closure.
+#   supply  - the fuel's heat release.
+#
+# A gap between them is not an imbalance -- the balances all
+# close, because the surplus leaves as sensible heat and wall
+# loss. It is a sizing error, and it reads as temperature.
+#
+# "Potential clinker" is what the feed would yield at complete
+# calcination, NOT the model's clinker stream: the latter still
+# carries uncalcined CaCO3, so dividing by it would flatter the
+# specific consumption by counting raw meal as product.
+# ======================================================
+def thermal_demand_vs_supply(twin):
+
+    state = twin.state
+    mf = twin.mass_flow
+
+    feed = _solid_feed_species(twin)
+
+    CaCO3_feed = float(feed.get("CaCO3", 0.0))
+
+    M_CaCO3 = SOLID_SPECIES["CaCO3"][0]
+    M_CO2 = A_C + 2 * A_O
+
+    CO2_full = CaCO3_feed * M_CO2 / M_CaCO3
+
+    H2O_free = float(
+        getattr(state, "m_dot_H2O_evaporated_preheater", 0.0)
+    )
+    H2O_bound = float(feed.get("Bound_H2O", 0.0))
+
+    meal = float(mf.m_dot_s_preheater)
+
+    clinker_potential = meal - CO2_full - H2O_free - H2O_bound
+
+    if clinker_potential <= 0.0:
+        return None
+
+    # Chemistry the feed REQUIRES, independent of how hot the
+    # model happens to run.
+    demand_full = (
+        CaCO3_feed * DH_CALCINATION
+        + float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
+        + float(getattr(state, "Drying_Q_sink", 0.0))
+        + float(getattr(state, "Burning_Q_sink", 0.0))
+    )
+
+    # Chemistry the model ACTUALLY runs.
+    demand_modelled = (
+        float(getattr(state, "Calcination_Q_sink", 0.0))
+        + float(getattr(state, "Calcination_Q_transition", 0.0))
+        + float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
+        + float(getattr(state, "Drying_Q_sink", 0.0))
+        + float(getattr(state, "Burning_Q_sink", 0.0))
+    )
+
+    supply = float(mf.m_dot_fuel) * FUEL_LHV
+
+    shc = supply / clinker_potential
+
+    return {
+        "meal": meal,
+        "clinker_potential": clinker_potential,
+        "meal_to_clinker": meal / clinker_potential,
+        "fuel": float(mf.m_dot_fuel),
+        "supply_W": supply,
+        "shc_J_per_kg": shc,
+        "shc_band": SHC_BAND,
+        "demand_modelled_W": demand_modelled,
+        "demand_full_W": demand_full,
+        "missing_sink_W": demand_full - demand_modelled,
+        "fuel_at_band_mid": (
+            clinker_potential
+            * (SHC_BAND[0] + SHC_BAND[1])
+            / 2.0
+            / FUEL_LHV
+        ),
+    }
+
+
+def _solid_feed_species(twin):
+    """Raw-meal species flows as fed.
+
+    Same source and same index as elemental_closure()'s feed side:
+    the preheater is indexed against the solid flow, so the meal
+    enters at its LAST cell.
+    """
+
+    solids = twin.state.material_flows["preheater"].solids
+
+    feed = {}
+
+    for sp in SOLID_SPECIES:
+        arr = getattr(solids, sp, None)
+
+        if arr is None:
+            continue
+
+        arr = np.asarray(arr, dtype=float)
+
+        if arr.size:
+            feed[sp] = float(arr[-1])
+
+    return feed
+
+
+# ======================================================
 # REPORT
 # ======================================================
 def report(twin):
@@ -823,6 +980,63 @@ def report(twin):
             f"{p['iterations_to_tol']}  of max_iter={p['max_iter']}"
         )
         w("  (the loop has no break: it always runs max_iter passes)")
+
+    # ---------- D11 ----------
+    w("\n-- D11  thermal demand vs fuel supply --")
+    t = thermal_demand_vs_supply(twin)
+
+    if t is None:
+        w("  (not available)")
+    else:
+        w(
+            f"  raw meal fed            {t['meal']:9.3f} kg/s"
+        )
+        w(
+            f"  potential clinker       {t['clinker_potential']:9.3f} kg/s"
+            f"   ({t['clinker_potential'] * 86.4:.0f} t/d,"
+            f" meal/clinker {t['meal_to_clinker']:.3f})"
+        )
+        w(
+            f"  fuel supplied           {t['fuel']:9.3f} kg/s"
+            f"   -> {t['supply_W'] / 1e6:6.2f} MW"
+        )
+
+        lo, hi = t["shc_band"]
+        shc = t["shc_J_per_kg"]
+        verdict = "OVER-FIRED" if shc > hi else (
+            "under-fired" if shc < lo else "ok"
+        )
+
+        w(
+            f"  [{verdict:>10s}] specific heat consumption "
+            f"{shc / 1e3:7.0f} kJ/kg clinker"
+            f"   (modern ILC {lo / 1e3:.0f}-{hi / 1e3:.0f})"
+        )
+        w(
+            f"               fuel at band midpoint would be "
+            f"{t['fuel_at_band_mid']:.3f} kg/s"
+            f"  ({t['fuel'] / t['fuel_at_band_mid']:.2f}x)"
+        )
+        w(
+            f"  chemistry demand, as modelled   "
+            f"{t['demand_modelled_W'] / 1e6:6.2f} MW"
+        )
+        w(
+            f"  chemistry demand, full calcination "
+            f"{t['demand_full_W'] / 1e6:6.2f} MW"
+        )
+        w(
+            f"  MISSING SINK                    "
+            f"{t['missing_sink_W'] / 1e6:6.2f} MW"
+        )
+        w(
+            "  Fuel is a fixed config input, so nothing in the model can"
+            " reject a surplus."
+        )
+        w(
+            "  Heat the chemistry does not absorb leaves as temperature,"
+            " wall loss and exhaust."
+        )
 
     w("\n================================================================\n")
 

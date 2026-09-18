@@ -213,15 +213,18 @@ class Transition:
         # ======================================================
 
         state.Hg_transition = (
-            state.m_dot_g_transition
+            state.m_dot_g_transition_cells
             * h_gas(
                 state.Tg_transition,
                 self.T_ref,
             )
         )
 
+        # Per-cell flow: the bed calcines along this zone, so a
+        # single scalar would be the true flow in at most one
+        # cell. thermal_step publishes the profile it solved on.
         state.Hs_transition = (
-            state.m_dot_s_transition
+            state.m_dot_s_transition_cells
             * self.Cp_s
             * (
                 state.Ts_transition
@@ -292,17 +295,15 @@ class Transition:
         # ======================================================
         # ENERGY OUT
         # ======================================================
-        state.Hgas_transition_out = (
-            self.gas_enthalpy_out(
-                state.Hg_transition
-            )
-        )
-
-        state.Hsolid_transition_out = (
-            self.solid_enthalpy_out(
-                state.Hs_transition
-            )
-        )
+        # Hgas_transition_out / Hsolid_transition_out are set by
+        # thermal_step, which multiplies each reconstructed
+        # outlet face by the flow that face carries. Re-deriving
+        # them here by extrapolating the Hg/Hs arrays would give
+        # a different number, because extrapolating a product of
+        # two varying profiles is not the product of their
+        # extrapolations -- and it is the flux thermal_step
+        # booked in its own energy balance that the next zone
+        # must receive.
 
         # ======================================================
         # STEADY-STATE SOLID SPECIES FLOWS [kg/s]

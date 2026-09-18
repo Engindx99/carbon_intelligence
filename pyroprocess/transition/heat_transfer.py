@@ -1,8 +1,9 @@
 import numpy as np
 
+from physics.physics import cp_gas
 from physics.physics import h_gas
 from physics.physics import outlet_face_value
-from physics.physics import second_order_upwind_correction
+from physics.physics import second_order_upwind_face_corrections
 from physics.physics import wall_thermal_resistance
 from physics.physics import radiation
 
@@ -42,10 +43,27 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
     Cp_s = transition.Cp_s
 
-    Cs = (
-        m_dot_s
-        * Cp_s
-    )
+    # ======================================================
+    # STREAM MASS FLOWS
+    #
+    # The bed calcines along this zone, so neither stream has
+    # a single mass flow: the solid sheds CO2 cell by cell and
+    # the gas picks it up. state.m_dot_s_transition is the flow
+    # ENTERING (the calciner's outlet) and state.m_dot_g_transition
+    # the flow LEAVING (it already includes all the CO2), so
+    # each is used only at the end where it is the true flow.
+    # The per-cell profiles are built inside the Picard loop
+    # from the same calcination march that feeds the heat sink,
+    # so the mass and energy the reaction moves always agree.
+    # ======================================================
+
+    m_dot_s_in = m_dot_s
+
+    # The gas arriving is the stream Burning discharged, which
+    # is also the stream whose enthalpy Hgas_transition_in
+    # carries; taking it from state.m_dot_g keeps the flow and
+    # the enthalpy at this boundary from drifting apart.
+    m_dot_g_in = state.m_dot_g
 
     # ======================================================
     # INLET TEMPERATURES FROM ENTHALPY
@@ -183,16 +201,113 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # physics.second_order_upwind_correction.
         # ==================================================
 
-        adv_corr_g = second_order_upwind_correction(
+        # Per FACE, not pre-differenced: each face of a cell
+        # carries a different mass flow here, so the two
+        # corrections cannot be collapsed into one per-cell
+        # term (physics.second_order_upwind_face_corrections).
+        # Both arrays are in FLOW order and have N+1 entries.
+        Dg_face = second_order_upwind_face_corrections(
             h_gas(Tg_iter, T_ref),
             h_gas_in,
             reverse=True,
         )
 
-        adv_corr_s = second_order_upwind_correction(
+        Ds_face = second_order_upwind_face_corrections(
             Ts_iter,
             Ts_in,
             reverse=False,
+        )
+
+        # ==================================================
+        # CALCINATION MARCH
+        #
+        # Run over the whole zone BEFORE the rows are
+        # assembled. The gas flow in a cell depends on the CO2
+        # released by every cell downstream of it on the gas
+        # path, which the old cell-by-cell interleaving could
+        # not know yet. Marching first also keeps the mass
+        # transfer and the heat sink derived from one and the
+        # same conversion.
+        # ==================================================
+
+        m_dot_CaCO3_transition_in = getattr(
+            state,
+            "m_dot_CaCO3_out_calciner",
+            0.0,
+        )
+
+        dm_gas_cells = np.zeros(N)
+        Q_calcination_cells = np.zeros(N)
+
+        m_CaCO3_in_cell = m_dot_CaCO3_transition_in
+
+        for i in range(N):
+
+            (
+                _k_reaction,
+                m_CaCO3_out_cell,
+                m_CaCO3_reacted_cell,
+                Q_calcination_cell,
+            ) = calcination.compute_cell_calcination(
+                transition,
+                Ts_iter[i],
+                m_CaCO3_in_cell,
+                transition.dz,
+                u_s,
+            )
+
+            m_dot_CaCO3_out_cells[i] = m_CaCO3_out_cell
+
+            dm_gas_cells[i] = (
+                m_CaCO3_reacted_cell
+                * transition.chemistry.CO2_ratio
+            )
+
+            Q_calcination_cells[i] = Q_calcination_cell
+
+            m_CaCO3_in_cell = m_CaCO3_out_cell
+
+        # ==================================================
+        # PER-CELL STREAM FLOWS
+        #
+        # Solid runs 0 -> N-1 and loses dm_gas in each cell;
+        # gas runs N-1 -> 0 and gains it. Both are exact
+        # cumulative sums of the same array, so what leaves one
+        # phase is what joins the other, cell for cell.
+        # ==================================================
+
+        m_s_out_cells = (
+            m_dot_s_in
+            - np.cumsum(dm_gas_cells)
+        )
+
+        m_s_in_cells = np.concatenate(
+            (
+                [m_dot_s_in],
+                m_s_out_cells[:-1],
+            )
+        )
+
+        # Suffix sum: cell i's outgoing gas carries the CO2 of
+        # every cell from i to N-1 inclusive.
+        m_g_out_cells = (
+            m_dot_g_in
+            + np.cumsum(dm_gas_cells[::-1])[::-1]
+        )
+
+        m_g_in_cells = (
+            m_g_out_cells
+            - dm_gas_cells
+        )
+
+        # h_gas(Ts) for the CO2 leaving the bed, linearised at
+        # the current iterate exactly as the gas row linearises
+        # its own enthalpy.
+        cp_gas_s_cells = cp_gas(Ts_iter)
+
+        h_const_s_cells = (
+            h_gas(Ts_iter, T_ref)
+            - cp_gas_s_cells * Ts_iter
         )
 
         # ==================================================
@@ -231,6 +346,11 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 )
             )
 
+            # Gas cell i sits at flow position p = N-1-i, so its
+            # inflow face is Dg_face[p] and its outflow face
+            # Dg_face[p+1].
+            p_gas = N - 1 - i
+
             row = gas_phase.apply_gas_energy_balance(
                 A,
                 b,
@@ -239,47 +359,18 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 N,
                 Tg_iter,
                 T_ref,
-                m_dot_g,
+                m_g_out_cells[i],
+                m_g_in_cells[i],
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
                 V_cell,
                 K_gs,
                 K_gw,
                 radiation_gas_sink,
                 Tg_in,
-                adv_corr_g[i],
-            )
-
-            # ======================================================
-            # TRANSITION CALCINATION
-            # ======================================================
-            m_dot_CaCO3_transition_in = getattr(
-                state,
-                "m_dot_CaCO3_out_calciner",
-                0.0,
-            )
-
-            if i == 0:
-                m_CaCO3_in_cell = m_dot_CaCO3_transition_in
-            else:
-                m_CaCO3_in_cell = (
-                    m_dot_CaCO3_out_cells[i - 1]
-                )
-
-            (
-                k_reaction,
-                m_CaCO3_out_cell,
-                m_CaCO3_reacted_cell,
-                Q_calcination_cell,
-            ) = calcination.compute_cell_calcination(
-                transition,
-                Ts_iter[i],
-                m_CaCO3_in_cell,
-                transition.dz,
-                u_s,
-            )
-
-            # Sonraki hücreye aktarılacak CaCO3 debisi
-            m_dot_CaCO3_out_cells[i] = (
-                m_CaCO3_out_cell
+                Dg_face[p_gas],
+                Dg_face[p_gas + 1],
             )
 
             # ==================================================
@@ -300,14 +391,20 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 row,
                 i,
                 N,
-                Cs,
+                m_s_out_cells[i] * Cp_s,
+                m_s_in_cells[i] * Cp_s,
+                T_ref,
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
                 V_cell,
                 K_gs,
                 K_ws,
                 radiation_solid_source,
-                Q_calcination_cell,
+                Q_calcination_cells[i],
                 Ts_in,
-                adv_corr_s[i],
+                Ds_face[i],
+                Ds_face[i + 1],
             )
 
             # ==================================================
@@ -577,27 +674,75 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # and solid_phase.solid_enthalpy_out() hand to the next
     # unit. Reading the centres here would leak exactly that
     # difference out of this balance.
+    #
+    # The flow multiplying each face is the flow that face
+    # actually carries, taken from the converged calcination
+    # march: the solid discharges what is left after every cell
+    # has calcined, the gas discharges what it arrived with
+    # plus all the CO2. Using one scalar for both ends was what
+    # rescaled temperature across the handoff.
+
+    dm_gas_final = (
+        m_dot_CaCO3_reacted_cells
+        * transition.chemistry.CO2_ratio
+    )
+
+    m_s_out_face = (
+        m_dot_s_in
+        - float(np.sum(dm_gas_final))
+    )
+
+    m_g_out_face = (
+        m_dot_g_in
+        + float(np.sum(dm_gas_final))
+    )
+
+    Ts_out_face = outlet_face_value(
+        Ts_ss,
+        reverse=False,
+    )
+
+    h_gas_out_face = outlet_face_value(
+        h_gas(
+            Tg_ss,
+            T_ref
+        ),
+        reverse=True,
+    )
+
     Hg_out = (
-        m_dot_g
-        * outlet_face_value(
-            h_gas(
-                Tg_ss,
-                T_ref
-            ),
-            reverse=True,
-        )
+        m_g_out_face
+        * h_gas_out_face
     )
 
     Hs_out = (
-        m_dot_s
+        m_s_out_face
         * Cp_s
         * (
-            outlet_face_value(
-                Ts_ss,
-                reverse=False,
-            )
+            Ts_out_face
             - T_ref
         )
+    )
+
+    # Published so Transition.apply() hands downstream exactly
+    # the flux this balance booked, rather than re-deriving it
+    # from a cell-centre array and a scalar flow.
+    state.Hsolid_transition_out = float(Hs_out)
+    state.Hgas_transition_out = float(Hg_out)
+    state.m_dot_s_transition_out = float(m_s_out_face)
+    state.m_dot_g_transition_out = float(m_g_out_face)
+
+    # Per-cell flows at the converged state, so anything
+    # building an enthalpy array from the temperature profile
+    # multiplies each cell by the flow that cell carries.
+    state.m_dot_s_transition_cells = (
+        m_dot_s_in
+        - np.cumsum(dm_gas_final)
+    )
+
+    state.m_dot_g_transition_cells = (
+        m_dot_g_in
+        + np.cumsum(dm_gas_final[::-1])[::-1]
     )
 
     # ======================================================

@@ -192,11 +192,81 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
 
                 self.assertAlmostEqual(ratio, row["ratio"], places=9)
 
+    # ------------------------------------------------------
+    # D11 compares two numbers that must be derived from
+    # different places, or it proves nothing. These guard that
+    # separation: the demand side must come from the feed's
+    # chemistry and the supply side from the fuel, so the
+    # diagnostic cannot report a gap of zero by construction.
+    # ------------------------------------------------------
+    def test_potential_clinker_closes_against_the_feed(self):
+
+        t = diagnostics.thermal_demand_vs_supply(self.twin)
+
+        feed = diagnostics._solid_feed_species(self.twin)
+
+        M_CaCO3 = diagnostics.SOLID_SPECIES["CaCO3"][0]
+        M_CO2 = diagnostics.A_C + 2 * diagnostics.A_O
+
+        CO2_full = feed["CaCO3"] * M_CO2 / M_CaCO3
+
+        H2O_free = self.twin.state.m_dot_H2O_evaporated_preheater
+
+        # Everything the feed loses on the way to clinker.
+        lost = CO2_full + H2O_free + feed["Bound_H2O"]
+
+        self.assertAlmostEqual(
+            t["clinker_potential"] + lost,
+            t["meal"],
+            places=9,
+        )
+
+    def test_meal_to_clinker_ratio_is_physically_sane(self):
+        """A generic raw meal yields 1.5-1.7 kg meal per kg clinker.
+
+        This checks the FEED composition, not the model's conversion:
+        it stays true however badly the kiln is running, so a failure
+        means the raw meal itself is mis-specified.
+        """
+
+        t = diagnostics.thermal_demand_vs_supply(self.twin)
+
+        self.assertGreater(t["meal_to_clinker"], 1.45)
+        self.assertLess(t["meal_to_clinker"], 1.75)
+
+    def test_specific_heat_consumption_matches_fuel_and_clinker(self):
+
+        t = diagnostics.thermal_demand_vs_supply(self.twin)
+
+        self.assertAlmostEqual(
+            t["shc_J_per_kg"],
+            t["fuel"] * diagnostics.FUEL_LHV / t["clinker_potential"],
+            places=6,
+        )
+
+    def test_full_calcination_demand_exceeds_the_modelled_one(self):
+        """The plant does not fully calcine, so the ceiling must be higher.
+
+        If these ever coincide the model has reached complete
+        calcination and the missing-sink line becomes zero -- which is
+        the outcome Faz 4 is aiming at, and this test is then the
+        thing that says so.
+        """
+
+        t = diagnostics.thermal_demand_vs_supply(self.twin)
+
+        self.assertGreaterEqual(t["demand_full_W"], t["demand_modelled_W"])
+        self.assertAlmostEqual(
+            t["missing_sink_W"],
+            t["demand_full_W"] - t["demand_modelled_W"],
+            places=6,
+        )
+
     def test_report_renders_every_section(self):
 
         text = diagnostics.report(self.twin)
 
-        for marker in ("D1", "D2", "D3", "D4", "D8", "D9"):
+        for marker in ("D1", "D2", "D3", "D4", "D8", "D9", "D11"):
             with self.subTest(section=marker):
                 self.assertIn(marker, text)
 
