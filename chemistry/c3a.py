@@ -14,7 +14,21 @@ class C3AModel(ReactionBase):
         self.activation_energy = 2.2e5
 
         # ================= THERMODYNAMICS =================
-        self.deltaH = 3.0e5
+        #
+        # 3 CaO + Al2O3 -> Ca3Al2O6
+        #
+        # From standard enthalpies of formation at 298.15 K
+        # [kJ/mol]: CaO -635.09, Al2O3 (corundum) -1675.70,
+        # C3A -3587.80.
+        #
+        #   dH = -3587.80 - (3(-635.09) + (-1675.70))
+        #      = -6.83 kJ/mol       (exothermic, but small)
+        #
+        # BASIS: per kg Al2O3, the limiting reactant.
+        #
+        #   -6.83 kJ/mol / 0.10196 kg/mol = -6.699e4 J/kg Al2O3
+        #   ( equivalently -25.3 kJ/kg C3A produced )
+        self.deltaH = -6.699e4
 
         # ================= STOICHIOMETRY =================
         self.CaO_required = 168.24 / 101.96

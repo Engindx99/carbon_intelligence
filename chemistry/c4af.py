@@ -14,7 +14,33 @@ class C4AFModel(ReactionBase):
         self.activation_energy = 2.2e5
 
         # ================= THERMODYNAMICS =================
-        self.deltaH = 3.5e5
+        #
+        # 4 CaO + Al2O3 + Fe2O3 -> Ca4Al2Fe2O10
+        #
+        # From standard enthalpies of formation at 298.15 K
+        # [kJ/mol]: CaO -635.09, Al2O3 -1675.70,
+        # Fe2O3 (hematite) -824.20, C4AF -5080.0.
+        #
+        #   dH = -5080.0 - (4(-635.09) + (-1675.70) + (-824.20))
+        #      = -39.74 kJ/mol
+        #
+        # LEAST CERTAIN OF THE FOUR. Brownmillerite is a solid
+        # solution and its tabulated formation enthalpy varies
+        # by a few kJ/mol between sources; because this reaction
+        # is a small difference between large numbers, that
+        # uncertainty carries straight into dH. An earlier pass
+        # over the same question landed on -109 kJ/kg C4AF
+        # against the -81.8 below. The sign is not in doubt and
+        # the term is ~0.1 MW at plant scale, so the spread does
+        # not change any conclusion -- but this is the one value
+        # here that should be replaced if better data appears,
+        # not the one to trust to three digits.
+        #
+        # BASIS: per kg Al2O3, the limiting reactant.
+        #
+        #   -39.74 kJ/mol / 0.10196 kg/mol = -3.898e5 J/kg Al2O3
+        #   ( equivalently -81.8 kJ/kg C4AF produced )
+        self.deltaH = -3.898e5
 
         # ================= STOICHIOMETRY =================
         # per kg Al2O3 reacted

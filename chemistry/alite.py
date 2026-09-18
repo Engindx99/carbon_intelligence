@@ -14,7 +14,32 @@ class AliteModel(ReactionBase):
         self.activation_energy = 2.2e5
 
         # ================= THERMODYNAMICS =================
-        self.deltaH = 6.0e5
+        #
+        # CaO + Ca2SiO4 -> Ca3SiO5
+        #
+        # From standard enthalpies of formation at 298.15 K
+        # [kJ/mol]: CaO -635.09, beta-C2S -2307.50,
+        # C3S -2927.80.
+        #
+        #   dH = -2927.80 - ((-635.09) + (-2307.50))
+        #      = +14.79 kJ/mol
+        #
+        # Alite is the one clinker phase that really is
+        # endothermic, so this was the least wrong of the four:
+        # the SIGN was right and only the magnitude was off, by
+        # about 7x.
+        #
+        # BASIS: per kg C2S, the limiting reactant (see
+        # chemistry/base.py heat_sink()).
+        #
+        #   +14.79 kJ/mol / 0.17224 kg/mol = +8.587e4 J/kg C2S
+        #   ( equivalently +64.8 kJ/kg C3S produced )
+        #
+        # NOT tuned. The audit's finding was that C3S is frozen
+        # by CaO starvation, not by kinetics, so adjusting the
+        # prefactor or activation energy here would be fitting a
+        # symptom. Those are left exactly as they were.
+        self.deltaH = 8.587e4
 
         # ================= STOICHIOMETRY =================
 

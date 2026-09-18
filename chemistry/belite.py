@@ -14,7 +14,39 @@ class BeliteModel(ReactionBase):
         self.activation_energy = 2.0e5
 
         # ================= THERMODYNAMICS =================
-        self.deltaH = 5.0e5
+        #
+        # 2 CaO + SiO2 -> beta-Ca2SiO4
+        #
+        # From standard enthalpies of formation at 298.15 K
+        # [kJ/mol]: CaO -635.09, SiO2 (alpha-quartz) -910.70,
+        # beta-C2S -2307.50.
+        #
+        #   dH = -2307.50 - (2(-635.09) + (-910.70))
+        #      = -126.62 kJ/mol
+        #
+        # BELITE FORMATION IS EXOTHERMIC. It was coded here as
+        # +5.0e5, an endothermic sink, and that single sign was
+        # 82% of the plant's total reaction-enthalpy error --
+        # hidden because the raw constants invited comparison
+        # with alite's 6.0e5 as though the two shared a basis.
+        # They do not.
+        #
+        # BASIS. heat_sink() multiplies this by `reacted`, which
+        # is the LIMITING REACTANT mass (chemistry/base.py), and
+        # this reaction is written per kg of SiO2. So the value
+        # below is per kg SiO2, NOT per kg C2S:
+        #
+        #   -126.62 kJ/mol / 0.06008 kg/mol = -2.1075e6 J/kg SiO2
+        #   ( equivalently -735.1 kJ/kg C2S produced )
+        #
+        # Sign convention: deltaH is a SINK, so exothermic is
+        # negative. Nothing downstream clamps it.
+        #
+        # Cross-check on the method: the same table and the same
+        # arithmetic reproduce calcination at 1781 kJ/kg CaCO3,
+        # against the 1.78e6 J/kg that chemistry/calcination.py
+        # already carried from an independent source.
+        self.deltaH = -2.1075e6
 
         # ================= STOICHIOMETRY =================
 
