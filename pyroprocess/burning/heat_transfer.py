@@ -6,6 +6,9 @@ from physics.physics import fill_fraction_from_holdup
 from physics.physics import outlet_face_value
 from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
+from physics.physics import second_order_upwind_face_corrections
+from physics.variable_flow_rows import apply_gas_energy_balance
+from physics.variable_flow_rows import apply_solid_energy_balance
 from physics.physics import T_gas_from_h
 from physics.physics import wall_thermal_resistance
 
@@ -39,17 +42,23 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # MASS FLOW / THERMAL CAPACITY
     # ======================================================
 
-    # m_dot_g is calculated centrally in main.py.
-    m_dot_g = state.m_dot_g
+    # m_dot_g is calculated centrally in main.py. It is the gas
+    # ENTERING the kiln -- burner air plus fuel -- and the stream
+    # grows along the zone, because the meal arrives still partly
+    # carbonated and finishes calcining here.
+    m_dot_g_in = state.m_dot_g
 
-    m_dot_s = state.m_dot_s
-
-    # ======================================================
-    # SOLID THERMAL CAPACITY
-    # ======================================================
+    # The bed ENTERS with what the transition discharged. It is
+    # not state.m_dot_s: that is the clinker, i.e. the outlet.
+    m_dot_s_in = float(
+        getattr(
+            state,
+            "m_dot_s_burning_in",
+            state.m_dot_s,
+        )
+    )
 
     Cp_s = burning.Cp_s
-    Cs = m_dot_s * Cp_s
 
     # ======================================================
     # GEOMETRY
@@ -57,6 +66,52 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     N = len(Tg)
     V_cell = burning.V_cell
+
+    # ======================================================
+    # PER-CELL STREAM FLOWS
+    #
+    # Same treatment the transition (Faz 1b) and the calciner
+    # (Faz 1c) already carry, for the same reason: a stream that
+    # loses mass as it goes has no single flow, and using one --
+    # at the outlet, the INLET value -- conserves J/s while
+    # rescaling K across the handoff.
+    # ======================================================
+
+    dm_gas_cells = np.asarray(
+        getattr(
+            state,
+            "m_dot_CO2_generated_burning_cells",
+            np.zeros(N),
+        ),
+        dtype=float,
+    )
+
+    if dm_gas_cells.size != N:
+        dm_gas_cells = np.zeros(N)
+
+    m_s_out_cells = (
+        m_dot_s_in
+        - np.cumsum(dm_gas_cells)
+    )
+
+    m_s_in_cells = np.concatenate(
+        (
+            [m_dot_s_in],
+            m_s_out_cells[:-1],
+        )
+    )
+
+    # Suffix sum: cell i's outgoing gas carries the CO2 of every
+    # cell from i to N-1 inclusive.
+    m_g_out_cells = (
+        m_dot_g_in
+        + np.cumsum(dm_gas_cells[::-1])[::-1]
+    )
+
+    m_g_in_cells = (
+        m_g_out_cells
+        - dm_gas_cells
+    )
 
     # ======================================================
     # HEAT TRANSFER PARAMETERS
@@ -106,7 +161,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # identical continuity expression, so they agree to machine
     # precision.
     bed_fill_fraction = fill_fraction_from_holdup(
-        m_dot_s=m_dot_s,
+        # The clinker flow, i.e. the bed at the DISCHARGE end.
+        # The bed is heavier at the feed end now that it calcines
+        # along the zone, so a single fill fraction is an
+        # approximation -- but it is the same one this closure
+        # always made, kept unchanged here so Faz 4 does not
+        # silently move the area closure as well. Making the
+        # areas follow the per-cell holdup belongs with Faz 3.
+        m_dot_s=state.m_dot_s,
         rho_bulk=burning.rho_s,
         u_s=u_s,
         A_cross=burning.A_cross,
@@ -263,16 +325,32 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         # Cs * (Ts - T_ref) is affine in Ts.
         # ==================================================
 
-        adv_corr_g = second_order_upwind_correction(
+        # Per FACE, not pre-differenced: each face of a cell
+        # carries a different mass flow once the bed calcines,
+        # so the two corrections cannot be collapsed into one
+        # per-cell term. Both arrays are in FLOW order with N+1
+        # entries.
+        Dg_face = second_order_upwind_face_corrections(
             h_gas(Tg_iter, T_ref),
             h_gas_in,
             reverse=True,
         )
 
-        adv_corr_s = second_order_upwind_correction(
+        Ds_face = second_order_upwind_face_corrections(
             Ts_iter,
             state.Ts_burning_in,
             reverse=False,
+        )
+
+        # h_gas(Ts) for the CO2 leaving the bed, linearised at
+        # the current iterate exactly as the gas row linearises
+        # its own enthalpy. Both phases carry this term with
+        # opposite signs, so it cancels over the zone.
+        cp_gas_s_cells = cp_gas(Ts_iter)
+
+        h_const_s_cells = (
+            h_gas(Ts_iter, T_ref)
+            - cp_gas_s_cells * Ts_iter
         )
 
         # ==================================================
@@ -308,7 +386,12 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 )
             )
 
-            row = gas_phase.apply_gas_energy_balance(
+            # Gas cell i sits at flow position p = N-1-i, so
+            # its inflow face is Dg_face[p] and its outflow
+            # face Dg_face[p+1].
+            p_gas = N - 1 - i
+
+            row = apply_gas_energy_balance(
                 A,
                 b,
                 row,
@@ -316,15 +399,24 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 N,
                 Tg_iter,
                 T_ref,
-                m_dot_g,
+                m_g_out_cells[i],
+                m_g_in_cells[i],
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
                 V_cell,
                 K_gs,
                 K_gw,
-                q_cell,
                 radiation_gas_sink,
                 state.Tg_burning_in,
-                adv_corr_g[i],
+                Dg_face[p_gas],
+                Dg_face[p_gas + 1],
             )
+
+            # The burner's heat is a source on the gas row. The
+            # shared builder is used by zones that do not fire,
+            # so the term is added here rather than passed in.
+            b[row - 1] += q_cell[i]
 
             # ==================================================
             # SOLID ENERGY BALANCE
@@ -338,20 +430,26 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 )
             )
 
-            row = solid_phase.apply_solid_energy_balance(
+            row = apply_solid_energy_balance(
                 A,
                 b,
                 row,
                 i,
                 N,
-                Cs,
+                m_s_out_cells[i] * Cp_s,
+                m_s_in_cells[i] * Cp_s,
+                T_ref,
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
                 V_cell,
                 K_gs,
                 K_ws,
                 radiation_solid_source,
                 reaction_q_cell[i],
                 state.Ts_burning_in,
-                adv_corr_s[i],
+                Ds_face[i],
+                Ds_face[i + 1],
             )
 
             # ==================================================
@@ -591,12 +689,20 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # GAS ENTHALPY BALANCE
     # ======================================================
 
+    # Each end carries the flow that end actually has: the kiln
+    # gas arrives as burner air plus fuel and leaves with the
+    # calcination CO2 on top.
     Hg_in = (
-        m_dot_g
+        m_dot_g_in
         * h_gas(
             Tg_in,
             T_ref
         )
+    )
+
+    m_g_out_face = (
+        m_dot_g_in
+        + float(np.sum(dm_gas_cells))
     )
 
     # Taken from the reconstructed face enthalpy directly
@@ -604,7 +710,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # the inversion tolerance of T_gas_from_h, and this is the
     # quantity the flux and the handoff both use.
     Hg_out = (
-        m_dot_g
+        m_g_out_face
         * h_gas_out_face
     )
 
@@ -613,10 +719,25 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         - Hg_in
     )
 
+    # Energy carried across the phase boundary by the CO2, at
+    # the bed temperature it left. A SOURCE for the gas and a
+    # SINK of the same size for the solid, so it cancels in the
+    # zone total and appears only in these two per-phase checks.
+    H_phase_change = float(
+        np.sum(
+            dm_gas_cells
+            * h_gas(
+                Ts_ss,
+                T_ref,
+            )
+        )
+    )
+
     gas_expected = (
         Q_burning
         - Qgs
         - Qgw
+        + H_phase_change
     )
 
     gas_energy_balance = (
@@ -629,15 +750,22 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # ======================================================
 
     Hs_in = (
-        m_dot_s
+        m_dot_s_in
         * Cp_s
         * (
             Ts_in - T_ref
         )
     )
 
+    # The bed discharges what is left after every cell has
+    # finished calcining.
+    m_s_out_face = (
+        m_dot_s_in
+        - float(np.sum(dm_gas_cells))
+    )
+
     Hs_out = (
-        m_dot_s
+        m_s_out_face
         * Cp_s
         * (
             Ts_out - T_ref
@@ -652,6 +780,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     solid_expected = (
         Qgs
         - Qws
+        - H_phase_change
     )
 
     solid_energy_balance = (
@@ -732,6 +861,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     state.Burning_q_fuel_cells = q_cell
     state.Burning_q_reaction_cells = reaction_q_cell
 
+    # Energy the CO2 carries from the bed into the gas, at the
+    # bed temperature it left. Published because the gas balance
+    # is no longer closed by the fuel and the two transfer terms
+    # alone: anything reconstructing it from the per-cell arrays
+    # needs this term, and must read the SAME number the balance
+    # used rather than recompute it.
+    state.Burning_H_phase_change = H_phase_change
+
     # ======================================================
     # CLOSURE STATE (DIAGNOSTIC)
     #
@@ -763,8 +900,27 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # Capacity rates, for NTU. The gas side is evaluated at the
     # converged profile rather than at a single temperature,
     # since cp_gas varies by ~25% across this zone.
-    state.Burning_C_solid = float(m_dot_s * Cp_s)
-    state.Burning_C_gas_cells = m_dot_g * cp_gas(Tg_ss)
+    state.Burning_C_solid = float(m_s_out_face * Cp_s)
+    state.Burning_C_gas_cells = m_g_out_cells * cp_gas(Tg_ss)
+
+    # ======================================================
+    # HANDOFF FLUXES AND PER-CELL FLOWS
+    #
+    # Published here so Burning.apply() hands the cooler
+    # exactly the flux this balance booked. Extrapolating the
+    # product of two varying profiles is not the product of
+    # their extrapolations, so re-deriving it from a cell-centre
+    # array and a scalar flow would give a different number.
+    # ======================================================
+
+    state.Hgas_burning_out = float(Hg_out)
+    state.Hsolid_burning_out = float(Hs_out)
+
+    state.m_dot_s_burning_out = float(m_s_out_face)
+    state.m_dot_g_burning_out = float(m_g_out_face)
+
+    state.m_dot_s_burning_cells = m_s_out_cells.copy()
+    state.m_dot_g_burning_cells = m_g_out_cells.copy()
 
     # ======================================================
     # RETURN

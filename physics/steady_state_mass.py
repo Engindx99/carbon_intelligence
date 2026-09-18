@@ -46,6 +46,7 @@ class SteadyStateMassFlow:
     # ======================================================
 
     m_dot_g_burning: float = 0.0
+    m_dot_g_burning_out: float = 0.0
     m_dot_g_transition: float = 0.0
     m_dot_g_calciner: float = 0.0
     m_dot_g_preheater: float = 0.0
@@ -64,6 +65,7 @@ class SteadyStateMassFlow:
 
     m_dot_CO2_generated: float = 0.0
     m_dot_CO2_generated_transition: float = 0.0
+    m_dot_CO2_generated_burning: float = 0.0
     m_dot_H2O_generated: float = 0.0
     m_dot_H2O_generated_calciner: float = 0.0
 
@@ -85,6 +87,42 @@ class SteadyStateMassFlow:
         self.m_dot_fuel = float(m_dot_fuel)
         self.m_dot_air = float(m_dot_air)
 
+    def calculate_burning_flow(
+        self,
+        m_dot_CO2_generated,
+    ):
+        """
+        Residual calcination inside the KILN.
+
+        The meal reaches the burning zone still partly
+        carbonated, so calcination finishes there. Until this
+        was modelled the kiln passed CaCO3 through untouched and
+        it was counted as clinker, which inflated the product
+        stream and hid the largest endothermic load in the kiln.
+
+        CaCO3 -> CaO + CO2
+
+        The CO2 leaves the bed and joins the kiln gas, so it
+        both REDUCES the clinker leaving to the cooler and
+        INCREASES the gas handed to the transition zone.
+        """
+
+        self.m_dot_CO2_generated_burning = float(
+            m_dot_CO2_generated
+        )
+
+        self.m_dot_g_burning_out = (
+            self.m_dot_g_burning
+            + self.m_dot_CO2_generated_burning
+        )
+
+        self.m_dot_s_cooler = (
+            self.m_dot_s_burning
+            - self.m_dot_CO2_generated_burning
+        )
+
+        return self.m_dot_s_cooler
+
     def calculate_transition_flow(
         self,
         m_dot_CO2_generated,
@@ -101,8 +139,11 @@ class SteadyStateMassFlow:
             m_dot_CO2_generated
         )
 
+        # Starts from the gas LEAVING the kiln, which now
+        # carries the kiln's own calcination CO2 as well as the
+        # burner's combustion products.
         self.m_dot_g_transition = (
-            self.m_dot_g_burning
+            self.m_dot_g_burning_out
             + self.m_dot_CO2_generated_transition
         )
 

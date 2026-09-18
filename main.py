@@ -598,6 +598,7 @@ class Twin:
         co2_generated_total = (
             mass_flow.m_dot_CO2_generated
             + mass_flow.m_dot_CO2_generated_transition
+            + mass_flow.m_dot_CO2_generated_burning
         )
 
         # m_dot_exhaust also carries two H2O mass-flow terms
@@ -911,6 +912,27 @@ class Twin:
         # reaches the calciner.
         # ======================================================
 
+        # Residual calcination inside the KILN comes first on the
+        # gas path: the burning zone is upstream of the transition
+        # for the gas, so its CO2 is already in the stream that
+        # reaches the transition.
+        m_dot_CO2_generated_burning = float(
+            getattr(
+                self.state,
+                "m_dot_CO2_generated_burning",
+                0.0,
+            )
+        )
+
+        self.mass_flow.m_dot_CO2_generated_burning = (
+            m_dot_CO2_generated_burning
+        )
+
+        self.mass_flow.m_dot_g_burning_out = (
+            self.mass_flow.m_dot_g_burning
+            + m_dot_CO2_generated_burning
+        )
+
         m_dot_CO2_generated_transition = float(
             getattr(
                 self.state,
@@ -973,8 +995,12 @@ class Twin:
             self.mass_flow.m_dot_s_transition
         )
 
-        self.mass_flow.m_dot_s_cooler = (
-            self.mass_flow.m_dot_s_burning
+        # The kiln finishes the calcination, so the bed leaves it
+        # lighter than it arrived. m_dot_s_burning is the INLET,
+        # m_dot_s_cooler the OUTLET; they are no longer the same
+        # number, and the clinker is the outlet one.
+        self.mass_flow.calculate_burning_flow(
+            m_dot_CO2_generated=m_dot_CO2_generated_burning
         )
 
         # ======================================================
@@ -1074,8 +1100,17 @@ class Twin:
         # STATE OUTPUTS
         # ======================================================
 
-        self.state.m_dot_s = (
+        # The bed ENTERING the kiln. It leaves lighter, because
+        # the meal finishes calcining there.
+        self.state.m_dot_s_burning_in = (
             self.mass_flow.m_dot_s_burning
+        )
+
+        # state.m_dot_s is the CLINKER, i.e. the kiln outlet and
+        # the cooler's flow throughout. The cooler runs no
+        # reactions, so one scalar is correct for it.
+        self.state.m_dot_s = (
+            self.mass_flow.m_dot_s_cooler
         )
 
         self.state.m_dot_s_preheater = (
@@ -1212,8 +1247,29 @@ class Twin:
         # iterations to clear its tolerance. The residual decays
         # smoothly and geometrically (~0.75x/iteration); 100 was
         # cutting it off just before it crossed the threshold.
+        #
+        # 400 (was 150): residual calcination inside the kiln
+        # (Faz 4b) is a stiff coupling. The reaction is very sharp
+        # in temperature -- at kiln conditions k*tau is large
+        # enough that it runs to completion wherever the bed is
+        # hot enough -- so what oscillates between sweeps is WHERE
+        # the front sits, and the bed temperature and the sink
+        # chase each other. Burning.calcination_relaxation damps
+        # it per cell, but the approach is no longer geometric and
+        # takes ~125 sweeps at either discretisation. 150 left
+        # almost no margin; this is headroom, not a change of
+        # answer -- the run stops at the same tolerance either
+        # way.
+        #
+        # The proper fix is not more damping (heavier damping is
+        # WORSE here: 0.25 and below do not converge at all,
+        # because they slow the approach without touching the
+        # front's oscillation). It is CO2 back-pressure in the
+        # calcination kinetics, which smooths the front instead of
+        # suppressing it, and is already on the roadmap as a
+        # missing closure.
         # ======================================================
-        max_iterations = 150
+        max_iterations = 400
 
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6

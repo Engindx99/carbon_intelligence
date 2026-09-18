@@ -66,10 +66,23 @@ def resolve_solid_inlet(burning, state):
 
     state.Hsolid_burning_in = state.Hsolid_transition_out
 
+    # The INLET flow, not state.m_dot_s -- that is the clinker,
+    # and the bed is heavier here by the CO2 it has yet to
+    # release. The transition built this enthalpy on the flow it
+    # discharged, so the inversion has to use the same one or the
+    # handoff conserves J/s while rescaling K.
+    m_dot_s_in = float(
+        getattr(
+            state,
+            "m_dot_s_burning_in",
+            state.m_dot_s,
+        )
+    )
+
     state.Ts_burning_in = (
         burning.T_ref
         + state.Hsolid_burning_in
-        / (state.m_dot_s * burning.Cp_s)
+        / (m_dot_s_in * burning.Cp_s)
     )
 
     return state.Ts_burning_in

@@ -198,6 +198,21 @@ class Burning:
                 f"got {self.primary_air_fraction}"
             )
 
+        # Under-relaxation on the kiln's own calcination CO2.
+        # Numerical only: at the fixed point the blend is the
+        # identity, so this cannot change the converged answer.
+        # See the comment at its use in apply().
+        self.calcination_relaxation = burning_cfg.get(
+            "calcination_relaxation",
+            0.45,
+        )
+
+        if not (0.0 < self.calcination_relaxation <= 1.0):
+            raise ValueError(
+                "burning.calcination_relaxation must be in (0, 1], "
+                f"got {self.calcination_relaxation}"
+            )
+
         # ======================================================
         # FUEL SPLIT (kiln burner vs precalciner)
         #
@@ -312,11 +327,118 @@ class Burning:
         # Steady-state flow form: reacts the solid stream
         # handed over by Transition over this zone's own cell
         # residence time dz / u_s.
+        def _previous(name, N):
+            """Last sweep's per-cell array, or zeros on the first."""
+
+            prev = getattr(state, name, None)
+
+            if prev is None:
+                return np.zeros(N)
+
+            prev = np.asarray(prev, dtype=float)
+
+            if prev.size != N:
+                return np.zeros(N)
+
+            return prev
+
+        N_cells = len(state.Ts_burning)
+
+        dm_previous = _previous(
+            "m_dot_CO2_generated_burning_cells",
+            N_cells,
+        )
+
+        Q_calc_previous = _previous(
+            "Calcination_Q_burning_cells",
+            N_cells,
+        )
+
         state = self.chemistry.apply_burning(
             state,
             self.dz,
             u_s,
         )
+
+        # ======================================================
+        # UNDER-RELAXED CALCINATION, PER CELL
+        #
+        # PATH ONLY -- this cannot move the answer. At the fixed
+        # point the new arrays equal the previous ones and the
+        # blend is the identity, so the converged solution is
+        # exactly the un-relaxed one. It changes only how the
+        # iteration gets there.
+        #
+        # Two separate instabilities made it necessary, and the
+        # second is why the blend is ELEMENTWISE rather than a
+        # single factor on the totals:
+        #
+        #   1. MAGNITUDE. The term goes from zero to its full
+        #      value in one sweep. The kiln really does finish
+        #      the calcination, but on the first sweeps the
+        #      upstream zones have not calcined yet, so all of
+        #      the meal's CaCO3 arrives here and decomposes at
+        #      once. Clinker collapsed to 14.3 kg/s against the
+        #      15.2 kg/s floor the cooler air split imposes, and
+        #      the run died on an iterate nowhere near the
+        #      solution. The fixed point is comfortably feasible
+        #      (clinker 16.9, vent 3.8 kg/s).
+        #
+        #   2. SHAPE. Damping only the totals left a period-2
+        #      cycle in which the total sink barely moved (5.498
+        #      vs 5.455 kg/s CO2) while its AXIAL PLACEMENT
+        #      flipped between two profiles each sweep. Scaling a
+        #      profile by one number preserves its shape, so that
+        #      oscillation survived untouched. Calcination is
+        #      very sharp in temperature -- it runs to completion
+        #      wherever the bed is hot enough -- so the cell it
+        #      lands in is what oscillates, and the blend has to
+        #      act cell by cell to damp it.
+        #
+        # Mass and heat are relaxed with the SAME weights,
+        # because they are the same reaction: damping one and not
+        # the other is what produced instability 2's predecessor,
+        # a period-3 cycle between 917 K and 1662 K with the mass
+        # residual already at 1e-14.
+        # ======================================================
+
+        w = self.calcination_relaxation
+
+        dm_new = np.asarray(
+            state.m_dot_CO2_generated_burning_cells,
+            dtype=float,
+        )
+
+        Q_calc_new = np.asarray(
+            state.Calcination_Q_burning_cells,
+            dtype=float,
+        )
+
+        dm_relaxed = w * dm_new + (1.0 - w) * dm_previous
+
+        Q_calc_relaxed = (
+            w * Q_calc_new
+            + (1.0 - w) * Q_calc_previous
+        )
+
+        # The four clinkering reactions are not relaxed, so their
+        # heat is taken out at the new value and the calcination
+        # term put back at the relaxed one.
+        state.Burning_Q_sink_cells = (
+            np.asarray(state.Burning_Q_sink_cells, dtype=float)
+            - Q_calc_new
+            + Q_calc_relaxed
+        )
+
+        state.Burning_Q_sink = float(
+            np.sum(state.Burning_Q_sink_cells)
+        )
+
+        state.Calcination_Q_burning_cells = Q_calc_relaxed
+        state.Calcination_Q_burning = float(np.sum(Q_calc_relaxed))
+
+        state.m_dot_CO2_generated_burning_cells = dm_relaxed
+        state.m_dot_CO2_generated_burning = float(np.sum(dm_relaxed))
 
         # ======================================================
         # STEADY-STATE THERMAL SOLUTION
@@ -355,8 +477,12 @@ class Burning:
         # ======================================================
         # ENTHALPY STATES
         # ======================================================
+        # Per-cell flow: the meal finishes calcining here, so the
+        # bed loses CO2 and the gas gains it along the zone and a
+        # single scalar would be the true flow in at most one
+        # cell. thermal_step publishes the profiles it solved on.
         state.Hg_burning = (
-            state.m_dot_g
+            state.m_dot_g_burning_cells
             * h_gas(
                 state.Tg_burning,
                 self.T_ref
@@ -364,7 +490,7 @@ class Burning:
         )
 
         state.Hs_burning = (
-            state.m_dot_s
+            state.m_dot_s_burning_cells
             * self.Cp_s
             * (state.Ts_burning - self.T_ref)
         )
@@ -381,22 +507,18 @@ class Burning:
         state.Wall_loss_burning = float(Q_wall_loss)
 
         # ======================================================
-        # GAS ENTHALPY OUT
+        # ENTHALPY OUT
+        #
+        # Hgas_burning_out / Hsolid_burning_out are set by
+        # thermal_step, which multiplies each reconstructed
+        # outlet face by the flow that face carries. Re-deriving
+        # them here by extrapolating the Hg/Hs arrays would give
+        # a different number, because extrapolating a product of
+        # two varying profiles is not the product of their
+        # extrapolations -- and it is the flux thermal_step
+        # booked in its own energy balance that the cooler must
+        # receive.
         # ======================================================
-        state.Hgas_burning_out = (
-            self.gas_enthalpy_out(
-                state.Hg_burning
-            )
-        )
-
-        # ======================================================
-        # SOLID ENTHALPY OUT
-        # ======================================================
-        state.Hsolid_burning_out = (
-            self.solid_enthalpy_out(
-                state.Hs_burning
-            )
-        )
 
         # ======================================================
         # STEADY-STATE STORED ENERGY

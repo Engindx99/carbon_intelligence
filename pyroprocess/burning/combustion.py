@@ -47,11 +47,18 @@ def fuel_heat_release_for(burning, inputs):
 # ======================================================
 def reaction_heat_sink(state):
 
+    # Must match state.Burning_Q_sink_cells, which is what the
+    # solid row actually absorbs. Once calcination started running
+    # in the kiln (Faz 4b) the four clinkering terms stopped being
+    # the whole story, and summing only them left the zone energy
+    # balance short by exactly the kiln's calcination heat --
+    # 19.07 MW, a 31% residual.
     return (
         state.Belite_Q_sink
         + state.Alite_Q_sink
         + state.C3A_Q_sink
         + state.C4AF_Q_sink
+        + float(getattr(state, "Calcination_Q_burning", 0.0))
     )
 
 

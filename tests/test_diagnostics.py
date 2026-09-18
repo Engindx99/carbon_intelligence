@@ -107,8 +107,20 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         )
         Hg_out = float(state.Hgas_burning_out)
 
+        # The kiln gas GAINS mass: residual calcination in the bed
+        # sends CO2 across the phase boundary, carrying its own
+        # enthalpy at the local bed temperature. Without this term
+        # the reconstruction is short by 6.94 MW -- it was correct
+        # only while nothing calcined in the kiln.
+        #
+        # Read from state, not recomputed here, so this really is
+        # the number the solver's own balance booked.
+        H_phase_change = float(
+            getattr(state, "Burning_H_phase_change", 0.0)
+        )
+
         residual = (Hg_out - Hg_in) - (
-            float(state.Q_burning) - Qgs - Qgw
+            float(state.Q_burning) - Qgs - Qgw + H_phase_change
         )
 
         self.assertLess(
@@ -312,27 +324,36 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         solid = np.asarray(state.m_dot_s_calciner_cells, dtype=float)
         gas = np.asarray(state.m_dot_g_calciner_cells, dtype=float)
 
+        # RELATIVE, not absolute. These flows are tens of kg/s and
+        # the two accountings agree to the outer solver's own
+        # tolerance, not to the last bit: an absolute places=9 on
+        # 44.7 kg/s is asking for 2e-11 relative, which is tighter
+        # than the iteration that produced them.
+
         # Solid runs 0 -> N-1, so its last cell is the discharge.
         self.assertAlmostEqual(
-            solid[-1],
-            mf.m_dot_s_calciner_out,
+            solid[-1] / mf.m_dot_s_calciner_out,
+            1.0,
             places=9,
         )
 
         # Gas runs N-1 -> 0, so its first cell is the discharge.
         self.assertAlmostEqual(
-            gas[0],
-            state.m_dot_g_calciner,
+            gas[0] / state.m_dot_g_calciner,
+            1.0,
             places=9,
         )
 
         # The derived gas inlet must equal what the upstream
         # streams actually deliver, assembled independently.
         self.assertAlmostEqual(
-            state.m_dot_g_calciner_in,
-            state.m_dot_g_transition
-            + mf.m_dot_tertiary_air
-            + mf.m_dot_fuel_calciner,
+            state.m_dot_g_calciner_in
+            / (
+                state.m_dot_g_transition
+                + mf.m_dot_tertiary_air
+                + mf.m_dot_fuel_calciner
+            ),
+            1.0,
             places=9,
         )
 

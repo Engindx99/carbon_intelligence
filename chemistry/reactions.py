@@ -264,6 +264,22 @@ class ChemistryModel:
 
         Q_cells = np.zeros(N)
 
+        # Residual calcination in the kiln. The meal arrives still
+        # carbonated, and until now nothing here consumed it: CaCO3
+        # crossed the burning zone with in == out and left as
+        # "clinker". It is kept OUT of the Strang sequence above --
+        # that sequence splits reactions competing for the same CaO
+        # pool, while calcination only produces CaO -- and run once
+        # per substep at full step length.
+        #
+        # Its CO2 leaves the solid stream, so it is accumulated
+        # separately and handed to the zone as a per-cell mass
+        # release, the same quantity the transition and calciner
+        # already publish.
+        dm_CO2_cells = np.zeros(N)
+
+        Q_calcination_cells = np.zeros(N)
+
         for i in range(N):
 
             T_i = float(Ts[i])
@@ -273,10 +289,17 @@ class ChemistryModel:
                 for model in heat
             }
 
+            rate_calcination = float(
+                self.calcination.reaction_rate(T_i)
+            )
+
             n_sub = max(
                 1,
                 math.ceil(
-                    max(rate.values())
+                    max(
+                        max(rate.values()),
+                        rate_calcination,
+                    )
                     * tau
                     / self._MAX_RATE_SUBSTEP
                 ),
@@ -286,7 +309,27 @@ class ChemistryModel:
 
             Q_cell = 0.0
 
+            Q_calcination_cell = 0.0
+
+            dm_CO2_cell = 0.0
+
             for _ in range(n_sub):
+
+                # Calcination first: it only ADDS to the CaO pool
+                # the four below compete for, so releasing it
+                # before they draw on it is the ordering that
+                # matches the physics of a still-carbonated meal
+                # entering the kiln.
+                q_calc, dm_CO2 = self.calcination.react_flow(
+                    flow,
+                    T_i,
+                    h,
+                    rate_calcination,
+                )
+
+                Q_calcination_cell += q_calc
+                dm_CO2_cell += dm_CO2
+                Q_cell += q_calc
 
                 for model in half_sequence:
                     q = model.react_flow(flow, T_i, 0.5 * h, rate[model])
@@ -304,6 +347,10 @@ class ChemistryModel:
 
             Q_cells[i] = Q_cell
 
+            Q_calcination_cells[i] = Q_calcination_cell
+
+            dm_CO2_cells[i] = dm_CO2_cell
+
             set_cell_solid_flow(
                 flows["burning"].solids,
                 i,
@@ -315,13 +362,35 @@ class ChemistryModel:
         state.C3A_Q_sink = heat[self.c3a]
         state.C4AF_Q_sink = heat[self.c4af]
 
+        # Kept separate from the four clinkering terms because it
+        # is the one that also moves mass, and the burning zone
+        # needs the CO2 profile, not just the heat.
+        state.Calcination_Q_burning = float(
+            np.sum(Q_calcination_cells)
+        )
+
+        state.Calcination_Q_burning_cells = Q_calcination_cells
+
+        state.m_dot_CO2_generated_burning_cells = dm_CO2_cells
+
+        state.m_dot_CO2_generated_burning = float(
+            np.sum(dm_CO2_cells)
+        )
+
         state.Burning_Q_sink_cells = Q_cells
 
+        # Must include calcination, because Q_cells does: the two
+        # are the same quantity at different resolutions and the
+        # zone balance reads the scalar while the solid row reads
+        # the array. Summing only the four clinkering terms here
+        # would have left the balance short by the calcination
+        # heat with nothing to flag it.
         state.Burning_Q_sink = (
             state.Belite_Q_sink
             + state.Alite_Q_sink
             + state.C3A_Q_sink
             + state.C4AF_Q_sink
+            + state.Calcination_Q_burning
         )
 
         print("\n========== BURNING CHEMISTRY DEBUG ==========")
@@ -329,6 +398,7 @@ class ChemistryModel:
         print(f"Alite_Q_sink  = {state.Alite_Q_sink:.12e} W")
         print(f"C3A_Q_sink    = {state.C3A_Q_sink:.12e} W")
         print(f"C4AF_Q_sink   = {state.C4AF_Q_sink:.12e} W")
+        print(f"Calcination_Q_burning = {state.Calcination_Q_burning:.12e} W")
         print(f"Burning_Q_sink = {state.Burning_Q_sink:.12e} W")
         print("==============================================")
 

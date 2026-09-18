@@ -172,6 +172,33 @@ def _solid_build_flow(twin, zone):
     return float(getattr(twin.state, attr)), f"state.{attr}"
 
 
+def _solid_invert_flow(twin, zone):
+    """The mass flow a zone divides an INCOMING enthalpy by.
+
+    The mirror of _solid_build_flow, and it needs its own
+    resolution for the same reason: a zone that loses mass has an
+    inlet flow distinct from its outlet, and the map below holds
+    whichever single scalar each zone historically used. The
+    burning zone is the case that forced this -- `m_dot_s` there
+    is the CLINKER, i.e. its outlet, so reading the map would
+    report a 24% mismatch on a handoff that is exact.
+
+    This is the third time a zone changing its flow handling has
+    silently invalidated D1's resolution. Preferring an explicit
+    `m_dot_s_<zone>_in` means a zone declares its inlet rather
+    than this table guessing it.
+    """
+
+    m_in = getattr(twin.state, f"m_dot_s_{zone}_in", None)
+
+    if m_in is not None:
+        return float(m_in), f"state.m_dot_s_{zone}_in"
+
+    attr = ZONE_SOLID_FLOW_ATTR[zone]
+
+    return float(getattr(twin.state, attr)), f"state.{attr}"
+
+
 def _zone_object(twin, zone):
     return {
         "preheater": twin.preheater,
@@ -212,7 +239,7 @@ def zone_boundary_continuity(twin):
             continue
 
         m_up, src_up = _solid_build_flow(twin, upstream)
-        m_down = float(getattr(state, ZONE_SOLID_FLOW_ATTR[downstream]))
+        m_down, src_down = _solid_invert_flow(twin, downstream)
 
         cp_up = _zone_object(twin, upstream).Cp_s
         cp_down = _zone_object(twin, downstream).Cp_s
@@ -613,7 +640,14 @@ def solid_mass_flow_consistency(twin):
             v = np.asarray(flow, dtype=float)
             per_cell = v.copy() if per_cell is None else per_cell + v
 
-        scalar = float(getattr(state, ZONE_SOLID_FLOW_ATTR[zone]))
+        # Compared end for end: the zone's own inlet scalar
+        # against the species inlet, its outlet scalar against
+        # the species outlet. Using one scalar for both ends
+        # would report the zone's real mass loss as a
+        # discrepancy, which is the opposite of what this
+        # diagnostic is for.
+        scalar_in, _ = _solid_invert_flow(twin, zone)
+        scalar_out, _ = _solid_build_flow(twin, zone)
 
         # The preheater is indexed against the solid flow.
         first, last = (
@@ -627,9 +661,9 @@ def solid_mass_flow_consistency(twin):
                 "zone": zone,
                 "species_in": float(first),
                 "species_out": float(last),
-                "scalar": scalar,
-                "scalar_minus_species_in": scalar - float(first),
-                "scalar_minus_species_out": scalar - float(last),
+                "scalar": scalar_out,
+                "scalar_minus_species_in": scalar_in - float(first),
+                "scalar_minus_species_out": scalar_out - float(last),
             }
         )
 
@@ -773,22 +807,39 @@ def thermal_demand_vs_supply(twin):
     if clinker_potential <= 0.0:
         return None
 
+    # The four clinkering reactions ONLY. state.Burning_Q_sink
+    # cannot be used here: since calcination started running in
+    # the kiln too (Faz 4b) that scalar carries the kiln's
+    # calcination as well, and adding it to a calcination term
+    # would count the same reaction twice -- once at the feed's
+    # full extent and once again at the kiln's.
+    clinkering = (
+        float(getattr(state, "Belite_Q_sink", 0.0))
+        + float(getattr(state, "Alite_Q_sink", 0.0))
+        + float(getattr(state, "C3A_Q_sink", 0.0))
+        + float(getattr(state, "C4AF_Q_sink", 0.0))
+    )
+
+    fixed_terms = (
+        float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
+        + float(getattr(state, "Drying_Q_sink", 0.0))
+        + clinkering
+    )
+
     # Chemistry the feed REQUIRES, independent of how hot the
     # model happens to run.
     demand_full = (
         CaCO3_feed * DH_CALCINATION
-        + float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
-        + float(getattr(state, "Drying_Q_sink", 0.0))
-        + float(getattr(state, "Burning_Q_sink", 0.0))
+        + fixed_terms
     )
 
-    # Chemistry the model ACTUALLY runs.
+    # Chemistry the model ACTUALLY runs, summed over every zone
+    # calcination is active in.
     demand_modelled = (
         float(getattr(state, "Calcination_Q_sink", 0.0))
         + float(getattr(state, "Calcination_Q_transition", 0.0))
-        + float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
-        + float(getattr(state, "Drying_Q_sink", 0.0))
-        + float(getattr(state, "Burning_Q_sink", 0.0))
+        + float(getattr(state, "Calcination_Q_burning", 0.0))
+        + fixed_terms
     )
 
     supply = float(mf.m_dot_fuel) * FUEL_LHV

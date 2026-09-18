@@ -43,6 +43,46 @@ class CalcinationModel(ReactionBase):
         )
 
     # ======================================================
+    # STEADY-STATE FLOW FORM
+    #
+    # Same interface as belite/alite/c3a/c4af.react_flow(), so
+    # calcination can join the burning zone's Strang march
+    # instead of being a separate pass. It was absent there
+    # entirely: 9.18 kg/s of CaCO3 crossed the kiln with in ==
+    # out exactly and was counted as clinker, while the 16.3 MW
+    # its calcination should have drawn -- half the kiln's fuel
+    # -- was missing from the solid's energy balance.
+    #
+    # THIS ONE CHANGES THE STREAM MASS. CO2 leaves the bed, so
+    # unlike the four clinkering reactions the caller cannot
+    # treat the solid flow as constant across the zone; the
+    # released mass is returned so the caller can build its
+    # per-cell flow profile from it.
+    #
+    # Returns (heat_sink [W], CO2_released [kg/s]).
+    # ======================================================
+    def react_flow(self, flow, T, tau, rate=None):
+
+        if rate is None:
+            rate = float(self.reaction_rate(T))
+
+        available = float(flow["CaCO3"])
+
+        reacted = float(
+            self.reacted_mass(available, rate, tau)
+        )
+
+        flow["CaCO3"] -= reacted
+        flow["CaO"] += reacted * self.CaO_ratio
+
+        # The CO2 does NOT go into flow[]: it is no longer part
+        # of the solid stream. The caller books it into the gas.
+        return (
+            float(self.heat_sink(reacted)),
+            reacted * self.CO2_ratio,
+        )
+
+    # ======================================================
     # STEADY-STATE SPATIAL REACTION
     # ======================================================
 
