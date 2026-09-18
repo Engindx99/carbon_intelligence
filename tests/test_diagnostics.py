@@ -368,11 +368,96 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         self.assertTrue(np.all(np.diff(solid) <= 1e-12))
         self.assertTrue(np.all(np.diff(gas) <= 1e-12))
 
+    # ------------------------------------------------------
+    # D12 is only worth reading if it is the SAME accounting the
+    # plant closed, not a parallel one that happens to look
+    # plausible. These pin that.
+    # ------------------------------------------------------
+    def test_ledger_closes(self):
+
+        led = diagnostics.plant_thermal_ledger(self.twin)
+
+        self.assertLess(
+            abs(led["closure_W"]),
+            1.0,
+            f"ledger does not close: {led['closure_W']:.3e} W",
+        )
+
+    def test_ledger_reaction_total_is_the_disjoint_set(self):
+        """Several published reaction scalars contain each other.
+
+        Calciner_Q_sink already holds Dehydroxylation_Q_sink, and
+        Burning_Q_sink already holds Calcination_Q_burning, so the
+        naive sum of every reaction attribute double-counts. This
+        checks the ledger uses the disjoint set AND that the naive
+        sum really would differ -- if the overlap ever disappears
+        this test should be revisited, not deleted.
+        """
+
+        state = self.twin.state
+
+        def g(n):
+            return float(getattr(state, n, 0.0))
+
+        disjoint = (
+            g("Preheater_Q_sink")
+            + g("Calciner_Q_sink")
+            + g("Calcination_Q_transition")
+            + g("Burning_Q_sink")
+        )
+
+        naive = (
+            g("Drying_Q_sink")
+            + g("Dehydroxylation_Q_sink")
+            + g("Calcination_Q_sink")
+            + g("Calcination_Q_transition")
+            + g("Calcination_Q_burning")
+            + g("Belite_Q_sink")
+            + g("Alite_Q_sink")
+            + g("C3A_Q_sink")
+            + g("C4AF_Q_sink")
+            + g("Calciner_Q_sink")
+            + g("Burning_Q_sink")
+        )
+
+        led = diagnostics.plant_thermal_ledger(self.twin)
+
+        reactions = next(
+            r for r in led["rows"] if r["label"] == "reactions (net)"
+        )
+
+        self.assertAlmostEqual(reactions["W"], disjoint, places=6)
+
+        # The overlap is real, so the naive sum must be bigger.
+        self.assertGreater(naive, disjoint)
+
+    def test_ledger_per_kg_uses_potential_not_modelled_clinker(self):
+        """Dividing by the model's clinker stream would flatter it.
+
+        That stream still carries uncalcined CaCO3, so using it
+        would count raw meal as product and understate the
+        specific consumption.
+        """
+
+        led = diagnostics.plant_thermal_ledger(self.twin)
+        demand = diagnostics.thermal_demand_vs_supply(self.twin)
+
+        self.assertAlmostEqual(
+            led["clinker_potential"],
+            demand["clinker_potential"],
+            places=9,
+        )
+
+        self.assertGreater(
+            led["clinker_potential"],
+            0.5 * self.twin.mass_flow.m_dot_s_preheater,
+        )
+
     def test_report_renders_every_section(self):
 
         text = diagnostics.report(self.twin)
 
-        for marker in ("D1", "D2", "D3", "D4", "D8", "D9", "D11"):
+        for marker in ("D1", "D2", "D3", "D4", "D8", "D9", "D11", "D12"):
             with self.subTest(section=marker):
                 self.assertIn(marker, text)
 

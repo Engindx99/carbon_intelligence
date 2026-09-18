@@ -866,6 +866,144 @@ def thermal_demand_vs_supply(twin):
     }
 
 
+# ======================================================
+# D12. PLANT THERMAL LEDGER
+#
+# D11 asks whether the fuel is the right SIZE. D12 asks where
+# it GOES. The two together are what makes the fuel question
+# answerable, because the honest answer to "what fuel does this
+# process need" depends entirely on which loss structure you
+# assume -- and this plant's losses are not a real plant's.
+#
+# Every term is read from the SAME attributes the global energy
+# balance uses (main._validate_global_energy_balance), not
+# recomputed, so this cannot drift into a parallel accounting
+# that agrees with nothing. The reaction total in particular
+# must come from the disjoint set
+#
+#   Preheater_Q_sink + Calciner_Q_sink
+#     + Calcination_Q_transition + Burning_Q_sink
+#
+# because several of the published reaction scalars OVERLAP:
+# Calciner_Q_sink already contains Dehydroxylation_Q_sink, and
+# Burning_Q_sink already contains Calcination_Q_burning. Summing
+# the individual reactions instead would double-count them --
+# a mistake this diagnostic's neighbour D11 actually made.
+#
+# Bands are what a modern ILC preheater/precalciner plant
+# achieves, per kg of clinker. They are context, not targets:
+# nothing here feeds back into the solution.
+# ======================================================
+
+# [J/kg clinker], for the ledger's context column.
+LEDGER_BANDS = {
+    "reactions": (1700.0e3, 1800.0e3, "theoretical heat of formation"),
+    "exhaust": (600.0e3, 750.0e3, "preheater exit"),
+    "wall": (200.0e3, 300.0e3, "shell + casing"),
+}
+
+
+def plant_thermal_ledger(twin):
+
+    state = twin.state
+    mf = twin.mass_flow
+
+    demand = thermal_demand_vs_supply(twin)
+
+    if demand is None:
+        return None
+
+    clinker = demand["clinker_potential"]
+
+    def g(name):
+        return float(getattr(state, name, 0.0))
+
+    # ---------- IN ----------
+    fuel_kiln = g("Q_burning")
+    fuel_calciner = g("Q_calciner")
+
+    # ---------- OUT ----------
+    exhaust = g("Hgas_preheater_out")
+    clinker_sensible = g("Hsolid_cooler_out")
+    vent = g("Hgas_cooler_vent")
+
+    wall = sum(
+        g(f"Wall_loss_{z}")
+        for z in SOLID_ZONE_ORDER
+    )
+
+    # The disjoint set -- see the note above.
+    reactions = (
+        g("Preheater_Q_sink")
+        + g("Calciner_Q_sink")
+        + g("Calcination_Q_transition")
+        + g("Burning_Q_sink")
+    )
+
+    # Ambient-temperature streams the plant is also fed. Small,
+    # but they belong on the IN side or the ledger will not close
+    # against the fuel alone.
+    raw_meal_in = g("Hsolid_preheater_in")
+    air_in = g("Hgas_cooler_in")
+    primary_in = (
+        g("Hgas_burning_in")
+        - g("Hgas_cooler_secondary")
+    )
+
+    total_in = (
+        fuel_kiln
+        + fuel_calciner
+        + raw_meal_in
+        + air_in
+        + primary_in
+    )
+
+    total_out = (
+        exhaust
+        + clinker_sensible
+        + vent
+        + wall
+        + reactions
+    )
+
+    items = [
+        ("fuel, kiln burner", fuel_kiln, "in", None),
+        ("fuel, precalciner", fuel_calciner, "in", None),
+        ("raw meal + air (ambient)", raw_meal_in + air_in + primary_in, "in", None),
+        ("reactions (net)", reactions, "out", "reactions"),
+        ("exhaust gas", exhaust, "out", "exhaust"),
+        ("wall losses", wall, "out", "wall"),
+        ("cooler vent air", vent, "out", None),
+        ("clinker sensible", clinker_sensible, "out", None),
+    ]
+
+    rows = []
+
+    for label, value, side, band_key in items:
+
+        band = LEDGER_BANDS.get(band_key)
+
+        rows.append(
+            {
+                "label": label,
+                "side": side,
+                "W": value,
+                "J_per_kg": value / clinker,
+                "share": value / (fuel_kiln + fuel_calciner),
+                "band": band,
+            }
+        )
+
+    return {
+        "rows": rows,
+        "clinker_potential": clinker,
+        "fuel_W": fuel_kiln + fuel_calciner,
+        "total_in_W": total_in,
+        "total_out_W": total_out,
+        "closure_W": total_in - total_out,
+    }
+
+
 def _solid_feed_species(twin):
     """Raw-meal species flows as fed.
 
@@ -1088,6 +1226,59 @@ def report(twin):
             "  Heat the chemistry does not absorb leaves as temperature,"
             " wall loss and exhaust."
         )
+
+    # ---------- D12 ----------
+    w("\n-- D12  plant thermal ledger --")
+    led = plant_thermal_ledger(twin)
+
+    if led is None:
+        w("  (not available)")
+    else:
+        w(
+            f"  per kg of potential clinker"
+            f" ({led['clinker_potential']:.3f} kg/s)"
+        )
+        w(
+            f"  {'':26s} {'MW':>8s} {'kJ/kg':>9s} {'% fuel':>8s}"
+            f"   modern ILC"
+        )
+
+        for r in led["rows"]:
+
+            if r["band"] is None:
+                context = ""
+            else:
+                lo, hi, what = r["band"]
+                verdict = (
+                    "HIGH" if r["J_per_kg"] > hi
+                    else ("low" if r["J_per_kg"] < lo else "ok")
+                )
+                context = (
+                    f"   {lo / 1e3:.0f}-{hi / 1e3:.0f}"
+                    f"  [{verdict}]  {what}"
+                )
+
+            sign = "+" if r["side"] == "in" else "-"
+
+            w(
+                f"  {sign} {r['label']:24s} {r['W'] / 1e6:8.2f}"
+                f" {r['J_per_kg'] / 1e3:9.0f} {100 * r['share']:7.1f}%"
+                f"{context}"
+            )
+
+        w(
+            f"    {'closure (in - out)':26s}"
+            f" {led['closure_W'] / 1e6:8.3f} MW"
+        )
+        w(
+            "  Reads the same attributes as the global energy balance,"
+            " from the disjoint"
+        )
+        w(
+            "  reaction set -- Calciner_Q_sink already holds"
+            " dehydroxylation, Burning_Q_sink"
+        )
+        w("  already holds the kiln's calcination.")
 
     w("\n================================================================\n")
 
