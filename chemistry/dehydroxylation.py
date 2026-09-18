@@ -384,6 +384,20 @@ class DehydroxylationModel(ReactionBase):
             m_dot_out_cells.copy()
         )
 
+        # Per-cell water handed to the gas, published for the same
+        # reason calcination publishes m_dot_CaCO3_reacted_cells:
+        # the calciner's solid stream loses this mass cell by cell,
+        # so its energy balance needs to know where it leaves, not
+        # just how much left in total.
+        state.m_dot_BoundH2O_reacted_cells = (
+            m_dot_reacted_cells.copy()
+        )
+
+        state.m_dot_H2O_generated_cells = (
+            m_dot_reacted_cells
+            * self.product_ratio
+        )
+
         # ==================================================
         # NUMERICAL CHECKS
         # ==================================================

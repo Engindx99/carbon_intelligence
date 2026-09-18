@@ -13,7 +13,27 @@ from physics.physics import T_gas_from_h
 # ======================================================
 def gas_temperature_from_enthalpy(calciner, H, state):
 
-    m_dot_g = state.m_dot_g_calciner
+    # The INLET flow, not state.m_dot_g_calciner -- that scalar
+    # already carries every kg of CO2 and water this zone will
+    # release, so dividing the incoming enthalpy by it invented
+    # a colder inlet than the transition and the tertiary air
+    # actually delivered. H is built from Hgas_transition_out
+    # plus the tertiary air, so the inversion has to use the
+    # flow those two carry or the handoff conserves J/s while
+    # rescaling K.
+    #
+    # thermal_step publishes this once it has marched the
+    # chemistry; on the first pass, before any solve has run,
+    # the zone total is the only figure available and is used
+    # as the seed.
+    m_dot_g = getattr(
+        state,
+        "m_dot_g_calciner_in",
+        None,
+    )
+
+    if m_dot_g is None:
+        m_dot_g = state.m_dot_g_calciner
 
     # H = m_dot_g * h_gas(T, T_ref)
     #

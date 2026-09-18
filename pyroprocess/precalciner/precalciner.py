@@ -174,6 +174,7 @@ class Calciner:
         reaction_heat_cells=None,
         q_fuel_cells=None,
         Q_calciner=0.0,
+        dm_gas_cells=None,
     ):
 
         return thermal_solver.thermal_step(
@@ -188,6 +189,7 @@ class Calciner:
             reaction_heat_cells=reaction_heat_cells,
             q_fuel_cells=q_fuel_cells,
             Q_calciner=Q_calciner,
+            dm_gas_cells=dm_gas_cells,
         )
 
     # ======================================================
@@ -405,6 +407,33 @@ class Calciner:
                 state.Calciner_Q_sink
             )
 
+            # ==================================================
+            # MASS LEAVING THE BED, CELL BY CELL
+            #
+            # Both reactions in this zone move mass out of the
+            # solid and into the gas: calcination as CO2,
+            # dehydroxylation as water vapour. The thermal
+            # solver needs to know WHERE it leaves, not just how
+            # much left in total, or it has to use one scalar
+            # flow for a stream that does not have one.
+            #
+            # Taken from the same per-cell arrays the chemistry
+            # just wrote, so the mass transfer and the heat sink
+            # are derived from one and the same conversion.
+            # ==================================================
+
+            dm_gas_cells = (
+                np.asarray(
+                    state.m_dot_CaCO3_reacted_cells,
+                    dtype=float,
+                )
+                * self.chemistry.calcination.CO2_ratio
+                + np.asarray(
+                    state.m_dot_H2O_generated_cells,
+                    dtype=float,
+                )
+            )
+
 
 
             # ==================================================
@@ -431,6 +460,7 @@ class Calciner:
                 ),
                 q_fuel_cells=q_fuel_cells,
                 Q_calciner=Q_calciner,
+                dm_gas_cells=dm_gas_cells,
             )
 
             # ==================================================
@@ -607,8 +637,12 @@ class Calciner:
         # used by thermal_step().
         # ======================================================
 
+        # Per-cell flow: both reactions move mass out of the bed
+        # along this zone, so a single scalar would be the true
+        # flow in at most one cell. thermal_step publishes the
+        # profiles it solved on.
         state.Hg_calciner = (
-            state.m_dot_g_calciner
+            state.m_dot_g_calciner_cells
             * h_gas(
                 state.Tg_calciner,
                 self.T_ref,
@@ -621,7 +655,7 @@ class Calciner:
         # ======================================================
 
         state.Hs_calciner = (
-            state.m_dot_s_calciner
+            state.m_dot_s_calciner_cells
             * self.Cp_s
             * (
                 state.Ts_calciner
@@ -634,31 +668,15 @@ class Calciner:
         # ENTHALPY TO NEXT ZONE
         # ======================================================
 
-        # Read at the outlet FACE, not at the last cell CENTRE
-        # (Hg_calciner[0]) half a cell upstream of it: this is
-        # the reconstructed value the second-order flux in
-        # thermal_solver.thermal_step() transports out of cell
-        # 0, so handing off anything else would leak the
-        # difference out of the energy balance. Hg_calciner is
-        # m_dot_g * h elementwise, i.e. affine in h, so the
-        # extrapolation may be taken on it directly.
-        state.Hgas_calciner_out = outlet_face_value(
-            state.Hg_calciner,
-            reverse=True,
-        )
-
-
-        # ======================================================
-        # SOLID ENTHALPY TO NEXT ZONE
-        #
-        # Outlet FACE for the same reason; Hs_calciner is affine
-        # in Ts.
-        # ======================================================
-
-        state.Hsolid_calciner_out = outlet_face_value(
-            state.Hs_calciner,
-            reverse=False,
-        )
+        # Hgas_calciner_out / Hsolid_calciner_out are set by
+        # thermal_step, which multiplies each reconstructed
+        # outlet face by the flow that face carries. Re-deriving
+        # them here by extrapolating the Hg/Hs arrays would give
+        # a different number, because extrapolating a product of
+        # two varying profiles is not the product of their
+        # extrapolations -- and it is the flux thermal_step
+        # booked in its own energy balance that the next zone
+        # must receive.
 
         # ======================================================
         # STEADY-STATE:

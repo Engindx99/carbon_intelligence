@@ -5,8 +5,11 @@ from physics.physics import h_gas
 from physics.physics import outlet_face_value
 from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
+from physics.physics import second_order_upwind_face_corrections
 from physics.physics import T_gas_from_h
 from physics.physics import wall_thermal_resistance
+from physics.variable_flow_rows import apply_gas_energy_balance
+from physics.variable_flow_rows import apply_solid_energy_balance
 
 
 # ======================================================
@@ -29,6 +32,7 @@ def thermal_step(
     reaction_heat_cells=None,
     q_fuel_cells=None,
     Q_calciner=0.0,
+    dm_gas_cells=None,
 ):
 
     # ======================================================
@@ -37,8 +41,13 @@ def thermal_step(
 
     T_ref = calciner.T_ref
 
-    m_dot_g = state.m_dot_g_calciner
-    m_dot_s = state.m_dot_s_calciner
+    # state.m_dot_g_calciner is the flow LEAVING the zone and
+    # state.m_dot_s_calciner the flow ENTERING it; neither is
+    # the flow in a general cell, because calcination and
+    # dehydroxylation move mass from the bed to the gas all the
+    # way along. The per-cell profiles are built below.
+    m_dot_g_out = state.m_dot_g_calciner
+    m_dot_s_in = state.m_dot_s_calciner
 
     # ======================================================
     # FUEL HEAT RELEASE
@@ -61,21 +70,76 @@ def thermal_step(
         )
 
     # ======================================================
-    # SOLID THERMAL CAPACITY
-    # ======================================================
-
-    Cp_s = calciner.Cp_s
-
-    Cs = (
-        m_dot_s
-        * Cp_s
-    )
-
-    # ======================================================
     # GEOMETRY
     # ======================================================
 
     N = len(Tg)
+
+    # ======================================================
+    # PER-CELL STREAM FLOWS
+    #
+    # The bed calcines and dehydroxylates along this zone, so a
+    # single scalar flow is the true flow in at most one cell.
+    # Used as one it was also, at the outlet, the INLET value --
+    # which is how the calciner handed the transition an
+    # enthalpy that inverted 110 K too hot while every energy
+    # balance still closed to machine precision.
+    #
+    # Solid runs 0 -> N-1 and loses dm_gas in each cell; gas runs
+    # N-1 -> 0 and gains it. Both are cumulative sums of the same
+    # array, so what leaves one phase is what joins the other,
+    # cell for cell.
+    #
+    # The gas INLET flow is derived as the zone outlet minus
+    # everything the bed adds, rather than being reassembled from
+    # the transition gas, tertiary air and fuel. That keeps this
+    # identical to the scalar chain in physics.steady_state_mass
+    # by construction, so the two accountings cannot drift.
+    # ======================================================
+
+    Cp_s = calciner.Cp_s
+
+    if dm_gas_cells is None:
+        dm_gas_cells = np.zeros(N)
+
+    dm_gas_cells = np.asarray(dm_gas_cells, dtype=float)
+
+    if dm_gas_cells.size != N:
+        raise ValueError(
+            "dm_gas_cells has wrong length: "
+            f"{dm_gas_cells.size}, expected N={N}"
+        )
+
+    m_s_out_cells = (
+        m_dot_s_in
+        - np.cumsum(dm_gas_cells)
+    )
+
+    m_s_in_cells = np.concatenate(
+        (
+            [m_dot_s_in],
+            m_s_out_cells[:-1],
+        )
+    )
+
+    m_dot_g_in = (
+        m_dot_g_out
+        - float(np.sum(dm_gas_cells))
+    )
+
+    # Suffix sum: cell i's outgoing gas carries the mass released
+    # by every cell from i to N-1 inclusive.
+    m_g_out_cells = (
+        m_dot_g_in
+        + np.cumsum(dm_gas_cells[::-1])[::-1]
+    )
+
+    m_g_in_cells = (
+        m_g_out_cells
+        - dm_gas_cells
+    )
+
+    V_cell = calciner.V_cell
 
     V_cell = calciner.V_cell
 
@@ -263,16 +327,34 @@ def thermal_step(
         # see physics.second_order_upwind_correction.
         # ==================================================
 
-        adv_corr_g = second_order_upwind_correction(
+        # Per FACE, not pre-differenced: each face of a cell
+        # carries a different mass flow here, so the two
+        # corrections cannot be collapsed into one per-cell term
+        # (physics.second_order_upwind_face_corrections). Both
+        # arrays are in FLOW order and have N+1 entries.
+        Dg_face = second_order_upwind_face_corrections(
             h_gas(Tg_iter, T_ref),
             h_gas_in,
             reverse=True,
         )
 
-        adv_corr_s = second_order_upwind_correction(
+        Ds_face = second_order_upwind_face_corrections(
             Ts_iter,
             Ts_in,
             reverse=False,
+        )
+
+        # h_gas(Ts) for the CO2 and water leaving the bed,
+        # linearised at the current iterate exactly as the gas
+        # row linearises its own enthalpy. Both phases see the
+        # same term with opposite signs, so it cancels over the
+        # zone: the released mass crosses phases at the bed
+        # temperature it actually left, creating no energy.
+        cp_gas_s_cells = cp_gas(Ts_iter)
+
+        h_const_s_cells = (
+            h_gas(Ts_iter, T_ref)
+            - cp_gas_s_cells * Ts_iter
         )
 
         # ==================================================
@@ -313,63 +395,12 @@ def thermal_step(
             )
 
             # ==================================================
-            # GAS LOCAL HEAT CAPACITY
-            # ==================================================
-
-            Cp_g_i = cp_gas(
-                Tg_iter[i]
-            )
-
-            Cg_i = (
-                m_dot_g
-                * Cp_g_i
-            )
-
-            # ==================================================
-            # GAS ENTHALPY LINEARIZATION
-            #
-            # h(T) ≈ Cp*T + constant
-            # ==================================================
-
-            h_i_iter = h_gas(
-                Tg_iter[i],
-                T_ref,
-            )
-
-            h_linear_const_i = (
-                h_i_iter
-                - Cp_g_i
-                * Tg_iter[i]
-            )
-
-            # ==================================================
             # GAS ENERGY BALANCE
             #
-            # Gas direction:
-            #
-            # N-1  --->  0
-            #
-            # Gas receives no reaction sink directly.
-            # Calcination reaction is a solid-phase sink.
+            # Gas direction: N-1 ---> 0. The gas GAINS the mass
+            # the bed releases, so it enters and leaves each cell
+            # with different flows; the row is built on both.
             # ==================================================
-
-            A[row, Tg_i] += (
-                Cg_i
-                + V_cell * K_gs
-                + V_cell * K_gw
-            )
-
-            A[row, Ts_i] += (
-                -V_cell * K_gs
-            )
-
-            A[row, Tw_i] += (
-                -V_cell * K_gw
-            )
-
-            # --------------------------------------------------
-            # GAS RADIATION SINK
-            # --------------------------------------------------
 
             radiation_gas_sink = (
                 V_cell
@@ -379,100 +410,47 @@ def thermal_step(
                 )
             )
 
-            # --------------------------------------------------
-            # GAS INLET CELL
-            #
-            # Gas enters at cell N-1
-            # --------------------------------------------------
+            # Gas cell i sits at flow position p = N-1-i, so its
+            # inflow face is Dg_face[p] and its outflow face
+            # Dg_face[p+1].
+            p_gas = N - 1 - i
 
-            if i == N - 1:
+            row = apply_gas_energy_balance(
+                A,
+                b,
+                row,
+                i,
+                N,
+                Tg_iter,
+                T_ref,
+                m_g_out_cells[i],
+                m_g_in_cells[i],
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
+                V_cell,
+                K_gs,
+                K_gw,
+                radiation_gas_sink,
+                Tg_in,
+                Dg_face[p_gas],
+                Dg_face[p_gas + 1],
+            )
 
-                h_in = h_gas(
-                    Tg_in,
-                    T_ref,
-                )
-
-                b[row] = (
-                    m_dot_g * h_in
-                    - m_dot_g
-                    * h_linear_const_i
-                    - radiation_gas_sink
-                    - m_dot_g
-                    * adv_corr_g[i]
-                    + q_fuel_cells[i]
-                )
-
-            # --------------------------------------------------
-            # INTERNAL GAS CELLS
-            # --------------------------------------------------
-
-            else:
-
-                Tg_up_i = (
-                    i + 1
-                )
-
-                Cp_g_up = cp_gas(
-                    Tg_iter[i + 1]
-                )
-
-                h_up_iter = h_gas(
-                    Tg_iter[i + 1],
-                    T_ref,
-                )
-
-                h_linear_const_up = (
-                    h_up_iter
-                    - Cp_g_up
-                    * Tg_iter[i + 1]
-                )
-
-                A[row, Tg_up_i] += (
-                    -m_dot_g
-                    * Cp_g_up
-                )
-
-                b[row] = (
-                    -m_dot_g
-                    * h_linear_const_i
-                    + m_dot_g
-                    * h_linear_const_up
-                    - radiation_gas_sink
-                    - m_dot_g
-                    * adv_corr_g[i]
-                    + q_fuel_cells[i]
-                )
-
-            row += 1
+            # The fuel burns in the gas stream, exactly as the
+            # kiln burner's does, so its heat is a source on the
+            # gas row. apply_gas_energy_balance() is shared with
+            # the transition zone, which has no firing, so the
+            # term is added here rather than passed into it.
+            b[row - 1] += q_fuel_cells[i]
 
             # ==================================================
             # SOLID ENERGY BALANCE
             #
-            # Solid direction:
-            #
-            # 0  --->  N-1
-            #
-            # Calcination reaction is a solid-phase
-            # energy sink.
+            # Solid direction: 0 ---> N-1. The bed LOSES the CO2
+            # of calcination and the water of dehydroxylation as
+            # it goes.
             # ==================================================
-
-            A[row, Ts_i] += (
-                Cs
-                + V_cell * K_gs
-                + V_cell * K_ws
-            )
-
-            A[row, Tg_i] += (
-                -V_cell * K_gs
-            )
-
-            A[row, Tw_i] += (
-                -V_cell * K_ws
-            )
-
-            # --------------------------------------------------
-            # SOLID RADIATION
-            # --------------------------------------------------
 
             radiation_solid_source = (
                 V_cell
@@ -482,40 +460,27 @@ def thermal_step(
                 )
             )
 
-            # --------------------------------------------------
-            # SOLID INLET CELL
-            # --------------------------------------------------
-
-            if i == 0:
-
-                b[row] = (
-                    Cs * Ts_in
-                    + radiation_solid_source
-                    - reaction_heat_cells[i]
-                    - Cs * adv_corr_s[i]
-                )
-
-            # --------------------------------------------------
-            # INTERNAL SOLID CELLS
-            # --------------------------------------------------
-
-            else:
-
-                Ts_up_i = (
-                    N + i - 1
-                )
-
-                A[row, Ts_up_i] += (
-                    -Cs
-                )
-
-                b[row] = (
-                    radiation_solid_source
-                    - reaction_heat_cells[i]
-                    - Cs * adv_corr_s[i]
-                )
-
-            row += 1
+            row = apply_solid_energy_balance(
+                A,
+                b,
+                row,
+                i,
+                N,
+                m_s_out_cells[i] * Cp_s,
+                m_s_in_cells[i] * Cp_s,
+                T_ref,
+                dm_gas_cells[i],
+                cp_gas_s_cells[i],
+                h_const_s_cells[i],
+                V_cell,
+                K_gs,
+                K_ws,
+                radiation_solid_source,
+                reaction_heat_cells[i],
+                Ts_in,
+                Ds_face[i],
+                Ds_face[i + 1],
+            )
 
             # ==================================================
             # WALL ENERGY BALANCE
@@ -794,8 +759,13 @@ def thermal_step(
     # GAS ENTHALPY BALANCE
     # ======================================================
 
+    # Each end carries the flow that end actually has: the gas
+    # arrives with what the transition and the tertiary air
+    # brought and leaves with that plus everything the bed
+    # released. Using one scalar for both was what rescaled the
+    # temperature across the handoff.
     Hg_in = (
-        m_dot_g
+        m_dot_g_in
         * h_gas(
             Tg_in,
             T_ref,
@@ -807,8 +777,23 @@ def thermal_step(
     # the inversion tolerance of T_gas_from_h, and this is the
     # quantity the flux and the handoff both use.
     Hg_out = (
-        m_dot_g
+        m_dot_g_out
         * h_gas_out_face
+    )
+
+    # Energy carried across the phase boundary by the CO2 and
+    # the water, at the bed temperature they left. It is a
+    # SOURCE for the gas and a SINK for the solid of exactly
+    # the same size, so it cancels in the total balance below
+    # and appears only in the two per-phase checks.
+    H_phase_change = float(
+        np.sum(
+            dm_gas_cells
+            * h_gas(
+                Ts_ss,
+                T_ref,
+            )
+        )
     )
 
     gas_energy_change = (
@@ -828,6 +813,7 @@ def thermal_step(
     gas_expected = (
         -Qgs
         -Qgw
+        + H_phase_change
     )
 
     gas_energy_balance = (
@@ -840,7 +826,7 @@ def thermal_step(
     # ======================================================
 
     Hs_in = (
-        m_dot_s
+        m_dot_s_in
         * Cp_s
         * (
             Ts_in
@@ -848,8 +834,15 @@ def thermal_step(
         )
     )
 
+    # The bed discharges what is left after every cell has
+    # calcined and dehydroxylated, not what it was fed.
+    m_s_out_face = (
+        m_dot_s_in
+        - float(np.sum(dm_gas_cells))
+    )
+
     Hs_out = (
-        m_dot_s
+        m_s_out_face
         * Cp_s
         * (
             Ts_out
@@ -874,6 +867,7 @@ def thermal_step(
         Qgs
         - Qws
         - reaction_sink
+        - H_phase_change
     )
 
     solid_energy_balance = (
@@ -924,6 +918,24 @@ def thermal_step(
 
     calciner.energy_residual = total_energy_balance
 
+    # ======================================================
+    # HANDOFF FLUXES AND PER-CELL FLOWS
+    #
+    # Published here so Calciner.apply() hands downstream
+    # exactly the flux this balance booked, rather than
+    # re-deriving it from a cell-centre array and a scalar
+    # flow -- extrapolating the product of two varying
+    # profiles is not the product of their extrapolations.
+    # ======================================================
+
+    state.Hgas_calciner_out = float(Hg_out)
+    state.Hsolid_calciner_out = float(Hs_out)
+
+    state.m_dot_g_calciner_in = float(m_dot_g_in)
+    state.m_dot_s_calciner_out = float(m_s_out_face)
+
+    state.m_dot_s_calciner_cells = m_s_out_cells.copy()
+    state.m_dot_g_calciner_cells = m_g_out_cells.copy()
 
     # ======================================================
     # RETURN

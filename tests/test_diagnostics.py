@@ -262,6 +262,91 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             places=6,
         )
 
+    # ------------------------------------------------------
+    # Faz 1b + 1c deliverable. Every zone that loses mass now
+    # builds its outlet enthalpy on the flow that outlet face
+    # actually carries, so each handoff must invert back to the
+    # temperature the upstream zone discharged.
+    #
+    # This is the one property no energy balance can protect:
+    # a mismatched flow conserves J/s exactly while rescaling
+    # K, so all 14 balances close at machine precision either
+    # way. Only an explicit check keeps it fixed.
+    # ------------------------------------------------------
+    def test_every_solid_handoff_is_temperature_continuous(self):
+
+        for row in diagnostics.zone_boundary_continuity(self.twin):
+            with self.subTest(handoff=row["handoff"]):
+
+                self.assertAlmostEqual(
+                    row["ratio"],
+                    1.0,
+                    places=9,
+                    msg=(
+                        f"{row['handoff']} converts enthalpy with "
+                        f"{row['m_dot_up']:.4f} kg/s upstream "
+                        f"(from {row['m_dot_up_source']}) and "
+                        f"{row['m_dot_down']:.4f} kg/s downstream"
+                    ),
+                )
+
+                self.assertAlmostEqual(
+                    row["delta_T"],
+                    0.0,
+                    places=6,
+                )
+
+    # ------------------------------------------------------
+    # The per-cell profiles and the scalar mass chain in
+    # physics.steady_state_mass are two independent accountings
+    # of the same stream. They are derived differently -- one by
+    # marching the chemistry cell by cell, one by subtracting
+    # zone totals -- so agreement at the endpoints is a real
+    # cross-check, not a tautology.
+    # ------------------------------------------------------
+    def test_calciner_cell_flows_match_the_scalar_chain(self):
+
+        state = self.twin.state
+        mf = self.twin.mass_flow
+
+        solid = np.asarray(state.m_dot_s_calciner_cells, dtype=float)
+        gas = np.asarray(state.m_dot_g_calciner_cells, dtype=float)
+
+        # Solid runs 0 -> N-1, so its last cell is the discharge.
+        self.assertAlmostEqual(
+            solid[-1],
+            mf.m_dot_s_calciner_out,
+            places=9,
+        )
+
+        # Gas runs N-1 -> 0, so its first cell is the discharge.
+        self.assertAlmostEqual(
+            gas[0],
+            state.m_dot_g_calciner,
+            places=9,
+        )
+
+        # The derived gas inlet must equal what the upstream
+        # streams actually deliver, assembled independently.
+        self.assertAlmostEqual(
+            state.m_dot_g_calciner_in,
+            state.m_dot_g_transition
+            + mf.m_dot_tertiary_air
+            + mf.m_dot_fuel_calciner,
+            places=9,
+        )
+
+    def test_calciner_stream_flows_are_monotonic(self):
+        """Mass only ever moves bed -> gas here, never back."""
+
+        state = self.twin.state
+
+        solid = np.asarray(state.m_dot_s_calciner_cells, dtype=float)
+        gas = np.asarray(state.m_dot_g_calciner_cells, dtype=float)
+
+        self.assertTrue(np.all(np.diff(solid) <= 1e-12))
+        self.assertTrue(np.all(np.diff(gas) <= 1e-12))
+
     def test_report_renders_every_section(self):
 
         text = diagnostics.report(self.twin)
