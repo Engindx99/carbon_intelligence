@@ -41,6 +41,10 @@ class GlobalState:
     rpm: float = 0.0
     residence_time: float = 0.0 #min
     solid_velocity: float = 0.0 #m/s
+    # Bed cross-section fraction, solved together with the transit
+    # time from mass continuity (physics.bed_motion_from_continuity).
+    # Distinct from operational.kiln_load, which is a capacity figure.
+    bed_fill_fraction: float = 0.0 # -
 
     # ======================================================
     # FUEL ENERGY (W)

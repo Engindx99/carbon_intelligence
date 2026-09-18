@@ -19,8 +19,31 @@ class DehydroxylationModel(ReactionBase):
         # ================= THERMODYNAMICS =================
         self.deltaH = 1.10e6
 
-        # kg H2O released / kg reacted hydroxyl
-        self.product_ratio = 0.139
+        # kg H2O released per kg of the reacting species.
+        #
+        # This was 0.139, which is 2 M_H2O / M_kaolinite
+        # (36.03 / 258.16): the water yield per kg of KAOLINITE.
+        # The species this model actually consumes is
+        # `Bound_H2O`, and chemistry/composition.py defines the
+        # raw meal on an OXIDE basis -- SiO2 and Al2O3 are
+        # already separate entries carrying the clay's oxides,
+        # so `Bound_H2O` is the combined water itself, not the
+        # hydroxyl-bearing mineral.
+        #
+        # Applying the kaolinite-basis ratio to a water-basis
+        # species destroyed 86.1 % of the combined water: the
+        # solid lost the full 0.5555 kg/s of Bound_H2O while
+        # only 0.0772 kg/s reached the gas, so 0.4783 kg/s
+        # (1.7 % of the feed) left the plant accounted nowhere.
+        # That was the entire disagreement between the scalar
+        # mass chain and the per-cell species network; with 1.0
+        # the two reconcile to machine precision.
+        #
+        # Water released per kg of water is 1.0 by definition.
+        # The reaction enthalpy is unaffected: the heat term is
+        # m_reacted * deltaH on the Bound_H2O mass, which this
+        # ratio never enters.
+        self.product_ratio = 1.0
 
         # ================= TEMPERATURE =================
         self.T_start = 723.0

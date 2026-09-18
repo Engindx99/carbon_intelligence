@@ -1,8 +1,7 @@
 import numpy as np
 
+from physics.physics import bed_motion_from_continuity
 from physics.physics import outlet_face_value
-from physics.physics import residence_time
-from physics.physics import solid_axial_velocity
 
 
 # ======================================================
@@ -21,21 +20,30 @@ def resolve_solid_motion(burning, state, inputs):
         burning.rpm_max,
     )
 
-    tau = residence_time(
-        L=burning.L,
-        D=burning.D,
-        slope_deg=burning.slope_deg,
-        fill_fraction=burning.fill_fraction,
-        rpm=rpm,
-        eps=burning.eps,
-    )
+    # ======================================================
+    # The transit time and the bed fill are one unknown, not
+    # two: the correlation gives tau from the fill fraction and
+    # mass continuity gives the fill fraction back from tau.
+    # bed_motion_from_continuity solves that pair in closed form.
+    #
+    # This used to pass burning.fill_fraction, read from
+    # operational.kiln_load, which the config sets to 1.0 -- a
+    # capacity-utilisation figure standing in for a bed fill
+    # fraction, i.e. a completely full kiln. That made the
+    # transit time 5.4 min against the ~an-hour the same
+    # correlation gives once the bed is consistent with the feed
+    # rate, and every residence-time-driven reaction rate was
+    # scaled by it.
+    # ======================================================
 
-    u_s = solid_axial_velocity(
+    tau, u_s, bed_fill_fraction = bed_motion_from_continuity(
         L=burning.L,
         D=burning.D,
         slope_deg=burning.slope_deg,
-        fill_fraction=burning.fill_fraction,
         rpm=rpm,
+        m_dot_s=state.m_dot_s,
+        rho_bulk=burning.rho_s,
+        A_cross=burning.A_cross,
         eps=burning.eps,
     )
 
@@ -43,6 +51,7 @@ def resolve_solid_motion(burning, state, inputs):
     state.residence_time = tau
     state.u_s = u_s
     state.solid_velocity = u_s
+    state.bed_fill_fraction = bed_fill_fraction
 
     return u_s
 
@@ -101,6 +110,14 @@ def solid_enthalpy_out(Hs):
 #
 # Solid direction: 0 -> N-1.
 #
+# `reaction_q_cell_i` is the clinkering enthalpy consumed in
+# this cell [W]. The reactions run in the bed, so the heat
+# leaves the solid, exactly as calcination does on the solid
+# rows of the transition zone and the calciner. It was
+# previously subtracted from the gas row instead, which left
+# the bed temperature unaffected by its own reactions.
+# Like the radiation and advection terms it enters b only.
+#
 # `advection_correction` is the per-cell van Leer deferred
 # correction from physics.second_order_upwind_correction,
 # in temperature units (K) -- the solid flux
@@ -121,6 +138,7 @@ def apply_solid_energy_balance(
     K_gs,
     K_ws,
     radiation_solid_source,
+    reaction_q_cell_i,
     Ts_in,
     advection_correction=0.0,
 ):
@@ -148,6 +166,7 @@ def apply_solid_energy_balance(
         b[row] = (
             Cs * Ts_in
             + radiation_solid_source
+            - reaction_q_cell_i
             - Cs * advection_correction
         )
 
@@ -161,6 +180,7 @@ def apply_solid_energy_balance(
 
         b[row] = (
             radiation_solid_source
+            - reaction_q_cell_i
             - Cs * advection_correction
         )
 

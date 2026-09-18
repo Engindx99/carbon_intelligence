@@ -124,7 +124,6 @@ def apply_gas_energy_balance(
     K_gs,
     K_gw,
     q_cell,
-    reaction_q_cell,
     radiation_gas_sink,
     Tg_in,
     advection_correction=0.0,
@@ -171,7 +170,6 @@ def apply_gas_energy_balance(
 
         b[row] = (
             q_cell[i]
-            - reaction_q_cell[i]
             - radiation_gas_sink
             + m_dot_g * h_in
             - m_dot_g * h_linear_const_i
@@ -202,7 +200,6 @@ def apply_gas_energy_balance(
 
         b[row] = (
             q_cell[i]
-            - reaction_q_cell[i]
             - radiation_gas_sink
             - m_dot_g * h_linear_const_i
             + m_dot_g * h_linear_const_up

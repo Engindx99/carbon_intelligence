@@ -367,6 +367,51 @@ def k_gas(T):
 # ======================================================
 def second_order_upwind_correction(phi, phi_in, reverse=False):
 
+    D = second_order_upwind_face_corrections(
+        phi,
+        phi_in,
+        reverse=reverse,
+    )
+
+    if D.size < 2:
+        return np.zeros(np.asarray(phi, dtype=float).size)
+
+    # Cell i gains its outflow face correction and loses
+    # its inflow face correction.
+    correction = D[1:] - D[:-1]
+
+    if reverse:
+        correction = correction[::-1]
+
+    return correction
+
+
+# ======================================================
+# FACE-RESOLVED SECOND-ORDER CORRECTIONS
+#
+# The same van Leer reconstruction as above, but returned
+# per FACE instead of already differenced per cell.
+#
+# A cell's correction is only the difference of its two face
+# corrections when the same mass flow passes through both.
+# Where a stream gains or loses mass inside the zone -- a
+# calcining bed shedding CO2, say -- the two faces carry
+# different flows and the flux correction is
+#
+#   m_out * D[out face] - m_in * D[in face]
+#
+# which cannot be recovered from the difference alone. Those
+# callers take the faces from here.
+#
+# The returned array has N+1 entries in FLOW order: D[p] is
+# the inflow face of the p-th cell along the stream and
+# D[p+1] its outflow face, so D[0] is the zone inlet face and
+# D[N] the outlet face. With reverse=True, flow order runs
+# from the last array index to the first, i.e. the cell at
+# array index i sits at flow position p = N-1-i.
+# ======================================================
+def second_order_upwind_face_corrections(phi, phi_in, reverse=False):
+
     phi = np.asarray(phi, dtype=float)
 
     N = phi.size
@@ -426,14 +471,7 @@ def second_order_upwind_correction(phi, phi_in, reverse=False):
 
     D[N] = 0.5 * (phi[N - 1] - phi[N - 2])
 
-    # Cell i gains its outflow face correction and loses
-    # its inflow face correction.
-    correction = D[1:] - D[:-1]
-
-    if reverse:
-        correction = correction[::-1]
-
-    return correction
+    return D
 
 
 # ======================================================
@@ -609,6 +647,79 @@ def residence_time(L, D, slope_deg, fill_fraction, rpm, eps):
     )
 
     return tau
+
+
+# ======================================================
+# SELF-CONSISTENT RESIDENCE TIME AND BED FILL
+#
+# residence_time() above needs a fill fraction, and the bed
+# fill fraction follows from mass continuity through the same
+# cross-section,
+#
+#   eta = m_dot_s / (rho_bulk * u_s * A_cross),  u_s = L / tau
+#
+# so the two are not independent: picking one fixes the other.
+# Feeding them an externally chosen eta leaves the kiln holding
+# an amount of material that its own transit time contradicts.
+#
+# Substituting eta into the correlation closes the loop, and it
+# closes in closed form -- no iteration, no new constant:
+#
+#   tau = 1.77 L / (D w S eta),  eta = m_dot_s tau / (rho_bulk L A)
+#   =>  tau^2 = 1.77 L^2 rho_bulk A / (D w S m_dot_s)
+#   =>  tau   = L sqrt(1.77 rho_bulk A / (D w S m_dot_s))
+#
+# with w = rpm and S = tan(slope). The 1.77 grouping and the
+# operand order are kept exactly as residence_time() has them,
+# so the two agree to machine precision when the returned eta is
+# fed back in -- which is what tests assert.
+#
+# This is a conservation statement, not a new correlation: the
+# only physics added is that mass in equals mass out.
+# ======================================================
+def bed_motion_from_continuity(
+    L,
+    D,
+    slope_deg,
+    rpm,
+    m_dot_s,
+    rho_bulk,
+    A_cross,
+    eps,
+):
+
+    if min(L, D, rpm, m_dot_s, rho_bulk, A_cross) <= 0.0:
+        raise ValueError(
+            "L, D, rpm, m_dot_s, rho_bulk and A_cross must be > 0, got "
+            f"L={L}, D={D}, rpm={rpm}, m_dot_s={m_dot_s}, "
+            f"rho_bulk={rho_bulk}, A_cross={A_cross}"
+        )
+
+    S = np.tan(np.deg2rad(slope_deg))
+
+    if S <= 0.0:
+        raise ValueError(
+            f"slope_deg must give a positive slope, got {slope_deg}"
+        )
+
+    tau = L * np.sqrt(
+        1.77
+        * rho_bulk
+        * A_cross
+        / (D * rpm * S * m_dot_s)
+    )
+
+    u_s = L / (tau + eps)
+
+    fill_fraction = m_dot_s / (rho_bulk * u_s * A_cross)
+
+    if not (0.0 < fill_fraction < 1.0):
+        raise ValueError(
+            "bed fill fraction out of range: "
+            f"{fill_fraction} (tau={tau}, u_s={u_s})"
+        )
+
+    return tau, u_s, fill_fraction
 
 
 def solid_axial_velocity(L, D, slope_deg, fill_fraction, rpm, eps):

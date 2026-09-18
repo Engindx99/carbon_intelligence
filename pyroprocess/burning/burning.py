@@ -2,7 +2,6 @@ import numpy as np
 import yaml
 
 from physics.physics import h_gas
-from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
 from physics.physics import ZONE_HT_CONFIG
@@ -55,16 +54,15 @@ class Burning:
         self.energy_residual = 0.0
 
         # ======================================================
-        # INTERFACIAL & WALL GEOMETRY
+        # INTERFACIAL AREAS
+        #
+        # Not set here any more. a_gs, a_ws and a_gw are derived
+        # per solve from the bed cross-section in
+        # heat_transfer.thermal_step (bed_segment_geometry on the
+        # fill fraction from mass continuity), because they depend
+        # on how much material is in the kiln and so cannot be
+        # fixed at construction time.
         # ======================================================
-        self.epsilon_bed = 0.35
-        self.k_interfacial = 1.0
-
-        self.a_gs, self.a_ws = interfacial_areas(
-            D=self.D,
-            epsilon_bed=self.epsilon_bed,
-            k_interfacial=self.k_interfacial
-        )
 
         # ======================================================
         # REFRACTORY
@@ -87,11 +85,17 @@ class Burning:
         # ======================================================
         # WALL GEOMETRY
         # ======================================================
+        # wall_geometry's fourth return is the gas-wall area density
+        # over the full perimeter. It is discarded: a_gw is now the
+        # exposed arc only, split from a_ws by bed_segment_geometry in
+        # thermal_step. A_wall_cell and V_wall below are unaffected --
+        # those are refractory conduction quantities and the whole
+        # perimeter is the right area for them.
         (
             self.wall_perimeter,
             self.A_wall_total,
             self.A_wall_cell,
-            self.a_gw,
+            _a_gw_full_perimeter,
             self.V_wall
         ) = wall_geometry(
             D=self.D,
@@ -135,10 +139,14 @@ class Burning:
             3.0
         )
 
-        self.fill_fraction = op.get(
-            "kiln_load",
-            0.10
-        )
+        # No fill_fraction here. It used to be read from
+        # operational.kiln_load -- a capacity-utilisation figure the
+        # config sets to 1.0 -- and handed to residence_time() as if it
+        # were the bed cross-section fraction. The bed fill is now
+        # solved with the transit time from mass continuity in
+        # solid_phase.resolve_solid_motion and published as
+        # state.bed_fill_fraction, so there is nothing to set here and
+        # nothing left to confuse with kiln_load.
 
         self.u_s = 0.0
         self.u_g = 0.0

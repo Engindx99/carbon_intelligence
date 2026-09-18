@@ -1,6 +1,8 @@
 import numpy as np
 
+from physics.physics import bed_segment_geometry
 from physics.physics import cp_gas, h_gas
+from physics.physics import fill_fraction_from_holdup
 from physics.physics import outlet_face_value
 from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
@@ -64,9 +66,62 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     hv_gw = burning.hv_gw
     hv_ws = burning.hv_ws
 
-    a_gs = burning.a_gs
-    a_gw = burning.a_gw
-    a_ws = burning.a_ws
+    # ======================================================
+    # INTERFACIAL AREAS FROM THE BED CROSS-SECTION
+    #
+    # The bed occupies a circular segment of the kiln bore, so
+    # the three exchange areas follow from how much material is
+    # actually in the kiln: the gas sees the bed across its top
+    # chord, the covered arc carries wall->bed contact, and the
+    # remaining exposed arc carries gas->wall. The fill fraction
+    # itself comes from steady-state mass continuity,
+    # m_dot_s = rho_bulk * u_s * A_bed.
+    #
+    # This replaces burning.a_gs / a_ws / a_gw, which came from
+    # interfacial_areas() -- the packed-bed specific-surface
+    # correlation 6(1-eps)/d_p with the 4.2 m kiln bore
+    # substituted for the particle diameter. That form never saw
+    # the fill fraction, so it was a constant fixed at __init__
+    # and the heat transfer could not respond to kiln loading.
+    # It also double-counted the wall: a_gw was the full
+    # perimeter 4/D while a_ws was charged on top of it, for
+    # 1.51 m2/m3 against a physical ceiling of 4/D = 0.95.
+    # bed_segment_geometry splits the perimeter exactly, so
+    # a_ws + a_gw == 4/D holds by construction.
+    #
+    # Computed once per thermal_step, outside the Picard loop:
+    # m_dot_s and u_s are set by the outer loop and are constant
+    # within one Picard sweep, so re-deriving them per iteration
+    # would only add cost and a path to oscillation.
+    #
+    # D_e (gas-side hydraulic diameter) is returned but not used
+    # yet -- it is the length scale for the Reynolds number once
+    # hv_gs stops being a constant.
+    # ======================================================
+
+    # Same quantity solid_phase.resolve_solid_motion already solved
+    # alongside the transit time, recomputed here from the u_s it
+    # handed down rather than read back off state, so the areas follow
+    # whatever u_s this call is actually given. Both go through the
+    # identical continuity expression, so they agree to machine
+    # precision.
+    bed_fill_fraction = fill_fraction_from_holdup(
+        m_dot_s=m_dot_s,
+        rho_bulk=burning.rho_s,
+        u_s=u_s,
+        A_cross=burning.A_cross,
+    )
+
+    (
+        _bed_angle,
+        a_gs,
+        a_ws,
+        a_gw,
+        _D_e,
+    ) = bed_segment_geometry(
+        burning.D,
+        bed_fill_fraction,
+    )
 
     K_gs = hv_gs * a_gs
     K_gw = hv_gw * a_gw
@@ -86,18 +141,41 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     # ======================================================
     # BURNING REACTION ENERGY SINK
+    #
+    # The clinkering reactions (C2S/C3S/C3A/C4AF) run in the
+    # bed, so their enthalpy is drawn from the solid phase --
+    # the same way the calciner and the transition zone draw
+    # calcination heat from their solid rows. It used to be
+    # subtracted from the gas row here, which left the bed
+    # temperature unaffected by the reactions consuming its
+    # energy.
+    #
+    # The per-cell profile is the kinetic one built by
+    # ChemistryModel.apply_burning (cell by cell, from the
+    # local Ts), not the flame shape. Its sum equals the
+    # scalar Burning_Q_sink to machine precision, because
+    # both accumulate the identical per-reaction terms.
     # ======================================================
 
-    Burning_Q_sink = combustion.reaction_heat_sink(state)
+    reaction_q_cell = np.asarray(
+        state.Burning_Q_sink_cells,
+        dtype=float,
+    )
+
+    if reaction_q_cell.size != N:
+
+        raise ValueError(
+            "state.Burning_Q_sink_cells has length "
+            f"{reaction_q_cell.size}, expected N={N}"
+        )
 
     # ======================================================
-    # AXIAL ENERGY DISTRIBUTION
+    # AXIAL COMBUSTION HEAT DISTRIBUTION
     # ======================================================
 
-    q_cell, reaction_q_cell = combustion.axial_heat_distribution(
+    q_cell = combustion.axial_heat_distribution(
         N,
         Q_burning,
-        Burning_Q_sink,
     )
 
     # ======================================================
@@ -133,6 +211,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     converged = False
     error = np.inf
+    iterations_to_tol = None
 
     for iteration in range(max_iter):
 
@@ -242,7 +321,6 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 K_gs,
                 K_gw,
                 q_cell,
-                reaction_q_cell,
                 radiation_gas_sink,
                 state.Tg_burning_in,
                 adv_corr_g[i],
@@ -271,6 +349,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 K_gs,
                 K_ws,
                 radiation_solid_source,
+                reaction_q_cell[i],
                 state.Ts_burning_in,
                 adv_corr_s[i],
             )
@@ -331,6 +410,31 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             2 * N:3 * N
         ]
 
+
+        # ==================================================
+        # CONVERGENCE MEASUREMENT (DIAGNOSTIC, NON-BINDING)
+        #
+        # tol/converged/error were assigned here and never
+        # read, so the loop has always run all max_iter passes
+        # and no convergence was ever verified. They are now
+        # measured and reported.
+        #
+        # Deliberately NO break: stopping early would change
+        # the answer at the 1e-7 level and this instrumentation
+        # increment must leave the solution bit-identical.
+        # Wiring the break is a separate, later change.
+        # ==================================================
+
+        error = max(
+            float(np.max(np.abs(Tg_new - Tg_iter))),
+            float(np.max(np.abs(Ts_new - Ts_iter))),
+            float(np.max(np.abs(Tw_new - Tw_iter))),
+        )
+
+        if not converged and error < tol:
+
+            converged = True
+            iterations_to_tol = iteration + 1
 
         # ==================================================
         # RELAXATION
@@ -584,68 +688,83 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     burning.energy_residual = float(total_energy_balance)
 
 
-    for i in range(N):
+    # ======================================================
+    # PER-CELL MECHANISM SPLIT (DIAGNOSTIC)
+    #
+    # These six per-cell arrays were already being computed
+    # here, one cell at a time, and then thrown away. They are
+    # now published on state so the mechanism split can be
+    # read without re-deriving it outside the solver.
+    #
+    # This block is pure bookkeeping: every term is built from
+    # the already-converged Tg_ss/Ts_ss/Tw_ss and the same
+    # K_* / q_*_rad_final used by the balance above, so it
+    # cannot change the solution. The loop it replaces is the
+    # vectorised form of the identical arithmetic.
+    #
+    # Sign convention, per cell, in W:
+    #   Qgs_cells > 0  gas   -> solid
+    #   Qgw_cells > 0  gas   -> wall
+    #   Qws_cells > 0  solid -> wall
+    #   Qloss_cells    wall  -> ambient (always >= 0 here)
+    # ======================================================
 
-        # ==================================================
-        # GAS -> SOLID
-        # ==================================================
+    Qgs_rad_cells = V_cell * q_gs_rad_final
+    Qgw_rad_cells = V_cell * q_gw_rad_final
+    Qws_rad_cells = V_cell * q_ws_rad_final
 
-        Qgs_conv_cell = Qgs_conv[i]
+    state.Burning_Qgs_conv_cells = Qgs_conv
+    state.Burning_Qgw_conv_cells = Qgw_conv
+    state.Burning_Qws_conv_cells = Qws_conv
 
-        Qgs_rad_cell = (
-            V_cell
-            * q_gs_rad_final[i]
-        )
+    state.Burning_Qgs_rad_cells = Qgs_rad_cells
+    state.Burning_Qgw_rad_cells = Qgw_rad_cells
+    state.Burning_Qws_rad_cells = Qws_rad_cells
 
-        Qgs_cell = (
-            Qgs_conv_cell
-            + Qgs_rad_cell
-        )
+    state.Burning_Qgs_cells = Qgs_conv + Qgs_rad_cells
+    state.Burning_Qgw_cells = Qgw_conv + Qgw_rad_cells
+    state.Burning_Qws_cells = Qws_conv + Qws_rad_cells
 
-        # ==================================================
-        # GAS -> WALL
-        # ==================================================
+    state.Burning_Qloss_cells = (
+        Tw_ss - burning.T_amb
+    ) / R_total
 
-        Qgw_conv_cell = Qgw_conv[i]
+    state.Burning_q_fuel_cells = q_cell
+    state.Burning_q_reaction_cells = reaction_q_cell
 
-        Qgw_rad_cell = (
-            V_cell
-            * q_gw_rad_final[i]
-        )
+    # ======================================================
+    # CLOSURE STATE (DIAGNOSTIC)
+    #
+    # The volumetric conductances and the interfacial area
+    # densities that produced the split above. Published so
+    # NTU and the wall-area identity a_ws + a_gw == 4/D can be
+    # checked against the values the solver actually used,
+    # rather than recomputed from config and assumed equal.
+    # ======================================================
 
-        Qgw_cell = (
-            Qgw_conv_cell
-            + Qgw_rad_cell
-        )
+    state.Burning_K_gs = float(K_gs)
+    state.Burning_K_gw = float(K_gw)
+    state.Burning_K_ws = float(K_ws)
 
-        # ==================================================
-        # SOLID -> WALL
-        # ==================================================
+    state.Burning_a_gs = float(a_gs)
+    state.Burning_a_gw = float(a_gw)
+    state.Burning_a_ws = float(a_ws)
 
-        Qws_conv_cell = Qws_conv[i]
+    state.Burning_V_cell = float(V_cell)
+    state.Burning_R_total = float(R_total)
 
-        Qws_rad_cell = (
-            V_cell
-            * q_ws_rad_final[i]
-        )
+    # Picard convergence, measured not enforced (see the loop).
+    state.Burning_picard_max_iter = int(max_iter)
+    state.Burning_picard_tol = float(tol)
+    state.Burning_picard_error = float(error)
+    state.Burning_picard_converged = bool(converged)
+    state.Burning_picard_iterations_to_tol = iterations_to_tol
 
-        Qws_cell = (
-            Qws_conv_cell
-            + Qws_rad_cell
-        )
-
-        # ==================================================
-        # WALL LOSS
-        # ==================================================
-
-        Qloss_cell = (
-            (
-                Tw_ss[i]
-                - burning.T_amb
-            )
-            / R_total
-        )
-
+    # Capacity rates, for NTU. The gas side is evaluated at the
+    # converged profile rather than at a single temperature,
+    # since cp_gas varies by ~25% across this zone.
+    state.Burning_C_solid = float(m_dot_s * Cp_s)
+    state.Burning_C_gas_cells = m_dot_g * cp_gas(Tg_ss)
 
     # ======================================================
     # RETURN

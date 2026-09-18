@@ -51,6 +51,7 @@ from physics.axial_coordinate import SOLID_FLOW_ZONE_ORDER, build_axial_layout
 from validators.energy import validate_energy
 from validators.mass import validate_mass
 from reporter.validation import report_validation
+from reporter import diagnostics
 from visualization.zone_profiles import (
     plot_zone_temperature_profiles,
     plot_global_temperature_profile,
@@ -1683,6 +1684,22 @@ class Twin:
                 self._validate_global_mass_balance()
                 self._validate_cooler_air_split()
                 self._validate_co2_species_balance()
+
+                # ==================================================
+                # PHYSICS DIAGNOSTICS
+                #
+                # Read-only. The balances above verify that the
+                # bookkeeping is self-consistent; they cannot fail on
+                # a wrong reaction enthalpy, a handoff that rescales
+                # temperature, or a physically impossible profile,
+                # because every one of those closes exactly. This
+                # report is the part that can.
+                #
+                # It measures only -- nothing here feeds back into
+                # the solution, and it runs after convergence.
+                # ==================================================
+
+                print(diagnostics.report(self))
 
                 return self.state
 

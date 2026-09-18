@@ -1,5 +1,3 @@
-import numpy as np
-
 from physics.physics import fuel_heat_release
 from physics.physics import combustion_axial_distribution
 from physics.physics import ZONE_ENERGY_WEIGHTS
@@ -50,12 +48,22 @@ def reaction_heat_sink(state):
 
 
 # ======================================================
-# AXIAL ENERGY DISTRIBUTION
+# AXIAL COMBUSTION HEAT DISTRIBUTION
 #
 # Moved from inside Burning.thermal_step()
-# (pyroprocess/burning.py). Logic is unchanged.
+# (pyroprocess/burning.py).
+#
+# These weights are a flame shape: they describe where the
+# fuel releases its heat into the gas. They used to be
+# reused to spread the clinkering reaction sink as well,
+# which tied the location of the reactions to the location
+# of the flame. The reaction sink now comes from the
+# kinetics instead (state.Burning_Q_sink_cells, built cell
+# by cell in ChemistryModel.apply_burning from the local
+# bed temperature), so this function only distributes
+# combustion heat.
 # ======================================================
-def axial_heat_distribution(N, Q_burning, Burning_Q_sink):
+def axial_heat_distribution(N, Q_burning):
 
     weights = resample_axial_weights(
         ZONE_ENERGY_WEIGHTS["burning"]["axial"],
@@ -67,9 +75,4 @@ def axial_heat_distribution(N, Q_burning, Burning_Q_sink):
         weights=weights,
     )
 
-    reaction_q_cell = (
-        Burning_Q_sink
-        * np.asarray(weights, dtype=float)
-    )
-
-    return q_cell, reaction_q_cell
+    return q_cell
