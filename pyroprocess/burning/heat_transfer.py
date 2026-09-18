@@ -1,10 +1,12 @@
 import numpy as np
 
 from physics.physics import bed_segment_geometry
+from physics.kiln_closures import fuel_combustion_products
+from physics.kiln_closures import kiln_transfer_coefficients
+from physics.kiln_closures import radiating_partial_pressure
 from physics.physics import cp_gas, h_gas
 from physics.physics import fill_fraction_from_holdup
 from physics.physics import outlet_face_value
-from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
 from physics.physics import second_order_upwind_face_corrections
 from physics.variable_flow_rows import apply_gas_energy_balance
@@ -117,10 +119,6 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # HEAT TRANSFER PARAMETERS
     # ======================================================
 
-    hv_gs = burning.hv_gs
-    hv_gw = burning.hv_gw
-    hv_ws = burning.hv_ws
-
     # ======================================================
     # INTERFACIAL AREAS FROM THE BED CROSS-SECTION
     #
@@ -174,20 +172,93 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         A_cross=burning.A_cross,
     )
 
+    # The geometry is still resolved here, outside the Picard loop,
+    # because it depends only on the fill fraction. Faz 5 keeps the
+    # split areas and adds D_e, which is no longer "returned but not
+    # used": it is the length scale of both Reynolds numbers and,
+    # through L_m = 0.9 D_e, of the gas emissivity.
     (
-        _bed_angle,
+        bed_angle,
         a_gs,
         a_ws,
         a_gw,
-        _D_e,
+        D_e,
     ) = bed_segment_geometry(
         burning.D,
         bed_fill_fraction,
     )
 
-    K_gs = hv_gs * a_gs
-    K_gw = hv_gw * a_gw
-    K_ws = hv_ws * a_ws
+    # ======================================================
+    # RADIATING GAS COMPOSITION
+    #
+    # Only CO2 and H2O radiate. In this zone the gas enters at the
+    # burner as combustion products and picks up the bed's
+    # calcination CO2 on the way to the kiln inlet, so the radiating
+    # mass is per-cell even though the fuel term is not.
+    #
+    # m_g_out_cells was already built as a suffix sum of dm_gas_cells
+    # on top of m_dot_g_in, and every kilogram of that suffix sum is
+    # calcination CO2 -- so the CO2 a cell's gas carries is the
+    # fuel's CO2 plus exactly that increment. No new bookkeeping.
+    # ======================================================
+    m_dot_fuel_kiln = (
+        burning.kiln_fuel_fraction
+        * inputs.get("Fuel_rate_total", 0.0)
+    )
+
+    (
+        m_CO2_fuel,
+        m_H2O_fuel,
+    ) = fuel_combustion_products(m_dot_fuel_kiln)
+
+    m_CO2_gas_cells = (
+        m_CO2_fuel
+        + (m_g_out_cells - m_dot_g_in)
+    )
+
+    p_rad_cells = radiating_partial_pressure(
+        m_CO2_gas_cells,
+        np.full(N, float(m_H2O_fuel)),
+        m_g_out_cells,
+    )
+
+    # ======================================================
+    # FAZ 5 CLOSURE, EVALUATED PER PICARD ITERATE
+    #
+    # K_gs / K_gw / K_ws used to be three scalars formed once from
+    # three literal constants. They are now per-cell arrays rebuilt
+    # inside the loop from the current temperatures, because every
+    # term in them moves with temperature: the Nusselt numbers
+    # through the gas properties, the gas emissivity through T, and
+    # the radiation coefficients through T^3.
+    #
+    # Radiation is now INSIDE K rather than an explicit source in b.
+    # That is deliberate. It is ~80x larger than the k_eff = 0.005
+    # version it replaces, and an explicit source of that size
+    # oscillates; linearised into the matrix it is unconditionally
+    # stable, keeps A an M-matrix (every h_rad >= 0), and is exact at
+    # the fixed point because h_rad (T1 - T2) == eps sigma
+    # (T1^4 - T2^4) identically.
+    # ======================================================
+    def closure_at(Tg_at, Ts_at, Tw_at):
+
+        return kiln_transfer_coefficients(
+            Tg=Tg_at,
+            Ts=Ts_at,
+            Tw=Tw_at,
+            D=burning.D,
+            fill_fraction=bed_fill_fraction,
+            rpm=burning.rpm_default,
+            m_dot_gas=m_g_out_cells,
+            p_rad=p_rad_cells,
+            eps_bed=burning.closure.bed_emissivity,
+            eps_wall=burning.closure.wall_emissivity,
+            bed_conductivity=burning.closure.bed_conductivity,
+            bed_density=burning.rho_s,
+            bed_cp=burning.Cp_s,
+            particle_diameter=burning.closure.particle_diameter,
+            contact_chi=burning.closure.contact_chi,
+        )
 
     # ======================================================
     # FUEL HEAT RELEASE
@@ -287,26 +358,11 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         # RADIATION
         # ==================================================
 
-        q_gs_rad = radiation(
-            Tg_iter,
-            Ts_iter,
-            zone="burning",
-            area=a_gs
-        )
+        closure = closure_at(Tg_iter, Ts_iter, Tw_iter)
 
-        q_gw_rad = radiation(
-            Tg_iter,
-            Tw_iter,
-            zone="burning",
-            area=a_gw
-        )
-
-        q_ws_rad = radiation(
-            Ts_iter,
-            Tw_iter,
-            zone="burning",
-            area=a_ws
-        )
+        K_gs = closure["K_gs"]
+        K_gw = closure["K_gw"]
+        K_ws = closure["K_ws"]
 
         # ==================================================
         # SECOND-ORDER ADVECTION CORRECTION
@@ -378,13 +434,13 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             # GAS ENERGY BALANCE
             # ==================================================
 
-            radiation_gas_sink = (
-                V_cell
-                * (
-                    q_gs_rad[i]
-                    + q_gw_rad[i]
-                )
-            )
+            # Faz 5: radiation is carried implicitly inside
+            # K_gs / K_gw, so there is no explicit radiative
+            # source left on any row. The parameter stays in the
+            # shared builder because the calciner -- which is not
+            # a rotating cylinder and keeps the old closure --
+            # still uses it.
+            radiation_gas_sink = 0.0
 
             # Gas cell i sits at flow position p = N-1-i, so
             # its inflow face is Dg_face[p] and its outflow
@@ -405,8 +461,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
-                K_gw,
+                K_gs[i],
+                K_gw[i],
                 radiation_gas_sink,
                 state.Tg_burning_in,
                 Dg_face[p_gas],
@@ -422,13 +478,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             # SOLID ENERGY BALANCE
             # ==================================================
 
-            radiation_solid_source = (
-                V_cell
-                * (
-                    q_gs_rad[i]
-                    - q_ws_rad[i]
-                )
-            )
+            radiation_solid_source = 0.0
 
             row = apply_solid_energy_balance(
                 A,
@@ -443,8 +493,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
-                K_ws,
+                K_gs[i],
+                K_ws[i],
                 radiation_solid_source,
                 reaction_q_cell[i],
                 state.Ts_burning_in,
@@ -457,35 +507,23 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             # ==================================================
 
             A[row, Tg_i] += (
-                V_cell * K_gw
+                V_cell * K_gw[i]
             )
 
             A[row, Ts_i] += (
-                V_cell * K_ws
+                V_cell * K_ws[i]
             )
 
             A[row, Tw_i] += (
-                -V_cell * K_gw
-                -V_cell * K_ws
+                -V_cell * K_gw[i]
+                -V_cell * K_ws[i]
                 -1.0 / R_total
             )
 
-            # --------------------------------------------------
-            # WALL RADIATION SOURCE
-            # --------------------------------------------------
-
-            radiation_wall_source = (
-                V_cell
-                * (
-                    q_gw_rad[i]
-                    + q_ws_rad[i]
-                )
-            )
-
-            b[row] = (
-                -burning.T_amb / R_total
-                -radiation_wall_source
-            )
+            # Faz 5: the wall's radiative gains are inside
+            # K_gw and K_ws now, so the only explicit term left
+            # on this row is the ambient loss.
+            b[row] = -burning.T_amb / R_total
 
             row += 1
 
@@ -613,67 +651,43 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # FINAL RADIATION
     # ======================================================
 
-    q_gs_rad_final = radiation(
-        Tg_ss,
-        Ts_ss,
-        zone="burning",
-        area=a_gs
-    )
-
-    q_gw_rad_final = radiation(
-        Tg_ss,
-        Tw_ss,
-        zone="burning",
-        area=a_gw
-    )
-
-    q_ws_rad_final = radiation(
-        Ts_ss,
-        Tw_ss,
-        zone="burning",
-        area=a_ws
-    )
-
     # ======================================================
-    # CONVECTIVE HEAT TRANSFER
+    # MECHANISM SPLIT AT THE SOLUTION
+    #
+    # Re-evaluated at the converged temperatures rather than
+    # reusing the last iterate, and split with the SAME
+    # conductances the matrix was assembled from, so D4 reports
+    # the model's own numbers instead of a parallel calculation.
+    #
+    # Note which area each piece is charged on: the solid <-> wall
+    # path is contact over the covered arc a_ws PLUS radiation
+    # across the bed surface a_gs. Those are different areas, which
+    # is precisely why they cannot share one lumped hv_ws.
     # ======================================================
+    closure_ss = closure_at(Tg_ss, Ts_ss, Tw_ss)
 
-    Qgs_conv = (
-        V_cell
-        * K_gs
-        * (Tg_ss - Ts_ss)
-    )
+    K_gs = closure_ss["K_gs"]
+    K_gw = closure_ss["K_gw"]
+    K_ws = closure_ss["K_ws"]
 
-    Qgw_conv = (
-        V_cell
-        * K_gw
-        * (Tg_ss - Tw_ss)
-    )
+    dT_gs = Tg_ss - Ts_ss
+    dT_gw = Tg_ss - Tw_ss
+    dT_ws = Ts_ss - Tw_ss
 
-    Qws_conv = (
-        V_cell
-        * K_ws
-        * (Ts_ss - Tw_ss)
-    )
+    Qgs_conv = V_cell * closure_ss["K_gs_conv"] * dT_gs
+    Qgs_rad = V_cell * closure_ss["K_gs_rad"] * dT_gs
 
-    # ======================================================
-    # TOTAL HEAT TRANSFER
-    # ======================================================
+    Qgw_conv = V_cell * closure_ss["K_gw_conv"] * dT_gw
+    Qgw_rad = V_cell * closure_ss["K_gw_rad"] * dT_gw
 
-    Qgs = np.sum(
-        Qgs_conv
-        + V_cell * q_gs_rad_final
-    )
+    # "conv" on this pair is CONTACT, not convection: the covered
+    # wall touches the bed, it does not blow past it.
+    Qws_conv = V_cell * closure_ss["K_ws_cont"] * dT_ws
+    Qws_rad = V_cell * closure_ss["K_ws_rad"] * dT_ws
 
-    Qgw = np.sum(
-        Qgw_conv
-        + V_cell * q_gw_rad_final
-    )
-
-    Qws = np.sum(
-        Qws_conv
-        + V_cell * q_ws_rad_final
-    )
+    Qgs = np.sum(Qgs_conv + Qgs_rad)
+    Qgw = np.sum(Qgw_conv + Qgw_rad)
+    Qws = np.sum(Qws_conv + Qws_rad)
 
     # ======================================================
     # WALL LOSS
@@ -838,9 +852,9 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     #   Qloss_cells    wall  -> ambient (always >= 0 here)
     # ======================================================
 
-    Qgs_rad_cells = V_cell * q_gs_rad_final
-    Qgw_rad_cells = V_cell * q_gw_rad_final
-    Qws_rad_cells = V_cell * q_ws_rad_final
+    Qgs_rad_cells = Qgs_rad
+    Qgw_rad_cells = Qgw_rad
+    Qws_rad_cells = Qws_rad
 
     state.Burning_Qgs_conv_cells = Qgs_conv
     state.Burning_Qgw_conv_cells = Qgw_conv
@@ -879,13 +893,42 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # rather than recomputed from config and assumed equal.
     # ======================================================
 
-    state.Burning_K_gs = float(K_gs)
-    state.Burning_K_gw = float(K_gw)
-    state.Burning_K_ws = float(K_ws)
+    # Per-cell now: Faz 5 made every conductance a function of the
+    # local temperature, so a single float would be a zone average
+    # masquerading as a coefficient. Diagnostics that want one number
+    # take the mean explicitly.
+    state.Burning_K_gs_cells = K_gs
+    state.Burning_K_gw_cells = K_gw
+    state.Burning_K_ws_cells = K_ws
+
+    state.Burning_K_gs = float(np.mean(K_gs))
+    state.Burning_K_gw = float(np.mean(K_gw))
+    state.Burning_K_ws = float(np.mean(K_ws))
 
     state.Burning_a_gs = float(a_gs)
     state.Burning_a_gw = float(a_gw)
     state.Burning_a_ws = float(a_ws)
+
+    # Faz 5 closure detail, for D4 and for the report.
+    state.Burning_D_e = float(D_e)
+    state.Burning_bed_angle = float(bed_angle)
+    state.Burning_mean_beam_length = float(closure_ss["L_m"])
+    state.Burning_eps_gas_cells = closure_ss["eps_gas"]
+    state.Burning_p_rad_cells = p_rad_cells
+
+    # Radiating species handed on to the transition zone. The gas
+    # leaves at cell 0 (it flows N-1 -> 0), so that cell's outgoing
+    # gas is what crosses the boundary. Published rather than
+    # re-derived downstream so the two zones cannot disagree about
+    # what is in the same stream.
+    state.Burning_m_dot_CO2_gas_out = float(m_CO2_gas_cells[0])
+    state.Burning_m_dot_H2O_gas_out = float(m_H2O_fuel)
+    state.Burning_h_conv_gs_cells = closure_ss["h_conv_gs"]
+    state.Burning_h_rad_gs_cells = closure_ss["h_rad_gs"]
+    state.Burning_h_conv_gw_cells = closure_ss["h_conv_gw"]
+    state.Burning_h_rad_gw_cells = closure_ss["h_rad_gw"]
+    state.Burning_h_cont_ws_cells = closure_ss["h_cont_ws"]
+    state.Burning_h_rad_sw_cells = closure_ss["h_rad_sw"]
 
     state.Burning_V_cell = float(V_cell)
     state.Burning_R_total = float(R_total)

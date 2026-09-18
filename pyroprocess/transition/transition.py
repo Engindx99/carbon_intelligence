@@ -1,7 +1,7 @@
 import numpy as np
 
 from physics.physics import h_gas
-from physics.physics import ZONE_HT_CONFIG
+from physics.closure_config import closure_settings
 
 from chemistry.phases import copy_solid_phases
 from chemistry.phases import get_cell_solid_flow
@@ -14,7 +14,13 @@ from . import heat_transfer
 
 class Transition:
 
-    def __init__(self, N=5, L=25.0):
+    def __init__(self, N=5, L=25.0, cfg=None):
+
+        if cfg is None:
+            import yaml
+
+            with open("configs/twin_cfg.yaml") as handle:
+                cfg = yaml.safe_load(handle)
 
         self.N = N
         self.L = L
@@ -36,19 +42,25 @@ class Transition:
         self.V_cell = self.V_total / self.N
 
         # ================= INTERFACIAL AREA =================
-        self.epsilon_bed = 0.35
-        self.k_interfacial = 1.0
-
-        a_gs_base = 6.0 * (1.0 - self.epsilon_bed) / self.D
-
-        self.a_gs = self.k_interfacial * a_gs_base
-        self.a_ws = 0.6 * self.a_gs
-
+        #
+        # Faz 5 / Faz 3. The three area densities are no longer set
+        # here. They came from an INLINED copy of the packed-bed
+        # correlation 6(1 - eps)/d_p with the 4.2 m kiln bore
+        # substituted for the particle diameter, plus a_ws = 0.6 a_gs
+        # and a_gw taken as the FULL perimeter on top of it. That
+        # charged the wall twice: (a_ws + a_gw) D/4 came to 1.585
+        # against a physical ceiling of 1, a 58.5% over-count, and it
+        # gave this 25 m zone a larger gas -> solid exchange capacity
+        # (144.7 kW/K) than the 60 m kiln itself (121.0 kW/K).
+        #
+        # They now come per thermal_step from bed_segment_geometry,
+        # which splits the perimeter exactly, so a_ws + a_gw == 4/D
+        # holds by construction and the areas follow the actual bed
+        # loading instead of being frozen at construction.
         # ================= WALL GEOMETRY =================
         self.wall_perimeter = np.pi * self.D
         self.A_wall = self.wall_perimeter * self.L
         self.A_wall_cell = self.A_wall / self.N
-        self.a_gw = self.A_wall_cell / self.V_cell
 
         # ================= REFRACTORY =================
         self.refractory_thickness = 0.05
@@ -72,18 +84,28 @@ class Transition:
         self.Cp_wall = 1000.0
 
         # ================= BED =================
-        self.fill_fraction = 0.10
+        # fill_fraction used to be pinned here at 0.10 and nothing
+        # solved for it. It now comes from mass continuity per
+        # thermal_step, so there is nothing to set.
 
         # ================= FLOW =================
         self.u_g = 0.0
         self.u_s = 0.0
 
-        # ================= HEAT TRANSFER =================
-        cfg = ZONE_HT_CONFIG[self.zone]
+        # ================= MOTION =================
+        # The same kiln tube as the burning zone, so the same
+        # rotation. Read from the same config block rather than
+        # copied, so the two cannot drift apart.
+        motion = cfg.get("motion", {})
 
-        self.hv_gs = cfg["hv_gs"]
-        self.hv_gw = cfg["hv_gw"]
-        self.hv_ws = cfg["hv_ws"]
+        self.rpm_default = motion.get("rpm_default", 1.5)
+        self.slope_deg = motion.get("inclination_deg", 3.0)
+
+        # ================= HEAT TRANSFER =================
+        # Faz 5: hv_gs / hv_gw / hv_ws are gone from this zone, the
+        # same way they are gone from burning. ZONE_HT_CONFIG no
+        # longer carries a "transition" entry.
+        self.closure = closure_settings(cfg)
 
         # ================= NUMERICAL =================
         self.eps = 1e-9

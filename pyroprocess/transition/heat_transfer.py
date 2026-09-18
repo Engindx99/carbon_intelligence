@@ -4,8 +4,11 @@ from physics.physics import cp_gas
 from physics.physics import h_gas
 from physics.physics import outlet_face_value
 from physics.physics import second_order_upwind_face_corrections
+from physics.physics import fill_fraction_from_holdup
+from physics.physics import bed_segment_geometry
 from physics.physics import wall_thermal_resistance
-from physics.physics import radiation
+from physics.kiln_closures import kiln_transfer_coefficients
+from physics.kiln_closures import radiating_partial_pressure
 
 from . import gas_phase
 from . import solid_phase
@@ -102,17 +105,66 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # HEAT TRANSFER COEFFICIENTS
     # ======================================================
 
-    hv_gs = transition.hv_gs
-    hv_gw = transition.hv_gw
-    hv_ws = transition.hv_ws
+    # ======================================================
+    # FAZ 5 / FAZ 3 -- AREAS AND COEFFICIENTS
+    #
+    # a_gs / a_ws / a_gw used to be frozen in __init__ from an
+    # inlined packed-bed correlation that over-counted the wall by
+    # 58.5%, and K was that times three literal constants. Both now
+    # follow the state: the areas from the bed's circular segment,
+    # the coefficients from the local temperatures.
+    #
+    # The fill fraction comes from the same continuity relation the
+    # burning zone uses, m_dot_s = rho_bulk * u_s * A_bed, rather
+    # than the hard-coded transition.fill_fraction = 0.10 that
+    # nothing solved for. It is taken at the zone INLET flow, which
+    # is the heavier end here because the bed calcines along the
+    # zone -- the same single-fill-fraction approximation the
+    # burning zone makes, and the same one Faz 3 will remove.
+    # ======================================================
+    bed_fill_fraction = fill_fraction_from_holdup(
+        m_dot_s=m_dot_s_in,
+        rho_bulk=transition.rho_s,
+        u_s=u_s,
+        A_cross=transition.A_cross,
+    )
 
-    a_gs = transition.a_gs
-    a_gw = transition.a_gw
-    a_ws = transition.a_ws
+    (
+        bed_angle,
+        a_gs,
+        a_ws,
+        a_gw,
+        D_e,
+    ) = bed_segment_geometry(
+        transition.D,
+        bed_fill_fraction,
+    )
 
-    K_gs = hv_gs * a_gs
-    K_gw = hv_gw * a_gw
-    K_ws = hv_ws * a_ws
+    # Radiating species arriving from the kiln, plus whatever this
+    # zone's own calcination adds on the way. Read off state so the
+    # two zones describe the same stream with the same numbers.
+    m_CO2_gas_in = getattr(state, "Burning_m_dot_CO2_gas_out", 0.0)
+    m_H2O_gas_in = getattr(state, "Burning_m_dot_H2O_gas_out", 0.0)
+
+    def closure_at(Tg_at, Ts_at, Tw_at, m_g_cells, p_rad):
+
+        return kiln_transfer_coefficients(
+            Tg=Tg_at,
+            Ts=Ts_at,
+            Tw=Tw_at,
+            D=transition.D,
+            fill_fraction=bed_fill_fraction,
+            rpm=transition.rpm_default,
+            m_dot_gas=m_g_cells,
+            p_rad=p_rad,
+            eps_bed=transition.closure.bed_emissivity,
+            eps_wall=transition.closure.wall_emissivity,
+            bed_conductivity=transition.closure.bed_conductivity,
+            bed_density=transition.rho_s,
+            bed_cp=transition.Cp_s,
+            particle_diameter=transition.closure.particle_diameter,
+            contact_chi=transition.closure.contact_chi,
+        )
 
     # ======================================================
     # WALL THERMAL RESISTANCE
@@ -165,26 +217,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # RADIATION
         # ==================================================
 
-        q_gs_rad = radiation(
-            Tg_iter,
-            Ts_iter,
-            zone=transition.zone,
-            area=a_gs,
-        )
-
-        q_gw_rad = radiation(
-            Tg_iter,
-            Tw_iter,
-            zone=transition.zone,
-            area=a_gw,
-        )
-
-        q_ws_rad = radiation(
-            Ts_iter,
-            Tw_iter,
-            zone=transition.zone,
-            area=a_ws,
-        )
+        # Faz 5: the transfer coefficients are built further down,
+        # after the calcination march has produced this iterate's
+        # per-cell gas flow -- the closure needs it for both the
+        # local gas velocity and the radiating partial pressure.
 
         # ==================================================
         # SECOND-ORDER ADVECTION CORRECTION
@@ -311,6 +347,35 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         )
 
         # ==================================================
+        # FAZ 5 CLOSURE AT THIS ITERATE
+        #
+        # Built here, not at the top of the loop, because the gas
+        # flow it needs only exists after the calcination march.
+        # Radiation goes INSIDE K rather than into b: linearised
+        # as h_rad = eps_eff sigma (T1 + T2)(T1^2 + T2^2) it is
+        # algebraically identical to eps_eff sigma (T1^4 - T2^4)
+        # at the fixed point, keeps A an M-matrix, and is stable
+        # at a magnitude an explicit source would oscillate at.
+        # ==================================================
+        p_rad_cells = radiating_partial_pressure(
+            m_CO2_gas_in + (m_g_out_cells - m_dot_g_in),
+            np.full(N, float(m_H2O_gas_in)),
+            m_g_out_cells,
+        )
+
+        closure = closure_at(
+            Tg_iter,
+            Ts_iter,
+            Tw_iter,
+            m_g_out_cells,
+            p_rad_cells,
+        )
+
+        K_gs = closure["K_gs"]
+        K_gw = closure["K_gw"]
+        K_ws = closure["K_ws"]
+
+        # ==================================================
         # LINEAR SYSTEM
         # ==================================================
 
@@ -338,13 +403,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             # GAS ENERGY BALANCE
             # ==================================================
 
-            radiation_gas_sink = (
-                V_cell
-                * (
-                    q_gs_rad[i]
-                    + q_gw_rad[i]
-                )
-            )
+            # Faz 5: radiation lives inside K now.
+            radiation_gas_sink = 0.0
 
             # Gas cell i sits at flow position p = N-1-i, so its
             # inflow face is Dg_face[p] and its outflow face
@@ -365,8 +425,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
-                K_gw,
+                K_gs[i],
+                K_gw[i],
                 radiation_gas_sink,
                 Tg_in,
                 Dg_face[p_gas],
@@ -377,13 +437,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             # SOLID ENERGY BALANCE
             # ==================================================
 
-            radiation_solid_source = (
-                V_cell
-                * (
-                    q_gs_rad[i]
-                    - q_ws_rad[i]
-                )
-            )
+            radiation_solid_source = 0.0
 
             row = solid_phase.apply_solid_energy_balance(
                 A,
@@ -398,8 +452,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
-                K_ws,
+                K_gs[i],
+                K_ws[i],
                 radiation_solid_source,
                 Q_calcination_cells[i],
                 Ts_in,
@@ -412,16 +466,16 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             # ==================================================
 
             A[row, Tg_i] += (
-                V_cell * K_gw
+                V_cell * K_gw[i]
             )
 
             A[row, Ts_i] += (
-                V_cell * K_ws
+                V_cell * K_ws[i]
             )
 
             A[row, Tw_i] += (
-                -V_cell * K_gw
-                -V_cell * K_ws
+                -V_cell * K_gw[i]
+                -V_cell * K_ws[i]
                 -1.0 / R_total
             )
 
@@ -429,13 +483,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             # WALL RADIATION SOURCE
             # --------------------------------------------------
 
-            radiation_wall_source = (
-                V_cell
-                * (
-                    q_gw_rad[i]
-                    + q_ws_rad[i]
-                )
-            )
+            radiation_wall_source = 0.0
 
             b[row] = (
                 -transition.T_amb / R_total
@@ -494,29 +542,27 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     Tw_ss = Tw_iter
 
     # ======================================================
-    # FINAL RADIATION
+    # MECHANISM SPLIT AT THE SOLUTION
+    #
+    # Re-evaluated at the converged field and split with the SAME
+    # conductances the matrix used, so a diagnostic reads the
+    # model's own numbers rather than a parallel calculation.
     # ======================================================
-
-    q_gs_rad = radiation(
+    closure_ss = closure_at(
         Tg_ss,
         Ts_ss,
-        zone=transition.zone,
-        area=a_gs,
+        Tw_ss,
+        m_g_out_cells,
+        p_rad_cells,
     )
 
-    q_gw_rad = radiation(
-        Tg_ss,
-        Tw_ss,
-        zone=transition.zone,
-        area=a_gw,
-    )
+    K_gs = closure_ss["K_gs"]
+    K_gw = closure_ss["K_gw"]
+    K_ws = closure_ss["K_ws"]
 
-    q_ws_rad = radiation(
-        Ts_ss,
-        Tw_ss,
-        zone=transition.zone,
-        area=a_ws,
-    )
+    q_gs_rad = closure_ss["K_gs_rad"] * (Tg_ss - Ts_ss)
+    q_gw_rad = closure_ss["K_gw_rad"] * (Tg_ss - Tw_ss)
+    q_ws_rad = closure_ss["K_ws_rad"] * (Ts_ss - Tw_ss)
 
     # ======================================================
     # FINAL TRANSITION CALCINATION
@@ -555,29 +601,11 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # FINAL CONVECTION
     # ======================================================
 
-    q_gs_conv = (
-        K_gs
-        * (
-            Tg_ss
-            - Ts_ss
-        )
-    )
+    q_gs_conv = closure_ss["K_gs_conv"] * (Tg_ss - Ts_ss)
+    q_gw_conv = closure_ss["K_gw_conv"] * (Tg_ss - Tw_ss)
 
-    q_gw_conv = (
-        K_gw
-        * (
-            Tg_ss
-            - Tw_ss
-        )
-    )
-
-    q_ws_conv = (
-        K_ws
-        * (
-            Ts_ss
-            - Tw_ss
-        )
-    )
+    # Contact, not convection: the covered wall touches the bed.
+    q_ws_conv = closure_ss["K_ws_cont"] * (Ts_ss - Tw_ss)
 
     # ======================================================
     # TOTAL CELL HEAT TRANSFER
@@ -789,6 +817,57 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     )
 
     transition.energy_residual = total_energy_balance
+
+    # ======================================================
+    # FAZ 5 CLOSURE STATE (DIAGNOSTIC)
+    #
+    # Same names, same meaning, same sign convention as the burning
+    # zone publishes, so D4 and D8 can read both zones through one
+    # code path instead of special-casing each.
+    #
+    #   Qgs_cells > 0  gas   -> solid
+    #   Qgw_cells > 0  gas   -> wall
+    #   Qws_cells > 0  solid -> wall
+    # ======================================================
+    state.Transition_Qgs_conv_cells = V_cell * q_gs_conv
+    state.Transition_Qgw_conv_cells = V_cell * q_gw_conv
+    state.Transition_Qws_conv_cells = V_cell * q_ws_conv
+
+    state.Transition_Qgs_rad_cells = V_cell * q_gs_rad
+    state.Transition_Qgw_rad_cells = V_cell * q_gw_rad
+    state.Transition_Qws_rad_cells = V_cell * q_ws_rad
+
+    state.Transition_Qgs_cells = V_cell * q_gs_cell
+    state.Transition_Qgw_cells = V_cell * q_gw_cell
+    state.Transition_Qws_cells = V_cell * q_ws_cell
+
+    state.Transition_Qloss_cells = Q_loss_cell
+
+    state.Transition_K_gs_cells = K_gs
+    state.Transition_K_gw_cells = K_gw
+    state.Transition_K_ws_cells = K_ws
+
+    state.Transition_K_gs = float(np.mean(K_gs))
+    state.Transition_K_gw = float(np.mean(K_gw))
+    state.Transition_K_ws = float(np.mean(K_ws))
+
+    state.Transition_a_gs = float(a_gs)
+    state.Transition_a_gw = float(a_gw)
+    state.Transition_a_ws = float(a_ws)
+
+    state.Transition_V_cell = float(V_cell)
+    state.Transition_D_e = float(D_e)
+    state.Transition_bed_angle = float(bed_angle)
+    state.Transition_bed_fill_fraction = float(bed_fill_fraction)
+    state.Transition_mean_beam_length = float(closure_ss["L_m"])
+    state.Transition_eps_gas_cells = closure_ss["eps_gas"]
+    state.Transition_p_rad_cells = p_rad_cells
+    state.Transition_h_conv_gs_cells = closure_ss["h_conv_gs"]
+    state.Transition_h_rad_gs_cells = closure_ss["h_rad_gs"]
+    state.Transition_h_conv_gw_cells = closure_ss["h_conv_gw"]
+    state.Transition_h_rad_gw_cells = closure_ss["h_rad_gw"]
+    state.Transition_h_cont_ws_cells = closure_ss["h_cont_ws"]
+    state.Transition_h_rad_sw_cells = closure_ss["h_rad_sw"]
 
     state.Calcination_Q_transition = float(
         Q_calcination_transition

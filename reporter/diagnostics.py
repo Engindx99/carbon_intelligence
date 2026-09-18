@@ -533,22 +533,35 @@ def clinker_quality(twin):
 # which is the quantity any change to hv_gs or k_eff has to
 # move. Without it the split can only be inferred.
 # ======================================================
-def burning_mechanism_split(state):
+# Zones that publish a per-mechanism split. Faz 5 gave transition the
+# same publication contract the burning zone already had, so D4 reads
+# both through one path.
+MECHANISM_SPLIT_ZONES = ("burning", "transition")
+
+
+def zone_mechanism_split(state, zone="burning"):
+    """
+    D4 for one zone. The convective column is CONTACT on the
+    solid->wall pair (the covered wall touches the bed), not
+    convection -- see physics.kiln_closures.
+    """
+
+    prefix = zone.capitalize()
 
     def arr(name):
         v = getattr(state, name, None)
         return None if v is None else np.asarray(v, dtype=float)
 
     conv = {
-        "gas->solid": arr("Burning_Qgs_conv_cells"),
-        "gas->wall": arr("Burning_Qgw_conv_cells"),
-        "solid->wall": arr("Burning_Qws_conv_cells"),
+        "gas->solid": arr(f"{prefix}_Qgs_conv_cells"),
+        "gas->wall": arr(f"{prefix}_Qgw_conv_cells"),
+        "solid->wall": arr(f"{prefix}_Qws_conv_cells"),
     }
 
     rad = {
-        "gas->solid": arr("Burning_Qgs_rad_cells"),
-        "gas->wall": arr("Burning_Qgw_rad_cells"),
-        "solid->wall": arr("Burning_Qws_rad_cells"),
+        "gas->solid": arr(f"{prefix}_Qgs_rad_cells"),
+        "gas->wall": arr(f"{prefix}_Qgw_rad_cells"),
+        "solid->wall": arr(f"{prefix}_Qws_rad_cells"),
     }
 
     if conv["gas->solid"] is None:
@@ -558,9 +571,22 @@ def burning_mechanism_split(state):
 
     for pair in conv:
 
-        c = float(np.sum(conv[pair]))
-        r = float(np.sum(rad[pair]))
+        c_cells = conv[pair]
+        r_cells = rad[pair]
+
+        c = float(np.sum(c_cells))
+        r = float(np.sum(r_cells))
         tot = c + r
+
+        # The share has to be built per cell and then summed in
+        # MAGNITUDE. Taking abs() of the two zone sums instead lets a
+        # pair that changes sign along the zone cancel itself down to
+        # a near-zero convective total and report ~97% radiation where
+        # the per-cell truth is ~85%. The burning zone does change
+        # sign -- the solid stops receiving heat partway down -- so
+        # this is not a hypothetical.
+        mag_c = float(np.sum(np.abs(c_cells)))
+        mag_r = float(np.sum(np.abs(r_cells)))
 
         rows.append(
             {
@@ -569,18 +595,27 @@ def burning_mechanism_split(state):
                 "radiation_W": r,
                 "total_W": tot,
                 "radiation_pct": (
-                    100.0 * abs(r) / (abs(c) + abs(r))
-                    if (abs(c) + abs(r))
+                    100.0 * mag_r / (mag_c + mag_r)
+                    if (mag_c + mag_r)
                     else float("nan")
                 ),
+                # Kept so a caller can see how much cancellation the
+                # signed totals hide.
+                "convection_abs_W": mag_c,
+                "radiation_abs_W": mag_r,
             }
         )
 
+    def total(name):
+        v = arr(name)
+        return float(np.sum(v)) if v is not None else float("nan")
+
     return {
+        "zone": zone,
         "rows": rows,
-        "fuel_W": float(np.sum(arr("Burning_q_fuel_cells"))),
-        "reaction_W": float(np.sum(arr("Burning_q_reaction_cells"))),
-        "wall_loss_W": float(np.sum(arr("Burning_Qloss_cells"))),
+        "fuel_W": total(f"{prefix}_q_fuel_cells"),
+        "reaction_W": total(f"{prefix}_q_reaction_cells"),
+        "wall_loss_W": total(f"{prefix}_Qloss_cells"),
         # Net heat INTO the solid per cell: what it gains from the
         # gas minus what it loses to the wall. Qws is signed
         # solid -> wall, so it subtracts.
@@ -588,7 +623,22 @@ def burning_mechanism_split(state):
             (conv["gas->solid"] + rad["gas->solid"])
             - (conv["solid->wall"] + rad["solid->wall"])
         ),
+        # Faz 5 closure detail; None for a zone still on constants.
+        "eps_gas_mean": (
+            float(np.mean(arr(f"{prefix}_eps_gas_cells")))
+            if arr(f"{prefix}_eps_gas_cells") is not None
+            else None
+        ),
+        "mean_beam_length_m": getattr(
+            state, f"{prefix}_mean_beam_length", None
+        ),
     }
+
+
+def burning_mechanism_split(state):
+    """Back-compatible alias; D4 covers more than one zone now."""
+
+    return zone_mechanism_split(state, "burning")
 
 
 def _sign_flip_cell(q):
@@ -691,28 +741,54 @@ def zone_ntu(twin):
 
         z = _zone_object(twin, zone)
 
-        hv_gs = getattr(z, "hv_gs", None)
+        # The two Faz 5 zones (burning, transition) resolve their
+        # areas AND their coefficients per cell from the local state,
+        # so neither an a_gs attribute nor an hv_gs attribute exists
+        # on them. The published arrays are the only correct source,
+        # and UA has to be built from the conductance the solver
+        # actually used rather than from hv_gs * a_gs, which no
+        # longer exists as a product anywhere.
+        #
+        # This is the THIRD time a zone changed how it resolves a
+        # quantity and this diagnostic kept reporting the old path as
+        # if it were still true. It reported a 42.50 K handoff
+        # mismatch that did not exist once transition moved to
+        # per-cell flow. Whenever a zone changes what it publishes,
+        # re-check here.
+        prefix = zone.capitalize()
 
-        # Burning derives its areas per thermal_step from the bed
-        # geometry and keeps no a_gs attribute, so the published
-        # values are the only correct source for it. Every other
-        # zone still freezes a_gs in __init__.
-        if zone == "burning":
-            a_gs = getattr(state, "Burning_a_gs", None)
-            a_ws = getattr(state, "Burning_a_ws", None)
-            a_gw = getattr(state, "Burning_a_gw", None)
-        else:
+        K_gs_cells = getattr(state, f"{prefix}_K_gs_cells", None)
+
+        a_gs = getattr(state, f"{prefix}_a_gs", None)
+        a_ws = getattr(state, f"{prefix}_a_ws", None)
+        a_gw = getattr(state, f"{prefix}_a_gw", None)
+
+        if a_gs is None:
             a_gs = getattr(z, "a_gs", None)
             a_ws = getattr(z, "a_ws", None)
             a_gw = getattr(z, "a_gw", None)
 
-        if hv_gs is None or a_gs is None:
+        if a_gs is None:
             continue
 
         a_gs = float(a_gs)
 
         V_total = float(z.V_cell) * int(z.N)
-        UA = float(hv_gs) * a_gs * V_total
+
+        if K_gs_cells is not None:
+            # Per-cell conductance: the zone-average is the honest
+            # single number, and hv_gs is reported as the coefficient
+            # that average implies, not as a stored constant.
+            K_gs_mean = float(np.mean(np.asarray(K_gs_cells, dtype=float)))
+            UA = K_gs_mean * V_total
+            hv_gs = K_gs_mean / a_gs
+        else:
+            hv_gs = getattr(z, "hv_gs", None)
+
+            if hv_gs is None:
+                continue
+
+            UA = float(hv_gs) * a_gs * V_total
 
         m_s = float(getattr(state, ZONE_SOLID_FLOW_ATTR[zone]))
         C_s = m_s * float(z.Cp_s)
@@ -1112,12 +1188,15 @@ def report(twin):
             w(f"    {k:12s} {q['parts'][k]:8.4f} kg/s  {v:6.2f} %")
 
     # ---------- D4 ----------
-    w("\n-- D4  burning mechanism split --")
-    split = burning_mechanism_split(twin.state)
+    for zone in MECHANISM_SPLIT_ZONES:
 
-    if split is None:
-        w("  (not published)")
-    else:
+        w(f"\n-- D4  {zone} mechanism split --")
+        split = zone_mechanism_split(twin.state, zone)
+
+        if split is None:
+            w("  (not published)")
+            continue
+
         w(
             f"  {'pair':14s} {'convection MW':>15s} {'radiation MW':>14s} "
             f"{'radiation %':>13s}"
@@ -1129,14 +1208,33 @@ def report(twin):
             )
 
         w(
+            "  radiation % is magnitude-weighted PER CELL. The signed"
+        )
+        w(
+            "  totals to its left cancel where a pair changes sign"
+        )
+        w(
+            "  along the zone, which would read ~97% on a pair whose"
+        )
+        w(
+            "  per-cell truth is ~85%."
+        )
+
+        w(
             f"\n  fuel {split['fuel_W']/1e6:.3f} MW | "
             f"reaction sink {split['reaction_W']/1e6:.3f} MW | "
             f"wall loss {split['wall_loss_W']/1e6:.3f} MW"
         )
 
+        if split["eps_gas_mean"] is not None:
+            w(
+                f"  mean gas emissivity {split['eps_gas_mean']:.3f} | "
+                f"mean beam length {split['mean_beam_length_m']:.2f} m"
+            )
+
         cell = split["sign_flip_cell"]
         w(
-            "  net convective heat to the solid turns negative at cell "
+            "  net heat to the solid turns negative at cell "
             + (str(cell) if cell is not None else "never")
         )
 
@@ -1155,6 +1253,9 @@ def report(twin):
         )
 
     w("  last column must be 1.0000; anything else double-counts wall area.")
+    w("  hv_gs for burning/transition is the ZONE MEAN implied by the")
+    w("  per-cell conductance, not a stored constant -- Faz 5 removed")
+    w("  the constants from those two zones.")
 
     # ---------- D9 ----------
     w("\n-- D9  burning Picard convergence (last call) --")

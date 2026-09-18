@@ -80,3 +80,38 @@ logging:
 checkpoint:
   enabled: true
   file: burning_ckpt.pkl
+
+# ======================================================
+# FAZ 5 -- ROTARY KILN HEAT TRANSFER CLOSURE
+#
+# These replace the per-zone literals hv_gs / hv_gw / hv_ws and the
+# global radiation suppression factor k_eff = 0.005 in the two ROTATING
+# zones (burning, transition). The calciner, preheater and cooler still
+# use the old constants: they are not rotating cylinders -- a cyclone
+# string and a grate -- so the rotary-kiln correlations do not apply to
+# them and they are left for Faz 6.
+#
+# Every entry below is a MATERIAL or GEOMETRIC property, not a tuning
+# knob. Nothing here was fitted to make the plant look right.
+# ======================================================
+kiln_closure:
+
+  # Radiative properties of the two surfaces in the enclosure.
+  # Cement raw meal and clinker are near-black in the infrared;
+  # used refractory is slightly lower.
+  bed_emissivity: 0.90
+  wall_emissivity: 0.85
+
+  # Bed properties for the covered-wall -> bed contact path
+  # (physics.wall_bed_contact_coefficient, Li et al. 2005).
+  # d_p is the only genuinely uncertain one: nodulised kiln feed
+  # spans roughly 0.5-5 mm and the coefficient goes as 1/d_p in
+  # the gas-gap leg, so it is stated here rather than buried.
+  particle_diameter_m: 1.0e-3
+  bed_conductivity: 0.4        # W/(m K), packed cement meal/clinker
+
+  # Gas gap between the wall and the first particle layer, as a
+  # multiple of d_p. Li et al. fit 0.096-0.198; this is the midpoint.
+  # physics.wall_bed_contact_coefficient REJECTS values outside that
+  # range rather than clamping them.
+  contact_gap_chi: 0.147

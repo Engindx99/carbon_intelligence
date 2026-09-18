@@ -163,6 +163,117 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             places=12,
         )
 
+    # ------------------------------------------------------
+    # FAZ 5. The acceptance criterion for replacing hv_gs /
+    # hv_gw / hv_ws and k_eff was mechanism correctness, not a
+    # temperature target, so these are the tests that decide
+    # whether the change did what it claimed.
+    # ------------------------------------------------------
+    def test_both_rotating_zones_split_the_wall_area_exactly(self):
+        """
+        a_ws + a_gw == 4/D. Before Faz 5 the transition zone read
+        1.5850 here: it charged the full perimeter to gas->wall and
+        then charged the covered arc to wall->bed on top of it.
+        """
+
+        rows = {r["zone"]: r for r in diagnostics.zone_ntu(self.twin)}
+
+        for zone in diagnostics.MECHANISM_SPLIT_ZONES:
+            self.assertAlmostEqual(
+                rows[zone]["wall_area_identity"],
+                1.0,
+                places=10,
+                msg=f"{zone} double-counts wall area",
+            )
+
+    def test_radiation_carries_the_kiln_not_convection(self):
+        """
+        The measurement that motivated Faz 5: at kiln temperature the
+        gas->bed path is radiation-dominated. The old closure put it
+        at 1.0% radiation because k_eff = 0.005 suppressed eps*sigma
+        200-fold. Anything that puts it back under half is a
+        regression, whatever else moved.
+        """
+
+        for zone in diagnostics.MECHANISM_SPLIT_ZONES:
+
+            split = diagnostics.zone_mechanism_split(
+                self.twin.state, zone
+            )
+
+            row = {r["pair"]: r for r in split["rows"]}["gas->solid"]
+
+            self.assertGreater(
+                row["radiation_pct"],
+                50.0,
+                f"{zone} gas->solid is convection-dominated",
+            )
+
+    def test_conductances_are_not_constant_along_the_kiln(self):
+        """
+        The structural argument for the change: h_rad goes as T^3 and
+        a single constant cannot represent it. If K came back uniform
+        the closure would have silently collapsed to a constant again.
+        """
+
+        for zone in diagnostics.MECHANISM_SPLIT_ZONES:
+
+            K = np.asarray(
+                getattr(
+                    self.twin.state,
+                    f"{zone.capitalize()}_K_gs_cells",
+                ),
+                dtype=float,
+            )
+
+            self.assertGreater(K.size, 1)
+            self.assertGreater(
+                float(K.max() / K.min()),
+                1.2,
+                f"{zone} K_gs barely varies; closure may be constant",
+            )
+
+    def test_the_rotating_zones_no_longer_carry_the_old_constants(self):
+        """
+        Deleted, not merely unused: a fallback that still exists is a
+        fallback something will eventually take.
+        """
+
+        from physics.physics import ZONE_HT_CONFIG, ZONE_RAD_CONFIG
+
+        for zone in diagnostics.MECHANISM_SPLIT_ZONES:
+
+            self.assertNotIn(zone, ZONE_HT_CONFIG)
+            self.assertNotIn(zone, ZONE_RAD_CONFIG)
+
+            z = diagnostics._zone_object(self.twin, zone)
+
+            for attr in ("hv_gs", "hv_gw", "hv_ws"):
+                self.assertFalse(
+                    hasattr(z, attr),
+                    f"{zone} still carries {attr}",
+                )
+
+    def test_gas_emissivity_is_physical_in_both_zones(self):
+        """
+        A participating gas, not a transparent one and not a black
+        body. Outside roughly 0.05-0.6 the radiation network would be
+        describing something that is not combustion gas.
+        """
+
+        for zone in diagnostics.MECHANISM_SPLIT_ZONES:
+
+            eps = np.asarray(
+                getattr(
+                    self.twin.state,
+                    f"{zone.capitalize()}_eps_gas_cells",
+                ),
+                dtype=float,
+            )
+
+            self.assertTrue(np.all(eps > 0.05), f"{zone} gas too thin")
+            self.assertTrue(np.all(eps < 0.6), f"{zone} gas too thick")
+
     def test_every_zone_appears_in_the_ntu_table(self):
 
         rows = {r["zone"] for r in diagnostics.zone_ntu(self.twin)}

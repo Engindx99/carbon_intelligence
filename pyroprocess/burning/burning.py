@@ -4,7 +4,7 @@ import yaml
 from physics.physics import h_gas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
-from physics.physics import ZONE_HT_CONFIG
+from physics.closure_config import closure_settings
 
 from chemistry.reactions import ChemistryModel
 
@@ -21,8 +21,14 @@ def load_cfg(path):
 
 
 class Burning:
-    def __init__(self, N=5, L=60.0, chemistry=None):
-        cfg = load_cfg("configs/twin_cfg.yaml")
+    def __init__(self, N=5, L=60.0, chemistry=None, cfg=None):
+        # Falls back to reading the file so existing callers that
+        # construct a zone on its own keep working, but an explicitly
+        # passed cfg now WINS. It used to be ignored, which silently
+        # defeated every in-memory config sweep: a relaxation sweep
+        # earlier in this project returned identical results for
+        # w = 0.25 and w = 0.05 for exactly this reason.
+        cfg = cfg if cfg is not None else load_cfg("configs/twin_cfg.yaml")
         plant = cfg.get("plant", {})
         motion = cfg.get("motion", {})
         op = cfg.get("operational", {})
@@ -154,11 +160,15 @@ class Burning:
         # ======================================================
         # HEAT TRANSFER
         # ======================================================
-        ht = ZONE_HT_CONFIG[self.zone]
-
-        self.hv_gs = ht["hv_gs"]
-        self.hv_gw = ht["hv_gw"]
-        self.hv_ws = ht["hv_ws"]
+        # Faz 5: hv_gs / hv_gw / hv_ws are gone from this zone. The
+        # three coefficients are now solved per cell from the local
+        # state by physics.kiln_closures.kiln_transfer_coefficients --
+        # Tscheng-Watkinson for gas -> bed, Dittus-Boelter for
+        # gas -> exposed wall, the Li et al. penetration model for
+        # covered wall -> bed, and an explicit radiation network on
+        # top of all three. ZONE_HT_CONFIG no longer carries an entry
+        # for "burning"; the remaining zones still read it.
+        self.closure = closure_settings(cfg)
 
         self.h_ext = op.get(
             "h_ext",

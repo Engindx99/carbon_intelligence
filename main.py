@@ -81,11 +81,13 @@ class Twin:
         self.burning = Burning(
             N=cfg["plant"]["N"],
             L=cfg["plant"]["length"],
+            cfg=cfg,
         )
 
         self.transition = Transition(
             N=cfg["plant"]["N"],
             L=cfg["transition"]["length"],
+            cfg=cfg,
         )
 
         self.calciner = Calciner(

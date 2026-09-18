@@ -507,21 +507,32 @@ def outlet_face_value(phi, reverse=False):
     return float(phi[-1] + 0.5 * (phi[-1] - phi[-2]))
 
 
+# ======================================================
+# REPRESENTATIVE PETCOKE COMPOSITION
+# [mass fraction]
+#
+# Read by gas_mass_balance (to size the combustion air) and by
+# physics.kiln_closures.fuel_combustion_products (to size the
+# radiating CO2 and H2O). One definition, two consumers.
+# ======================================================
+FUEL_COMPOSITION = {
+    "C": 0.88,
+    "H": 0.04,
+    "O": 0.02,
+    "S": 0.06,
+}
+
+
 def gas_mass_balance(
     fuel_rate_total,
     O2,
     eps=1e-12,
 ):
-    # ======================================================
-    # REPRESENTATIVE PETCOKE COMPOSITION
-    # [mass fraction]
-    # ======================================================
-    fuel_composition = {
-        "C": 0.88,
-        "H": 0.04,
-        "O": 0.02,
-        "S": 0.06,
-    }
+    # Hoisted to a module constant (FUEL_COMPOSITION) so the
+    # radiation closure can derive the combustion products' CO2 and
+    # H2O from the SAME composition this balance burns, rather than
+    # keeping a second copy that can drift out of step.
+    fuel_composition = FUEL_COMPOSITION
 
     # ======================================================
     # MOLAR MASSES [kg/mol]
@@ -833,19 +844,29 @@ k_eff is an effective radiation scaling factor representing
 unresolved radiative effects, including view factors,
 participating media, gas absorption, flame radiation,
 and other complex heat transfer mechanisms.
+
+FAZ 5 -- "burning" and "transition" are GONE from both dicts below.
+
+Those two zones are rotating cylinders and now resolve all three
+coefficients from the local state in physics.kiln_closures. The
+entries are deleted rather than left unused so that a call which
+still asks for them fails loudly instead of silently falling back
+to a constant.
+
+What the deleted entries were, and why they could not stay:
+k_eff = 0.005 made ZONE_RAD_COEFF equal to 0.46% of eps * sigma --
+a 200-fold suppression. At the burning zone's own working point
+that put radiation at 1.0% of the gas -> bed path where the
+physical share is 79-86%, so the model was carrying essentially
+all of its kiln heat on a mechanism that does not carry it.
+
+The remaining three zones keep these constants ON PURPOSE. A
+cyclone string and a grate cooler are not rotating cylinders, so
+the rotary-kiln correlations that replaced the constants do not
+apply to them; they are Faz 6 work, not Faz 5.
 """
 
 ZONE_RAD_CONFIG = {
-
-    "burning": {
-        "eps":0.92,
-        "k_eff":0.005,
-    },
-
-    "transition":{
-        "eps":0.88,
-        "k_eff":0.005,
-    },
 
     "calciner":{
         "eps":0.82,
@@ -863,17 +884,10 @@ ZONE_RAD_CONFIG = {
     },
 }
 
+# See the note above ZONE_RAD_CONFIG: "burning" (hv_gs 700, hv_gw
+# 180, hv_ws 220) and "transition" (450 / 150 / 180) were removed by
+# Faz 5 and are resolved per cell instead.
 ZONE_HT_CONFIG = {
-    "burning": {
-        "hv_gs": 700.0,
-        "hv_gw": 180.0,
-        "hv_ws": 220.0,
-    },
-    "transition": {
-        "hv_gs": 450.0,
-        "hv_gw": 150.0,
-        "hv_ws": 180.0,
-    },
     "calciner": {
         "hv_gs": 350.0,
         "hv_gw": 120.0,
