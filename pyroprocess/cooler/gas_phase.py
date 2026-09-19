@@ -2,6 +2,7 @@ from physics.physics import cp_gas
 from physics.physics import h_gas
 from physics.physics import outlet_face_value
 from physics.physics import second_order_upwind_correction
+from physics.physics import T_gas_from_h
 
 
 # ======================================================
@@ -333,3 +334,60 @@ def gas_enthalpy_split(cooler, Tg, state):
     H_vent = state.m_dot_vent_air * h_hot
 
     return H_secondary, H_tertiary, H_vent
+
+
+# ======================================================
+# STREAM TEMPERATURES
+#
+# The cooler publishes its three air streams as ENTHALPY
+# flows and nothing anywhere published their temperatures --
+# downstream zones invert what they receive, mixed with
+# whatever else they receive. That left
+# BOUNDS["secondary_air"], which is a bound on secondary air
+# ALONE, with no secondary air temperature to be checked
+# against, so D2 was checking it against state.Tg_burning_in
+# instead: the BURNER MIXTURE of secondary air, ambient
+# primary air and the fuel's mass.
+#
+# MEASURED, at the committed operating point, what that
+# substitution costs:
+#
+#   true secondary   D2 reads   verdict vs (1050, 1350)
+#      586.06 K       540.81 K    fail
+#     1050.00 K       933.92 K    fail   <- the band's own floor
+#     1150.00 K      1018.90 K    fail
+#     1350.00 K      1189.05 K    pass
+#
+# The check could not be satisfied at the floor of its own
+# band however well the cooler worked. It is mis-aimed by
+# 116-161 K.
+#
+# Each stream is inverted on the mass IT carries, so this
+# stays correct when the streams stop sharing one
+# temperature. Reporting only: nothing consumes these.
+# ======================================================
+def stream_temperatures(
+    cooler,
+    H_secondary,
+    H_tertiary,
+    H_vent,
+    state,
+):
+
+    def invert(H, m_dot):
+
+        if m_dot <= cooler.eps:
+            return cooler.T_ref
+
+        return T_gas_from_h(
+            H / m_dot,
+            cooler.T_ref,
+            cooler.T_ref,
+            4000.0,
+        )
+
+    return (
+        invert(H_secondary, state.m_dot_secondary_air),
+        invert(H_tertiary, state.m_dot_tertiary_air),
+        invert(H_vent, state.m_dot_vent_air),
+    )

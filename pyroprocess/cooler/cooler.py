@@ -289,6 +289,22 @@ class Cooler:
             state,
         )
 
+        # Reporting only. D2 bounds secondary air, so secondary
+        # air has to exist as a number somewhere; before this it
+        # did not, and the bound was being applied to the burner
+        # mixture instead. See gas_phase.stream_temperatures.
+        (
+            state.Tg_secondary_air,
+            state.Tg_tertiary_air,
+            state.Tg_vent_air,
+        ) = gas_phase.stream_temperatures(
+            self,
+            state.Hgas_cooler_secondary,
+            state.Hgas_cooler_tertiary,
+            state.Hgas_cooler_vent,
+            state,
+        )
+
         state.Hsolid_cooler_out = self.solid_enthalpy_out(
             state.Ts_cooler,
             state,

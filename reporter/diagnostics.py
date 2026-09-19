@@ -445,11 +445,36 @@ def plausibility_bounds(twin):
         note,
     )
 
-    sec = getattr(state, "Tg_burning_in", None)
+    # BOUNDS["secondary_air"] is a band on secondary air off the
+    # cooler, so it is checked against secondary air off the
+    # cooler. It used to be checked against Tg_burning_in, which
+    # is the BURNER MIXTURE -- secondary air plus ambient primary
+    # air plus the fuel's mass -- and is therefore always colder.
+    # MEASURED: secondary air at 1050 K, the band's own floor,
+    # reported as 933.92 K and FAILED; at 1150 K it reported
+    # 1018.90 K and failed. The check was unsatisfiable at the
+    # bottom of its own band no matter how well the cooler ran.
+    sec = getattr(state, "Tg_secondary_air", None)
 
     if sec is not None:
         lo, hi, note = BOUNDS["secondary_air"]
-        add("gas into kiln (sec + prim air)", float(sec), lo, hi, note)
+        add("secondary air off the cooler", float(sec), lo, hi, note)
+
+    # Kept, and deliberately UNBOUNDED. It is the temperature the
+    # kiln's gas rows actually start from, so it is worth seeing;
+    # there is simply no published band for a burner mixture, and
+    # inventing one by reusing the secondary-air band is what this
+    # replaced.
+    mixed = getattr(state, "Tg_burning_in", None)
+
+    if mixed is not None:
+        add(
+            "gas into kiln (sec + prim air + fuel)",
+            float(mixed),
+            None,
+            None,
+            "burner mixture, no published band",
+        )
 
     return checks
 

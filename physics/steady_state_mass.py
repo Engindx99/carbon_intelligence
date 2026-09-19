@@ -205,7 +205,12 @@ class SteadyStateMassFlow:
             clinker - exhaust - vent_air
             = 0
 
-        Kiln combustion air (self.m_dot_air = primary + secondary)
+        Combustion air (self.m_dot_air is the PLANT total; the
+        kiln's share is self.m_dot_air_kiln, and THAT is what
+        primary + secondary sum to -- main.py:862, :1074-1082.
+        This line used to say m_dot_air = primary + secondary,
+        which is wrong by the calciner's share. The balance
+        arithmetic below was never affected; only this sentence.)
         is no longer an independent ambient intake on its own:
         secondary air's mass already originates from the cooler's
         own ambient draw (self.m_dot_air_cooler = secondary +
