@@ -331,7 +331,18 @@ class DehydroxylationModel(ReactionBase):
 
             calciner_gases = state.materials["calciner"].gases
 
-            calciner_gases.H2O[:] += (
+            # Assigned, not accumulated, for the reason set out
+            # at solid_flow_profile below: these arrays are
+            # allocated once and never reset, so `+=` sums the
+            # same steady-state inventory over every sweep.
+            #
+            # Unobservable today -- materials[...].gases is
+            # written by three call sites and read by none after
+            # GlobalState.__post_init__, which runs before any of
+            # them -- but the other two writers already assign,
+            # and leaving one `+=` behind only invites the same
+            # confusion the material_flows twin caused.
+            calciner_gases.H2O[:] = (
                 Bound_H2O_reacted_inventory
                 * self.product_ratio
             )
@@ -429,15 +440,44 @@ class DehydroxylationModel(ReactionBase):
     # already present at `solids` (written by
     # CalcinationModel.solid_flow_profile()) is read back per
     # cell and only its Bound_H2O entry is overwritten, so this
-    # must run after that call. Released water joins the gas
-    # flow already held in `gases.H2O` (drying's contribution,
-    # if any, from an upstream zone).
+    # must run after that call.
+    #
+    # gases.H2O is ASSIGNED, not accumulated.
+    #
+    # It used to be `+=`, on the reading that released water
+    # should join "the flow already held in gases.H2O (drying's
+    # contribution, if any, from an upstream zone)". Nothing
+    # ever put drying's water there -- the preheater assigns
+    # its own array (ChemistryModel.apply_preheater) and no
+    # zone writes another zone's -- and material_flows is built
+    # once in GlobalState.__post_init__ and never reset, so the
+    # `+=` had nothing to add to and simply summed this zone's
+    # own flow over every sweep of the solve.
+    #
+    # MEASURED before the fix: material_flows["calciner"].
+    # gases.H2O[0] rose by exactly 0.555592 kg/s per sweep,
+    # without limit, reaching 37.21 kg/s after 69 sweeps -- 67x
+    # the true flow, and a number that said how many sweeps the
+    # solve took rather than anything physical.
+    #
+    # This is a reporting channel only: nothing reads a
+    # non-preheater material_flows[...].gases array back into
+    # the solve, so no temperature, flow or balance was ever
+    # affected. The 14 balances use the correctly-assigned
+    # scalar m_dot_H2O_generated_dehydroxylation and were right
+    # throughout. What it did corrupt is the plotted calciner
+    # H2O profile and the twin_harness regression snapshot, the
+    # latter making a golden fixture depend on the sweep count.
+    #
+    # If a future upstream zone ever does contribute water to
+    # this array, it must be composed explicitly here, not left
+    # to residue from the previous sweep.
     #
     # inlet_flow : dict {phase: kg/s} entering cell 0
     # solids     : SolidPhases of per-cell outflows, updated
     #              in place for Bound_H2O only
-    # gases      : GasPhases, H2O generated per cell [kg/s]
-    #              is added to in place
+    # gases      : GasPhases, H2O generated per cell [kg/s],
+    #              written in place
     # ======================================================
     def solid_flow_profile(
         self,
@@ -473,7 +513,7 @@ class DehydroxylationModel(ReactionBase):
                 cell_flow,
             )
 
-            gases.H2O[i] += (
+            gases.H2O[i] = (
                 max(BoundH2O_upstream - BoundH2O_out, 0.0)
                 * self.product_ratio
             )
