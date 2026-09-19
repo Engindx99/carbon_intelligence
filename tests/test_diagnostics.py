@@ -66,6 +66,164 @@ class SpeciesStoichiometryTest(unittest.TestCase):
         )
 
 
+class FreeLimeTest(unittest.TestCase):
+    """D14, against synthetic flows -- no twin, no solve.
+
+    Free lime is the residual a setpoint solver will be driven
+    against, so its denominator has to be exactly the clinker
+    stream: the nine SOLID_SPECIES, never free or bound water.
+    """
+
+    @staticmethod
+    def _twin(**species):
+        """A stub carrying only what free_lime reads."""
+
+        class _Solids:
+            pass
+
+        solids = _Solids()
+
+        for name in diagnostics.SOLID_SPECIES:
+            # Two cells, because clinker_quality reads the LAST one.
+            setattr(
+                solids,
+                name,
+                np.array([0.0, float(species.get(name, 0.0))]),
+            )
+
+        # Water is present in the phase record but is NOT clinker.
+        for name in ("H2O", "Bound_H2O"):
+            setattr(
+                solids,
+                name,
+                np.array([0.0, float(species.get(name, 0.0))]),
+            )
+
+        class _Flow:
+            pass
+
+        flow = _Flow()
+        flow.solids = solids
+
+        class _State:
+            pass
+
+        state = _State()
+        state.material_flows = {"cooler": flow}
+
+        class _Twin:
+            pass
+
+        twin = _Twin()
+        twin.state = state
+
+        return twin
+
+    def test_percent_is_CaO_over_the_clinker_total(self):
+
+        twin = self._twin(CaO=1.0, C3S=6.0, C2S=2.0, C3A=0.5, C4AF=0.5)
+
+        result = diagnostics.free_lime(twin)
+
+        # 1.0 of 10.0 kg/s.
+        self.assertAlmostEqual(result["free_lime_pct"], 10.0, places=9)
+        self.assertAlmostEqual(result["CaO_kg_s"], 1.0, places=9)
+        self.assertAlmostEqual(result["clinker_kg_s"], 10.0, places=9)
+
+    def test_water_is_excluded_from_the_denominator(self):
+        """A wet stream must not dilute the percentage."""
+
+        dry = self._twin(CaO=1.0, C3S=9.0)
+        wet = self._twin(CaO=1.0, C3S=9.0, H2O=5.0, Bound_H2O=5.0)
+
+        self.assertAlmostEqual(
+            diagnostics.free_lime(dry)["free_lime_pct"],
+            diagnostics.free_lime(wet)["free_lime_pct"],
+            places=9,
+        )
+        self.assertAlmostEqual(
+            diagnostics.free_lime(wet)["free_lime_pct"], 10.0, places=9
+        )
+
+    def test_zero_when_all_lime_is_bound(self):
+
+        twin = self._twin(C3S=10.0)
+        self.assertAlmostEqual(
+            diagnostics.free_lime(twin)["free_lime_pct"], 0.0, places=9
+        )
+
+    def test_hundred_when_nothing_reacted(self):
+
+        twin = self._twin(CaO=10.0)
+        self.assertAlmostEqual(
+            diagnostics.free_lime(twin)["free_lime_pct"], 100.0, places=9
+        )
+
+    def test_band_verdict(self):
+
+        lo, hi = diagnostics.FREE_LIME_BAND
+
+        self.assertTrue(
+            diagnostics.free_lime(
+                self._twin(CaO=1.0, C3S=99.0)
+            )["ok"]
+        )
+        # Under-burnt: above the band.
+        self.assertFalse(
+            diagnostics.free_lime(
+                self._twin(CaO=5.0, C3S=95.0)
+            )["ok"]
+        )
+        # Over-fired: below the band.
+        self.assertFalse(
+            diagnostics.free_lime(
+                self._twin(CaO=0.1, C3S=99.9)
+            )["ok"]
+        )
+        self.assertEqual((lo, hi), (0.5, 2.0))
+
+
+class LimeSaturationTest(unittest.TestCase):
+    """Free lime here is KINETIC, not stoichiometric.
+
+    If the raw meal carried surplus CaO, free lime would have a
+    floor no amount of firing could reach and it would be
+    useless as a specification. It does not: the meal is lime
+    SHORT of full C3S formation, so complete reaction leaves
+    zero. This pins that, because a composition edit could
+    silently destroy the whole premise.
+    """
+
+    def test_meal_is_lime_short_of_full_C3S(self):
+
+        from chemistry.composition import RAW_MEAL_COMPOSITION as MEAL
+
+        M_CaCO3, _, _, _, _ = diagnostics.SOLID_SPECIES["CaCO3"]
+        M_CaO, _, _, _, _ = diagnostics.SOLID_SPECIES["CaO"]
+        M_SiO2, _, _, _, _ = diagnostics.SOLID_SPECIES["SiO2"]
+        M_Al2O3, _, _, _, _ = diagnostics.SOLID_SPECIES["Al2O3"]
+        M_Fe2O3, _, _, _, _ = diagnostics.SOLID_SPECIES["Fe2O3"]
+
+        # CaO the meal can release: its own plus all the carbonate.
+        cao = MEAL["CaO"] + MEAL["CaCO3"] * M_CaO / M_CaCO3
+
+        sio2 = MEAL["SiO2"]
+        al2o3 = MEAL["Al2O3"]
+        fe2o3 = MEAL["Fe2O3"]
+
+        # Lime saturation factor, Bogue form.
+        lsf = cao / (
+            2.8 * sio2 + 1.18 * al2o3 + 0.65 * fe2o3
+        )
+
+        self.assertAlmostEqual(lsf, 0.950, places=2)
+
+        # Below 1.0 means complete reaction consumes ALL the lime,
+        # so free lime is zero at completion and any reading above
+        # zero is time-at-temperature talking.
+        self.assertLess(lsf, 1.0)
+
+
 class SignFlipTest(unittest.TestCase):
 
     def test_reports_first_negative_index(self):

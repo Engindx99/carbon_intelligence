@@ -557,6 +557,88 @@ def clinker_quality(twin):
 
 
 # ======================================================
+# D14. FREE LIME
+#
+# Unbound CaO left in the product. This is the variable a
+# real kiln is actually trimmed against -- see the note in
+# thermal_demand_vs_supply, which says fuel is a fixed input
+# here "so nothing in the model can push back on a wrong
+# value". Free lime is that push-back, measured.
+#
+# It is a KINETIC residual, not a stoichiometric one: the raw
+# meal's lime saturation factor is 0.95, so CaO supply is
+# SHORT of what full C3S formation demands and complete
+# reaction leaves zero free lime. Whatever this reads is
+# therefore a statement about the clinkering rates and the
+# time at temperature, which is exactly what makes it a
+# specification rather than a bookkeeping identity.
+#
+# No new state attribute -- the species arrays are already
+# published and diagnostics already owns read-only access.
+#
+# The denominator is NOT clinker_quality's total. SOLID_SPECIES
+# carries H2O and Bound_H2O as well, and water is not clinker;
+# reusing that total would let a wet stream silently dilute a
+# specification. The cooler stream happens to be dry today, so
+# nothing is wrong in the converged plant -- but a percentage
+# used as a setpoint has to state its own basis.
+# ======================================================
+# The nine species that ARE clinker. Water is tracked in the same
+# phase record but is not part of the product.
+NON_CLINKER_SPECIES = ("H2O", "Bound_H2O")
+
+CLINKER_SPECIES = tuple(
+    name
+    for name in SOLID_SPECIES
+    if name not in NON_CLINKER_SPECIES
+)
+
+# Mass percent of unbound CaO in clinker. Plants specify 0.5-2.0%:
+# above the band the clinker is under-burnt and strength suffers;
+# below it the kiln has been over-fired to buy a margin nobody
+# needs. A BAND, not a target.
+FREE_LIME_BAND = (0.5, 2.0)
+
+
+def free_lime(twin):
+    """
+    D14. Unbound CaO as a mass percent of the clinker stream.
+    """
+
+    solids = twin.state.material_flows["cooler"].solids
+
+    cao = 0.0
+    total = 0.0
+
+    for name in CLINKER_SPECIES:
+
+        flow = getattr(solids, name, None)
+
+        if flow is None:
+            continue
+
+        # Cell arrays hold each cell's OUTLET, so the zone's
+        # outlet is the LAST entry.
+        m = float(np.asarray(flow, dtype=float)[-1])
+        total += m
+
+        if name == "CaO":
+            cao = m
+
+    pct = 100.0 * cao / total if total else float("nan")
+
+    lo, hi = FREE_LIME_BAND
+
+    return {
+        "free_lime_pct": pct,
+        "CaO_kg_s": cao,
+        "clinker_kg_s": total,
+        "band": FREE_LIME_BAND,
+        "ok": bool(lo <= pct <= hi),
+    }
+
+
+# ======================================================
 # D4. BURNING MECHANISM SPLIT
 #
 # Published by pyroprocess/burning/heat_transfer.py. This is
@@ -1299,6 +1381,16 @@ def report(twin):
     for k, v in sorted(q["pct"].items(), key=lambda kv: -kv[1]):
         if v > 0.01:
             w(f"    {k:12s} {q['parts'][k]:8.4f} kg/s  {v:6.2f} %")
+
+    # ---------- D14 ----------
+    fl = free_lime(twin)
+    w("\n-- D14  free lime --")
+    w(
+        f"  {fl['free_lime_pct']:.3f} %  "
+        f"({fl['CaO_kg_s']:.4f} of {fl['clinker_kg_s']:.4f} kg/s)  "
+        f"band {fl['band'][0]}-{fl['band'][1]} %  "
+        f"{'ok' if fl['ok'] else 'OUT OF BAND'}"
+    )
 
     # ---------- D4 ----------
     for zone in MECHANISM_SPLIT_ZONES:
