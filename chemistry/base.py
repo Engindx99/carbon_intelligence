@@ -298,7 +298,12 @@ class ReactionBase:
             * np.maximum(dt, 0.0)
             * np.exp(-rate * np.maximum(dt, 0.0))
             * self.deltaH
-            * slope
+            # Clamped for the same reason the scalar path returns
+            # 0.0 on a non-positive slope: a negative value on the
+            # solid row's diagonal would REMOVE diagonal dominance
+            # instead of adding it. The scalar path had this guard
+            # and the array path did not.
+            * np.maximum(slope, 0.0)
         )
 
         if np.any(~np.isfinite(derivative)):
@@ -308,6 +313,140 @@ class ReactionBase:
             )
 
         return derivative
+
+
+    # ======================================================
+    # TEMPERATURE AT WHICH THIS REACTION STOPS [K]
+    #
+    # The temperature below which the rate is EXACTLY zero, so
+    # Q(T_vanish) = 0 exactly. For the base window law that is
+    # T_start, where temperature_window clips to 0. A subclass
+    # whose rate is gated by something else -- calcination, by
+    # the CO2 back-pressure -- overrides this with its own.
+    #
+    # It is the anchor of the chord in reaction_heat_slope
+    # below, so it has to be an EXACT zero of Q, not an
+    # approximate one, or the chord stops being a secant of the
+    # real function.
+    # ======================================================
+    def rate_vanishing_temperature(self):
+
+        return float(self.T_start)
+
+
+    # ======================================================
+    # SLOPE HANDED TO THE SOLID ROW'S DIAGONAL [W/K]
+    #
+    # This is the S that apply_solid_energy_balance puts on the
+    # diagonal, and reaction_heat_derivative above is only one
+    # candidate for it.
+    #
+    # THE KEY IDENTITY. The linearisation is
+    #
+    #   Q_eff(Ts) = Q(Ts*) + S (Ts - Ts*)
+    #
+    # and at the fixed point Ts == Ts*, so Q_eff == Q(Ts*) FOR
+    # ANY S WHATSOEVER. The converged answer does not depend on
+    # S at all. S is therefore free to be chosen for robustness,
+    # and the tangent is a poor choice for a SATURATING source.
+    #
+    # WHY THE TANGENT FAILS. Q = available (1 - exp(-k dt)) dH
+    # saturates at available*dH once k*dt is large, and a
+    # saturated sink has no slope. Measured for calcination at
+    # the literature rate with dt = 66 s, in W/K per kg/s:
+    #
+    #   1088 K (plateau)  6.8e5
+    #   1100 K            2.5e3
+    #   1110 K            9.7
+    #   1150 K            4e-14
+    #   >= 1200 K         ~0
+    #
+    # So the tangent stabilises the NEIGHBOURHOOD of the
+    # solution and gives nothing from a hot start. Solving a
+    # single calciner cell that starts at 1223 K, where the
+    # kinetics demand 36 MW and the streams carry 5 MW, gives
+    # Ts = -704 K -- which is the negative hot face the shell
+    # closure used to reject.
+    #
+    # THE CHORD. Use instead the secant to the temperature where
+    # the reaction stops:
+    #
+    #   S = max( dQ/dTs , Q(Ts*) / (Ts* - T_vanish) )
+    #
+    # This is not invented damping. It is a secant of the TRUE
+    # Q(T) through two EXACT points of it: Q(T_vanish) = 0,
+    # because the rate is identically zero there, and Q(Ts*),
+    # the value the chemistry just computed. Substituting gives
+    #
+    #   Q_eff(T) = Q(Ts*) (T - T_vanish) / (Ts* - T_vanish)
+    #
+    # a sink that vanishes at the equilibrium temperature and
+    # equals the computed value at Ts*. That is the physical
+    # statement the tangent cannot express -- a cell cannot
+    # absorb reaction heat below the temperature at which its
+    # own product gas stops the reaction -- and it makes the
+    # solve unconditionally bounded, because the energy equation
+    # can always find a T >= T_vanish that balances.
+    #
+    # Same cell as above, with the chord: Ts lands at 1106 K and
+    # the sink applied is 4.9 MW, i.e. what the cell actually
+    # has. Iterated to its fixed point it reaches 1088.03 K with
+    # the energy balance closing exactly. A cell with heat to
+    # spare reaches the IDENTICAL fixed point under chord and
+    # tangent (2783.1353 K, reaction complete), which is the
+    # identity above doing its work: the chord changes the path,
+    # never the answer.
+    #
+    # max() and not the chord alone, so this is never weaker
+    # than the tangent. Over-damping only slows convergence;
+    # under-damping is what breaks the solve.
+    # ======================================================
+    def reaction_heat_slope(
+        self,
+        available,
+        T,
+        dt,
+    ):
+
+        tangent = self.reaction_heat_derivative(
+            available,
+            T,
+            dt,
+        )
+
+        T = float(T)
+        available = float(available)
+        dt = float(dt)
+
+        if available <= 0.0 or dt <= 0.0:
+            return 0.0
+
+        T_vanish = self.rate_vanishing_temperature()
+
+        span = T - T_vanish
+
+        # At or below the stopping temperature the reaction is
+        # dead and there is no chord to take: Q is zero and so
+        # is its secant.
+        if span <= 0.0:
+            return float(tangent)
+
+        rate = float(self.reaction_rate(T))
+
+        heat = (
+            self.reacted_mass(available, rate, dt)
+            * self.deltaH
+        )
+
+        chord = heat / span
+
+        if not math.isfinite(chord):
+            raise FloatingPointError(
+                f"{self.__class__.__name__}: "
+                "reaction_heat_slope produced NaN/Inf"
+            )
+
+        return max(float(tangent), chord)
 
 
     # ======================================================

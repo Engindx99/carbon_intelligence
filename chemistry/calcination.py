@@ -419,7 +419,7 @@ class CalcinationModel(ReactionBase):
             # tau is dz/u_s, the same residence the exponent
             # above uses.
             reaction_heat_slope_cells[i] = (
-                self.reaction_heat_derivative(
+                self.reaction_heat_slope(
                     m_in,
                     T_i,
                     float(dz / u_s),

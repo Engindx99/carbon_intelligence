@@ -464,12 +464,18 @@ class Burning:
         # would hand the solid row a slope that does not belong to
         # the sink in b, and the pair would stop reconstructing
         # Q_blend at Ts == Ts*.
+        #
+        # Scaled through a LOCAL and assigned once, not multiplied
+        # in place on the state attribute: in place, a second
+        # apply() without a fresh chemistry pass would scale the
+        # same array by w twice.
+        Q_calc_slope_new = np.asarray(
+            state.Calcination_Q_burning_slope_cells,
+            dtype=float,
+        )
+
         state.Calcination_Q_burning_slope_cells = (
-            w
-            * np.asarray(
-                state.Calcination_Q_burning_slope_cells,
-                dtype=float,
-            )
+            w * Q_calc_slope_new
         )
 
         state.m_dot_CO2_generated_burning_cells = dm_relaxed

@@ -55,7 +55,7 @@ def compute_cell_calcination(transition, Ts_cell, m_CaCO3_in_cell, dz, u_s):
     # -- the same reason the march computes mass transfer and
     # heat sink from one conversion. The solid row puts it on
     # its diagonal; see physics.variable_flow_rows.
-    dQ_dTs_cell = transition.chemistry.reaction_heat_derivative(
+    dQ_dTs_cell = transition.chemistry.reaction_heat_slope(
         float(m_CaCO3_in_cell),
         T_reaction,
         float(tau_cell),

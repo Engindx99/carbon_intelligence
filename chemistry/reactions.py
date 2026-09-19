@@ -395,7 +395,7 @@ class ChemistryModel:
             Q_calcination_cells[i] = Q_calcination_cell
 
             Q_calcination_slope_cells[i] = (
-                self.calcination.reaction_heat_derivative(
+                self.calcination.reaction_heat_slope(
                     CaCO3_in_cell,
                     T_i,
                     tau,

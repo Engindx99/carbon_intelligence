@@ -310,6 +310,37 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             m_CaCO3_in_cell = m_CaCO3_out_cell
 
         # ==================================================
+        # SLOPE GUARD
+        #
+        # The calciner (precalciner/thermal_solver.py) and the
+        # kiln (burning/heat_transfer.py) both reject a negative
+        # or non-finite slope before it reaches the matrix; this
+        # zone handed its array straight to the row builder with
+        # no check at all.
+        #
+        # It is not defensive book-keeping. A negative slope on
+        # the solid diagonal REMOVES diagonal dominance instead
+        # of adding it, turning the stabilisation into its
+        # opposite, and that is the one property the whole device
+        # rests on.
+        # ==================================================
+
+        if not np.all(np.isfinite(dQ_dTs_cells)):
+
+            raise FloatingPointError(
+                "transition calcination slope contains "
+                "non-finite values."
+            )
+
+        if np.any(dQ_dTs_cells < 0.0):
+
+            raise ValueError(
+                "transition calcination slope cannot contain "
+                "negative values: a negative slope would remove "
+                "diagonal dominance instead of adding it."
+            )
+
+        # ==================================================
         # PER-CELL STREAM FLOWS
         #
         # Solid runs 0 -> N-1 and loses dm_gas in each cell;
