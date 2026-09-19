@@ -454,6 +454,24 @@ class Burning:
         state.Calcination_Q_burning_cells = Q_calc_relaxed
         state.Calcination_Q_burning = float(np.sum(Q_calc_relaxed))
 
+        # The slope has to carry the SAME weight as the heat it is
+        # the slope of. The blend is
+        #
+        #   Q_blend = w Q_new(Ts) + (1 - w) Q_prev
+        #
+        # and Q_prev is last sweep's array, a constant here, so
+        # d(Q_blend)/dTs = w dQ_new/dTs. Scaling by anything else
+        # would hand the solid row a slope that does not belong to
+        # the sink in b, and the pair would stop reconstructing
+        # Q_blend at Ts == Ts*.
+        state.Calcination_Q_burning_slope_cells = (
+            w
+            * np.asarray(
+                state.Calcination_Q_burning_slope_cells,
+                dtype=float,
+            )
+        )
+
         state.m_dot_CO2_generated_burning_cells = dm_relaxed
         state.m_dot_CO2_generated_burning = float(np.sum(dm_relaxed))
 

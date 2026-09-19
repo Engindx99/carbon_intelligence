@@ -303,6 +303,46 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         )
 
     # ======================================================
+    # REACTION SINK SLOPE
+    #
+    # dQ/dTs of the CALCINATION part of the sink only, already
+    # scaled by calcination_relaxation in Burning.apply so it
+    # matches the blended heat above. The four clinkering terms
+    # are left un-linearised and stay wholly in b, exactly as
+    # they were: Patankar's rule applies term by term, and the
+    # stiff one here is calcination.
+    #
+    # The linearisation point is state.Ts_burning -- the field
+    # the chemistry was evaluated at, one level up in
+    # Burning.apply, which has not been overwritten yet when
+    # this runs. Same anchoring as the calciner, and for the
+    # same reason: it is what makes the slope damp the coupling
+    # between sweeps rather than cancel inside this loop.
+    # ======================================================
+
+    reaction_slope_cell = np.asarray(
+        getattr(
+            state,
+            "Calcination_Q_burning_slope_cells",
+            np.zeros(N),
+        ),
+        dtype=float,
+    )
+
+    if reaction_slope_cell.size != N:
+        reaction_slope_cell = np.zeros(N)
+
+    if np.any(reaction_slope_cell < 0.0):
+
+        raise ValueError(
+            "Calcination_Q_burning_slope_cells cannot contain "
+            "negative values: a negative slope would remove "
+            "diagonal dominance instead of adding it."
+        )
+
+    Ts_reaction = np.asarray(state.Ts_burning, dtype=float)
+
+    # ======================================================
     # AXIAL COMBUSTION HEAT DISTRIBUTION
     # ======================================================
 
@@ -523,6 +563,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 state.Ts_burning_in,
                 Ds_face[i],
                 Ds_face[i + 1],
+                reaction_slope_cell[i],
+                Ts_reaction[i],
             )
 
             # ==================================================

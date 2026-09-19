@@ -280,9 +280,34 @@ class ChemistryModel:
 
         Q_calcination_cells = np.zeros(N)
 
+        # dQ/dTs of the calcination term, for the source-term
+        # linearisation in
+        # physics.variable_flow_rows.apply_solid_energy_balance.
+        #
+        # ONLY calcination. Patankar's rule applies to any subset
+        # of a source; a term left un-linearised simply stays in b
+        # as it was. Calcination is the stiff one -- k crosses
+        # orders of magnitude within a cell's temperature span --
+        # while the four clinkering reactions are the ones the
+        # Strang split exists for, and an exact slope through that
+        # split is a different and much larger problem.
+        #
+        # The substepping does not complicate it. Calcination is a
+        # first-order decay run at full step length once per
+        # substep, so n_sub steps of available*(1-exp(-k h)) leave
+        # exactly CaCO3_in*exp(-k*tau): the cell total is
+        # CaCO3_in*(1-exp(-k tau))*deltaH however many substeps the
+        # clinkering rates demanded. Nor do the other four
+        # interfere -- they consume CaO, never CaCO3.
+        Q_calcination_slope_cells = np.zeros(N)
+
         for i in range(N):
 
             T_i = float(Ts[i])
+
+            # The CaCO3 entering this cell, read before the
+            # substep loop consumes it.
+            CaCO3_in_cell = float(flow["CaCO3"])
 
             rate = {
                 model: float(model.reaction_rate(T_i))
@@ -369,6 +394,14 @@ class ChemistryModel:
 
             Q_calcination_cells[i] = Q_calcination_cell
 
+            Q_calcination_slope_cells[i] = (
+                self.calcination.reaction_heat_derivative(
+                    CaCO3_in_cell,
+                    T_i,
+                    tau,
+                )
+            )
+
             dm_CO2_cells[i] = dm_CO2_cell
 
             set_cell_solid_flow(
@@ -390,6 +423,10 @@ class ChemistryModel:
         )
 
         state.Calcination_Q_burning_cells = Q_calcination_cells
+
+        state.Calcination_Q_burning_slope_cells = (
+            Q_calcination_slope_cells
+        )
 
         state.m_dot_CO2_generated_burning_cells = dm_CO2_cells
 
