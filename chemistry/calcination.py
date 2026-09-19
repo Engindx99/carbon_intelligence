@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from chemistry.base import ReactionBase
@@ -42,6 +44,136 @@ class CalcinationModel(ReactionBase):
             RAW_MEAL_COMPOSITION["CaCO3"] / 100000.0
         )
 
+        # ======================================================
+        # DECOMPOSITION EQUILIBRIUM
+        #
+        # CaCO3(s) <-> CaO(s) + CO2(g) is reversible, and its
+        # equilibrium CO2 pressure is what actually decides where
+        # calcination can run. The linear T_start..T_end window
+        # above is a stand-in for it.
+        #
+        # P_eq(T) = exp( -(dH - T*dS) / (R*T) )   [atm]
+        #
+        # Both anchors are checkable and neither is fitted:
+        #   dH  -- this model's own deltaH, converted to a molar
+        #          basis with M_CaCO3 (178.16 kJ/mol; the open
+        #          calciner literature quotes 179.4).
+        #   dS  -- fixed by the one textbook point on the curve,
+        #          P_eq = 1 atm at 1170 K, as dS = dH / T_eq.
+        #
+        # Against the tabulated decomposition curve that gives,
+        # over four orders of magnitude in pressure:
+        #
+        #     T [K]    P_eq model   tabulated   ratio
+        #      873       0.00197      0.0024     0.82
+        #      973       0.0245       0.028      0.88
+        #     1073       0.191        0.22       0.87
+        #     1173       1.048        1.04       1.01
+        #     1273       4.40         3.9        1.13
+        #
+        # tests/test_calcination_equilibrium.py pins these.
+        # ======================================================
+        self.M_CaCO3 = 0.10009              # kg/mol
+        self.T_equilibrium_1atm = 1170.0    # K, P_eq = 1 atm
+
+        self.dH_molar = self.deltaH * self.M_CaCO3          # J/mol
+        self.dS_molar = self.dH_molar / self.T_equilibrium_1atm
+
+    # ======================================================
+    # EQUILIBRIUM CO2 PRESSURE [atm] over CaCO3 at T [K]
+    # ======================================================
+    def equilibrium_pressure(self, T):
+
+        T = float(T)
+
+        if T <= 0.0:
+            raise ValueError("equilibrium_pressure needs T > 0 K")
+
+        return math.exp(
+            -(self.dH_molar - T * self.dS_molar)
+            / (self.R * T)
+        )
+
+    # ======================================================
+    # EQUILIBRIUM TEMPERATURE [K] at a CO2 partial pressure
+    #
+    # The inverse of equilibrium_pressure: below this
+    # temperature the reaction cannot proceed against the CO2
+    # already in the gas, so it is the floor the meal's own
+    # calcination can cool it to -- the calcination plateau.
+    #
+    # P_eq(T) = p  =>  T = dH / (dS - R ln p)
+    # ======================================================
+    def equilibrium_temperature(self, p_co2):
+
+        p_co2 = float(p_co2)
+
+        if not (0.0 < p_co2):
+            raise ValueError(
+                "equilibrium_temperature needs p_co2 > 0 atm, "
+                f"got {p_co2}"
+            )
+
+        denominator = self.dS_molar - self.R * math.log(p_co2)
+
+        if denominator <= 0.0:
+            raise ValueError(
+                "equilibrium_temperature: no solution for "
+                f"p_co2={p_co2} atm"
+            )
+
+        return self.dH_molar / denominator
+
+    # ======================================================
+    # HEAT-TRANSFER-CONTROLLED EXTENT
+    #
+    # Kinetics say how fast calcination COULD go; they do not
+    # say the heat to drive it exists. Once k*tau is large the
+    # reaction leaves the kinetic regime entirely and becomes
+    # HEAT-TRANSFER controlled: the meal sits on the calcination
+    # plateau, absorbing whatever arrives, and cannot cool itself
+    # below the temperature at which its own CO2 stops it.
+    #
+    # Unbounded, this is what breaks the solve. The chemistry is
+    # evaluated at the PREVIOUS pass's temperature and the energy
+    # equation is solved after it, so a cell whose kinetic extent
+    # would draw more than its stream carries hands the solver a
+    # negative temperature. With the literature rate the calciner
+    # does exactly that on the first sweep: 20.3 kg/s of CaCO3 at
+    # t90 = 0.03 s is ~36 MW demanded where ~5 MW is present, and
+    # physics.shell then rejects the hot face it is given.
+    #
+    # `heat_available` [W] is the sensible enthalpy the caller's
+    # solid stream holds ABOVE the equilibrium temperature -- the
+    # plateau floor from equilibrium_temperature(). Capping the
+    # extent there is the physical statement, not a clamp: past
+    # that point the driving force is gone.
+    #
+    # heat_available=None keeps the pure kinetic extent, so every
+    # caller that has not been taught the limit is unchanged.
+    # ======================================================
+    def limit_by_available_heat(self, reacted, heat_available):
+
+        reacted = float(reacted)
+
+        if heat_available is None:
+            return reacted
+
+        heat_available = float(heat_available)
+
+        if not math.isfinite(heat_available):
+            raise FloatingPointError(
+                "CalcinationModel: heat_available is not finite"
+            )
+
+        # Below the plateau there is no driving force left at all.
+        if heat_available <= 0.0:
+            return 0.0
+
+        reacted_max = heat_available / self.deltaH
+
+        return min(reacted, reacted_max)
+
     # ======================================================
     # STEADY-STATE FLOW FORM
     #
@@ -61,7 +193,7 @@ class CalcinationModel(ReactionBase):
     #
     # Returns (heat_sink [W], CO2_released [kg/s]).
     # ======================================================
-    def react_flow(self, flow, T, tau, rate=None):
+    def react_flow(self, flow, T, tau, rate=None, heat_available=None):
 
         if rate is None:
             rate = float(self.reaction_rate(T))
@@ -70,6 +202,11 @@ class CalcinationModel(ReactionBase):
 
         reacted = float(
             self.reacted_mass(available, rate, tau)
+        )
+
+        reacted = self.limit_by_available_heat(
+            reacted,
+            heat_available,
         )
 
         flow["CaCO3"] -= reacted
@@ -93,6 +230,7 @@ class CalcinationModel(ReactionBase):
     u_s,
     m_dot_CaCO3_in=None,
     commit_phases=True,
+    heat_available_cells=None,
 ):
 
         # ==================================================
@@ -246,6 +384,19 @@ class CalcinationModel(ReactionBase):
                 m_in
                 - m_out
             )
+
+            # Heat-transfer-controlled ceiling. See
+            # limit_by_available_heat: past the plateau the extent
+            # is set by the heat present, not by k. None leaves the
+            # kinetic extent untouched.
+            if heat_available_cells is not None:
+
+                m_reacted = self.limit_by_available_heat(
+                    m_reacted,
+                    heat_available_cells[i],
+                )
+
+                m_out = m_in - m_reacted
 
             # --------------------------------------------------
             # LOCAL CONVERSION
