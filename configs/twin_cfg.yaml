@@ -24,6 +24,15 @@ simulation:
   total_hours: 3.0
   chunk_hours: 1.0
 
+  # Picard sweep budget for the steady-state solve (main.Twin.run).
+  # Measured 2026-09-19: the converged plant needs 71 sweeps at
+  # nodes_per_stage=1 and 67 at nodes_per_stage=20, so this is ~40%
+  # margin. It is a BUDGET, not an answer -- the loop exits on the
+  # same tolerance whatever this is set to. Raise it only if a
+  # change genuinely needs more sweeps; a run that hits the cap is
+  # reporting a divergence, not asking for a bigger number.
+  max_iterations: 100
+
 
 fuel:
   Fuel_rate_total: 2.5

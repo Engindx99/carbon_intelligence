@@ -293,13 +293,33 @@ class ChemistryModel:
                 self.calcination.reaction_rate(T_i)
             )
 
+            # Substep count is set by the CLINKERING rates only.
+            #
+            # _MAX_RATE_SUBSTEP bounds the STRANG SPLITTING error,
+            # and that error is a property of the four reactions
+            # that compete for one CaO pool -- splitting them means
+            # each is advanced while the others are frozen, which
+            # is only accurate while k*h is small.
+            #
+            # Calcination is not in that sequence (see the comment
+            # above) and is not split against anything: it is a
+            # first-order decay of CaCO3 integrated EXACTLY by
+            # ReactionBase.reacted_mass as available*(1-exp(-k*h)),
+            # which is unconditionally accurate for any h. Including
+            # its rate here therefore bought no accuracy and instead
+            # made the substep count scale with a reaction that does
+            # not need substepping at all.
+            #
+            # That was harmless only while the calcination rate was
+            # orders of magnitude below the clinkering rates. At the
+            # literature rate the kiln reaches k ~ 76-300 1/s, and
+            # with tau ~ 190 s per cell the old criterion demanded
+            # ~1e5-1e6 substeps per cell, so a single plant sweep
+            # never completed.
             n_sub = max(
                 1,
                 math.ceil(
-                    max(
-                        max(rate.values()),
-                        rate_calcination,
-                    )
+                    max(rate.values())
                     * tau
                     / self._MAX_RATE_SUBSTEP
                 ),

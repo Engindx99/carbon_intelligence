@@ -75,6 +75,11 @@ class Twin:
         self.state = state
         self.mass_flow = SteadyStateMassFlow()
 
+        # Kept so run() can read solver budgets (simulation.
+        # max_iterations) from the same config the zones are built
+        # from, instead of a literal in the loop.
+        self.cfg = cfg
+
         # ======================================================
         # ZONE MODELS
         # ======================================================
@@ -1274,7 +1279,29 @@ class Twin:
         # suppressing it, and is already on the roadmap as a
         # missing closure.
         # ======================================================
-        max_iterations = 400
+        # MEASURED 2026-09-19, and the ~125 figure above is stale:
+        # the converged plant takes 71 sweeps at nodes_per_stage=1
+        # and 67 at nodes_per_stage=20 (traced per iteration). 400
+        # was therefore ~6x headroom, and its only practical effect
+        # was to turn a non-converging experiment into a run that
+        # had to be killed by hand.
+        #
+        # 100 keeps ~40% margin over the measured count and makes a
+        # diverging change fail fast instead of grinding. It is read
+        # from the config so a change that genuinely needs more can
+        # raise it without editing code; the loop stops at the same
+        # tolerance either way, so this is a budget, not an answer.
+        simulation_cfg = self.cfg.get("simulation", {}) or {}
+
+        max_iterations = int(
+            simulation_cfg.get("max_iterations", 100)
+        )
+
+        if max_iterations < 1:
+            raise ValueError(
+                "simulation.max_iterations must be >= 1, "
+                f"got {max_iterations}"
+            )
 
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6
