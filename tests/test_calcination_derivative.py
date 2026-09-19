@@ -188,19 +188,28 @@ class HeatDerivativeTest(unittest.TestCase):
         """
 
         available = 20.3
-        dt = 0.8
-
-        def heat(T):
-            return (
-                self.model.reacted_mass(
-                    available,
-                    float(self.model.reaction_rate(T)),
-                    dt,
-                )
-                * self.model.deltaH
-            )
 
         for T in [1100.0, 1150.0, 1200.0, 1400.0, 1700.0]:
+
+            # Residence taken from the local rate rather than
+            # written down, so each sample sits at k*dt = 1 --
+            # the regime where the slope is meaningful. A fixed
+            # dt cannot do that across a rate that spans orders
+            # of magnitude: too long and the cell has already
+            # converted everything it holds, the heat saturates
+            # at available*deltaH and BOTH the analytic slope and
+            # the finite difference are legitimately zero.
+            dt = 1.0 / float(self.model.reaction_rate(T))
+
+            def heat(t, dt=dt):
+                return (
+                    self.model.reacted_mass(
+                        available,
+                        float(self.model.reaction_rate(t)),
+                        dt,
+                    )
+                    * self.model.deltaH
+                )
 
             analytic = self.model.reaction_heat_derivative(
                 available,

@@ -36,6 +36,7 @@ class CalcinationModel(ReactionBase):
         self.T_start = 1073.0               # K
         self.T_end = 1300.0                 # K
 
+
         # ======================================================
         # RAW MEAL COMPOSITION
         # ======================================================
@@ -125,54 +126,45 @@ class CalcinationModel(ReactionBase):
         return self.dH_molar / denominator
 
     # ======================================================
-    # HEAT-TRANSFER-CONTROLLED EXTENT
+    # HEAT-TRANSFER-CONTROLLED EXTENT -- REMOVED
     #
-    # Kinetics say how fast calcination COULD go; they do not
-    # say the heat to drive it exists. Once k*tau is large the
-    # reaction leaves the kinetic regime entirely and becomes
-    # HEAT-TRANSFER controlled: the meal sits on the calcination
-    # plateau, absorbing whatever arrives, and cannot cool itself
-    # below the temperature at which its own CO2 stops it.
+    # limit_by_available_heat() used to sit here: a ceiling that
+    # capped the reacted mass at heat_available/deltaH, so a cell
+    # could not draw more heat than its stream carried.
     #
-    # Unbounded, this is what breaks the solve. The chemistry is
-    # evaluated at the PREVIOUS pass's temperature and the energy
-    # equation is solved after it, so a cell whose kinetic extent
-    # would draw more than its stream carries hands the solver a
-    # negative temperature. With the literature rate the calciner
-    # does exactly that on the first sweep: 20.3 kg/s of CaCO3 at
-    # t90 = 0.03 s is ~36 MW demanded where ~5 MW is present, and
-    # physics.shell then rejects the hot face it is given.
+    # It was the right diagnosis and the wrong instrument. The
+    # diagnosis: once k*tau is large the reaction leaves the
+    # kinetic regime and becomes HEAT-TRANSFER controlled -- the
+    # meal sits on the calcination plateau absorbing whatever
+    # arrives. The instrument was a clamp applied after the fact,
+    # and it never worked: evaluated on a uniform first-sweep
+    # field every cell independently believed it held the whole
+    # stream enthalpy, so a 20-cell zone claimed 20x its budget
+    # and the shell closure still got a negative hot face.
     #
-    # `heat_available` [W] is the sensible enthalpy the caller's
-    # solid stream holds ABOVE the equilibrium temperature -- the
-    # plateau floor from equilibrium_temperature(). Capping the
-    # extent there is the physical statement, not a clamp: past
-    # that point the driving force is gone.
+    # Faz 6 item 1.5 addresses the mechanism instead of the
+    # symptom: dQ/dTs now sits on the solid row's diagonal
+    # (physics.variable_flow_rows.apply_solid_energy_balance), so
+    # near the plateau the cell is pinned at the temperature
+    # where reaction heat equals supply and the plateau falls out
+    # of the energy balance rather than being imposed.
     #
-    # heat_available=None keeps the pure kinetic extent, so every
-    # caller that has not been taught the limit is unchanged.
+    # BE PRECISE ABOUT WHAT THAT DOES AND DOES NOT DO. The slope
+    # is large only where k*tau ~ 1. Once a cell converts
+    # everything it holds, Q saturates at m_in*deltaH and dQ/dTs
+    # falls to zero -- measured at the literature rate with
+    # tau = 66 s: 6.8e5 W/K per kg/s at the 1088 K plateau,
+    # 2.5e3 at 1100 K, 9.7 at 1110 K, and 4e-14 by 1150 K. So the
+    # linearisation stabilises the NEIGHBOURHOOD of the solution,
+    # which is where the converged plant sits, and offers nothing
+    # from a hot start where the reaction is already complete.
+    # Bounding that transient needs the extent and the cell
+    # energy balance solved together, not a ceiling applied after
+    # the fact.
+    #
+    # It was also dead code throughout: no caller ever passed
+    # heat_available or heat_available_cells.
     # ======================================================
-    def limit_by_available_heat(self, reacted, heat_available):
-
-        reacted = float(reacted)
-
-        if heat_available is None:
-            return reacted
-
-        heat_available = float(heat_available)
-
-        if not math.isfinite(heat_available):
-            raise FloatingPointError(
-                "CalcinationModel: heat_available is not finite"
-            )
-
-        # Below the plateau there is no driving force left at all.
-        if heat_available <= 0.0:
-            return 0.0
-
-        reacted_max = heat_available / self.deltaH
-
-        return min(reacted, reacted_max)
 
     # ======================================================
     # STEADY-STATE FLOW FORM
@@ -193,7 +185,7 @@ class CalcinationModel(ReactionBase):
     #
     # Returns (heat_sink [W], CO2_released [kg/s]).
     # ======================================================
-    def react_flow(self, flow, T, tau, rate=None, heat_available=None):
+    def react_flow(self, flow, T, tau, rate=None):
 
         if rate is None:
             rate = float(self.reaction_rate(T))
@@ -202,11 +194,6 @@ class CalcinationModel(ReactionBase):
 
         reacted = float(
             self.reacted_mass(available, rate, tau)
-        )
-
-        reacted = self.limit_by_available_heat(
-            reacted,
-            heat_available,
         )
 
         flow["CaCO3"] -= reacted
@@ -230,7 +217,6 @@ class CalcinationModel(ReactionBase):
     u_s,
     m_dot_CaCO3_in=None,
     commit_phases=True,
-    heat_available_cells=None,
 ):
 
         # ==================================================
@@ -390,19 +376,6 @@ class CalcinationModel(ReactionBase):
                 m_in
                 - m_out
             )
-
-            # Heat-transfer-controlled ceiling. See
-            # limit_by_available_heat: past the plateau the extent
-            # is set by the heat present, not by k. None leaves the
-            # kinetic extent untouched.
-            if heat_available_cells is not None:
-
-                m_reacted = self.limit_by_available_heat(
-                    m_reacted,
-                    heat_available_cells[i],
-                )
-
-                m_out = m_in - m_reacted
 
             # --------------------------------------------------
             # LOCAL CONVERSION
