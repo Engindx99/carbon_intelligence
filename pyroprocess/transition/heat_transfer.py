@@ -531,6 +531,27 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         ]
 
         # ==================================================
+        # CONVERGENCE ERROR
+        #
+        # tol, converged and error were assigned above and
+        # never read, so this loop had no convergence test at
+        # all and always ran every one of its max_iter passes.
+        # The calciner and the cooler have measured and broken
+        # here all along; this zone and the kiln did not.
+        #
+        # Measured on the raw solve against the iterate it came
+        # from, then acted on after the blend -- the same order
+        # the calciner uses, so the two zones stop on one and
+        # the same definition of "converged".
+        # ==================================================
+
+        error = max(
+            float(np.max(np.abs(Tg_new - Tg_iter))),
+            float(np.max(np.abs(Ts_new - Ts_iter))),
+            float(np.max(np.abs(Tw_new - Tw_iter))),
+        )
+
+        # ==================================================
         # RELAXATION
         # ==================================================
 
@@ -551,6 +572,17 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             + (1.0 - relaxation)
             * Tw_iter
         )
+
+        # ======================================================
+        # CONVERGENCE
+        # ======================================================
+
+        if error < tol:
+
+            converged = True
+
+            break
+
 
     # ======================================================
     # FINAL STEADY-STATE TEMPERATURES

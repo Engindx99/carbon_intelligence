@@ -571,17 +571,21 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
 
         # ==================================================
-        # CONVERGENCE MEASUREMENT (DIAGNOSTIC, NON-BINDING)
+        # CONVERGENCE MEASUREMENT
         #
         # tol/converged/error were assigned here and never
-        # read, so the loop has always run all max_iter passes
-        # and no convergence was ever verified. They are now
-        # measured and reported.
+        # read, so the loop always ran all max_iter passes and
+        # no convergence was ever verified. They were made
+        # measurable first, deliberately without a break, so
+        # that increment could stay bit-identical.
         #
-        # Deliberately NO break: stopping early would change
-        # the answer at the 1e-7 level and this instrumentation
-        # increment must leave the solution bit-identical.
-        # Wiring the break is a separate, later change.
+        # This is the separate, later change that comment
+        # promised: the break is now wired, matching the
+        # calciner and the cooler, which have both stopped on
+        # this test all along. It moves the answer at the 1e-7
+        # level -- well under the 1e-3 K the plant loop itself
+        # converges to -- and buys back the iterations spent
+        # refining a field that had already stopped moving.
         # ==================================================
 
         error = max(
@@ -613,6 +617,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             relaxation * Tw_new
             + (1.0 - relaxation) * Tw_iter
         )
+
+        # ==================================================
+        # CONVERGENCE
+        # ==================================================
+
+        if error < tol:
+
+            break
 
 
     # ======================================================
