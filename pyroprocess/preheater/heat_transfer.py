@@ -98,6 +98,12 @@ def thermal_step(
     preheater.gas_handoff_residuals = []
     preheater.solid_handoff_residuals = []
 
+    # The inner loop's error trajectory. Published so a caller
+    # that gets a raise can tell a near-miss from a divergence
+    # without re-running the plant, and so the contraction ratio
+    # is a measurement rather than an assumption.
+    preheater.solid_error_history = []
+
     # ======================================================
     # COUNTER-CURRENT STAGE SOLUTION
     # ======================================================
@@ -109,8 +115,40 @@ def thermal_step(
     # Fresh feed -> Stage 5 -> Stage 4 -> Stage 3
     #            -> Stage 2 -> Stage 1
 
-    max_iterations = 50
+    # This is plain Picard on the solid inlet profile, so its
+    # error sequence is geometric and the budget is a NUMERICAL
+    # resource, not a physical parameter. 50 was too small and had
+    # already produced two false negatives: a plant that missed
+    # this tolerance looks, from outside, exactly like one that
+    # diverged, and both were reported to a fuel experiment as
+    # infeasible operating points.
+    #
+    # MEASURED on the literature-kinetics tree at nodes_per_stage
+    # = 1, with the budget lifted so the loop could finish:
+    #
+    #   fuel 1.6 kg/s -> converged in 51 iterations, rho = 0.708
+    #   fuel 1.3 kg/s -> converged in 62 iterations, rho = 0.758
+    #
+    # 1.6 missed by ONE iteration. The error fell 421 K -> 9.6e-6 K
+    # monotonically over eight orders; nothing was diverging.
+    #
+    # 200 is derived, not guessed: the worst contraction still
+    # worth calling convergent is taken as rho = 0.9, and the
+    # initial error spans feed to exhaust, order 1e3 K, so
+    # log(1e-5 / 1e3) / log(0.9) = 175 iterations. Rounded up.
+    max_iterations = 200
+
+    # NOT loosened. preheater.energy_closure_tolerance below is
+    # derived from this figure, so relaxing it would silently
+    # relax the energy validator with it -- buying convergence by
+    # lowering the bar the result is checked against.
     tolerance = 1e-5
+
+    # A budget four times larger makes a GENUINE divergence four
+    # times more expensive, so pay that back: a sequence that has
+    # stopped contracting is not going to start, and saying so
+    # early costs one comparison per iteration.
+    divergence_window = 20
 
     # ======================================================
     # ENERGY CLOSURE TOLERANCE
@@ -267,14 +305,65 @@ def thermal_step(
 
         solid_in_guess = new_solid_in
 
+        preheater.solid_error_history.append(float(solid_error))
+
         if solid_error < tolerance:
             break
 
+        # A contraction that has made no progress across a whole
+        # window is not converging slowly, it is not converging.
+        # Compared against the START of the window rather than the
+        # previous step, so the ordinary non-monotone wobble of a
+        # counter-current sweep does not trip it.
+        if len(preheater.solid_error_history) > divergence_window:
+
+            reference = preheater.solid_error_history[
+                -divergence_window - 1
+            ]
+
+            if solid_error >= reference:
+                raise RuntimeError(
+                    "Preheater counter-current solution is not "
+                    "contracting: solid_error="
+                    f"{solid_error:.6e} K after {iteration + 1} "
+                    f"iterations, against {reference:.6e} K "
+                    f"{divergence_window} iterations earlier "
+                    f"(tolerance {tolerance:.1e} K). This is a "
+                    "divergence, not an exhausted budget."
+                )
+
     else:
-        raise RuntimeError(
+        # Report the ATTAINED error and the rate, so a caller can
+        # tell "two iterations short" from "nowhere near". The
+        # first costs a fuel experiment a feasible operating point
+        # if it is reported as infeasible; the second is a real
+        # statement about the plant.
+        ratio = float("nan")
+
+        if len(preheater.solid_error_history) >= 2:
+            previous = preheater.solid_error_history[-2]
+            if previous > 0.0:
+                ratio = solid_error / previous
+
+        shortfall = solid_error / tolerance
+
+        message = (
             "Preheater counter-current solution did not converge: "
-            f"solid_error={solid_error:.6e} K"
+            f"solid_error={solid_error:.6e} K after "
+            f"{max_iterations} iterations, which is "
+            f"{shortfall:.2f}x the {tolerance:.1e} K tolerance "
+            f"(last contraction ratio {ratio:.4f})."
         )
+
+        # ratio == ratio rejects NaN, which is what an empty or
+        # zero-valued history leaves behind.
+        if ratio == ratio and ratio < 1.0:
+            message += (
+                " Budget exhausted while still contracting -- "
+                "this is not a divergence."
+            )
+
+        raise RuntimeError(message)
 
     # ======================================================
     # FINAL CONSISTENT SWEEP
