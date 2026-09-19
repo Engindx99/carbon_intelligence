@@ -22,10 +22,11 @@ def compute_cell_calcination(transition, Ts_cell, m_CaCO3_in_cell, dz, u_s):
         transition.chemistry.reaction_rate(T_reaction)
     )
 
+    tau_cell = dz / max(u_s, transition.eps)
+
     spatial_exponent = (
         k_reaction
-        * dz
-        / max(u_s, transition.eps)
+        * tau_cell
     )
 
     m_CaCO3_out_cell = (
@@ -49,11 +50,23 @@ def compute_cell_calcination(transition, Ts_cell, m_CaCO3_in_cell, dz, u_s):
         * transition.chemistry.deltaH
     )
 
+    # dQ/dTs for this cell, returned from the same place as the
+    # heat itself so the slope and the value cannot drift apart
+    # -- the same reason the march computes mass transfer and
+    # heat sink from one conversion. The solid row puts it on
+    # its diagonal; see physics.variable_flow_rows.
+    dQ_dTs_cell = transition.chemistry.reaction_heat_derivative(
+        float(m_CaCO3_in_cell),
+        T_reaction,
+        float(tau_cell),
+    )
+
     return (
         k_reaction,
         m_CaCO3_out_cell,
         m_CaCO3_reacted_cell,
         Q_calcination_cell,
+        dQ_dTs_cell,
     )
 
 
@@ -99,6 +112,7 @@ def resolve_transition_calcination(transition, state, Ts, u_s):
                 m_out,
                 m_reacted,
                 Q_cell,
+                _dQ_dTs_cell,
             ) = compute_cell_calcination(
                 transition,
                 Ts[i],

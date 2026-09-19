@@ -277,6 +277,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
         dm_gas_cells = np.zeros(N)
         Q_calcination_cells = np.zeros(N)
+        dQ_dTs_cells = np.zeros(N)
 
         m_CaCO3_in_cell = m_dot_CaCO3_transition_in
 
@@ -287,6 +288,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 m_CaCO3_out_cell,
                 m_CaCO3_reacted_cell,
                 Q_calcination_cell,
+                dQ_dTs_cell,
             ) = calcination.compute_cell_calcination(
                 transition,
                 Ts_iter[i],
@@ -303,6 +305,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             )
 
             Q_calcination_cells[i] = Q_calcination_cell
+            dQ_dTs_cells[i] = dQ_dTs_cell
 
             m_CaCO3_in_cell = m_CaCO3_out_cell
 
@@ -473,6 +476,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 Ts_in,
                 Ds_face[i],
                 Ds_face[i + 1],
+                dQ_dTs_cells[i],
+                Ts_iter[i],
             )
 
             # ==================================================

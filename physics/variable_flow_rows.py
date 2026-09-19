@@ -217,8 +217,60 @@ def apply_gas_energy_balance(
 # current iterate the same way the gas row linearises its own
 # enthalpy: h_gas(Ts) ~ cp_gas_s * Ts + h_const_s.
 #
+# THE REACTION SINK IS LINEARISED THE SAME WAY, for the same
+# reason and by the same device -- see dQ_dTs_cell below.
+#
 # With Cs_in == Cs_out and dm_gas == 0 this reduces exactly to
 # the constant-flow form it replaces.
+#
+# ------------------------------------------------------
+# dQ_dTs_cell / Ts_star_cell -- SOURCE-TERM LINEARISATION
+#
+# Q_reaction_cell is evaluated at some iterate Ts*, and until
+# Faz 6 item 1.5 that was the whole story: the sink went into
+# b as a constant and contributed NOTHING to the diagonal. The
+# reaction's response to temperature was then resolved by
+# successive substitution between the chemistry pass and the
+# thermal solve.
+#
+# That works only while dQ/dTs is small. Calcination at a
+# literature rate crosses six orders of magnitude of k within
+# one cell's temperature span, the fixed-point map's Jacobian
+# passes 1 in magnitude, and the plant limit-cycles -- measured
+# at a thermal residual pinned near 290 K that does not decay,
+# with no damping weight able to remove it.
+#
+# The standard finite-volume treatment of a strongly
+# temperature-dependent source is to split it about the current
+# iterate and carry the slope in the matrix (Patankar,
+# Numerical Heat Transfer and Fluid Flow, 1980, ch. 7: a source
+# linearised as S = S_C + S_P T must have S_P <= 0):
+#
+#   Q(Ts) ~ Q(Ts*) + S (Ts - Ts*),   S = dQ/dTs >= 0
+#
+# so +S joins the diagonal and -(Q(Ts*) - S Ts*) stays in b.
+# Here S_P = -S <= 0 because a hotter cell reacts faster and
+# absorbs MORE heat, which is what makes the rule apply.
+#
+# Three consequences, and the third is the point:
+#
+#   - it cannot move the answer. At the fixed point Ts == Ts*
+#     and the two added terms cancel identically, so this is a
+#     PATH change only, exactly like the h_gas linearisation
+#     above and like burning's calcination_relaxation;
+#   - S >= 0 always, so the diagonal only ever grows: the
+#     system is more diagonally dominant than before, never
+#     less;
+#   - the stiffer the chemistry, the LARGER S is, and the
+#     harder the cell is pinned to the temperature at which
+#     reaction heat balances supply. Stiffness becomes
+#     self-damping instead of destabilising, and the
+#     calcination plateau falls out of the energy balance
+#     rather than being imposed by a clamp or a heat budget.
+#
+# Defaults of 0.0 reproduce the previous arithmetic exactly
+# (x + 0.0 == x, x - 0.0 * 0.0 == x), so a caller that has not
+# been taught the slope is bit-identical.
 # ======================================================
 def apply_solid_energy_balance(
     A,
@@ -240,6 +292,8 @@ def apply_solid_energy_balance(
     Ts_in,
     D_in=0.0,
     D_out=0.0,
+    dQ_dTs_cell=0.0,
+    Ts_star_cell=0.0,
 ):
 
     Tg_i = i
@@ -251,6 +305,7 @@ def apply_solid_energy_balance(
         + dm_gas * cp_gas_s
         + V_cell * K_gs
         + V_cell * K_ws
+        + dQ_dTs_cell
     )
 
     A[row, Tg_i] += (
@@ -262,9 +317,13 @@ def apply_solid_energy_balance(
     )
 
     # Constants common to both ends of the cell.
+    #
+    # The sink appears as its value at Ts* minus the slope
+    # already moved to the diagonal, so the pair reconstructs
+    # Q(Ts*) exactly when the solve returns Ts == Ts*.
     b_common = (
         radiation_solid_source
-        - Q_reaction_cell
+        - (Q_reaction_cell - dQ_dTs_cell * Ts_star_cell)
         - dm_gas * h_const_s
         - Cs_out * D_out
         + Cs_in * D_in
