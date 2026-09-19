@@ -60,6 +60,13 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     N = cooler.N
     V_cell = cooler.V_cell
 
+    # Cross-flow: each grate segment draws its own fresh air
+    # from its own fan box. m_dot_g stays as the TOTAL ambient
+    # draw, which is what Hg_in below is built from and what the
+    # global mass balance books; m_air_cells is how it is
+    # distributed along the grate. See gas_phase.cooler_air_cells.
+    m_air_cells = gas_phase.cooler_air_cells(cooler, state)
+
     # ======================================================
     # INLET BOUNDARY CONDITIONS
     # ======================================================
@@ -172,7 +179,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             Ts_iter,
             Tw_iter,
             cooler.T_ref,
-            m_dot_g,
+            m_air_cells,
             V_cell,
             K_gs,
             K_gw,
@@ -430,19 +437,25 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         )
     )
 
-    # Outlet values are read at the outlet FACE, not at the
-    # last cell CENTRE -- the same reconstructed values the
-    # second-order fluxes actually transport out of the end
-    # cells, and the same ones gas_phase.gas_enthalpy_out()
-    # and solid_phase.solid_enthalpy_out() hand to the next
-    # unit. Reading the centres here instead would show up as
-    # a spurious gas_gap/solid_gap in the decomposition below.
-    Hg_out = (
-        m_dot_g
-        * gas_phase.hot_end_face_enthalpy(
-            cooler,
-            Tg_ss,
-        )
+    # The SOLID outlet is read at the outlet FACE, not the last
+    # cell centre -- the same reconstructed value the
+    # second-order flux actually transports out of the end cell,
+    # and the same one solid_phase.solid_enthalpy_out() hands to
+    # the next unit. Reading the centre would show up as a
+    # spurious solid_gap in the decomposition below.
+    #
+    # The GAS has no outlet face. Under cross-flow each cell's
+    # air leaves vertically through the hood at that cell's own
+    # temperature, so the cooler has N gas outlets and the cell
+    # CENTRES are the outlet states -- there is nothing half a
+    # cell downstream to reconstruct towards. Taken through
+    # gas_phase.gas_enthalpy_out rather than re-derived here, so
+    # this and the three split streams cooler.py publishes
+    # cannot drift apart.
+    Hg_out = gas_phase.gas_enthalpy_out(
+        cooler,
+        Tg_ss,
+        state,
     )
 
     Hs_in = (
@@ -498,11 +511,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     #
     # gas_gap  Closure gap of the gas rows, evaluated at the
     #          converged state against the final fluxes. Zero
-    #          at the exact fixed point: the enthalpy-
-    #          linearized rows (gas_phase.py) telescope to
-    #          m_dot_g*(h_gas(Tg_out) - h_gas(Tg_in)), which is
-    #          exactly Hg_out - Hg_in above. What is left is
-    #          the Picard gap, bounded by `tol`.
+    #          at the exact fixed point. Under cross-flow the
+    #          enthalpy-linearized rows (gas_phase.py) do not
+    #          telescope -- there is no chain to telescope
+    #          along -- they simply ADD to
+    #          sum_i m_air[i]*h(Tg_i) - m_total*h(Tg_in), which
+    #          is exactly Hg_out - Hg_in above with no
+    #          reconstruction in between. Counter-current needed
+    #          an outlet-face reconstruction matched to a van
+    #          Leer correction to make the same statement true;
+    #          this is structurally exact instead. What is left
+    #          is the Picard gap, bounded by `tol`.
     #
     # solid_gap  Same for the solid rows. Cp_s is constant, so
     #          those telescope exactly too; again only the

@@ -1,8 +1,55 @@
+import numpy as np
+
 from physics.physics import cp_gas
 from physics.physics import h_gas
-from physics.physics import outlet_face_value
-from physics.physics import second_order_upwind_correction
 from physics.physics import T_gas_from_h
+
+
+# ======================================================
+# PER-CELL COOLING AIR
+#
+# A grate cooler is not a duct. Each segment of the grate has
+# its own undergrate fan box and blows its own fresh ambient
+# air UP through the clinker bed; that air leaves through the
+# hood at that segment's temperature and is taken off as
+# secondary, tertiary or vent depending on where along the
+# grate it sits. It does not travel the length of the cooler.
+#
+# Source: Svensen, Leal da Silva, Pigazo Merino, Sampath &
+# Jorgensen, "A Dynamic Cooler Model for Cement Clinker
+# Production", arXiv:2409.09076 (2024) -- the same DTU
+# pyro-section series as the calcination kinetics this repo
+# already uses (Ritschel et al., arXiv:2405.03208). Their
+# cooler is 10 finite-volume segments, each with its own air
+# inflow (40.89 kg/s on segment 1, 18.56 on segment 2, 16.24
+# on each of 3-10); secondary air is segment 1's air at
+# 1088.7 C and tertiary is segment 2's at 899.1 C.
+#
+# UNIFORM here, rather than their hot-end-weighted profile.
+# That profile is one plant's grate design and is not measured
+# for the generic reference kiln this config describes;
+# uniform introduces no fitted parameter and no new config
+# key. A cooler_air.grate_air_profile hook is the obvious
+# extension and is deliberately not built.
+#
+# WHY THIS MATTERS. As one lumped counter-current stream the
+# whole 2.2 kg air/kg clinker had to share one outlet
+# temperature, which put C_air/C_solid at 2.91 and capped the
+# air rise at 266 K -- secondary air measured 586.06 K against
+# BOUNDS["secondary_air"] = (1050, 1350). The cooler was at
+# ~100% counter-current effectiveness; it was not broken. The
+# air simply cannot get hot when its heat-capacity rate is
+# 2.9x the clinker's. Secondary air alone is 0.65 kg/kg
+# clinker here and 0.771 in the source, and it is that smaller
+# stream, drawn off the hot end only, that can reach the band.
+# ======================================================
+def cooler_air_cells(cooler, state):
+
+    return np.full(
+        cooler.N,
+        float(state.m_dot_air_cooler) / cooler.N,
+        dtype=float,
+    )
 
 
 # ======================================================
@@ -13,30 +60,54 @@ from physics.physics import T_gas_from_h
 # renamed to `cooler` since this is now a free function
 # taking the owning Cooler instance explicitly.
 #
-# Cooler gas is now counter-current to the solid (secondary/
-# tertiary air recuperation): a Dirichlet inlet row
-# (Tg[N-1] = Tg_in) at the clinker-discharge end, followed by
-# a per-cell loop sweeping N-1 -> 0 toward the hot
-# clinker-inlet end, where the gas exits hottest. This matches
-# the gas direction already used by
-# pyroprocess/transition/gas_phase.py and
-# pyroprocess/burning/gas_phase.py (gas N-1 -> 0); the solid
-# still flows 0 -> N-1 (pyroprocess/cooler/solid_phase.py,
-# unchanged), so the two phases are counter-current. Cooler's
-# own row-assembly architecture (a self-contained per-cell
-# loop here, rather than Burning/Transition's externally
-# driven per-cell call) is otherwise preserved as-is; only the
-# sweep direction and inlet cell changed.
+# CROSS-FLOW. Each cell's gas is its own stream: it enters
+# from the undergrate fan box at the ambient inlet condition,
+# crosses the bed once, and leaves through the hood at that
+# cell's temperature. There is NO axial gas transport, so
+# there is no upstream cell, no sweep direction and no inlet
+# cell. Cell i's row is simply
 #
-# The convective term is written in ENTHALPY like those two
-# siblings. It used to be a bare right-endpoint
-# m_dot_g*cp_gas(Tg_i)*(Tg_i - Tg_up), whose fixed point does
-# not satisfy the finite-control-volume first law
-# m_dot_g*(h_out - h_in) = Q that heat_transfer.py's energy
-# balance assumes. That gap was the dominant part of the
-# Cooler energy residual; the residual decomposition
-# diagnostic in heat_transfer.py now reports what is left of
-# it as `gas_gap`.
+#   m_air[i] * (h(Tg_i) - h(Tg_in)) + Q_gs,i + Q_gw,i = 0
+#
+# The gas-to-gas block of A is therefore DIAGONAL. The rows
+# keep their couplings to the solid and wall unknowns through
+# K_gs and K_gw; only the gas-to-gas coupling disappears.
+# Every gas cell is now anchored directly to the inlet
+# condition instead of through a chain of N, which makes the
+# block strictly more diagonally dominant than the upwind
+# operator it replaces.
+#
+# WHAT LEAVES WITH THE ADVECTION, and why that is not a loss
+# of accuracy. The counter-current form needed a van Leer
+# deferred correction (physics.second_order_upwind_correction)
+# matched to an outlet-FACE reconstruction, because
+# first-order upwind smeared the steep axial gradient the
+# recuperator was made of. Both were a matched pair: the
+# reconstruction is exactly what made the telescoped row sum
+# equal m_dot_g*(h_face - h_in). With no axial flux there is
+# nothing to reconstruct and nothing to smear, and the row sum
+#
+#   sum_i m_air[i]*h(Tg_i) - m_total*h(Tg_in)
+#       + V_cell*sum(q_gs + q_gw) = 0
+#
+# is an identity rather than the consequence of a matched
+# pair. That is `gas_gap` in heat_transfer.py's residual
+# decomposition, and it should become structurally exact.
+#
+# WHAT STAYS. The convective term is still written in
+# ENTHALPY, and h_gas is still cubic in T, so each cell still
+# carries the first-order Taylor expansion of h_gas about the
+# frozen Picard iterate,
+#
+#   h_lin(T) = Cp_g * T + h_linear_const
+#
+# which is EXACT at the fixed point. It is the linearisation,
+# not the advection, that makes this non-linear. What did
+# disappear is the UPSTREAM cell's linearisation: the inlet
+# enthalpy is now a known constant, identical in every cell.
+#
+# The solid still flows 0 -> N-1 (solid_phase.py, unchanged
+# and still genuinely axial, with its own reconstruction).
 # ======================================================
 def apply_gas_energy_balance(
     A,
@@ -48,7 +119,7 @@ def apply_gas_energy_balance(
     Ts_iter,
     Tw_iter,
     T_ref,
-    m_dot_g,
+    m_air_cells,
     V_cell,
     K_gs,
     K_gw,
@@ -56,58 +127,31 @@ def apply_gas_energy_balance(
     q_gw,
 ):
 
-    # ----------------------------------------------
-    # SECOND-ORDER ADVECTION CORRECTION
-    #
-    # The face enthalpies below are upstream cell centres,
-    # i.e. first-order upwind, whose O(dz) truncation error
-    # acts as a numerical diffusion across the steep axial
-    # gradient the recuperator is made of. These per-cell
-    # terms upgrade the faces to a van Leer limited linear
-    # reconstruction by deferred correction: they enter
-    # b[row] only, so A stays the diagonally dominant upwind
-    # M-matrix, and the converged fixed point satisfies the
-    # second-order equation. See
-    # physics.second_order_upwind_correction.
-    #
-    # The gas is reconstructed in ENTHALPY, since the gas
-    # flux is m_dot_g * h and h is cubic in T. The inlet face
-    # carries no correction: its value is the known incoming
-    # cooling-air stream, not a reconstruction.
-    # ----------------------------------------------
-
-    h_iter = h_gas(
-        Tg_iter,
-        T_ref,
+    # The inlet stream is the same ambient condition for every
+    # fan box, so this is one constant, not a per-cell lookup.
+    h_in = float(
+        h_gas(
+            Tg_in,
+            T_ref,
+        )
     )
 
-    advection_correction = second_order_upwind_correction(
-        h_iter,
-        float(
-            h_gas(
-                Tg_in,
-                T_ref,
-            )
-        ),
-        reverse=True,
-    )
-
-    for i in range(N - 1, -1, -1):
+    for i in range(N):
 
         gas_i = i
         solid_i = N + i
         wall_i = 2 * N + i
 
         # ----------------------------------------------
-        # m_dot_g (h_g,i - h_g,up)
+        # m_air[i] (h_g,i - h_in)
         #
         # + Q_gs
         # + Q_gw
         # = 0
         #
         # h_gas is cubic in T, so it cannot enter the
-        # linear system directly. Each node instead carries
-        # a first-order Taylor expansion of h_gas about the
+        # linear system directly. Each node carries a
+        # first-order Taylor expansion of h_gas about the
         # frozen Picard iterate,
         #
         #   h_lin(T) = Cp_g * T + h_linear_const
@@ -116,29 +160,26 @@ def apply_gas_energy_balance(
         # T == Tg_iter and h_lin collapses back onto
         # h_gas. The linearization slope therefore sets the
         # convergence rate, not the converged answer.
-        # Summed over the cells this telescopes exactly to
-        # m_dot_g * (h_gas(Tg[-1]) - h_gas(Tg_in)), which is
-        # what heat_transfer.py uses for Hg_out - Hg_in.
         #
-        # Same construction as burning/gas_phase.py and
-        # transition/gas_phase.py, with the upstream node
-        # taken as i + 1 for Cooler's counter-current flow
-        # (gas sweeps N-1 -> 0).
+        # Summed over the cells these do NOT telescope --
+        # there is no chain to telescope along. They add
+        # directly to
         #
-        # Cell N-1 is a full control volume like every other
-        # cell, not a boundary node: its upstream enthalpy
-        # is the known inlet stream h_gas(Tg_in), injected
-        # as a flux in b[row]. Tg[N-1] is therefore the cell
-        # average, which is warmer than Tg_in; Tg[0] is the
-        # hottest cell and is what leaves the cooler as
-        # secondary/tertiary/vent air.
+        #   sum_i m_air[i]*h(Tg_i) - m_total*h(Tg_in)
+        #
+        # which is exactly the Hg_out - Hg_in that
+        # heat_transfer.py books, with no reconstruction in
+        # between. Tg_i IS the outlet state of cell i's
+        # stream, not a cell average on the way somewhere.
         # ----------------------------------------------
+
+        m_air_i = float(m_air_cells[i])
 
         Cp_g_i = float(
             cp_gas(Tg_iter[i])
         )
 
-        Cg_i = m_dot_g * Cp_g_i
+        Cg_i = m_air_i * Cp_g_i
 
         h_linear_const_i = (
             float(
@@ -184,60 +225,20 @@ def apply_gas_energy_balance(
             )
         )
 
-        if i == N - 1:
-
-            # Inlet face: the upstream enthalpy is the known
-            # inlet stream, so it is a constant flux rather
-            # than a coupling to a neighbouring cell.
-
-            h_in = float(
-                h_gas(
-                    Tg_in,
-                    T_ref,
-                )
+        # Every cell is an inlet cell now: its upstream
+        # enthalpy is the known fan-box stream, a constant
+        # flux rather than a coupling to a neighbour. The
+        # i == N-1 / else branch the counter-current form
+        # needed has no meaning here, and neither does
+        # A[row, gas_up] -- there is no gas_up.
+        b[row] = (
+            -V_cell * (
+                q_rad_gs
+                + q_rad_gw
             )
-
-            b[row] = (
-                -V_cell * (
-                    q_rad_gs
-                    + q_rad_gw
-                )
-                - m_dot_g * h_linear_const_i
-                + m_dot_g * h_in
-                - m_dot_g * advection_correction[i]
-            )
-
-        else:
-
-            gas_up = i + 1
-
-            Cp_g_up = float(
-                cp_gas(Tg_iter[gas_up])
-            )
-
-            Cg_up = m_dot_g * Cp_g_up
-
-            h_linear_const_up = (
-                float(
-                    h_gas(
-                        Tg_iter[gas_up],
-                        T_ref,
-                    )
-                )
-                - Cp_g_up * Tg_iter[gas_up]
-            )
-
-            A[row, gas_up] += -Cg_up
-
-            b[row] = (
-                -V_cell * (
-                    q_rad_gs
-                    + q_rad_gw
-                )
-                - m_dot_g * h_linear_const_i
-                + m_dot_g * h_linear_const_up
-                - m_dot_g * advection_correction[i]
-            )
+            - m_air_i * h_linear_const_i
+            + m_air_i * h_in
+        )
 
         row += 1
 
@@ -245,95 +246,139 @@ def apply_gas_energy_balance(
 
 
 # ======================================================
-# HOT-END FACE ENTHALPY
+# WHICH STREAM EACH CELL'S AIR JOINS
 #
-# Specific enthalpy of the gas where it actually leaves the
-# cooler: the OUTLET FACE at the clinker-inlet end, not the
-# centre of cell 0. The face sits half a cell further
-# downstream, so reading the centre understated the
-# recuperated air enthalpy by O(dz) no matter how fine the
-# mesh was -- and that value is the secondary air the kiln
-# burns with, so the bias propagated straight into
-# Hgas_burning_in.
+# There is no single gas outlet face any more. Each cell's
+# air leaves vertically through the hood at Tg[i], so the
+# cooler has N outlets and the question is which take-off
+# each one feeds. Hot end first, in the order a plant is
+# plumbed: the kiln hood sits over the clinker-inlet end and
+# takes secondary air off the hottest grate, the tertiary
+# duct taps immediately downstream, and whatever is left
+# vents. The source does the same -- secondary is its segment
+# 1 and tertiary its segment 2.
 #
-# This is also the flux the second-order scheme in
-# apply_gas_energy_balance() transports out of cell 0, so
-# using anything else here would leak exactly that
-# difference out of the cooler energy balance.
+# The masses are NOT decided here. main.py:1074-1097 sets
+# them from combustion stoichiometry (secondary is the kiln's
+# air less its primary share, tertiary IS the calciner's
+# combustion air) and leaves vent as the slack. This function
+# only says where along the grate each of those masses is
+# drawn from.
 #
-# Shared by gas_enthalpy_out() and gas_enthalpy_split()
-# below so the two cannot drift apart: the file's own
-# invariant is that the three split streams sum to the
-# outlet, which holds only if both read the same h_hot.
+# FRACTIONAL BOUNDARIES, not whole cells. A stream's mass
+# will not land on a cell edge -- secondary is 5.94 cells
+# wide at the committed point -- and rounding to whole cells
+# would make the reported temperature jump by a whole cell's
+# worth whenever the fuel rate moved, which is a
+# discretisation artifact and not physics.
+#
+# THREE PROPERTIES, EACH LOAD-BEARING:
+#
+#  1. vent is the RESIDUAL, m - w_sec - w_ter, not computed
+#     independently. That makes w_sec[i] + w_ter[i] +
+#     w_vent[i] == m[i] exact in floating point for every
+#     cell, with no sensitivity to summation order, which in
+#     turn makes H_sec + H_ter + H_vent == Hgas_cooler_out an
+#     identity. Four places depend on that identity:
+#     main.py:315-323 recovers primary air by SUBTRACTING
+#     secondary from Hgas_burning_in; main.py:347 and
+#     diagnostics.py:1117 put vent on the OUT side; and
+#     diagnostics.py:1136-1140 repeats the subtraction in
+#     D12. Vent is already the algebraic slack upstream, so
+#     this is the same modelling choice, not a new one.
+#
+#  2. The boundaries are CLIPPED, so the function stays total
+#     even on an infeasible split. main.py:1099 raises first,
+#     but cooler.apply must not be able to emit negative mass
+#     regardless.
+#
+#  3. min/max on cumulative mass, never int(m_sec/m). No
+#     floor, no ceil, no epsilon, no branch on whether a
+#     boundary lands exactly on a cell edge. The degenerate
+#     cases -- a zero-mass stream, a boundary on an edge --
+#     fall out as zero weights with no special-casing.
 # ======================================================
-def hot_end_face_enthalpy(cooler, Tg):
+def stream_masses(cooler, state):
 
-    return outlet_face_value(
-        h_gas(
-            Tg,
-            cooler.T_ref,
-        ),
-        reverse=True,
+    m_air = cooler_air_cells(cooler, state)
+
+    edges = np.concatenate(([0.0], np.cumsum(m_air)))
+
+    total = float(edges[-1])
+
+    lo_sec = 0.0
+    hi_sec = min(max(float(state.m_dot_secondary_air), 0.0), total)
+
+    hi_ter = min(
+        max(hi_sec + float(state.m_dot_tertiary_air), hi_sec),
+        total,
     )
 
-
-# ======================================================
-# GAS ENTHALPY TO NEXT ZONE
-#
-# Moved from Cooler.gas_enthalpy_out()
-# (pyroprocess/cooler.py). Logic is unchanged apart from two
-# things: the counter-current direction flip (the gas now
-# exits hottest at Tg[0], the clinker-inlet end, not Tg[-1])
-# and the mass-flow source, which is now the cooler's own
-# independent air flow (state.m_dot_air_cooler) rather than
-# the kiln's combustion gas flow (state.m_dot_g) -- the two
-# are no longer the same quantity. This takes the temperature
-# array `Tg` and recomputes the enthalpy from it directly,
-# unlike pyroprocess/transition/gas_phase.py's same-named
-# function, which indexes a pre-computed enthalpy array --
-# that signature difference is intentional and preserved.
-# ======================================================
-def gas_enthalpy_out(cooler, Tg, state):
-
-    H_gas_out = (
-        state.m_dot_air_cooler
-        * hot_end_face_enthalpy(
-            cooler,
-            Tg,
+    def overlap(lo, hi):
+        return np.maximum(
+            0.0,
+            np.minimum(edges[1:], hi) - np.maximum(edges[:-1], lo),
         )
-    )
 
-    return H_gas_out
+    w_secondary = overlap(lo_sec, hi_sec)
+    w_tertiary = overlap(hi_sec, hi_ter)
+
+    # The residual, for the reason in note 1 above.
+    w_vent = m_air - w_secondary - w_tertiary
+
+    return w_secondary, w_tertiary, w_vent
 
 
 # ======================================================
 # GAS ENTHALPY SPLIT (secondary / tertiary / vent)
 #
-# The cooler is a single lumped 1-D gas stream with one
-# outlet temperature (Tg[0], the hot end), so secondary,
-# tertiary and vent air are modeled as three mass shares of
-# that same hot-end gas state: same T, split only by mass.
-# The mass split itself (m_dot_secondary_air/m_dot_tertiary_air
-# /m_dot_vent_air) is computed centrally in
-# main.py::_update_steady_state_mass_flow, not here, so this
-# function only converts those masses to enthalpy flows at the
-# cooler's own outlet temperature. By construction,
-# H_secondary + H_tertiary + H_vent == gas_enthalpy_out(...)
-# above, since the three masses sum to m_dot_air_cooler and
-# all three use the same h_hot.
+# Each stream is the mass-weighted sum of the cell outlet
+# enthalpies it draws from. h_gas is evaluated ONCE over the
+# whole profile and reused for all three, so the three sums
+# are taken over the same numbers -- which is what makes the
+# identity in note 1 above hold to the last bit rather than
+# to a rounding order.
 # ======================================================
 def gas_enthalpy_split(cooler, Tg, state):
 
-    h_hot = hot_end_face_enthalpy(
-        cooler,
-        Tg,
+    h_cells = np.asarray(
+        h_gas(
+            np.asarray(Tg, dtype=float),
+            cooler.T_ref,
+        ),
+        dtype=float,
     )
 
-    H_secondary = state.m_dot_secondary_air * h_hot
-    H_tertiary = state.m_dot_tertiary_air * h_hot
-    H_vent = state.m_dot_vent_air * h_hot
+    w_secondary, w_tertiary, w_vent = stream_masses(cooler, state)
 
-    return H_secondary, H_tertiary, H_vent
+    return (
+        float(np.dot(w_secondary, h_cells)),
+        float(np.dot(w_tertiary, h_cells)),
+        float(np.dot(w_vent, h_cells)),
+    )
+
+
+# ======================================================
+# GAS ENTHALPY LEAVING THE COOLER
+#
+# Defined as the SUM of the three streams rather than as an
+# independent cell sum, so the two cannot drift apart by a
+# rounding order. heat_transfer.py books this same value as
+# Hg_out, through this same function, for the same reason.
+#
+# Kept as a function with its original signature because
+# cooler.py:278 and Cooler.gas_enthalpy_out are public
+# interface; only what it computes changed.
+# ======================================================
+def gas_enthalpy_out(cooler, Tg, state):
+
+    return sum(
+        gas_enthalpy_split(
+            cooler,
+            Tg,
+            state,
+        )
+    )
 
 
 # ======================================================
