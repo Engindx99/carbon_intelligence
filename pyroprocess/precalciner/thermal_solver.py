@@ -30,6 +30,7 @@ def thermal_step(
     Ts_in,
     reaction_sink=0.0,
     reaction_heat_cells=None,
+    reaction_heat_slope_cells=None,
     q_fuel_cells=None,
     Q_calciner=0.0,
     dm_gas_cells=None,
@@ -231,6 +232,60 @@ def thermal_step(
             )
 
     # ======================================================
+    # REACTION SLOPE DISTRIBUTION
+    #
+    # reaction_heat_slope_cells[i] : W/K
+    #
+    # dQ/dTs for the same cell, which the solid row carries on
+    # its diagonal instead of leaving the whole temperature
+    # dependence of the sink in b. See
+    # physics.variable_flow_rows.apply_solid_energy_balance.
+    #
+    # The non-negativity check is not defensive book-keeping:
+    # a negative slope would REMOVE diagonal dominance rather
+    # than add it, turning the stabilisation into its opposite,
+    # and it is the one property the whole device rests on.
+    # ======================================================
+
+    if reaction_heat_slope_cells is None:
+
+        reaction_heat_slope_cells = np.zeros(N)
+
+    else:
+
+        reaction_heat_slope_cells = np.asarray(
+            reaction_heat_slope_cells,
+            dtype=float,
+        )
+
+        if reaction_heat_slope_cells.shape != (N,):
+
+            raise ValueError(
+                "reaction_heat_slope_cells must have "
+                f"shape ({N},)."
+            )
+
+        if not np.all(
+            np.isfinite(
+                reaction_heat_slope_cells
+            )
+        ):
+
+            raise ValueError(
+                "reaction_heat_slope_cells contains "
+                "non-finite values."
+            )
+
+        if np.any(
+            reaction_heat_slope_cells < 0.0
+        ):
+
+            raise ValueError(
+                "reaction_heat_slope_cells cannot "
+                "contain negative values."
+            )
+
+    # ======================================================
     # PICARD ITERATION
     # ======================================================
 
@@ -265,6 +320,43 @@ def thermal_step(
     Tw_iter = (
         np.asarray(
             Tw,
+            dtype=float,
+        )
+        .copy()
+    )
+
+    # ======================================================
+    # LINEARISATION POINT FOR THE REACTION SINK
+    #
+    # The temperature the CHEMISTRY was evaluated at, frozen
+    # here and not advanced with Ts_iter below.
+    #
+    # This is the one place the calciner differs from the
+    # transition. There the calcination march runs inside this
+    # Picard loop, so the sink and the row are built from the
+    # same iterate and the linearisation point IS Ts_iter. Here
+    # the chemistry runs one level up, in Calciner.apply's outer
+    # chemistry<->thermal loop, at the Ts handed to this call.
+    #
+    # Anchoring the slope there is what makes it damp the OUTER
+    # loop, which is where this zone's instability lives: the
+    # solve then returns a Ts already corrected for how the
+    # reaction would respond to it,
+    #
+    #   Q_used = Q_chem + S (Ts_new - Ts_chem),
+    #
+    # a Newton step on the coupling rather than a plain
+    # substitution. Using Ts_iter instead would cancel to the
+    # un-linearised sink at inner convergence and leave the
+    # outer loop exactly as it was.
+    #
+    # At the OUTER fixed point Ts_new == Ts_chem and the
+    # correction vanishes, so the converged answer is untouched.
+    # ======================================================
+
+    Ts_reaction = (
+        np.asarray(
+            Ts,
             dtype=float,
         )
         .copy()
@@ -493,6 +585,8 @@ def thermal_step(
                 Ts_in,
                 Ds_face[i],
                 Ds_face[i + 1],
+                reaction_heat_slope_cells[i],
+                Ts_reaction[i],
             )
 
             # ==================================================

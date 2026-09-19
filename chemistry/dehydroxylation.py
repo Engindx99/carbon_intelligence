@@ -208,6 +208,12 @@ class DehydroxylationModel(ReactionBase):
         conversion_cells = np.zeros(N)
         reaction_heat_cells = np.zeros(N)
 
+        # dQ/dTs per cell, for the source-term linearisation in
+        # physics.variable_flow_rows.apply_solid_energy_balance.
+        # Built in the same march as the heat itself so the two
+        # cannot drift apart.
+        reaction_heat_slope_cells = np.zeros(N)
+
         # ==================================================
         # INITIAL CONDITION
         #
@@ -280,6 +286,14 @@ class DehydroxylationModel(ReactionBase):
             reaction_heat_cells[i] = (
                 m_reacted
                 * self.deltaH
+            )
+
+            reaction_heat_slope_cells[i] = (
+                self.reaction_heat_derivative(
+                    m_in,
+                    T_i,
+                    float(dz / u_s),
+                )
             )
 
             if i + 1 < N:
@@ -365,6 +379,10 @@ class DehydroxylationModel(ReactionBase):
 
         state.Dehydroxylation_Q_sink_cells = (
             reaction_heat_cells.copy()
+        )
+
+        state.Dehydroxylation_Q_slope_cells = (
+            reaction_heat_slope_cells.copy()
         )
 
         state.m_dot_BoundH2O_in_calciner = float(

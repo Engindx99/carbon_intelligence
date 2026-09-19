@@ -307,6 +307,12 @@ class CalcinationModel(ReactionBase):
         reaction_heat_cells = np.zeros(N)
         conversion_cells = np.zeros(N)
 
+        # dQ/dTs per cell, for the source-term linearisation in
+        # physics.variable_flow_rows.apply_solid_energy_balance.
+        # Built in the same march as the heat itself so the slope
+        # and the value cannot drift apart.
+        reaction_heat_slope_cells = np.zeros(N)
+
         # ==================================================
         # INITIAL CONDITION
         #
@@ -433,6 +439,18 @@ class CalcinationModel(ReactionBase):
             reaction_heat_cells[i] = (
                 m_reacted
                 * self.deltaH
+            )
+
+            # Slope of that heat with respect to this cell's
+            # solid temperature, at the flow entering the cell.
+            # tau is dz/u_s, the same residence the exponent
+            # above uses.
+            reaction_heat_slope_cells[i] = (
+                self.reaction_heat_derivative(
+                    m_in,
+                    T_i,
+                    float(dz / u_s),
+                )
             )
 
             # --------------------------------------------------
@@ -722,6 +740,10 @@ class CalcinationModel(ReactionBase):
 
         state.Calcination_Q_cells = (
             reaction_heat_cells.copy()
+        )
+
+        state.Calcination_Q_slope_cells = (
+            reaction_heat_slope_cells.copy()
         )
 
         # ==================================================

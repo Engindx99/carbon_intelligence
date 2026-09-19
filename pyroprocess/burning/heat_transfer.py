@@ -335,7 +335,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # ======================================================
 
     max_iter = 100
-    tol = 1e-6
+    tol = 1e-9
     relaxation = 0.5
 
     # Inlet face enthalpy of the incoming gas stream. It is a

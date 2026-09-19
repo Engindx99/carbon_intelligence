@@ -198,6 +198,7 @@ class Calciner:
         Ts_in,
         reaction_sink=0.0,
         reaction_heat_cells=None,
+        reaction_heat_slope_cells=None,
         q_fuel_cells=None,
         Q_calciner=0.0,
         dm_gas_cells=None,
@@ -213,6 +214,7 @@ class Calciner:
             Ts_in,
             reaction_sink=reaction_sink,
             reaction_heat_cells=reaction_heat_cells,
+            reaction_heat_slope_cells=reaction_heat_slope_cells,
             q_fuel_cells=q_fuel_cells,
             Q_calciner=Q_calciner,
             dm_gas_cells=dm_gas_cells,
@@ -483,6 +485,13 @@ class Calciner:
                 reaction_heat_cells=(
                     state.Calcination_Q_cells
                     + state.Dehydroxylation_Q_sink_cells
+                ),
+                # Both reactions respond to the same solid
+                # temperature, so their slopes add exactly as
+                # their heats do.
+                reaction_heat_slope_cells=(
+                    state.Calcination_Q_slope_cells
+                    + state.Dehydroxylation_Q_slope_cells
                 ),
                 q_fuel_cells=q_fuel_cells,
                 Q_calciner=Q_calciner,

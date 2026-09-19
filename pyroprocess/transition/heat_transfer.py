@@ -185,7 +185,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # ======================================================
 
     max_iter = 100
-    tol = 1.0e-6
+    tol = 1.0e-9
     relaxation = 0.5
 
     # Inlet face enthalpy of the incoming gas stream. It is a
