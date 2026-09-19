@@ -1,6 +1,6 @@
 # CLAUDE.md
 
-1. This is a physics-based cement pyroprocess Digital Twin; preserve physical consistency over heuristic behavior.
+1. This is a physics-based steady-state cement pyroprocess Digital Twin; preserve physical consistency over heuristic behavior.
 2. Use the existing architecture and code structure as the foundation; avoid unnecessary rewrites or refactoring. However, modify modules or the physical model when technically necessary for model improvement.
 3. Work incrementally: one focused task at a time, keeping changes small and reviewable.
 4. Use SI units exclusively.

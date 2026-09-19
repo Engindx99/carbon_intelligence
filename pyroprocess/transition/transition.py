@@ -375,46 +375,6 @@ class Transition:
         )
 
         # ======================================================
-        # SOLID PHASE HANDOFF DIAGNOSTIC
-        # ======================================================
-
-        print("\n========== TRANSITION -> BURNING SOLID HANDOFF ==========")
-
-        for phase in [
-            "H2O",
-            "Bound_H2O",
-            "CaCO3",
-            "CaO",
-            "SiO2",
-            "Al2O3",
-            "Fe2O3",
-            "C2S",
-            "C3S",
-            "C3A",
-            "C4AF",
-        ]:
-            transition = getattr(
-                state.materials["transition"].solids,
-                phase,
-            )
-
-            burning = getattr(
-                state.materials["burning"].solids,
-                phase,
-            )
-
-            diff = np.sum(burning - transition)
-
-            print(
-                f"{phase:10s}: "
-                f"transition={np.sum(transition):.6e}, "
-                f"burning={np.sum(burning):.6e}, "
-                f"diff={diff:.6e}"
-            )
-
-        print("==========================================================")
-
-        # ======================================================
         # STEADY-STATE STORED ENERGY
         # ======================================================
         state.Transition_gas_stored = 0.0

@@ -9,7 +9,6 @@ from physics.shell import wall_stack
 
 from chemistry.reactions import ChemistryModel
 
-from . import combustion
 from . import burner
 from . import gas_phase
 from . import solid_phase
@@ -550,92 +549,7 @@ class Burning:
         # ======================================================
         # STEADY-STATE ENERGY BALANCE
         # ======================================================
-        Hg_in = state.m_dot_g * h_gas(
-            state.Tg_burning_in,
-            self.T_ref
-        )
-
-        Hs_in = state.m_dot_s * self.Cp_s * (
-            state.Ts_burning_in - self.T_ref
-        )
-
         state.Burning_energy_balance = total_energy_balance
-
-        # ======================================================
-        # BURNING ITERATION DIAGNOSTIC
-        # ======================================================
-
-        Burning_Q_sink = combustion.reaction_heat_sink(state)
-
-        Q_wall_loss = getattr(
-            state,
-            "Wall_loss_burning",
-            np.nan,
-        )
-
-        print("\n========== BURNING THERMAL DIAGNOSTIC ==========")
-
-        print(
-            f"Tg_in                = "
-            f"{state.Tg_burning_in:.6f} K"
-        )
-
-        print(
-            f"Tg_out               = "
-            f"{state.Tg_burning[-1]:.6f} K"
-        )
-
-        print(
-            f"Ts_in                = "
-            f"{state.Ts_burning_in:.6f} K"
-        )
-
-        print(
-            f"Ts_out               = "
-            f"{state.Ts_burning[-1]:.6f} K"
-        )
-
-        print(
-            f"Hg_in                = "
-            f"{Hg_in:.12e} W"
-        )
-
-        print(
-            f"Hg_out               = "
-            f"{state.Hgas_burning_out:.12e} W"
-        )
-
-        print(
-            f"Hs_in                = "
-            f"{Hs_in:.12e} W"
-        )
-
-        print(
-            f"Hs_out               = "
-            f"{state.Hsolid_burning_out:.12e} W"
-        )
-
-        print(
-            f"Q_burning            = "
-            f"{state.Q_burning:.12e} W"
-        )
-
-        print(
-            f"Burning_Q_sink       = "
-            f"{Burning_Q_sink:.12e} W"
-        )
-
-        print(
-            f"Q_wall_loss          = "
-            f"{Q_wall_loss:.12e} W"
-        )
-
-        print(
-            f"Burning_energy_balance = "
-            f"{state.Burning_energy_balance:.12e} W"
-        )
-
-        print("================================================")
 
         return state
 

@@ -413,13 +413,4 @@ class ChemistryModel:
             + state.Calcination_Q_burning
         )
 
-        print("\n========== BURNING CHEMISTRY DEBUG ==========")
-        print(f"Belite_Q_sink = {state.Belite_Q_sink:.12e} W")
-        print(f"Alite_Q_sink  = {state.Alite_Q_sink:.12e} W")
-        print(f"C3A_Q_sink    = {state.C3A_Q_sink:.12e} W")
-        print(f"C4AF_Q_sink   = {state.C4AF_Q_sink:.12e} W")
-        print(f"Calcination_Q_burning = {state.Calcination_Q_burning:.12e} W")
-        print(f"Burning_Q_sink = {state.Burning_Q_sink:.12e} W")
-        print("==============================================")
-
         return state

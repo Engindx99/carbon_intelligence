@@ -485,28 +485,6 @@ class CalcinationModel(ReactionBase):
         calciner_solids = state.materials["calciner"].solids
 
         # ==================================================
-        # PHASE INVENTORY DIAGNOSTIC
-        # ==================================================
-
-        print("\n========== CALCINER PHASE INVENTORY ==========")
-        print(
-            "CaCO3_before =",
-            np.sum(calciner_solids.CaCO3),
-        )
-        print(
-            "CaO_before   =",
-            np.sum(calciner_solids.CaO),
-        )
-        print(
-            "CaCO3_in_flow =",
-            m_dot_CaCO3_in,
-        )
-        print(
-            "CaCO3_reacted_flow =",
-            m_dot_CaCO3_reacted,
-        )
-        
-        # ==================================================
         # OVERALL CONVERSION
         # ==================================================
 
@@ -530,28 +508,6 @@ class CalcinationModel(ReactionBase):
 
         CaO_before = (
             calciner_solids.CaO.copy()
-        )
-
-        print("\n========== CALCINER PHASE INVENTORY ==========")
-        print(
-            "CaCO3_before =",
-            np.sum(CaCO3_before),
-        )
-        print(
-            "CaO_before   =",
-            np.sum(CaO_before),
-        )
-        print(
-            "CaCO3_in_flow =",
-            m_dot_CaCO3_in,
-        )
-        print(
-            "CaCO3_reacted_flow =",
-            m_dot_CaCO3_reacted,
-        )
-        print(
-            "X_total =",
-            X_total,
         )
 
         # --------------------------------------------------

@@ -368,44 +368,6 @@ class Preheater:
         )
 
         # ======================================================
-        # SOLID PHASE HANDOFF DIAGNOSTIC
-        # ======================================================
-
-        print("\n========== SOLID PHASE HANDOFF ==========")
-
-        for phase in [
-            "H2O",
-            "Bound_H2O",
-            "CaCO3",
-            "CaO",
-            "SiO2",
-            "Al2O3",
-            "Fe2O3",
-            "C2S",
-            "C3S",
-            "C3A",
-            "C4AF",
-        ]:
-            preheater = getattr(
-                state.materials["preheater"].solids,
-                phase,
-            )
-
-            calciner = getattr(
-                state.materials["calciner"].solids,
-                phase,
-            )
-
-            diff = np.sum(calciner) - np.sum(preheater)
-
-            print(
-                f"{phase:10s}: "
-                f"preheater={np.sum(preheater):.6e}, "
-                f"calciner={np.sum(calciner):.6e}, "
-                f"diff={diff:.6e}"
-            )
-
-        # ======================================================
         # ENERGY BALANCE
         # ======================================================
 
