@@ -140,10 +140,20 @@ class Twin:
         # ======================================================
         fuel = cfg.get("fuel", {})
 
+        # SNAPSHOT, taken once. step() reads _last_inputs, NOT
+        # cfg, so mutating cfg after construction changes
+        # nothing -- a caller driving the fuel rate has to
+        # assign _last_inputs["Fuel_rate_total"] directly.
         self._last_inputs = {
             "Fuel_rate_total": fuel.get("Fuel_rate_total", 0.0),
             "O2": fuel.get("O2", 3.5),
         }
+
+        # Outcome of the last run(). Nothing recorded this
+        # before: run() either returned the state or raised,
+        # so a caller that suppresses the raise had no way to
+        # ask what happened.
+        self.converged = False
 
         # ======================================================
         # FEED CONFIG
@@ -1244,7 +1254,31 @@ class Twin:
 
 
 
-    def run(self):
+    def run(self, *, report=True, raise_on_nonconvergence=True):
+        """
+        Solve the plant to steady state.
+
+        The two keyword flags exist for callers that drive this
+        in a loop -- a setpoint solver evaluating one operating
+        point per call. Their DEFAULTS reproduce the previous
+        behaviour exactly, so nothing that calls run() plainly
+        can tell they were added.
+
+        report=False skips the post-convergence diagnostic
+        block, the six _validate_* calls and the printed report.
+        Those are for ANSWERS, and an intermediate iterate of an
+        outer loop is not an answer; they also append a row per
+        balance to reporter/logs/validation.jsonl, which would
+        otherwise grow by ~14 lines per evaluation.
+
+        raise_on_nonconvergence=False returns the (unconverged)
+        state instead of raising, so an outer loop can treat the
+        point as infeasible and contract its bracket rather than
+        losing every evaluation it has paid for.
+
+        Either way self.converged records the outcome, which
+        nothing on the Twin did before.
+        """
 
         # ======================================================
         # STEADY-STATE SOLVER
@@ -1368,7 +1402,16 @@ class Twin:
                     f"@ iteration {iteration + 1}",
                     flush=True,
                 )
-                
+
+                self.converged = True
+
+                # Everything below this point measures and
+                # validates; none of it feeds back into the
+                # solution. An outer loop asks for the state,
+                # not for the report, so it returns here.
+                if not report:
+                    return self.state
+
                         # ======================================================
                 # ENERGY HANDOFF DIAGNOSTIC
                 # Read-only: no physics/state modification
@@ -1845,6 +1888,11 @@ class Twin:
         # ======================================================
         # NOT CONVERGED
         # ======================================================
+        self.converged = False
+
+        if not raise_on_nonconvergence:
+            return self.state
+
         raise RuntimeError(
             "Steady-state solution did not converge "
             f"after {max_iterations} iterations."
