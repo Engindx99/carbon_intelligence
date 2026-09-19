@@ -177,8 +177,42 @@ def T_gas_from_h(h_target, T_ref, T_min, T_max):
     leave it degrades to a bisection step, so convergence is
     never worse than the plain bisection this replaces.
 
-    Out-of-range targets return the corresponding bound, which
-    is what a bisection on [T_min, T_max] collapses to.
+    An out-of-range target RAISES. It used to return the
+    corresponding bound, silently, and that was not a harmless
+    convenience -- MEASURED on the literature-kinetics tree:
+    the transition gas inlet needed 4037.9 K, the bound is
+    4000.0, and the 7.281181e5 W of enthalpy above the bound
+    was destroyed. That is exactly the residual by which the
+    Transition and Pyroprocess energy balances were failing,
+    reproduced to every digit. The same clamp also saturated
+    reporter.diagnostics.burning_enthalpy_ceiling, which
+    returned precisely 4000.0 -- the diagnostic meant to
+    arbitrate a runaway was itself the thing being clamped.
+
+    Worse than the leak: inside the clamped region dT/dh is
+    ZERO, so the inverted temperature stops responding to the
+    upstream enthalpy altogether. The feedback that stabilises
+    a handoff is severed, which is a mechanism for a limit
+    cycle and not merely for a wrong number.
+
+    The fix is to raise, NOT to move the bound to 6000. A gas
+    at 4000 K is a finding about the plant, and widening the
+    window would hide it while keeping the same cliff further
+    out. A caller that can legitimately meet an out-of-range
+    state -- a root finder exploring operating points -- should
+    catch this and treat the point as infeasible, which is
+    information; a silent bound is not.
+
+    NOTE for anyone raising T_max: h_gas is the analytic cubic
+    integral of cp_gas and is NOT monotone forever. cp_gas
+    floors at 1050 J/(kg K); h_gas does not carry that floor,
+    so it follows the polynomial, whose integrand crosses zero
+    near 9633 K -- above that the inverse is not unique and
+    this function will happily return nonsense. Note what that
+    figure means: the ceiling is 2.4x the 4000 K window, so
+    the window is a MODELLING choice, not a numerical
+    necessity. Which is precisely why clamping silently at it
+    was indefensible.
 
     This replaces three separate 100-step bisections (burning,
     transition and calciner gas inlets). Those spent half their
@@ -189,10 +223,31 @@ def T_gas_from_h(h_target, T_ref, T_min, T_max):
     T_low = float(T_min)
     T_high = float(T_max)
 
-    if h_target <= h_gas(T_low, T_ref):
+    h_at_low = h_gas(T_low, T_ref)
+    h_at_high = h_gas(T_high, T_ref)
+
+    if h_target < h_at_low:
+        raise ValueError(
+            "gas enthalpy below the inversion window: "
+            f"h_target={h_target:.6e} J/kg is under "
+            f"h_gas({T_low:.2f} K)={h_at_low:.6e} J/kg"
+        )
+
+    if h_target > h_at_high:
+        raise ValueError(
+            "gas enthalpy above the inversion window: "
+            f"h_target={h_target:.6e} J/kg exceeds "
+            f"h_gas({T_high:.2f} K)={h_at_high:.6e} J/kg "
+            f"by {(h_target - h_at_high):.6e} J/kg. The gas is "
+            "hotter than the window allows; widening the window "
+            "would hide that, not fix it."
+        )
+
+    # The bounds themselves remain exact answers.
+    if h_target == h_at_low:
         return T_low
 
-    if h_target >= h_gas(T_high, T_ref):
+    if h_target == h_at_high:
         return T_high
 
     T = 0.5 * (T_low + T_high)
