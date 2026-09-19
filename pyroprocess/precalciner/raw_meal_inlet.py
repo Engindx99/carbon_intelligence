@@ -22,18 +22,38 @@ def gas_temperature_from_enthalpy(calciner, H, state):
     # flow those two carry or the handoff conserves J/s while
     # rescaling K.
     #
-    # thermal_step publishes this once it has marched the
-    # chemistry; on the first pass, before any solve has run,
-    # the zone total is the only figure available and is used
-    # as the seed.
-    m_dot_g = getattr(
-        state,
-        "m_dot_g_calciner_in",
-        None,
+    # ASSEMBLED FROM THE LIVE SCALAR CHAIN, not read back from
+    # state.m_dot_g_calciner_in. That attribute is published by
+    # thermal_step as (zone outlet - everything the bed adds),
+    # so it is a full sweep STALE by the time this runs: the
+    # outlet flow it was built from has since been recomputed
+    # by _update_steady_state_mass_flow. The two agree at the
+    # fixed point -- test_diagnostics asserts exactly this
+    # identity -- but NOT on the path to it, and a divisor is
+    # the one place a lag cannot be tolerated.
+    #
+    # MEASURED, literature calcination kinetics, sweep 2: the
+    # calciner outlet flow moves 16.42 -> 46.77 kg/s as
+    # calcination lights off, while the lagged divisor stays at
+    # 16.42 - 9.47 = 6.95 kg/s. Dividing an enthalpy carried by
+    # 35.80 kg/s of gas by 6.95 gave 5.887536e+06 J/kg -- a gas
+    # above 4000 K at the calciner inlet, five times its true
+    # specific enthalpy. Assembled live it is 1.142591e+06 J/kg
+    # and 1274 K, which is the riser gas mixed with tertiary
+    # air and is what an ILC calciner inlet actually looks like.
+    #
+    # The fuel mass belongs here because the scalar chain puts
+    # it in the zone outlet, so the subtraction this replaces
+    # carried it too. Its ENTHALPY is not in H -- fuel enters
+    # the gas row as q_fuel_cells along the zone -- which makes
+    # the inlet ~4% cold in specific terms. That asymmetry is
+    # real and predates this; it is not corrected here because
+    # it is a different question from the lag.
+    m_dot_g = (
+        state.m_dot_g_transition
+        + state.m_dot_tertiary_air
+        + getattr(state, "m_dot_fuel_calciner", 0.0)
     )
-
-    if m_dot_g is None:
-        m_dot_g = state.m_dot_g_calciner
 
     # H = m_dot_g * h_gas(T, T_ref)
     #
