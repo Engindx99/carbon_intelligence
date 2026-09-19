@@ -4,6 +4,7 @@ import yaml
 from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
+from physics.shell import wall_stack
 from physics.physics import ZONE_HT_CONFIG
 from physics.physics import h_gas
 
@@ -22,7 +23,11 @@ def load_cfg(path):
 
 class Cooler:
 
-    def __init__(self, N=5, L=20.0):
+    def __init__(self, N=5, L=20.0, cfg=None):
+
+        # Kept on the instance because the name `cfg` is rebound
+        # further down to the ZONE_HT_CONFIG entry for this zone.
+        self.plant_cfg = cfg
 
         self.N = N
         self.L = L
@@ -74,12 +79,26 @@ class Cooler:
             V_cell=self.V_cell,
         )
 
-        # ================= REFRACTORY =================
-        self.refractory_thickness = 0.15
-        self.refractory_conductivity = 1.5
+        # ================= REFRACTORY / SHELL =================
+        #
+        # Faz 6. A grate cooler is a lagged steel casing, not a
+        # bare shell: castable refractory, mineral wool, thin
+        # plate. The old 0.15 m / 1.5 W/(m K) plane wall with
+        # h_ext = 18 and no outer radiation is replaced by the
+        # layer stack in physics.shell.
+        self.wall_stack = wall_stack(self.plant_cfg, self.zone)
 
-        # ================= EXTERNAL =================
-        self.h_ext = 18.0
+        self.refractory_thickness = self.wall_stack.thickness
+
+        # Horizontal vessel, so the external film takes the outer
+        # diameter. The diameter is still the Faz 3 placeholder
+        # rotary geometry that Faz 6 item 4 replaces with the
+        # real grate.
+        self.shell = self.wall_stack.geometry(
+            r_inner=0.5 * self.D,
+            L_cell=self.dz,
+            L_char=self.D + 2.0 * self.wall_stack.thickness,
+        )
 
         # ================= THERMODYNAMIC REFERENCE =================
         self.T_ref = 298.15

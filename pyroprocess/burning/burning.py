@@ -5,6 +5,7 @@ from physics.physics import h_gas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
 from physics.closure_config import closure_settings
+from physics.shell import wall_stack
 
 from chemistry.reactions import ChemistryModel
 
@@ -71,22 +72,18 @@ class Burning:
         # ======================================================
 
         # ======================================================
-        # REFRACTORY
+        # REFRACTORY / SHELL
+        #
+        # Faz 6: the single (thickness, conductivity, h_ext)
+        # triple is replaced by the layer stack in physics.shell.
+        # refractory_thickness survives only as the wall's
+        # thermal-mass thickness (V_wall below) and is now read
+        # off the stack, so the mass and the resistance cannot
+        # describe different walls.
         # ======================================================
-        self.refractory_thickness = op.get(
-            "refractory_thickness",
-            0.20
-        )
+        self.wall_stack = wall_stack(cfg, self.zone)
 
-        self.refractory_conductivity = op.get(
-            "refractory_conductivity",
-            1.8
-        )
-
-        self.h_ext = op.get(
-            "h_ext",
-            10.0
-        )
+        self.refractory_thickness = self.wall_stack.thickness
 
         # ======================================================
         # WALL GEOMETRY
@@ -109,6 +106,22 @@ class Burning:
             N=self.N,
             V_cell=self.V_cell,
             refractory_thickness=self.refractory_thickness
+        )
+
+        # ======================================================
+        # SHELL GEOMETRY
+        #
+        # The temperature-independent half of the loss closure:
+        # cylindrical series conduction through the stack and the
+        # outer area, per cell. Resolved once here because none of
+        # it moves during a solve. The characteristic length for
+        # the external film is the OUTER DIAMETER -- a rotary kiln
+        # is a long horizontal cylinder in still air.
+        # ======================================================
+        self.shell = self.wall_stack.geometry(
+            r_inner=0.5 * self.D,
+            L_cell=self.dz,
+            L_char=self.D + 2.0 * self.wall_stack.thickness,
         )
 
         # ======================================================
@@ -169,11 +182,6 @@ class Burning:
         # top of all three. ZONE_HT_CONFIG no longer carries an entry
         # for "burning"; the remaining zones still read it.
         self.closure = closure_settings(cfg)
-
-        self.h_ext = op.get(
-            "h_ext",
-            12.0
-        )
 
         self.T_ref = op.get(
             "T_ref",

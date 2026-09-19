@@ -115,3 +115,37 @@ kiln_closure:
   # physics.wall_bed_contact_coefficient REJECTS values outside that
   # range rather than clamping them.
   contact_gap_chi: 0.147
+
+
+# ======================================================
+# FAZ 6 -- SHELL / REFRACTORY LOSS CLOSURE
+#
+# These replace the per-zone (refractory_thickness,
+# refractory_conductivity, h_ext) triples and the
+# insulation_factor = 0.27 calibration that physics.wall_losses
+# carried. The loss is now a cylindrical layer stack closing on a
+# SOLVED shell temperature, with natural convection AND radiation
+# on the outer face (physics/shell.py).
+#
+# The live layer tables are DEFAULT_WALL_STACKS in
+# physics/shell.py, next to the paragraph that justifies each
+# entry -- they are not restated here, so there is one source and
+# nothing to drift. This section exists to override them, per
+# zone, when a specific plant is being modelled rather than the
+# generic reference one. Anything left out keeps its default.
+#
+# Layers run HOT FACE OUTWARD as [name, thickness_m,
+# conductivity_W_per_mK]. orientation is "horizontal" (rotary
+# kiln shell, cooler casing) or "vertical" (calciner riser,
+# preheater tower) and picks the Churchill & Chu form and the
+# characteristic length.
+#
+# wall_stack:
+#   burning:
+#     orientation: horizontal
+#     shell_emissivity: 0.80
+#     layers:
+#       - [clinker coating,       0.100,  1.00]
+#       - [magnesia-spinel brick, 0.225,  2.80]
+#       - [steel shell,           0.025, 45.00]
+# ======================================================

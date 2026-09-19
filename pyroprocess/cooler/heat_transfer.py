@@ -2,8 +2,7 @@ import numpy as np
 
 from physics.physics import heat_transfer
 from physics.physics import outlet_face_value
-from physics.physics import wall_losses
-from physics.physics import wall_thermal_resistance
+from physics.shell import shell_closure
 from physics.physics import h_gas
 
 from . import gas_phase
@@ -11,17 +10,18 @@ from . import solid_phase
 
 
 # ======================================================
-# INSULATION FACTOR
+# INSULATION FACTOR -- REMOVED (Faz 6)
 #
-# Wall-loss calibration factor used by the wall rows of the
-# linear system. Previously written as the literal 0.27 in
-# two separate places in the wall-row assembly; bound to a
-# single name here so the matrix and the residual
-# decomposition diagnostic cannot silently diverge. Value is
-# unchanged, and matches the `insulation_factor=0.27` default
-# of physics.wall_losses().
+# This zone used to scale its wall rows by a calibration
+# factor of 0.27. It existed because the underlying loss
+# model was a single plane layer with a constant external
+# film and no outer radiation, which over-predicted the flux
+# by roughly the reciprocal of that factor. The loss is now
+# a cylindrical layer stack closing on a solved casing
+# temperature (physics.shell), so there is nothing left for
+# a calibration factor to correct, and both places that
+# carried it now read 1/R_total directly.
 # ======================================================
-_INSULATION_FACTOR = 0.27
 
 
 # ======================================================
@@ -79,11 +79,12 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # WALL THERMAL RESISTANCE
     # ======================================================
 
-    _, _, R_total = wall_thermal_resistance(
-        refractory_thickness=cooler.refractory_thickness,
-        refractory_conductivity=cooler.refractory_conductivity,
-        h_ext=cooler.h_ext,
-        A_wall_cell=cooler.A_wall_cell,
+    # Faz 6: per cell, and refreshed inside the Picard loop from
+    # the current hot face. This call only seeds the first pass.
+    R_total, T_shell, shell_info = shell_closure(
+        np.asarray(Tw, dtype=float),
+        cooler.shell,
+        cooler.T_amb,
     )
 
     # ======================================================
@@ -110,6 +111,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     ).copy()
 
     for iteration in range(max_iter):
+
+        # --------------------------------------------------
+        # Shell loss resistance at the current hot face
+        # --------------------------------------------------
+
+        R_total, T_shell, shell_info = shell_closure(
+            Tw_iter,
+            cooler.shell,
+            cooler.T_amb,
+            T_shell_guess=T_shell,
+        )
 
         # --------------------------------------------------
         # Existing heat-transfer model
@@ -216,7 +228,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             A[row, wall_i] += (
                 -V_cell * K_gw
                 -V_cell * K_ws
-                -_INSULATION_FACTOR / R_total
+                -1.0 / R_total[i]
             )
 
             q_rad_gw = (
@@ -240,7 +252,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
                     q_rad_gw
                     + q_rad_ws
                 )
-                -_INSULATION_FACTOR * cooler.T_amb / R_total
+                -cooler.T_amb / R_total[i]
             )
 
             row += 1
@@ -352,33 +364,57 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # ======================================================
     # FINAL WALL LOSS
     #
-    # eps=0.0: wall_losses() divides by (R_total + eps) and
-    # by (V_cell + eps), while the wall rows of the matrix
-    # above divide by R_total alone. Passing cooler.eps
-    # (1e-9) therefore biased the reported wall loss away
-    # from the energy the matrix actually removes, by
-    # eps/R_total ~ 4e-7 relative. Both denominators are
-    # strictly positive for any physical geometry
-    # (R_total = t/(k*A) + 1/(h*A), V_cell > 0), so the
-    # guard protects against nothing and is dropped here.
+    # Faz 6: the loss network is re-closed on the CONVERGED hot
+    # face and the loss read straight off it, rather than handed
+    # to a second implementation (physics.wall_losses) that could
+    # drift from the matrix. The wall_mismatch guard further down
+    # is what used to police that drift; it now compares the
+    # matrix against the same R_total the matrix was built from,
+    # so it degenerates to the Picard gap, which is what it was
+    # really measuring all along.
     # ======================================================
 
-    (
-        _,
-        wall_loss,
-        wall_debug,
-    ) = wall_losses(
-        Tw=Tw_ss,
-        h_ext=cooler.h_ext,
-        A_wall_cell=cooler.A_wall_cell,
-        V_cell=cooler.V_cell,
-        T_amb=cooler.T_amb,
-        A_wall_total=cooler.A_wall,
-        N=N,
-        refractory_thickness=cooler.refractory_thickness,
-        refractory_conductivity=cooler.refractory_conductivity,
-        eps=0.0,
+    # Held before the re-solve overwrites it: this is the
+    # resistance the LAST assembled matrix actually dissipated
+    # through, and the wall_mismatch guard below needs it to stay
+    # a test rather than an identity.
+    R_total_matrix = R_total
+
+    R_total, T_shell, shell_info = shell_closure(
+        Tw_ss,
+        cooler.shell,
+        cooler.T_amb,
+        T_shell_guess=T_shell,
     )
+
+    Q_loss_cells = (Tw_ss - cooler.T_amb) / R_total
+
+    wall_loss = float(np.sum(Q_loss_cells))
+
+    wall_debug = {
+        "R_cond": float(shell_info["R_cond"]),
+        "R_ext": float(shell_info["R_ext_mean"]),
+        "R_total": float(np.mean(R_total)),
+        "h_ext": float(shell_info["h_ext_mean"]),
+        "T_shell_mean": float(shell_info["T_shell_mean"]),
+        "q_loss_mean": float(np.mean(Q_loss_cells / cooler.V_cell)),
+        "wall_loss_total": wall_loss,
+        "A_wall": float(cooler.A_wall),
+        "A_wall_cell": float(cooler.A_wall_cell),
+        "V_cell": float(cooler.V_cell),
+        "N": int(N),
+    }
+
+    state.Cooler_R_total_cells = np.asarray(R_total, dtype=float)
+    state.Cooler_R_total = float(np.mean(R_total))
+
+    state.Cooler_T_shell_cells = np.asarray(T_shell, dtype=float)
+    state.Cooler_T_shell_max = float(np.max(T_shell))
+    state.Cooler_shell_h_ext = float(shell_info["h_ext_mean"])
+    state.Cooler_shell_h_conv = float(shell_info["h_conv_mean"])
+    state.Cooler_shell_h_rad = float(shell_info["h_rad_mean"])
+    state.Cooler_shell_flux = float(shell_info["flux_outer_mean"])
+    state.Cooler_shell_R_cond = float(shell_info["R_cond"])
 
     # ======================================================
     # ENTHALPY
@@ -472,10 +508,12 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     #          those telescope exactly too; again only the
     #          Picard gap remains.
     #
-    # wall_mismatch  The wall rows dissipate via
-    #          _INSULATION_FACTOR/R_total while the reported
-    #          wall_loss comes from physics.wall_losses().
-    #          Kept as a guard that the two stay in step.
+    # wall_mismatch  The wall rows dissipate through the
+    #          R_total of the LAST Picard iterate; the reported
+    #          wall_loss re-closes the same network on the
+    #          converged hot face. At the fixed point the two
+    #          iterates coincide, so this is the Picard gap of
+    #          the wall row and nothing else.
     #
     # This block is purely additive: it reads the converged
     # state and changes no equation, boundary condition or
@@ -504,11 +542,10 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         )
     )
 
-    wall_loss_matrix = (
-        _INSULATION_FACTOR
-        / R_total
-        * float(
-            np.sum(Tw_ss - cooler.T_amb)
+    wall_loss_matrix = float(
+        np.sum(
+            (Tw_ss - cooler.T_amb)
+            / R_total_matrix
         )
     )
 

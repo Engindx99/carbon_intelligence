@@ -113,6 +113,7 @@ BOUNDS = {
     "Ts_any_zone_max": (None, 1773.0, "clinker liquidus"),
     "Tw_burning_max": (None, 1900.0, "refractory hot-face limit"),
     "shell_T": (350.0, 670.0, "kiln shell"),
+    "casing_T": (310.0, 420.0, "lagged casing"),
     "clinker_kiln_outlet": (1600.0, 1780.0, "clinker discharge"),
     "clinker_cooler_outlet": (340.0, 480.0, "cooler discharge"),
     "secondary_air": (1050.0, 1350.0, "secondary air"),
@@ -384,16 +385,46 @@ def plausibility_bounds(twin):
         f"adiabatic-from-inlet is {T_ad:.0f} K (reference, not a bound)",
     )
 
-    # Shell temperature, from the refractory series resistance.
-    R_total = getattr(state, "Burning_R_total", None)
+    # Shell temperature, READ from the zone that solved it.
+    #
+    # Faz 6: this used to rebuild the skin temperature from a
+    # plane-wall ratio R_conv/R_total with a constant h_ext of its
+    # own, a second loss model living in the reporter. It
+    # disagreed with the solver by ~300 K. Every zone now
+    # publishes T_shell from physics.shell, so the check reads
+    # the number the model actually ran on.
+    # The two BARE zones are the rotary kiln itself: its shell is
+    # uninsulated by design and the bound on it is the temperature
+    # at which the refractory anchors let go. The other three are
+    # LAGGED vessels behind mineral wool and a thin casing, where
+    # the governing limit is a touchable surface, not anchor
+    # failure -- so they are checked against their own band
+    # rather than told a 550 K casing is acceptable.
+    for zone in SOLID_ZONE_ORDER:
+        T_shell_max = getattr(
+            state,
+            f"{zone.capitalize()}_T_shell_max",
+            None,
+        )
 
-    if R_total is not None:
-        R_conv = 1.0 / (twin.burning.h_ext * twin.burning.A_wall_cell)
-        T_shell = twin.burning.T_amb + (
-            np.max(Tw_b) - twin.burning.T_amb
-        ) * (R_conv / R_total)
-        lo, hi, note = BOUNDS["shell_T"]
-        add("kiln shell T (hottest cell)", float(T_shell), lo, hi, note)
+        if T_shell_max is None:
+            continue
+
+        key = (
+            "shell_T"
+            if zone in ("burning", "transition")
+            else "casing_T"
+        )
+
+        lo, hi, note = BOUNDS[key]
+
+        add(
+            f"shell T [{zone}] (hottest cell)",
+            float(T_shell_max),
+            lo,
+            hi,
+            note,
+        )
 
     # Stream boundary temperatures.
     lo, hi, note = BOUNDS["clinker_kiln_outlet"]
@@ -1080,6 +1111,88 @@ def plant_thermal_ledger(twin):
     }
 
 
+def shell_loss_split(twin):
+    """
+    Per-zone wall loss as the shell closure resolves it.
+
+    D12 reports the wall total per kg of clinker against a band,
+    which conflates two independent things: how much a square
+    metre of that wall loses, and how many square metres there
+    are per kg of product. The first is what physics/shell.py
+    determines; the second is a consequence of the plant's
+    geometry and its throughput. Reporting the FLUX next to the
+    specific loss separates them, so a [HIGH] wall row can be
+    read as either "the lining model is wrong" or "this kiln is
+    oversized for what is being fed through it".
+
+    Everything here is READ from the state the zones published,
+    not recomputed: the shell temperature and the outer area come
+    from the same solve that removed the energy.
+    """
+
+    state = twin.state
+
+    demand = thermal_demand_vs_supply(twin)
+
+    if demand is None:
+        return None
+
+    # The SAME denominator D12 divides by, so the two tables can
+    # be read against each other without a unit conversion in the
+    # reader's head.
+    clinker = demand["clinker_potential"]
+
+    rows = []
+
+    for zone in SOLID_ZONE_ORDER:
+
+        obj = _zone_object(twin, zone)
+        shell = getattr(obj, "shell", None)
+
+        if shell is None:
+            continue
+
+        loss = float(getattr(state, f"Wall_loss_{zone}", 0.0))
+
+        # Outer area of the whole zone, not of one cell: the
+        # preheater marches sub-volumes of a stage, so its cell
+        # count is not its stage count.
+        area = shell.A_outer_cell * obj.N
+
+        rows.append(
+            {
+                "zone": zone,
+                "loss_W": loss,
+                "J_per_kg": loss / clinker,
+                "area_m2": area,
+                "flux_W_per_m2": loss / area,
+                "T_shell": float(
+                    getattr(state, f"{zone.capitalize()}_T_shell_max", 0.0)
+                ),
+                # Area-specific, referenced to the OUTER face.
+                # shell.R_cond is per CELL, and the zones do not
+                # share a cell length (the preheater's N counts
+                # cyclone stages, the kiln's counts mesh cells),
+                # so the raw K/W figures are not comparable
+                # across rows and this one is.
+                "R_cond_m2K_W": shell.R_cond * shell.A_outer_cell,
+                "stack": " + ".join(
+                    f"{layer.name} {layer.thickness * 1e3:.0f} mm"
+                    for layer in shell.stack.layers
+                ),
+            }
+        )
+
+    total = sum(r["loss_W"] for r in rows)
+
+    return {
+        "rows": rows,
+        "total_W": total,
+        "total_J_per_kg": total / clinker,
+        "clinker": clinker,
+    }
+
+
 def _solid_feed_species(twin):
     """Raw-meal species flows as fed.
 
@@ -1380,6 +1493,48 @@ def report(twin):
             " dehydroxylation, Burning_Q_sink"
         )
         w("  already holds the kiln's calcination.")
+
+    # ---------- D13 ----------
+    shells = shell_loss_split(twin)
+
+    if shells is not None:
+
+        w("\n-- D13  shell loss per zone (Faz 6 closure) --")
+        w(
+            f"  {'zone':11s} {'MW':>6s} {'kJ/kg':>7s} {'A_out m2':>9s} "
+            f"{'kW/m2':>7s} {'T_shell K':>10s} {'R_cond m2K/W':>13s}   "
+            f"layer stack"
+        )
+
+        for r in shells["rows"]:
+            w(
+                f"  {r['zone']:11s} {r['loss_W'] / 1e6:6.3f} "
+                f"{r['J_per_kg'] / 1e3:7.1f} {r['area_m2']:9.1f} "
+                f"{r['flux_W_per_m2'] / 1e3:7.2f} {r['T_shell']:10.1f} "
+                f"{r['R_cond_m2K_W']:13.3f}   {r['stack']}"
+            )
+
+        w(
+            f"  {'TOTAL':11s} {shells['total_W'] / 1e6:6.3f} "
+            f"{shells['total_J_per_kg'] / 1e3:7.1f}"
+        )
+        w(
+            "  kW/m2 is what the LINING model determines; kJ/kg is that"
+            " flux times the"
+        )
+        w(
+            "  wall area this plant carries per kg of clinker. A bare"
+            " rotary shell runs"
+        )
+        w(
+            "  3-8 kW/m2 and a lagged casing well under 2, so a wall"
+            " row that D12 calls"
+        )
+        w(
+            "  HIGH while every flux here is in range is a"
+            " geometry-to-throughput"
+        )
+        w("  mismatch, not a lining error. See D11 for the same signal.")
 
     w("\n================================================================\n")
 

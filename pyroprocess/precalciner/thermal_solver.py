@@ -7,7 +7,7 @@ from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import T_gas_from_h
-from physics.physics import wall_thermal_resistance
+from physics.shell import shell_closure
 from physics.variable_flow_rows import apply_gas_energy_balance
 from physics.variable_flow_rows import apply_solid_energy_balance
 
@@ -174,11 +174,13 @@ def thermal_step(
     # WALL THERMAL RESISTANCE
     # ======================================================
 
-    R_ref, R_conv, R_total = wall_thermal_resistance(
-        refractory_thickness=calciner.refractory_thickness,
-        refractory_conductivity=calciner.refractory_conductivity,
-        h_ext=calciner.h_ext,
-        A_wall_cell=calciner.A_wall_cell,
+    # Faz 6: per cell, closed on the casing temperature through
+    # the lagged layer stack. Refreshed each Picard pass below;
+    # this call only supplies the first one.
+    R_total, T_shell, shell_info = shell_closure(
+        np.asarray(Tw, dtype=float),
+        calciner.shell,
+        calciner.T_amb,
     )
 
     # ======================================================
@@ -283,6 +285,17 @@ def thermal_step(
 
         Cp_g_iter = cp_gas(
             Tg_iter
+        )
+
+        # ==================================================
+        # SHELL LOSS RESISTANCE AT THE CURRENT HOT FACE
+        # ==================================================
+
+        R_total, T_shell, shell_info = shell_closure(
+            Tw_iter,
+            calciner.shell,
+            calciner.T_amb,
+            T_shell_guess=T_shell,
         )
 
         # ==================================================
@@ -497,7 +510,7 @@ def thermal_step(
             A[row, Tw_i] += (
                 -V_cell * K_gw
                 -V_cell * K_ws
-                -1.0 / R_total
+                -1.0 / R_total[i]
             )
 
             # --------------------------------------------------
@@ -514,7 +527,7 @@ def thermal_step(
 
             b[row] = (
                 -calciner.T_amb
-                / R_total
+                / R_total[i]
                 - radiation_wall_source
             )
 
@@ -622,6 +635,32 @@ def thermal_step(
     Tg_ss = Tg_iter
     Ts_ss = Ts_iter
     Tw_ss = Tw_iter
+
+    # The loss network re-closed on the CONVERGED hot face, so
+    # the wall loss reported below is the one the converged state
+    # implies rather than the last iterate's.
+    R_total, T_shell, shell_info = shell_closure(
+        Tw_ss,
+        calciner.shell,
+        calciner.T_amb,
+        T_shell_guess=T_shell,
+    )
+
+    # Faz 6 shell state, published rather than reconstructed by
+    # whoever reads it. The calciner runs an OUTER coupling loop
+    # over this solver, so these are overwritten each pass and
+    # the converged pass is what survives -- the same contract
+    # every other field written from here already has.
+    state.Calciner_R_total_cells = np.asarray(R_total, dtype=float)
+    state.Calciner_R_total = float(np.mean(R_total))
+
+    state.Calciner_T_shell_cells = np.asarray(T_shell, dtype=float)
+    state.Calciner_T_shell_max = float(np.max(T_shell))
+    state.Calciner_shell_h_ext = float(shell_info["h_ext_mean"])
+    state.Calciner_shell_h_conv = float(shell_info["h_conv_mean"])
+    state.Calciner_shell_h_rad = float(shell_info["h_rad_mean"])
+    state.Calciner_shell_flux = float(shell_info["flux_outer_mean"])
+    state.Calciner_shell_R_cond = float(shell_info["R_cond"])
 
     # ======================================================
     # INLET / OUTLET

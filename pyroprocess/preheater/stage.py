@@ -39,6 +39,12 @@ class PreheaterStage:
 
     wall_temperature: float = 0.0
 
+    # Faz 6: outer casing temperature of the stage, solved by
+    # physics.shell alongside the hot face. Published so the
+    # plausibility check reads it instead of rebuilding it from a
+    # resistance ratio.
+    shell_temperature: float = 0.0
+
     Q_gs: float = 0.0
     Q_gw: float = 0.0
     Q_ws: float = 0.0

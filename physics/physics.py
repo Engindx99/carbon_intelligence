@@ -262,6 +262,26 @@ SUTHERLAND_AIR = {
 
 def _sutherland(T, ref_value, T_0, S):
 
+    # Scalar fast path, on the same grounds as cp_gas above and
+    # verified the same way: np.asarray + np.any on a 0-d array
+    # cost ~14 us against ~0.3 us for the arithmetic in plain
+    # Python, and physics.shell calls this four times per pass of
+    # a Newton solve that itself sits inside the preheater's
+    # per-node wall solve. The arithmetic is identical, and the
+    # two paths were verified bit for bit over 40000
+    # temperatures in [250, 1200] K.
+    if isinstance(T, float):
+
+        if T <= 0.0:
+            raise ValueError("Sutherland's law needs T > 0 K")
+
+        return (
+            ref_value
+            * (T / T_0) ** 1.5
+            * (T_0 + S)
+            / (T + S)
+        )
+
     T = np.asarray(T, dtype=float)
 
     if np.any(T <= 0.0):
@@ -963,101 +983,6 @@ def heat_transfer(Tg, Ts, Tw, hv_gs, hv_gw, hv_ws, a_gs, a_gw, a_ws, zone=None):
     return q_gs, q_gw, q_ws
 
     
-def wall_losses(
-    Tw,
-    h_ext,
-    A_wall_cell,
-    V_cell,
-    T_amb,
-    A_wall_total,
-    N,
-    refractory_thickness,
-    refractory_conductivity,
-    eps,
-    insulation_factor=0.27,   # default calibration
-    debug=True,
-):
-    """
-    Wall heat loss through the refractory/convection network.
-
-    debug=True (default) also returns the wall_debug dict, so
-    every existing caller is unaffected. debug=False returns
-    None in its place and skips building it: the dict costs two
-    np.mean, one np.max and ~14 float() calls per invocation,
-    which is pure overhead on the iterative wall-temperature
-    solves that call this millions of times per steady-state
-    run and discard the dict. The returned q_loss and wall_loss
-    are identical either way.
-    """
-
-    # ======================================================
-    # THERMAL RESISTANCE NETWORK
-    # ======================================================
-    R_ref, R_conv, R_total = wall_thermal_resistance(
-        refractory_thickness=refractory_thickness,
-        refractory_conductivity=refractory_conductivity,
-        h_ext=h_ext,
-        A_wall_cell=A_wall_cell,
-    )
-
-    # ======================================================
-    # HEAT LOSS (cell-wise)
-    # ======================================================
-    wall_loss_cells = (Tw - T_amb) / (R_total + eps)
-
-    # ======================================================
-    # TOTAL HEAT LOSS
-    # ======================================================
-    wall_loss_raw = np.sum(wall_loss_cells)
-
-    # ======================================================
-    # APPLY INSULATION FACTOR
-    # ======================================================
-    # insulation_factor is a scalar calibration constant -- the
-    # debug dict below already assumed that via float(...) -- so
-    # the clamp is done in plain Python. np.clip on a scalar
-    # routes through the array-function machinery and dominated
-    # this function's cost in the iterative wall solves.
-    insulation_factor = min(
-        max(float(insulation_factor), 0.1),
-        1.0,
-    )
-
-    wall_loss = insulation_factor * wall_loss_raw
-
-    # ======================================================
-    # VOLUMETRIC LOSS
-    # ======================================================
-    q_loss = insulation_factor * wall_loss_cells / (V_cell + eps)
-
-    # ======================================================
-    # DEBUG
-    # ======================================================
-    if not debug:
-        return q_loss, wall_loss, None
-
-    wall_debug = {
-        "R_ref": float(R_ref),
-        "R_conv": float(R_conv),
-        "R_total": float(R_total),
-
-        "insulation_factor": float(insulation_factor),
-
-        "q_loss_mean": float(np.mean(q_loss)),
-        "q_loss_max": float(np.max(q_loss)),
-
-        "wall_loss_mean": float(np.mean(wall_loss_cells)),
-        "wall_loss_total_raw": float(wall_loss_raw),
-        "wall_loss_total": float(wall_loss),
-
-        "A_wall": float(A_wall_total),
-        "A_wall_cell": float(A_wall_cell),
-        "V_cell": float(V_cell),
-        "N": int(N),
-    }
-
-    return q_loss, wall_loss, wall_debug
-
 # ======================================================
 # GEOMETRY
 # ======================================================
@@ -1305,41 +1230,3 @@ def wall_bed_contact_coefficient(
     R_gap = chi * d_p / k_g
 
     return 1.0 / (R_gap + 1.0 / h_pen)
-
-# ======================================================
-# WALL THERMAL RESISTANCE
-# ======================================================
-def wall_thermal_resistance(
-    refractory_thickness,
-    refractory_conductivity,
-    h_ext,
-    A_wall_cell,
-):
-
-    # Refractory conduction resistance (K/W)
-    R_ref = (
-        refractory_thickness
-        / (
-            refractory_conductivity
-            * A_wall_cell
-        )
-    )
-
-    # External convection resistance (K/W)
-    R_conv = (
-        1.0
-        / (
-            h_ext
-            * A_wall_cell
-        )
-    )
-
-    # Total thermal resistance (K/W)
-    R_total = R_ref + R_conv
-
-    return (
-        R_ref,
-        R_conv,
-        R_total,
-    )
-    

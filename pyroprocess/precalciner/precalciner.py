@@ -12,6 +12,7 @@ from chemistry.phases import raw_meal_solid_flow
 from chemistry.phases import total_solid_flow
 from chemistry.reactions import ChemistryModel
 from physics.physics import ZONE_HT_CONFIG
+from physics.shell import wall_stack
 
 from . import thermal_solver
 from . import raw_meal_inlet
@@ -26,7 +27,12 @@ def load_cfg(path):
 
 class Calciner:
 
-    def __init__(self, N=5, L=25.0):
+    def __init__(self, N=5, L=25.0, cfg=None):
+
+        # cfg is read for the Faz 6 wall stack only; None falls
+        # back to physics.shell.DEFAULT_WALL_STACKS, so a caller
+        # that builds this zone on its own still works.
+        self.cfg = cfg
 
         self.N = N
         self.L = L
@@ -69,15 +75,35 @@ class Calciner:
         self.A_wall_cell = self.A_wall / self.N
         self.a_gw = self.A_wall_cell / self.V_cell
 
-        # ================= REFRACTORY =================
-        self.refractory_thickness = 0.05      # m
-        self.refractory_conductivity = 1.8    # W/mK
+        # ================= REFRACTORY / SHELL =================
+        #
+        # Faz 6. A calciner is not a bare kiln shell: it is a
+        # lagged vessel -- castable refractory, ceramic fibre,
+        # thin steel casing -- and the insulation is what sets
+        # its loss. The old 0.05 m / 1.8 W/(m K) plane wall with
+        # h_ext = 12 gave it a shell flux near 10 kW/m^2, an
+        # order of magnitude above a lagged surface, and it was
+        # the single largest wall-loss term in the plant.
+        self.wall_stack = wall_stack(self.cfg, self.zone)
+
+        self.refractory_thickness = self.wall_stack.thickness
 
         self.V_wall = self.A_wall * self.refractory_thickness
         self.V_wall_cell = self.V_wall / self.N
 
+        # The calciner is a VERTICAL vessel, so the external film
+        # takes its height as the characteristic length. The
+        # height used is the zone length, which is still the
+        # Faz 3 placeholder geometry (Faz 6 item 3 replaces it
+        # with the real riser); the closure follows whatever
+        # geometry the zone ends up with.
+        self.shell = self.wall_stack.geometry(
+            r_inner=0.5 * self.D,
+            L_cell=self.L / self.N,
+            L_char=self.L,
+        )
+
         # ================= EXTERNAL WALL =================
-        self.h_ext = 12.0
         self.T_ref = 298.15   # K
         self.T_amb = 300.0    # K
 

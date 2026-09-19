@@ -1,7 +1,8 @@
 import numpy as np
 
 from physics.physics import heat_transfer
-from physics.physics import wall_losses
+from physics.shell import loss_conductance
+from physics.shell import shell_closure
 from physics.physics import ZONE_RAD_CONFIG
 from physics.physics import sigma
 
@@ -375,7 +376,22 @@ def thermal_step(
         for stage in preheater.stages
     )
 
+    # ======================================================
+    # SHELL STATE (Faz 6)
+    #
+    # A stage's shell_temperature is the LAST node's, because
+    # solve_stage marches the nodes and each one overwrites it.
+    # The hottest stage is the one the casing bound applies to,
+    # so that is what is published.
+    # ======================================================
+    state.Preheater_T_shell_cells = np.array(
+        [stage.shell_temperature for stage in preheater.stages],
+        dtype=float,
+    )
 
+    state.Preheater_T_shell_max = float(
+        np.max(state.Preheater_T_shell_cells)
+    )
 
     # ======================================================
     # GLOBAL PREHEATER ENERGY BALANCE
@@ -530,6 +546,15 @@ def solve_stage(
         np.mean([node.wall_temperature for node in nodes])
     )
 
+    # The casing bound is a LIMIT, so the stage carries the
+    # hottest node's skin, not the mean -- a mean would hide a
+    # single hot node behind four cool ones. The hot face takes
+    # the mean because it is reported as a stage state, not
+    # checked against a limit.
+    stage.shell_temperature = float(
+        np.max([node.shell_temperature for node in nodes])
+    )
+
     stage.Q_gs = float(sum(node.Q_gs for node in nodes))
     stage.Q_gw = float(sum(node.Q_gw for node in nodes))
     stage.Q_ws = float(sum(node.Q_ws for node in nodes))
@@ -635,6 +660,26 @@ def solve_stage_node(
     A_wall_cell = model.A_wall_cell * volume_fraction
     A_wall = model.A_wall * volume_fraction
 
+    # ==========================================================
+    # SHELL GEOMETRY FOR THIS NODE
+    #
+    # A node is volume_fraction of a stage, so it owns that
+    # fraction of the stage's wall length. The conduction
+    # resistance scales as 1/L and the outer area as L, which is
+    # exactly what re-resolving the stack on the node's own cell
+    # length does -- the two would NOT come out right by scaling
+    # a stage-level resistance, because the external film sees an
+    # area and the stack sees a length.
+    #
+    # Resolved once per node rather than per residual evaluation:
+    # nothing in it moves while the wall temperature is solved.
+    # ==========================================================
+    node_shell = model.wall_stack.geometry(
+        r_inner=model.shell.r_inner,
+        L_cell=model.shell.L_cell * volume_fraction,
+        L_char=model.shell.L_char,
+    )
+
     Tg_in = float(gas_inlet_temperature)
     Ts_in = float(solid_inlet_temperature)
 
@@ -660,19 +705,15 @@ def solve_stage_node(
             zone=model.zone,
         )
 
-        _, Q_wall_loss_trial, _ = wall_losses(
-            Tw=np.array([Tw_trial]),
-            h_ext=model.h_ext,
-            A_wall_cell=A_wall_cell,
-            V_cell=V_cell,
-            T_amb=T_amb,
-            A_wall_total=A_wall,
-            N=1,
-            refractory_thickness=model.refractory_thickness,
-            refractory_conductivity=model.refractory_conductivity,
-            eps=eps,
-            debug=False,
+        R_total_trial, _, _ = shell_closure(
+            float(Tw_trial),
+            node_shell,
+            T_amb,
         )
+
+        Q_wall_loss_trial = (
+            float(Tw_trial) - T_amb
+        ) / R_total_trial
 
         return (
             float(q_gw_trial[0] + q_ws_trial[0])
@@ -704,11 +745,14 @@ def solve_stage_node(
     # is unique. Verified over 545 stage solves -- R was
     # strictly decreasing in all of them.
     #
-    # Q_loss is exactly affine in Tw and vanishes at T_amb, so
-    # its slope is read straight off physics.wall_losses at
-    # T_amb + 1 K rather than re-stating the insulation-factor
-    # calibration here. That keeps wall_losses the single
-    # source of truth for the loss model.
+    # Faz 6: Q_loss is NO LONGER AFFINE in Tw. The external film
+    # carries the casing temperature through h_rad ~ T^3 and
+    # h_conv ~ dT^(1/3), so the slope has to be evaluated where
+    # the Newton step is taken, not once at T_amb + 1 K. It comes
+    # from physics.shell.loss_conductance, which differentiates
+    # the same series network shell_closure solves -- so the
+    # slope and the residual still cannot describe different
+    # walls, which is what reading it off wall_losses bought.
     # ----------------------------------------------------------
 
     rad_cfg = ZONE_RAD_CONFIG[model.zone]
@@ -719,21 +763,19 @@ def solve_stage_node(
         * sigma
     )
 
-    _, wall_loss_slope, _ = wall_losses(
-        Tw=np.array([T_amb + 1.0]),
-        h_ext=model.h_ext,
-        A_wall_cell=A_wall_cell,
-        V_cell=V_cell,
-        T_amb=T_amb,
-        A_wall_total=A_wall,
-        N=1,
-        refractory_thickness=model.refractory_thickness,
-        refractory_conductivity=model.refractory_conductivity,
-        eps=eps,
-        debug=False,
-    )
-
     def wall_residual_slope_stage(Tw_trial):
+
+        _, T_shell_trial, _ = shell_closure(
+            float(Tw_trial),
+            node_shell,
+            T_amb,
+        )
+
+        wall_loss_slope = loss_conductance(
+            T_shell_trial,
+            node_shell,
+            T_amb,
+        )
 
         return (
             -V_cell
@@ -856,21 +898,16 @@ def solve_stage_node(
     # WALL LOSS
     # ==========================================================
 
-    _, wall_loss, _ = wall_losses(
-        Tw=np.array([Tw]),
-        h_ext=model.h_ext,
-        A_wall_cell=A_wall_cell,
-        V_cell=V_cell,
-        T_amb=T_amb,
-        A_wall_total=A_wall,
-        N=1,
-        refractory_thickness=model.refractory_thickness,
-        refractory_conductivity=model.refractory_conductivity,
-        eps=eps,
-        debug=False,
+    R_total, T_shell, _ = shell_closure(
+        float(Tw),
+        node_shell,
+        T_amb,
     )
 
+    wall_loss = (float(Tw) - T_amb) / R_total
+
     stage.Q_wall_loss = float(wall_loss)
+    stage.shell_temperature = float(T_shell)
 
     # ==========================================================
     # SOLID ENTHALPY

@@ -93,16 +93,19 @@ class Twin:
         self.calciner = Calciner(
             N=cfg["plant"]["N"],
             L=cfg["calciner"]["length"],
+            cfg=cfg,
         )
 
         self.preheater = Preheater(
             L=cfg["preheater"]["length"],
             nodes_per_stage=cfg["preheater"]["nodes_per_stage"],
+            cfg=cfg,
         )
 
         self.cooler = Cooler(
             N=cfg["plant"]["N"],
             L=cfg["cooler"]["length"],
+            cfg=cfg,
         )
 
         # ======================================================

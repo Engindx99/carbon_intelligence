@@ -12,7 +12,7 @@ from physics.physics import second_order_upwind_face_corrections
 from physics.variable_flow_rows import apply_gas_energy_balance
 from physics.variable_flow_rows import apply_solid_energy_balance
 from physics.physics import T_gas_from_h
-from physics.physics import wall_thermal_resistance
+from physics.shell import shell_closure
 
 from . import combustion
 from . import gas_phase
@@ -313,13 +313,21 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     # ======================================================
     # WALL THERMAL RESISTANCE
+    #
+    # Faz 6: no longer a constant. R_total now closes on the
+    # SHELL temperature -- cylindrical series conduction through
+    # the layer stack, then natural convection plus radiation off
+    # the steel skin -- so it is solved inside the Picard loop
+    # from the current hot-face iterate, exactly like the K_gw /
+    # K_ws coefficients above. The array below is only the
+    # starting value for the first pass; it is overwritten every
+    # iteration and is exact at the fixed point.
     # ======================================================
 
-    R_ref, R_conv, R_total = wall_thermal_resistance(
-        refractory_thickness=burning.refractory_thickness,
-        refractory_conductivity=burning.refractory_conductivity,
-        h_ext=burning.h_ext,
-        A_wall_cell=burning.A_wall_cell,
+    R_total, T_shell, shell_info = shell_closure(
+        np.asarray(Tw, dtype=float),
+        burning.shell,
+        burning.T_amb,
     )
 
     # ======================================================
@@ -363,6 +371,21 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         K_gs = closure["K_gs"]
         K_gw = closure["K_gw"]
         K_ws = closure["K_ws"]
+
+        # ==================================================
+        # SHELL LOSS RESISTANCE AT THE CURRENT HOT FACE
+        #
+        # Seeded with the previous pass's shell field, so the
+        # inner solve converges in two or three passes instead
+        # of eight.
+        # ==================================================
+
+        R_total, T_shell, shell_info = shell_closure(
+            Tw_iter,
+            burning.shell,
+            burning.T_amb,
+            T_shell_guess=T_shell,
+        )
 
         # ==================================================
         # SECOND-ORDER ADVECTION CORRECTION
@@ -517,13 +540,13 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             A[row, Tw_i] += (
                 -V_cell * K_gw[i]
                 -V_cell * K_ws[i]
-                -1.0 / R_total
+                -1.0 / R_total[i]
             )
 
             # Faz 5: the wall's radiative gains are inside
             # K_gw and K_ws now, so the only explicit term left
             # on this row is the ambient loss.
-            b[row] = -burning.T_amb / R_total
+            b[row] = -burning.T_amb / R_total[i]
 
             row += 1
 
@@ -669,6 +692,18 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     K_gs = closure_ss["K_gs"]
     K_gw = closure_ss["K_gw"]
     K_ws = closure_ss["K_ws"]
+
+    # Same re-evaluation for the loss network: the shell closes
+    # on the CONVERGED hot face, not on the last iterate that
+    # built the matrix. At the fixed point the two agree; making
+    # the reported loss read the converged state is what keeps
+    # the energy balance below from carrying the Picard gap.
+    R_total, T_shell, shell_info = shell_closure(
+        Tw_ss,
+        burning.shell,
+        burning.T_amb,
+        T_shell_guess=T_shell,
+    )
 
     dT_gs = Tg_ss - Ts_ss
     dT_gw = Tg_ss - Tw_ss
@@ -931,7 +966,27 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     state.Burning_h_rad_sw_cells = closure_ss["h_rad_sw"]
 
     state.Burning_V_cell = float(V_cell)
-    state.Burning_R_total = float(R_total)
+
+    # ======================================================
+    # SHELL STATE (Faz 6)
+    #
+    # The shell temperature is PUBLISHED, not left for a reader
+    # to rebuild. D2 used to reconstruct it from a plane-wall
+    # resistance ratio of its own making, which is how it came to
+    # report 868 K for a wall the solver was running at 550 K.
+    # R_total is per cell now, so the scalar below is an explicit
+    # mean rather than a coefficient pretending to be one.
+    # ======================================================
+    state.Burning_R_total_cells = np.asarray(R_total, dtype=float)
+    state.Burning_R_total = float(np.mean(R_total))
+
+    state.Burning_T_shell_cells = np.asarray(T_shell, dtype=float)
+    state.Burning_T_shell_max = float(np.max(T_shell))
+    state.Burning_shell_h_ext = float(shell_info["h_ext_mean"])
+    state.Burning_shell_h_conv = float(shell_info["h_conv_mean"])
+    state.Burning_shell_h_rad = float(shell_info["h_rad_mean"])
+    state.Burning_shell_flux = float(shell_info["flux_outer_mean"])
+    state.Burning_shell_R_cond = float(shell_info["R_cond"])
 
     # Picard convergence, measured not enforced (see the loop).
     state.Burning_picard_max_iter = int(max_iter)

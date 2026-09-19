@@ -564,11 +564,96 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             0.5 * self.twin.mass_flow.m_dot_s_preheater,
         )
 
+    # ------------------------------------------------------
+    # D13 and the wall row of D12 are two views of the same
+    # energy. They are built from different attributes -- D12
+    # sums Wall_loss_<zone>, D13 reads the shell geometry each
+    # zone published and divides by it -- so a zone that starts
+    # publishing one without the other shows up here rather than
+    # as two plausible tables that quietly disagree.
+    # ------------------------------------------------------
+    def test_shell_split_totals_the_ledger_wall_row(self):
+
+        shells = diagnostics.shell_loss_split(self.twin)
+        led = diagnostics.plant_thermal_ledger(self.twin)
+
+        wall_row = next(
+            r for r in led["rows"] if r["label"] == "wall losses"
+        )
+
+        self.assertAlmostEqual(
+            shells["total_W"], wall_row["W"], delta=1e-6
+        )
+
+        self.assertAlmostEqual(
+            shells["total_J_per_kg"],
+            wall_row["J_per_kg"],
+            delta=1e-9,
+        )
+
+    def test_every_zone_reports_a_shell(self):
+        """
+        All five zones must carry the Faz 6 closure. A zone that
+        loses its `shell` attribute would silently drop out of
+        D13 while still contributing to D12's total.
+        """
+
+        shells = diagnostics.shell_loss_split(self.twin)
+
+        self.assertEqual(
+            [r["zone"] for r in shells["rows"]],
+            list(diagnostics.SOLID_ZONE_ORDER),
+        )
+
+    def test_shell_fluxes_are_physical(self):
+        """
+        The bare rotary shells and the lagged vessels have to
+        land in the ranges their construction implies. This is
+        the check that distinguishes "the lining model is wrong"
+        from "the plant geometry does not match its throughput",
+        which is what the wall row of D12 cannot tell apart.
+        """
+
+        bare = {"burning", "transition"}
+
+        for r in diagnostics.shell_loss_split(self.twin)["rows"]:
+            with self.subTest(zone=r["zone"]):
+
+                lo, hi = (
+                    (3.0e3, 8.0e3)
+                    if r["zone"] in bare
+                    else (0.0, 2.0e3)
+                )
+
+                self.assertTrue(
+                    lo <= r["flux_W_per_m2"] <= hi,
+                    f"{r['zone']}: {r['flux_W_per_m2']:.0f} W/m2",
+                )
+
+    def test_shell_temperature_is_published_not_reconstructed(self):
+        """
+        D2's shell check must read the zone's own solved skin.
+        Rebuilding it from a resistance ratio is what made it
+        report 868 K for walls the solver was running near 550 K.
+        """
+
+        for zone in diagnostics.SOLID_ZONE_ORDER:
+            with self.subTest(zone=zone):
+                self.assertIsInstance(
+                    getattr(
+                        self.state,
+                        f"{zone.capitalize()}_T_shell_max",
+                    ),
+                    float,
+                )
+
     def test_report_renders_every_section(self):
 
         text = diagnostics.report(self.twin)
 
-        for marker in ("D1", "D2", "D3", "D4", "D8", "D9", "D11", "D12"):
+        for marker in (
+            "D1", "D2", "D3", "D4", "D8", "D9", "D11", "D12", "D13",
+        ):
             with self.subTest(section=marker):
                 self.assertIn(marker, text)
 

@@ -2,6 +2,7 @@ import numpy as np
 
 from physics.physics import h_gas
 from physics.closure_config import closure_settings
+from physics.shell import wall_stack
 
 from chemistry.phases import copy_solid_phases
 from chemistry.phases import get_cell_solid_flow
@@ -62,15 +63,29 @@ class Transition:
         self.A_wall = self.wall_perimeter * self.L
         self.A_wall_cell = self.A_wall / self.N
 
-        # ================= REFRACTORY =================
-        self.refractory_thickness = 0.05
-        self.refractory_conductivity = 1.8
+        # ================= REFRACTORY / SHELL =================
+        #
+        # Faz 6. The 0.05 m / 1.8 W/(m K) plane wall this zone
+        # carried is not a rotary kiln lining -- no kiln runs on a
+        # 50 mm lining, and the transition zone shares the shell
+        # of the burning zone it is welded to. It is replaced by
+        # the same layer stack the burning zone uses, with a
+        # thinner coating: coating grows toward the burner, so the
+        # upper transition carries less of it.
+        self.wall_stack = wall_stack(cfg, self.zone)
+
+        self.refractory_thickness = self.wall_stack.thickness
 
         self.V_wall = self.A_wall * self.refractory_thickness
         self.V_wall_cell = self.V_wall / self.N
 
+        self.shell = self.wall_stack.geometry(
+            r_inner=0.5 * self.D,
+            L_cell=self.dz,
+            L_char=self.D + 2.0 * self.wall_stack.thickness,
+        )
+
         # ================= EXTERNAL WALL =================
-        self.h_ext = 12.0
         self.T_ref = 298.15
         self.T_amb = 300.0
 

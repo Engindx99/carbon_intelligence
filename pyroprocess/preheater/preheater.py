@@ -4,6 +4,7 @@ from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
 from physics.physics import ZONE_HT_CONFIG
+from physics.shell import wall_stack
 
 from chemistry.phases import resample_solid_phases
 from chemistry.reactions import ChemistryModel
@@ -21,7 +22,11 @@ from .stage5 import Stage5
 
 class Preheater:
 
-    def __init__(self, N=5, L=25.0, nodes_per_stage=20):
+    def __init__(self, N=5, L=25.0, nodes_per_stage=20, cfg=None):
+
+        # Kept on the instance because the name `cfg` is rebound
+        # further down to the ZONE_HT_CONFIG entry for this zone.
+        self.plant_cfg = cfg
 
         self.N = N
         self.L = L
@@ -120,12 +125,29 @@ class Preheater:
             V_cell=self.V_cell,
         )
 
-        # ================= REFRACTORY =================
-        self.refractory_thickness = 0.20
-        self.refractory_conductivity = 1.8
+        # ================= REFRACTORY / SHELL =================
+        #
+        # Faz 6. A preheater tower is a LAGGED vessel: castable
+        # refractory, mineral wool, thin steel casing. The old
+        # 0.20 m / 1.8 W/(m K) plane wall with a constant
+        # h_ext = 12 described a bare kiln shell instead, and the
+        # 0.27 insulation factor in physics.wall_losses was what
+        # kept the resulting flux from being absurd.
+        self.wall_stack = wall_stack(self.plant_cfg, self.zone)
+
+        self.refractory_thickness = self.wall_stack.thickness
+
+        # Vertical vessel: the external film takes the tower
+        # height as its characteristic length. The height is the
+        # zone length, still the Faz 3 placeholder geometry that
+        # Faz 6 item 2 replaces with the real cyclone string.
+        self.shell = self.wall_stack.geometry(
+            r_inner=0.5 * self.D,
+            L_cell=self.L / self.N,
+            L_char=self.L,
+        )
 
         # ================= EXTERNAL WALL =================
-        self.h_ext = 12.0
         self.T_ref = 298.15
         self.T_amb = 300.0
 

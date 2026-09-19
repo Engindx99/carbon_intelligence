@@ -6,7 +6,7 @@ from physics.physics import outlet_face_value
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import fill_fraction_from_holdup
 from physics.physics import bed_segment_geometry
-from physics.physics import wall_thermal_resistance
+from physics.shell import shell_closure
 from physics.kiln_closures import kiln_transfer_coefficients
 from physics.kiln_closures import radiating_partial_pressure
 
@@ -170,11 +170,14 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # WALL THERMAL RESISTANCE
     # ======================================================
 
-    R_ref, R_conv, R_total = wall_thermal_resistance(
-        refractory_thickness=transition.refractory_thickness,
-        refractory_conductivity=transition.refractory_conductivity,
-        h_ext=transition.h_ext,
-        A_wall_cell=transition.A_wall_cell,
+    # Faz 6: solved per cell from the shell energy balance and
+    # refreshed inside the Picard loop, like every other
+    # temperature-dependent conductance in this zone. The call
+    # here only supplies the first pass's value.
+    R_total, T_shell, shell_info = shell_closure(
+        np.asarray(Tw, dtype=float),
+        transition.shell,
+        transition.T_amb,
     )
 
     # ======================================================
@@ -376,6 +379,17 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         K_ws = closure["K_ws"]
 
         # ==================================================
+        # SHELL LOSS RESISTANCE AT THE CURRENT HOT FACE
+        # ==================================================
+
+        R_total, T_shell, shell_info = shell_closure(
+            Tw_iter,
+            transition.shell,
+            transition.T_amb,
+            T_shell_guess=T_shell,
+        )
+
+        # ==================================================
         # LINEAR SYSTEM
         # ==================================================
 
@@ -476,7 +490,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             A[row, Tw_i] += (
                 -V_cell * K_gw[i]
                 -V_cell * K_ws[i]
-                -1.0 / R_total
+                -1.0 / R_total[i]
             )
 
             # --------------------------------------------------
@@ -486,7 +500,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             radiation_wall_source = 0.0
 
             b[row] = (
-                -transition.T_amb / R_total
+                -transition.T_amb / R_total[i]
                 - radiation_wall_source
             )
 
@@ -554,6 +568,15 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         Tw_ss,
         m_g_out_cells,
         p_rad_cells,
+    )
+
+    # The loss network re-closed on the CONVERGED hot face, so
+    # the reported wall loss does not carry the Picard gap.
+    R_total, T_shell, shell_info = shell_closure(
+        Tw_ss,
+        transition.shell,
+        transition.T_amb,
+        T_shell_guess=T_shell,
     )
 
     K_gs = closure_ss["K_gs"]
@@ -645,16 +668,29 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
     wall_debug = {
 
-        "R_ref": float(
-            R_ref
+        # Faz 6: R_ref / R_conv are gone -- the stack has more
+        # than one conduction layer now, and the external film is
+        # not a constant, so neither name meant anything. What
+        # replaces them is the cylindrical conduction resistance
+        # of the whole stack and the solved external film.
+        "R_cond": float(
+            shell_info["R_cond"]
         ),
 
-        "R_conv": float(
-            R_conv
+        "R_ext": float(
+            shell_info["R_ext_mean"]
         ),
 
         "R_total": float(
-            R_total
+            np.mean(R_total)
+        ),
+
+        "h_ext": float(
+            shell_info["h_ext_mean"]
+        ),
+
+        "T_shell_mean": float(
+            shell_info["T_shell_mean"]
         ),
 
         "q_loss_mean": float(
@@ -856,6 +892,19 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     state.Transition_a_ws = float(a_ws)
 
     state.Transition_V_cell = float(V_cell)
+
+    # Faz 6 shell state, published rather than reconstructed.
+    state.Transition_R_total_cells = np.asarray(R_total, dtype=float)
+    state.Transition_R_total = float(np.mean(R_total))
+
+    state.Transition_T_shell_cells = np.asarray(T_shell, dtype=float)
+    state.Transition_T_shell_max = float(np.max(T_shell))
+    state.Transition_shell_h_ext = float(shell_info["h_ext_mean"])
+    state.Transition_shell_h_conv = float(shell_info["h_conv_mean"])
+    state.Transition_shell_h_rad = float(shell_info["h_rad_mean"])
+    state.Transition_shell_flux = float(shell_info["flux_outer_mean"])
+    state.Transition_shell_R_cond = float(shell_info["R_cond"])
+
     state.Transition_D_e = float(D_e)
     state.Transition_bed_angle = float(bed_angle)
     state.Transition_bed_fill_fraction = float(bed_fill_fraction)
