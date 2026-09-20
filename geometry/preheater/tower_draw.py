@@ -1748,13 +1748,14 @@ def sheet_stage_detail(tower=None, stage=2):
 def _detail_notes(tower, stage):
 
     return [
-        "1  Düşey bacak alttaki siklonun YANINDAN iner. Tek eksende dururken bu mümkün "
-        "değildi;",
-        f"   o yüzden hat üç bacaklıydı. Plan offseti ({tower.chord_between_stages:.3f} m) "
-        "orta bacağı gereksiz kıldı.",
-        f"2  Bacak {tower.meal_drop_ratio * tower.pitch:.3f} m iner \u2014 stage_gap'in "
-        f"({tower.stage_gap:.3f} m) çok ötesine, çünkü oluk",
-        "   kendi riser'ının gaz dirseğinin ALTINDAN başlamak zorunda (7. kısıt).",
+        "1  Meal hattı önce YANA açılır, sonra riser'a döner. Doğrudan gitse "
+        "yolu neredeyse",
+        f"   dikey olurdu: dipleg ile riser kolonu arasında yalnızca "
+        f"{tower.chord_between_stages:.3f} m'lik kord var.",
+        f"2  Yana açılma {tower.meal_reach_ratio * tower.D:.3f} m "
+        "(1.00 x D_body). Radyal dışarı değil YANA, çünkü",
+        "   radyal dışarı yaklaşma doğrultusunun tersidir; hat kendi üstünden "
+        "geri dönerdi.",
         f"3  Oluk {tower.meal_entry_angle_deg(1):.0f}° ile iner (türetilmiş, "
         f"riser eksenine {tower.meal_riser_angle_deg(1):.0f}°); şev açısı "
         f"{repose_angle_deg():.0f}°'dir, altında kalan bir oluk akmaz tıkanır.",
@@ -1960,10 +1961,18 @@ def _comparison_table(towers):
                 if not tower.duct_interferences()
                 else f"{len(tower.duct_interferences())} çift"
             ),
-            "meal düşey bacak":
-                f"{tower.meal_drop_ratio * tower.pitch:.3f} m",
-            "meal oluğu (gerçek boy)":
-                f"{math.dist(tower.meal_line_path(1)[1], tower.meal_line_path(1)[2]):.3f} m",
+            "meal yana açılma":
+                f"{tower.meal_reach_ratio * tower.D:.3f} m",
+            "meal hattı (gerçek boy)": "{:.3f} m".format(
+                sum(
+                    math.dist(a, b)
+                    for a, b in zip(
+                        tower.meal_line_path(1), tower.meal_line_path(1)[1:]
+                    )
+                )
+            ),
+            "meal → riser açısı":
+                f"{tower.meal_riser_angle_deg(1):.1f}°",
             "riser yolu (ortalama)":
                 f"{sum(risers) / len(risers):.3f} m",
             "plan zarfı x": f"{max(xs) - min(xs):.3f} m",

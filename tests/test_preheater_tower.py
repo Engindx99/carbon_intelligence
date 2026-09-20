@@ -437,82 +437,53 @@ class MealPathTest(unittest.TestCase):
 
         self.assertIn("calciner", str(caught.exception))
 
-    def test_a_meal_line_is_a_drop_and_a_chute(self):
-        """Two legs, which is what a dipleg actually is.
+    def test_a_meal_line_bends_in_plan_and_not_in_elevation(self):
+        """One gradient the whole way, and the turn is sideways.
 
-        A vertical pipe with a flap valve, then an inclined chute. The
-        line was three legs while the stages shared an axis, because
-        the middle one had to dodge sideways around a cyclone that was
-        directly underneath. The plan offset took that cyclone out of
-        the way.
-
-        The point count is asserted, so a future edit cannot quietly
-        put a leg back without saying why.
+        A solids line wants a single slope: a flat spot is where meal
+        stops. So both legs fall at the same rate and the bend that
+        buys the lateral room happens in PLAN.
         """
 
         for stage in range(1, self.tower.stage_count):
 
             with self.subTest(from_stage=stage):
-                path = self.tower.meal_line_path(stage)
+                start, corner, end = self.tower.meal_line_path(stage)
 
-                self.assertEqual(len(path), 3)
-
-                start, dropped, end = path
-
-                # 1. straight down out of the dipleg, and a long way
-                self.assertAlmostEqual(dropped[0], start[0], places=12)
-                self.assertAlmostEqual(dropped[1], start[1], places=12)
-                self.assertGreater(start[2] - dropped[2], self.tower.stage_gap)
-
-                # 2. the inclined chute, which both falls and turns
-                self.assertLess(end[2], dropped[2])
-                self.assertGreater(
-                    math.hypot(end[0] - dropped[0], end[1] - dropped[1]), 0.0
+                first = (start[2] - corner[2]) / math.hypot(
+                    corner[0] - start[0], corner[1] - start[1]
+                )
+                second = (corner[2] - end[2]) / math.hypot(
+                    end[0] - corner[0], end[1] - corner[1]
                 )
 
-    def test_the_inclined_leg_runs_steeper_than_the_meal_heaps(self):
-        """Only the chute has to beat repose; the drop is vertical."""
+                self.assertAlmostEqual(first, second, places=9)
 
-        repose = repose_angle_deg()
+                # and it really does turn, rather than running straight
+                self.assertGreater(
+                    math.dist(start[:2], corner[:2])
+                    + math.dist(corner[:2], end[:2]),
+                    math.dist(start[:2], end[:2]) + 1.0,
+                )
 
-        for stage in range(1, self.tower.stage_count):
+    def test_a_meal_line_runs_outside_the_duct_bundle(self):
+        """It steps AWAY from the tower axis, not across it.
 
-            with self.subTest(from_stage=stage):
-                _start, dropped, end = self.tower.meal_line_path(stage)
-
-                run = math.hypot(end[0] - dropped[0], end[1] - dropped[1])
-                drop = dropped[2] - end[2]
-
-                self.assertGreater(math.degrees(math.atan2(drop, run)), repose)
-
-    def test_the_vertical_leg_runs_well_past_the_stage_gap(self):
-        """The premise of this test inverted when the offset arrived.
-
-        It used to assert the drop stayed INSIDE the stage gap, because
-        anything longer would have gone into the roof of the cyclone
-        below. Offset in plan, the cyclone is no longer underneath, and
-        the drop has to run past it -- far enough that the chute starts
-        below the gas elbow it would otherwise cross.
+        Stepping radially out would be stepping almost straight back
+        along the approach, since the riser it feeds lies nearly in
+        towards the axis -- the line would retrace itself and the duct
+        rule refuses it. Sideways is what makes a V instead.
         """
 
         for stage in range(1, self.tower.stage_count):
 
             with self.subTest(from_stage=stage):
-                start, dropped, _end = self.tower.meal_line_path(stage)
+                start, corner, _end = self.tower.meal_line_path(stage)
 
                 self.assertGreater(
-                    start[2] - dropped[2], self.tower.stage_gap
+                    math.hypot(corner[0], corner[1]),
+                    math.hypot(start[0], start[1]),
                 )
-
-                # What the vertical leg is FOR: getting past the mouth
-                # leg of the riser below before turning in. That leg
-                # starts at the top of the very column the meal is
-                # aiming for, and the dipleg axis stands 2.08 m off it
-                # against a 1.831 m requirement -- so the turn cannot
-                # happen until the line is below it.
-                mouth_z = self.tower.riser_vertical_span(stage + 1)[1]
-
-                self.assertLess(dropped[2], mouth_z)
 
     def test_the_raw_meal_chute_is_refused_below_the_repose_angle(self):
         """The one meal slope that is still SET rather than derived.
@@ -532,17 +503,19 @@ class MealPathTest(unittest.TestCase):
     def test_a_meal_line_enters_its_riser_tangentially(self):
         """The principle, as a number.
 
-        A meal line that drops vertically and then kinks in meets the
-        riser at a wide angle, and a duct arriving across the flow is
-        a duct the gas has to turn. These arrive nearly along the
-        riser's own axis, so the meal is picked up rather than
-        deflected.
+        Neither of the two ways of getting it wrong: a line that hangs
+        vertically meets the riser along its own axis and never really
+        enters it, and a line that comes in flat stabs it head-on. It
+        arrives on a slope, at an angle the gas can take.
         """
 
         for stage in range(1, self.tower.stage_count):
 
             with self.subTest(from_stage=stage):
-                self.assertLess(self.tower.meal_riser_angle_deg(stage), 15.0)
+                angle = self.tower.meal_riser_angle_deg(stage)
+
+                self.assertGreater(angle, 20.0)
+                self.assertLess(angle, 60.0)
 
     def test_the_meal_slope_is_derived_and_still_clears_repose(self):
         """Both ends are fixed, so the slope is a consequence.
@@ -785,28 +758,22 @@ class PlanOffsetTest(unittest.TestCase):
             [],
         )
 
-    def test_the_zigzag_is_no_wider_than_it_has_to_be(self):
-        """The rule the default was chosen by, as a test.
+    def test_the_zigzag_has_room_and_a_floor_under_it(self):
+        """What the committed step is, and what it is not.
 
-        Every extra degree of azimuth step lengthens the gas ducts, and
-        duct is pressure drop and shell loss, so the step is the
-        SMALLEST opening at which no passage touches one it does not
-        join. Two degrees tighter has to be refused -- 44 deg still
-        clears by 0.131 m, 43 deg does not clear at all -- and that
-        asymmetry is why this steps by two and not by one.
+        It is NOT the tightest that works -- routing the meal line out
+        to the side freed the chord, and 35 deg is clean too. It is a
+        step with room on both sides of it, and the floor under it is
+        real: close it far enough and the chute runs into the body of
+        the stage below.
         """
 
-        tower = self.tower
+        self.assertEqual(self.tower.duct_interferences(), [])
 
-        self.assertEqual(tower.duct_interferences(), [])
+        replace(self.tower, stage_azimuth_step_deg=35.0)
 
-        with self.assertRaises(ValueError) as caught:
-            replace(
-                tower,
-                stage_azimuth_step_deg=tower.stage_azimuth_step_deg - 2.0,
-            )
-
-        self.assertIn("stage_azimuth_step_deg", str(caught.exception))
+        with self.assertRaises(ValueError):
+            replace(self.tower, stage_azimuth_step_deg=30.0)
 
     # ---------- refused, and BY WHICH CHECK ----------
     #
@@ -830,19 +797,18 @@ class PlanOffsetTest(unittest.TestCase):
 
         self.assertIn("check 1", str(caught.exception))
 
-    def test_a_step_that_crosses_the_meal_line_over_its_riser_is_refused(self):
-        """Between 22 and 45 deg the plan checks all pass and the
-        fluid volume is still wrong -- which is the whole reason the
-        duct rule exists. At 24 deg the meal line goes through the
-        mouth leg of the riser it is aiming at."""
+    def test_closing_the_zigzag_runs_the_chute_into_the_stage_below(self):
+        """What binds when the tower is squeezed.
+
+        The meal line swings out to the side and comes back, so it is
+        the CHUTE that runs out of room first -- it passes the body of
+        the stage below on its way in.
+        """
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, stage_azimuth_step_deg=24.0)
+            replace(self.tower, stage_azimuth_step_deg=30.0)
 
-        message = str(caught.exception)
-
-        self.assertIn("TowerSpec ducts", message)
-        self.assertIn("meal_line_1", message)
+        self.assertIn("check 2", str(caught.exception))
 
     def test_a_column_that_stands_on_the_calciner_is_refused(self):
         """The chord is held up by a wider azimuth step, so the only
@@ -874,15 +840,15 @@ class PlanOffsetTest(unittest.TestCase):
         with self.assertRaises(ValueError) as caught:
             replace(self.tower, meal_side_azimuth_deg=350.0)
 
-        # Check 5, not check 1: turning the flank turns the WHOLE
-        # cyclone, so the riser column swings with it and reaches the
-        # calciner before the meal line runs out of chord.
-        self.assertIn("check 5", str(caught.exception))
+        # Check 2: turning the flank turns the WHOLE cyclone, so the
+        # meal line leaves on a different side and its chute swings
+        # into the body of the stage below.
+        self.assertIn("check 2", str(caught.exception))
 
     def test_a_dipleg_drop_too_short_to_pass_the_elbow_is_refused(self):
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, meal_drop_ratio=0.12)
+            replace(self.tower, meal_reach_ratio=0.0)
 
         message = str(caught.exception)
 
@@ -900,7 +866,7 @@ class PlanOffsetTest(unittest.TestCase):
             {"column_radius_ratio": 0.80, "stage_azimuth_step_deg": 70.0},
             {"stage_azimuth_step_deg": 110.0},
             {"meal_side_azimuth_deg": 0.0},
-            {"meal_drop_ratio": 0.12},
+            {"meal_reach_ratio": 0.0},
         ):
 
             with self.subTest(**kwargs):

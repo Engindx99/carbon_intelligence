@@ -250,7 +250,7 @@ TOWER_RATIO_RANGES = {
     "gas_inlet_height_ratio":   (0.50, 3.00),
     "meal_inlet_length_ratio":  (0.50, 2.00),
     "meal_inlet_height_ratio":  (0.10, 0.90),
-    "meal_drop_ratio":          (0.10, 0.90),
+    "meal_reach_ratio":         (0.00, 3.00),
     "meal_entry_height_ratio":  (0.05, 0.95),
     "column_radius_ratio":      (0.50, 4.00),
 }
@@ -521,22 +521,24 @@ class TowerSpec:
     meal_inlet_height_ratio: float = 0.50  # fraction along riser 1
 
     # WHERE on the riser's vertical run the meal lands, as a fraction
-    # of that run, and how far the line drops vertically first.
+    # of that run, and how far it swings OUT on the way.
     #
-    # THE VERTICAL LEG IS NOT A STYLE CHOICE. The mouth leg of the
-    # riser below starts at the TOP of the very column the meal is
-    # aiming for, and the dipleg axis stands only 2.08 m off it against
-    # a 1.831 m requirement -- so the meal has to stay on its own axis
-    # until it is past that leg, and only then turn in. A single
-    # straight run from discharge to entry cuts the mouth leg every
-    # time; the duct rule refuses it, which is how this was measured.
+    # THE OUTWARD SWING IS WHAT MAKES THE ENTRY TANGENTIAL. A dipleg
+    # stands only 3.106 m from the riser column it feeds, against a
+    # 21.7 m descent, so a line that goes straight there has nowhere to
+    # be but nearly vertical -- it hangs, and meets the riser along its
+    # own axis instead of running into it. Taking it wide first turns
+    # 3.106 m of lateral room into 11.8 m, and the same descent then
+    # lies at 58 deg: a slope you can see, and a duct the gas meets at
+    # 32 deg rather than head-on. Both ends are fixed, so that slope is
+    # derived; the repose angle is what refuses it when it goes flat.
     #
-    # Past it, the drop is kept SHORT so that the one inclined run
-    # carries the rest: that is what makes the entry tangential, since
-    # the riser's run is vertical and a steeper chute is a smaller
-    # angle to it.
-    meal_drop_ratio:         float = 0.25   # x pitch, clear of the mouth leg
-    meal_entry_height_ratio: float = 0.15   # just above the riser's elbow
+    # It also keeps the line clear of the mouth leg of the riser below,
+    # which starts at the TOP of the very column the meal is aiming
+    # for. A line that cuts straight across is refused by the duct
+    # rule, which is how this was measured.
+    meal_reach_ratio:        float = 1.00   # x D_body, out to the side
+    meal_entry_height_ratio: float = 0.30   # a third up the riser's run
 
     # Meal lines. The angle is the binding constraint; see the docstring.
     dipleg_entry_angle_deg: float = 55.0   # from horizontal
@@ -914,15 +916,48 @@ class TowerSpec:
 
         start = self.dipleg_point(stage)
 
-        dropped = (start[0], start[1],
-                   start[2] - self.meal_drop_ratio * self.pitch)
-
         low, high = self.riser_vertical_span(stage + 1)
         z = low + self.meal_entry_height_ratio * (high - low)
 
         axis = self.riser_axis(stage + 1)
 
-        return [start, dropped, (axis[0], axis[1], z)]
+        # Out to the SIDE first, and only then back in. Sideways, not
+        # radially outward: the riser it is aiming at lies almost
+        # straight in towards the tower axis, so a line that steps
+        # radially out and comes back retraces its own path -- the
+        # duct rule refuses it, which is how this was measured. Across
+        # the approach, the two legs make a real V in plan and the
+        # lateral room grows instead of cancelling.
+        #
+        # The side is the one AWAY from the tower axis, so the meal
+        # runs outside the duct bundle where the picture puts it.
+        #
+        # Both legs at the SAME slope: a solids line wants one gradient
+        # the whole way, since a flat spot is where meal stops. So the
+        # bend is in PLAN alone -- in elevation the line is straight.
+        span = math.hypot(axis[0] - start[0], axis[1] - start[1])
+        toward = ((axis[0] - start[0]) / span, (axis[1] - start[1]) / span)
+
+        side = (-toward[1], toward[0])
+
+        if start[0] * side[0] + start[1] * side[1] < 0.0:
+            side = (-side[0], -side[1])
+
+        reach = self.meal_reach_ratio * self.D
+
+        corner = (start[0] + reach * side[0], start[1] + reach * side[1])
+
+        out = math.hypot(corner[0] - start[0], corner[1] - start[1])
+        back = math.hypot(axis[0] - corner[0], axis[1] - corner[1])
+
+        drop = start[2] - z
+        share = out / (out + back) if out + back > 0.0 else 0.0
+
+        return [
+            start,
+            (corner[0], corner[1], start[2] - drop * share),
+            (axis[0], axis[1], z),
+        ]
 
     def meal_entry_angle_deg(self, stage):
         """Slope of a meal line, from horizontal [deg]. DERIVED.

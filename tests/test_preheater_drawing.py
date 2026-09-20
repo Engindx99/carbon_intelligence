@@ -432,11 +432,20 @@ class DepthTest(unittest.TestCase):
 
             with self.subTest(duct=name):
 
-                self.assertEqual(runs[0][1][0], path[0])
-                self.assertEqual(runs[-1][1][-1], path[-1])
+                # Almost, not exactly: the pieces are rebuilt by
+                # walking the densified path, so the last point is a
+                # sum of steps rather than the original float. The
+                # difference is 1e-15 m and the question being asked
+                # is whether the pieces COVER the duct.
+                def same(a, b):
+                    for i in range(3):
+                        self.assertAlmostEqual(a[i], b[i], places=9)
+
+                same(runs[0][1][0], path[0])
+                same(runs[-1][1][-1], path[-1])
 
                 for before, after in zip(runs, runs[1:]):
-                    self.assertEqual(before[1][-1], after[1][0])
+                    same(before[1][-1], after[1][0])
                     self.assertNotEqual(before[0], after[0])
 
                 drawn = sum(
