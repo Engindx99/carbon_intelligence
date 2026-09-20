@@ -677,7 +677,7 @@ class ProjectionTest(unittest.TestCase):
                 self.assertLess(projected, run)
                 self.assertGreater(
                     math.degrees(math.atan2(drop, projected)),
-                    self.tower.dipleg_entry_angle_deg,
+                    self.tower.meal_entry_angle_deg(1),
                 )
 
     def test_the_developed_view_keeps_every_elevation(self):

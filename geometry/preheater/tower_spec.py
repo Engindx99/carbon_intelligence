@@ -464,15 +464,25 @@ class TowerSpec:
     # past -- and the scroll is 1.669 m wider at its mouth than at the
     # end of its wrap, so that choice is worth 1.669 m of tower.
     #
-    # NONE OF THESE IS A FREE NUMBER. They are the smallest opening of
-    # the zigzag at which no flow passage touches a passage it does not
-    # join: at 44 deg the narrowest gap is 0.131 m and at 43 deg the
-    # meal line runs into the mouth leg of the riser below. 45 deg is
-    # that threshold rounded up, and it leaves 0.250 m. Past 50 deg the
-    # binding pair changes and opening further buys nothing, so there
-    # is nothing to be gained by spreading the tower.
-    column_radius_ratio:      float = 1.530   # x D_body -> 8.511 m
-    stage_azimuth_step_deg:   float = 45.0    # -> a 6.514 m chord
+    # NONE OF THESE IS A FREE NUMBER. The step opens the zigzag until
+    # the stages have room between them for the ducts that have to run
+    # there: the raw meal pipe is 1.113 m across, so the bar is that
+    # bore plus a mesh clearance either side, 1.213 m. At 45 deg the
+    # neighbouring envelopes left 0.687 m and the pipe did not fit; 65
+    # deg leaves 2.96 m.
+    #
+    # The circle was opened as well, and there is a point past which
+    # opening it further is pure cost. Check 3 is measured in the
+    # cyclone's OWN frame -- reach, local envelope, riser bore -- so no
+    # plan knob moves it, and at 2.548 m it is a floor under the
+    # narrowest clearance the tower can ever have. Below 1.94 the
+    # binding check is check 5, the riser column against the calciner,
+    # and widening buys real room; at 1.94 every check the plan can
+    # move has risen past that floor and widening buys nothing at all,
+    # while every extra metre of radius is another metre of riser --
+    # which is pressure drop and shell loss.
+    column_radius_ratio:      float = 1.940   # x D_body -> 10.792 m
+    stage_azimuth_step_deg:   float = 65.0    # -> a 9.146 m chord
     meal_side_azimuth_deg:    float = 330.0   # where the stage above sits
     layout_pattern:           str = "zigzag"  # or "fan"
 
@@ -518,7 +528,7 @@ class TowerSpec:
     exit_stack_height_ratio: float = 0.70  # x D_body, above cyclone 1
     gas_inlet_height_ratio:  float = 1.00  # x D_body, below cyclone 5
     meal_inlet_length_ratio: float = 1.00  # x D_body
-    meal_inlet_height_ratio: float = 0.50  # fraction along riser 1
+    meal_inlet_height_ratio: float = 0.15  # fraction along riser 1
 
     # WHERE on the riser's vertical run the meal lands, as a fraction
     # of that run, and how far it swings OUT on the way.
@@ -1006,24 +1016,70 @@ class TowerSpec:
         ]
 
     def meal_inlet_path(self):
-        """Raw meal into riser 1, the duct feeding the top cyclone."""
+        """Raw meal into riser 1, the duct feeding the top cyclone.
 
-        z_low, z_high = self.riser_vertical_span(1)
-        z = z_low + self.meal_inlet_height_ratio * (z_high - z_low)
+        THREE LEGS: inclined in, straight down, inclined into the
+        riser. It is the one meal line that comes from outside the
+        tower, so it has the whole descent to make and nothing in the
+        layout to make it -- hence a vertical leg rather than one long
+        chute that would have to start absurdly far out.
 
+        IT GOES ROUND THE RISER, NOT INTO IT. The first leg arrives
+        radially, from outside; the drop stands BESIDE the column, one
+        `meal_inlet_length_ratio` off it tangentially; and only the
+        last leg turns in. A duct aimed straight at the column from
+        outside would arrive across the gas rather than along it, and
+        would have to cross the column's own plan position on the way
+        down.
+
+        Both inclined legs fall at `dipleg_entry_angle_deg`. It is the
+        one meal slope in this model that is SET rather than derived,
+        because nothing in the layout fixes where the raw meal comes
+        from -- and it is refused below the angle of repose like any
+        other.
+        """
+
+        low, high = self.riser_vertical_span(1)
+        z_entry = low + self.meal_inlet_height_ratio * (high - low)
+
+        # BUILT IN THE CYCLONE'S OWN FRAME, where the riser column
+        # stands at a fixed place and the exit stack is the origin.
+        # Built from the tower's radial directions instead, the route
+        # turns with the pattern and, in the fan, swings over the
+        # stack -- which is how this was measured.
         placement = self.placement(1)
-        length = self.meal_inlet_length_ratio * self.D
-        angle = math.radians(self.dipleg_entry_angle_deg)
 
-        end_local = (self.mouth_x, self.riser_approach_y)
-        start_local = (end_local[0] - length * math.cos(angle), end_local[1])
+        column = self.riser_offset_local
+        span = math.hypot(column[0], column[1])
 
-        end = placement.to_world_xy(end_local)
+        # away from the cyclone's own axis, and square to that
+        away = (column[0] / span, column[1] / span)
+        round_about = (-away[1], away[0])
+
+        reach = self.meal_inlet_length_ratio * self.D
+        rise = reach * math.tan(math.radians(self.dipleg_entry_angle_deg))
+
+        # ... the last leg, turning in off the standing drop
+        turn_local = (
+            column[0] + reach * round_about[0],
+            column[1] + reach * round_about[1],
+        )
+
+        # ... and the first leg, coming in from outside
+        start_local = (
+            turn_local[0] + reach * away[0],
+            turn_local[1] + reach * away[1],
+        )
+
+        entry = placement.to_world_xy(column)
+        turn = placement.to_world_xy(turn_local)
         start = placement.to_world_xy(start_local)
 
         return [
-            (start[0], start[1], z + length * math.sin(angle)),
-            (end[0], end[1], z),
+            (start[0], start[1], high + rise),
+            (turn[0], turn[1], high),
+            (turn[0], turn[1], z_entry + rise),
+            (entry[0], entry[1], z_entry),
         ]
 
     def connections(self):

@@ -762,7 +762,7 @@ class PlanOffsetTest(unittest.TestCase):
         """What the committed step is, and what it is not.
 
         It is NOT the tightest that works -- routing the meal line out
-        to the side freed the chord, and 35 deg is clean too. It is a
+        to the side freed the chord, and 30 deg is clean too. It is a
         step with room on both sides of it, and the floor under it is
         real: close it far enough and the chute runs into the body of
         the stage below.
@@ -770,10 +770,10 @@ class PlanOffsetTest(unittest.TestCase):
 
         self.assertEqual(self.tower.duct_interferences(), [])
 
-        replace(self.tower, stage_azimuth_step_deg=35.0)
+        replace(self.tower, stage_azimuth_step_deg=30.0)
 
         with self.assertRaises(ValueError):
-            replace(self.tower, stage_azimuth_step_deg=30.0)
+            replace(self.tower, stage_azimuth_step_deg=25.0)
 
     # ---------- refused, and BY WHICH CHECK ----------
     #
@@ -786,16 +786,21 @@ class PlanOffsetTest(unittest.TestCase):
     def test_a_chord_too_short_to_drop_the_meal_past_is_refused(self):
         """Close the zigzag and the chord closes with it.
 
-        The chord, not the circle: shrinking `column_radius_ratio`
-        walks the cyclones onto the calciner and check 4 fires first,
-        which is a different (and also correct) refusal. Narrowing the
-        step leaves the circle where it is and isolates check 1.
+        Shrink the circle far enough and the cyclones walk onto the
+        calciner the tower is built around; shrink it less and it is
+        the riser columns that get there first. Two knobs, two checks,
+        and the message says which.
         """
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, stage_azimuth_step_deg=22.0)
+            replace(self.tower, column_radius_ratio=0.80)
 
-        self.assertIn("check 1", str(caught.exception))
+        self.assertIn("check 4", str(caught.exception))
+
+        with self.assertRaises(ValueError) as caught:
+            replace(self.tower, column_radius_ratio=1.20)
+
+        self.assertIn("check 5", str(caught.exception))
 
     def test_closing_the_zigzag_runs_the_chute_into_the_stage_below(self):
         """What binds when the tower is squeezed.
@@ -806,7 +811,7 @@ class PlanOffsetTest(unittest.TestCase):
         """
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, stage_azimuth_step_deg=30.0)
+            replace(self.tower, stage_azimuth_step_deg=25.0)
 
         self.assertIn("check 2", str(caught.exception))
 
@@ -826,10 +831,12 @@ class PlanOffsetTest(unittest.TestCase):
         self.assertIn("calciner", message)
         self.assertIn("column_radius_ratio", message)
 
-    def test_a_step_that_swings_the_risers_onto_the_calciner_is_refused(self):
+    def test_a_circle_too_tight_swings_the_risers_onto_the_calciner(self):
+        """The riser columns stand INSIDE the circle of cyclones, so
+        they reach the calciner before the vessels do."""
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, stage_azimuth_step_deg=110.0)
+            replace(self.tower, column_radius_ratio=1.20)
 
         self.assertIn("calciner", str(caught.exception))
 
@@ -838,35 +845,40 @@ class PlanOffsetTest(unittest.TestCase):
         mouth and the same chord no longer clears."""
 
         with self.assertRaises(ValueError) as caught:
-            replace(self.tower, meal_side_azimuth_deg=350.0)
+            replace(self.tower, meal_side_azimuth_deg=90.0)
 
-        # Check 2: turning the flank turns the WHOLE cyclone, so the
-        # meal line leaves on a different side and its chute swings
-        # into the body of the stage below.
-        self.assertIn("check 2", str(caught.exception))
+        # Not a clearance: turning the flank turns the WHOLE cyclone,
+        # so the riser it feeds ends up on the wrong side of it and
+        # the meal line has to run nearly level to reach. The angle of
+        # repose is what refuses that -- the line would plug.
+        self.assertIn("repose", str(caught.exception))
 
-    def test_a_dipleg_drop_too_short_to_pass_the_elbow_is_refused(self):
+    def test_without_the_sideways_step_the_meal_line_hangs(self):
+        """What the sideways route is FOR, once the tower is wide.
 
-        with self.assertRaises(ValueError) as caught:
-            replace(self.tower, meal_reach_ratio=0.0)
+        It was put there to stop the line cutting the riser it feeds.
+        At this chord it no longer has to -- go straight there and
+        nothing interferes. What is lost is the entry: the line falls
+        at 77 deg, which is to say it hangs down the riser's own axis
+        instead of running into it. The route is kept for the angle,
+        not for the clearance, and this test is what says so.
+        """
 
-        message = str(caught.exception)
+        straight = replace(self.tower, meal_reach_ratio=0.0)
 
-        # Refused by the duct rule now, not by a hand-written
-        # clearance: shortening the drop turns the line in while it is
-        # still level with the mouth leg of the riser it is aiming at,
-        # which is the crossing the rule exists to catch.
-        self.assertIn("TowerSpec ducts", message)
-        self.assertIn("meal_line_1", message)
+        self.assertEqual(straight.duct_interferences(), [])
+
+        self.assertLess(straight.meal_riser_angle_deg(1), 20.0)
+        self.assertGreater(self.tower.meal_riser_angle_deg(1), 30.0)
 
     def test_every_refusal_names_the_stage_it_measured(self):
 
         for kwargs in (
             {"column_radius_ratio": 0.80},
-            {"column_radius_ratio": 0.80, "stage_azimuth_step_deg": 70.0},
-            {"stage_azimuth_step_deg": 110.0},
-            {"meal_side_azimuth_deg": 0.0},
-            {"meal_reach_ratio": 0.0},
+            {"column_radius_ratio": 1.20},
+            {"column_radius_ratio": 1.40},
+            {"stage_azimuth_step_deg": 25.0},
+            {"meal_side_azimuth_deg": 90.0},
         ):
 
             with self.subTest(**kwargs):
