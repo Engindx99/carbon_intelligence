@@ -83,9 +83,12 @@ class Twin:
         # ======================================================
         # ZONE MODELS
         # ======================================================
+        # Burning derives its own length from kiln.length minus
+        # transition.length -- see Burning.__init__. L here is only
+        # the fallback for a caller with no `kiln` section.
         self.burning = Burning(
             N=cfg["plant"]["N"],
-            L=cfg["plant"]["length"],
+            L=cfg["kiln"]["length"],
             cfg=cfg,
         )
 

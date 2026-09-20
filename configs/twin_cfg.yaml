@@ -3,10 +3,67 @@
 # -> burning -> cooler, z = 0 at the preheater feed inlet.
 plant:
   N: 20
-  length: 60.0   # m, burning zone length
+
+# ======================================================
+# THE ROTARY TUBE
+#
+# One length for the whole rotary kiln, because that is the
+# number a kiln actually has. The tube is the transition zone
+# plus the burning zone; `transition.length` below splits it and
+# the burning zone is whatever is left, so the two cannot drift
+# apart. Named `kiln` rather than sitting under `plant`, which
+# means the whole pyroprocess -- preheater through cooler.
+#
+# This used to be `plant.length: 60.0  # burning zone length`,
+# consumed by the burning zone ALONE, with transition's 25 m on
+# top. That made the tube 85 m at D = 4.2 m, i.e. L/D = 20.2.
+#
+# L/D is what says whether a kiln is the right kiln. With
+# fuel.kiln_fraction = 0.40 this plant burns 60% of its fuel in
+# the calciner, so it is an in-line calciner (ILC) plant, and a
+# precalciner kiln is SHORT: US4425092 puts it below 14:1 and
+# preferably at 7:1-11:1, against 15:1-17:1 for a conventional
+# cyclone-preheater kiln with no precalciner. 20.2 was not
+# merely long, it was the wrong kiln type -- long-dry/wet
+# territory.
+#
+# 46.2 m is L/D = 11.00, the conservative end of that preferred
+# 7:1-11:1 range. MEASURED, and the reason this is where it
+# stops rather than a number chosen for the answer it gives:
+#
+#   tube   L/D    Ts_burning max   secondary air   kiln discharge
+#   85.0  20.24      1622.64 K        948.69 K       1295.42 K
+#   60.0  14.29      1703.51 K       1020.02 K       1415.94 K
+#   46.2  11.00      1771.16 K       1085.57 K       1524.09 K
+#   37.8   9.00      1832.07 K       1148.30 K       1625.04 K
+#
+# At L/D 9 the bed reaches 1832 K and breaks
+# BOUNDS["Ts_any_zone_max"] = 1773 K, the clinker liquidus. So
+# the LOWER half of the literature's preferred range is
+# incompatible with this model's own physical bound, and 11 is
+# simultaneously the literature value and the furthest this
+# plant can go without violating one. It is a bounded stopping
+# point, not a fitted one.
+#
+# NOT COMFORTABLE, and not to be forgotten: 1771.16 K leaves
+# 1.8 K of margin to the liquidus. A model sitting on a limit
+# has none left for a disturbance.
+#
+# THE OTHER LITERATURE CONSTRAINT IS STILL NOT MET. Modern
+# precalciner systems run 25-35 min of kiln residence; at
+# u_s = 0.01492 m/s this tube gives 51.85 min, and only L/D 7
+# (29.4 m) would reach the band -- far past where the liquidus
+# breaks. That gap is NOT length. u_s comes from
+# bed_motion_from_continuity, so it falls out of rpm, slope,
+# diameter and feed: D = 4.2 m is sized for 35-46 kg/s of
+# clinker and this plant makes 19.18, leaving the bed thin and
+# slow. The diameter is the next question, and it is a
+# different one.
+kiln:
+  length: 46.2   # m, transition + burning; L/D = 11.0
 
 transition:
-  length: 25.0   # m
+  length: 25.0   # m, the kiln's back end; burning gets the rest
 
 calciner:
   length: 25.0   # m
@@ -55,13 +112,27 @@ simulation:
   chunk_hours: 1.0
 
   # Picard sweep budget for the steady-state solve (main.Twin.run).
-  # Measured 2026-09-19: the converged plant needs 71 sweeps at
-  # nodes_per_stage=1 and 67 at nodes_per_stage=20, so this is ~40%
-  # margin. It is a BUDGET, not an answer -- the loop exits on the
-  # same tolerance whatever this is set to. Raise it only if a
-  # change genuinely needs more sweeps; a run that hits the cap is
-  # reporting a divergence, not asking for a bigger number.
-  max_iterations: 100
+  # It is a BUDGET, not an answer -- the loop exits on the same
+  # tolerance whatever this is set to.
+  #
+  # Measured 2026-09-19: 71 sweeps at nodes_per_stage=1, 67 at 20,
+  # so 100 carried ~40% margin.
+  #
+  # Measured 2026-09-20, shortening the rotary tube: 101 sweeps at
+  # 60 m, 94 at the committed 46.2 m. The 60 m case missed the old
+  # budget of 100 by ONE sweep, with thermal 5.771e-07 K, mass
+  # 1.421e-14 kg/s and solid_handoff 4.521e-04 W -- every
+  # criterion met, nothing diverging.
+  #
+  # That is the same near-miss the preheater inner loop had at 51
+  # against a budget of 50 (pyroprocess/preheater/heat_transfer.py)
+  # and it is worth saying twice: a run that hits the cap is
+  # reporting budget exhaustion, which looks identical to a
+  # divergence from outside and is not one. Check the residual
+  # trajectory before raising this OR before calling it a failure.
+  #
+  # 150 is ~60% margin over the measured 94.
+  max_iterations: 150
 
 
 fuel:

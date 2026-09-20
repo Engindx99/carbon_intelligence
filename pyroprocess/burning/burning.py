@@ -41,7 +41,32 @@ class Burning:
         # GEOMETRY
         # ======================================================
         self.N = plant.get("N", N)
-        self.L = plant.get("length", L)
+
+        # DERIVED, not configured. kiln.length is the whole rotary
+        # tube and transition.length is its back end, so the
+        # burning zone is the remainder and the two can never
+        # disagree about how long the kiln is. Before this the
+        # burning zone read its own length and the transition read
+        # another, which made the tube 85 m -- L/D 20.2 at
+        # D = 4.2 m, the wrong kiln type for a 60%-calciner plant.
+        # See configs/twin_cfg.yaml `kiln`.
+        kiln_length = float(
+            cfg.get("kiln", {}).get("length", L)
+        )
+
+        transition_length = float(
+            cfg.get("transition", {}).get("length", 0.0)
+        )
+
+        self.L = kiln_length - transition_length
+
+        if self.L <= 0.0:
+            raise ValueError(
+                "burning zone length must be positive: "
+                f"kiln.length={kiln_length} m minus "
+                f"transition.length={transition_length} m "
+                f"leaves {self.L} m"
+            )
 
         self.dz = self.L / self.N
         self.D = 4.2

@@ -23,12 +23,24 @@ from pyroprocess.globalstate import GlobalState
 from tests.twin_harness import REPO_ROOT
 
 
-def _build(max_iterations, nodes_per_stage=1):
-    """A Twin on the repo config, with the sweep budget forced."""
+def _build(max_iterations=None, nodes_per_stage=1):
+    """A Twin on the repo config.
+
+    `max_iterations=None` keeps the config's own budget. The two
+    solving tests below used to hardcode 100, which was a second
+    copy of a number that lives in configs/twin_cfg.yaml -- and it
+    broke the moment the plant needed 101 sweeps, reporting a
+    RuntimeError that said nothing about the flags under test.
+    A budget belongs in one place.
+    """
 
     cfg = main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
     cfg["preheater"]["nodes_per_stage"] = nodes_per_stage
-    cfg.setdefault("simulation", {})["max_iterations"] = max_iterations
+
+    if max_iterations is not None:
+        cfg.setdefault("simulation", {})["max_iterations"] = (
+            max_iterations
+        )
 
     return main.Twin(
         state=GlobalState(N=cfg["plant"]["N"]),
@@ -80,7 +92,7 @@ class RunFlagsTest(unittest.TestCase):
     # ------------------------------------------------------
     def test_report_false_writes_no_validation_rows(self):
 
-        twin = _build(max_iterations=100)
+        twin = _build()
 
         calls = []
 
@@ -98,7 +110,7 @@ class RunFlagsTest(unittest.TestCase):
 
     def test_default_reports_and_validates(self):
 
-        twin = _build(max_iterations=100)
+        twin = _build()
 
         calls = []
 
