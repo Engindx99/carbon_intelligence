@@ -18,6 +18,36 @@ preheater:
 cooler:
   length: 25.0   # m
 
+  # Clinker nodule diameter, for the packed-bed specific surface
+  # 6(1-eps)/d_p that sets the gas->solid contact area the cooling
+  # air sees. The cooler used to pass its 4.2 m VESSEL diameter
+  # into that d_p -- the same substitution
+  # pyroprocess/burning/heat_transfer.py:133-138 documents and
+  # fixed for the kiln.
+  #
+  # Clinker leaves a kiln nodulised at roughly 10-25 mm, and a
+  # grate passes up to ~25 mm before the crusher. 15 mm is the
+  # middle of that. The real distribution is wide (dust below
+  # 0.5 mm can be 1-70%), so this is a stand-in for a whole PSD.
+  #
+  # IT DOES NOT MATTER MUCH, AND THAT IS THE POINT. MEASURED on
+  # the converged plant by scaling a_gs directly:
+  #
+  #   a_gs x     NTU    secondary air   clinker discharge
+  #      1      1.20       717.81 K         462.06 K
+  #     10     12.29       912.55 K         363.94 K
+  #     25     30.79       934.47 K         356.89 K
+  #    100    123.34       946.13 K         353.41 K
+  #
+  # Ten-fold in area moves secondary air 33.6 K. 15 mm is a 280x
+  # correction, far onto that plateau, and so is every other
+  # defensible nodule size -- 5 mm and 25 mm land within a few K
+  # of each other. This is a mechanism being corrected, not a
+  # parameter being fitted, and the plateau is what makes that
+  # checkable rather than assertable (see
+  # tests/test_cooler_contact_area.py).
+  particle_diameter_m: 0.015
+
 
 simulation:
   dt: 0.05

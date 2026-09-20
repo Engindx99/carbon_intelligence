@@ -56,6 +56,27 @@ class Cooler:
         self.epsilon_bed = 0.35
         self.k_interfacial = 1.0
 
+        # The gas->solid area is a PACKED-BED specific surface and
+        # its d_p is the clinker nodule, not the 4.2 m vessel this
+        # used to pass. See configs/twin_cfg.yaml cooler.
+        # particle_diameter_m for the value, its source and the
+        # measured plateau that makes it a mechanism rather than a
+        # knob. a_ws is unaffected: wall contact is bounded by the
+        # vessel's perimeter, not by the particle size.
+        self.particle_diameter = float(
+            (cfg or {}).get("cooler", {}).get(
+                "particle_diameter_m",
+                0.015,
+            )
+        )
+
+        if not (0.0 < self.particle_diameter < self.D):
+            raise ValueError(
+                "cooler.particle_diameter_m must be positive and "
+                "smaller than the vessel diameter "
+                f"{self.D} m, got {self.particle_diameter}"
+            )
+
         (
             self.a_gs,
             self.a_ws,
@@ -63,6 +84,7 @@ class Cooler:
             D=self.D,
             epsilon_bed=self.epsilon_bed,
             k_interfacial=self.k_interfacial,
+            d_particle=self.particle_diameter,
         )
 
         # ================= WALL GEOMETRY =================

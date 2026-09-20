@@ -1098,19 +1098,49 @@ def interfacial_areas(
     D,
     epsilon_bed,
     k_interfacial=1.0,
+    d_particle=None,
 ):
+    """
+    a_gs is the PACKED-BED SPECIFIC SURFACE, 6(1-eps)/d_p, and d_p
+    in it is the PARTICLE diameter. Callers that pass only `D`
+    substitute the vessel diameter for it -- a dimensional
+    substitution, not a correlation choice, and
+    pyroprocess/burning/heat_transfer.py:133-138 already documents
+    it in those words for the kiln, which replaced this call with
+    bed_segment_geometry. `d_particle` lets a caller supply the
+    real one without disturbing the zones that have not been
+    revisited yet.
 
-    # Gas-solid interfacial area density (m²/m³)
-    a_gs_base = (
+    a_ws is solid->WALL contact. That is a PERIMETER quantity,
+    bounded by the vessel, and it is not a packed-bed specific
+    surface -- so it stays tied to D whatever d_particle says.
+    Scaling it with the particle size would put more wall contact
+    area in the zone than the vessel has wall.
+
+    With d_particle=None both come back exactly as before.
+    """
+
+    # The vessel-based density. Still what the wall contact is
+    # built from, and what a_gs falls back to.
+    vessel_base = (
         6.0
         * (1.0 - epsilon_bed)
         / D
     )
 
+    if d_particle is None:
+        a_gs_base = vessel_base
+    else:
+        a_gs_base = (
+            6.0
+            * (1.0 - epsilon_bed)
+            / d_particle
+        )
+
     a_gs = k_interfacial * a_gs_base
 
     # Wall-solid interfacial area density (m²/m³)
-    a_ws = 0.6 * a_gs
+    a_ws = 0.6 * k_interfacial * vessel_base
 
     return (
         a_gs,
