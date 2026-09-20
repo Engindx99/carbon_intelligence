@@ -717,6 +717,29 @@ def gas_mass_balance(
     return m_dot_g
 
 
+# ======================================================
+# SUPERSEDED FOR THE ROTARY KILN by rotary_bed_motion below,
+# which carries the correlation this one mis-states. Kept only
+# because pyroprocess/precalciner/precalciner.py:130/:285 still
+# calls it through solid_axial_velocity().
+#
+# What is wrong with it, stated once so the next reader does not
+# have to re-derive it: Sullivan's correlation has sqrt(angle of
+# repose) in the NUMERATOR and the inclination in DEGREES in the
+# denominator, and has no fill-fraction term at all. This form
+# dropped the repose angle, put tan(inclination) where degrees
+# belong -- a factor of 180/pi = 57.3 at these angles -- and
+# introduced a fill fraction the correlation never had. It also
+# returns Sullivan's MINUTES to callers that consume seconds.
+#
+# It is left alone here rather than fixed in place because its
+# only remaining caller is the precalciner, which is a vertical
+# riser, not a rotating cylinder: a rotary-kiln transit
+# correlation does not apply to it at all, and giving it the
+# right velocity is a different question from fixing this one.
+# Changing it here would move the calciner in the same commit
+# that moves the kiln and make neither attributable.
+# ======================================================
 def residence_time(L, D, slope_deg, fill_fraction, rpm, eps):
 
     theta = np.deg2rad(slope_deg)
@@ -736,38 +759,72 @@ def residence_time(L, D, slope_deg, fill_fraction, rpm, eps):
 
 
 # ======================================================
-# SELF-CONSISTENT RESIDENCE TIME AND BED FILL
+# SOLID TRANSIT THROUGH A ROTARY KILN
 #
-# residence_time() above needs a fill fraction, and the bed
-# fill fraction follows from mass continuity through the same
-# cross-section,
+# Sullivan, Maier & Ralston (1927), US Bureau of Mines TP 384 --
+# the correlation the cement industry still sizes kilns with:
 #
-#   eta = m_dot_s / (rho_bulk * u_s * A_cross),  u_s = L / tau
+#   tau [min] = 1.77 * L * sqrt(theta) / (D * N * beta)
 #
-# so the two are not independent: picking one fixes the other.
-# Feeding them an externally chosen eta leaves the kiln holding
-# an amount of material that its own transit time contradicts.
+#     theta = dynamic angle of repose of the bed   [DEGREES]
+#     beta  = kiln inclination                     [DEGREES]
+#     N     = rotational speed                     [rpm]
+#     L, D  = length and inside diameter           [any one unit]
 #
-# Substituting eta into the correlation closes the loop, and it
-# closes in closed form -- no iteration, no new constant:
+# beta enters as a NUMBER OF DEGREES, not as tan(beta), and theta
+# enters as the square root of a number of degrees. That is an
+# empirical fit from 1927, not a dimensional statement, and it is
+# the single easiest thing to get wrong here -- so it is checked
+# rather than asserted. Three industry restatements of the same
+# correlation, each folding a repose angle into the constant:
 #
-#   tau = 1.77 L / (D w S eta),  eta = m_dot_s tau / (rho_bulk L A)
-#   =>  tau^2 = 1.77 L^2 rho_bulk A / (D w S m_dot_s)
-#   =>  tau   = L sqrt(1.77 rho_bulk A / (D w S m_dot_s))
+#   t = 11.2 L / (r D s),    s in DEGREES        (cemnet, kiln speed)
+#   T = 11.4 L(ft) / (RPH * Dia(ft) * S),  S = ft/ft   (US BoM)
+#   RT = 23 L / (rpm D SlopePct)                 (cemnet, SIMEQ)
 #
-# with w = rpm and S = tan(slope). The 1.77 grouping and the
-# operand order are kept exactly as residence_time() has them,
-# so the two agree to machine precision when the returned eta is
-# fed back in -- which is what tests assert.
+# The second is quoted against the SLOPE AS A FRACTION and in
+# revolutions per HOUR; converting it to metres and rpm gives
+# 0.19 L/(D N tan beta), and 0.19 * 180/pi = 10.89. That it lands
+# on the first form's 11.2 is not a coincidence -- 180/pi = 57.2958
+# is exactly the small-angle conversion from tan(beta) to beta in
+# degrees, so the two forms ARE the same correlation and the fact
+# that they agree to 3% is the proof that beta is in degrees.
 #
-# This is a conservation statement, not a new correlation: the
-# only physics added is that mass in equals mass out.
+# Solving 1.77*sqrt(theta) for those constants gives theta = 40.0
+# and 37.8 degrees respectively, and a cement-industry forum
+# thread on the angle of repose states "for many raw material its
+# about 40 deg". 1.77*sqrt(40) = 11.194 against cemnet's 11.2.
+# The third form implies 55 degrees and is the outlier; it is a
+# conservative shorthand and is not used.
+#
+# WHAT THIS REPLACES, and why it is not a refinement but a fix.
+# The previous version closed residence_time() against mass
+# continuity to eliminate the fill fraction:
+#
+#   tau = L sqrt(1.77 rho A / (D N tan(beta) m_dot_s))
+#
+# That derivation is sound arithmetic on an unsound premise.
+# Sullivan's correlation ALREADY gives the transit time; it has no
+# fill-fraction term to eliminate, so there was no loop to close.
+# The fill fraction is an OUTPUT of the transit time through
+# continuity, not an input to it, and that is how it is computed
+# below. Continuity is still enforced -- it is just no longer
+# asked to supply a number the correlation never wanted.
+#
+# The units are fixed here too: Sullivan returns MINUTES and every
+# caller consumes seconds, so the conversion is explicit.
 # ======================================================
-def bed_motion_from_continuity(
+SECONDS_PER_MINUTE = 60.0
+
+SULLIVAN_C = 1.77
+
+
+def rotary_bed_motion(
     L,
     D,
     slope_deg,
     rpm,
+    repose_deg,
     m_dot_s,
     rho_bulk,
     A_cross,
@@ -781,22 +838,31 @@ def bed_motion_from_continuity(
             f"rho_bulk={rho_bulk}, A_cross={A_cross}"
         )
 
-    S = np.tan(np.deg2rad(slope_deg))
-
-    if S <= 0.0:
+    if slope_deg <= 0.0:
         raise ValueError(
-            f"slope_deg must give a positive slope, got {slope_deg}"
+            f"slope_deg must be a positive inclination, got {slope_deg}"
         )
 
-    tau = L * np.sqrt(
-        1.77
-        * rho_bulk
-        * A_cross
-        / (D * rpm * S * m_dot_s)
+    # The correlation is a fit over granular solids; outside this
+    # the sqrt(theta) grouping is an extrapolation and the caller
+    # should know rather than be given a number.
+    if not (15.0 <= repose_deg <= 55.0):
+        raise ValueError(
+            "repose_deg outside the granular range the Sullivan "
+            f"correlation was fitted over (15-55 deg), got {repose_deg}"
+        )
+
+    tau = SECONDS_PER_MINUTE * (
+        SULLIVAN_C
+        * L
+        * np.sqrt(repose_deg)
+        / (D * rpm * slope_deg)
     )
 
     u_s = L / (tau + eps)
 
+    # Continuity, and now nothing but continuity: the hold-up the
+    # transit time implies, expressed as a cross-section fraction.
     fill_fraction = m_dot_s / (rho_bulk * u_s * A_cross)
 
     if not (0.0 < fill_fraction < 1.0):

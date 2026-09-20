@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 import yaml
 
@@ -69,7 +71,13 @@ class Burning:
             )
 
         self.dz = self.L / self.N
-        self.D = 4.2
+
+        # The rotating tube has ONE bore, so the burning zone and
+        # the transition zone read the same config entry rather
+        # than each carrying a literal. The other three zones keep
+        # their own 4.2: a cyclone string, a riser and a grate are
+        # not this tube and must not follow it when it changes.
+        self.D = float(cfg.get("kiln", {}).get("diameter", 4.2))
 
         self.A_cross, self.V_total, self.V_cell = kiln_geometry(
             D=self.D,
@@ -177,17 +185,41 @@ class Burning:
             3.0
         )
 
-        self.slope_deg = motion.get(
-            "inclination_deg",
-            3.0
+        # Kiln inclination. Configured as a PERCENT, because that is
+        # the unit a kiln is built and quoted in, and converted here
+        # to the degrees physics.rotary_bed_motion's correlation
+        # takes. The two are not interchangeable at the precision
+        # that matters: 3 % is 1.72 deg, and the config used to say
+        # `inclination_deg: 3.0`, i.e. 5.24 % -- well outside the
+        # 2-4 % a cement kiln is laid on.
+        self.slope_pct = float(motion.get("inclination_pct", 3.0))
+
+        if not (0.0 < self.slope_pct < 100.0):
+            raise ValueError(
+                "motion.inclination_pct must be a positive percent "
+                f"slope, got {self.slope_pct}"
+            )
+
+        self.slope_deg = math.degrees(
+            math.atan(self.slope_pct / 100.0)
+        )
+
+        # Dynamic angle of repose of the bed [degrees]. A MATERIAL
+        # property, and the only material property the transit
+        # correlation reads: physics.rotary_bed_motion carries
+        # sqrt(repose_deg) in Sullivan's numerator, which is what
+        # the industry's shorthand constant 11.2 has folded into it.
+        self.repose_deg = motion.get(
+            "repose_angle_deg",
+            40.0
         )
 
         # No fill_fraction here. It used to be read from
         # operational.kiln_load -- a capacity-utilisation figure the
         # config sets to 1.0 -- and handed to residence_time() as if it
-        # were the bed cross-section fraction. The bed fill is now
-        # solved with the transit time from mass continuity in
-        # solid_phase.resolve_solid_motion and published as
+        # were the bed cross-section fraction. The bed fill is now an
+        # OUTPUT of the transit time through mass continuity, computed
+        # in solid_phase.resolve_solid_motion and published as
         # state.bed_fill_fraction, so there is nothing to set here and
         # nothing left to confuse with kiln_load.
 

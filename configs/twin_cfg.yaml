@@ -18,49 +18,68 @@ plant:
 # consumed by the burning zone ALONE, with transition's 25 m on
 # top. That made the tube 85 m at D = 4.2 m, i.e. L/D = 20.2.
 #
-# L/D is what says whether a kiln is the right kiln. With
-# fuel.kiln_fraction = 0.40 this plant burns 60% of its fuel in
-# the calciner, so it is an in-line calciner (ILC) plant, and a
-# precalciner kiln is SHORT: US4425092 puts it below 14:1 and
-# preferably at 7:1-11:1, against 15:1-17:1 for a conventional
-# cyclone-preheater kiln with no precalciner. 20.2 was not
-# merely long, it was the wrong kiln type -- long-dry/wet
+# L/D is what says whether a kiln is the right kiln, and BOTH
+# numbers belong to the ROTATING TUBE ALONE -- the burning zone
+# plus the transition zone. Nothing here sizes the precalciner,
+# the preheater or the cooler, which are static equipment and
+# keep their own diameters. "Precalciner kiln" below is the
+# industry's name for the ROTARY KILN OF A PLANT THAT HAS a
+# precalciner, not for the precalciner vessel: moving 60% of the
+# fuel into a separate static calciner is exactly what lets the
+# rotary tube be short, because the tube no longer has to do the
+# calcining.
+#
+# With fuel.kiln_fraction = 0.40 this plant burns 60% of its fuel
+# in the calciner, so it is an in-line calciner (ILC) plant, and
+# the rotary kiln of such a plant is SHORT: US4425092 puts it
+# below 14:1 and preferably at 7:1-11:1, against 15:1-17:1 for a
+# conventional cyclone-preheater kiln with no precalciner. 20.2
+# was not merely long, it was the wrong kiln type -- long-dry/wet
 # territory.
 #
-# 46.2 m is L/D = 11.00, the conservative end of that preferred
-# 7:1-11:1 range. MEASURED, and the reason this is where it
-# stops rather than a number chosen for the answer it gives:
+# THE LENGTH IS GIVEN, NOT DERIVED. 60 m is the user's figure
+# for this plant and is held fixed; the bore is then what has to
+# satisfy L/D, and 4.5 m gives 13.33 -- inside the "below 14:1"
+# criterion. The bore matters a second time: `diameter` is read
+# by the burning and transition zones ONLY, because they are the
+# one rotary tube. The calciner, preheater and cooler keep their
+# own 4.2 m; a riser, a cyclone string and a grate are not this
+# tube and must not follow it when it moves.
 #
-#   tube   L/D    Ts_burning max   secondary air   kiln discharge
-#   85.0  20.24      1622.64 K        948.69 K       1295.42 K
-#   60.0  14.29      1703.51 K       1020.02 K       1415.94 K
-#   46.2  11.00      1771.16 K       1085.57 K       1524.09 K
-#   37.8   9.00      1832.07 K       1148.30 K       1625.04 K
+# 60 m at the previously committed 4.2 m bore would be L/D 14.29
+# and would MISS that criterion, which is why the bore moved at
+# all. The alternative inside the stated 4.0-4.5 m range, 4.0 m,
+# is L/D 15.00 -- past even the conventional preheater-kiln
+# range -- and was rejected for that despite scoring slightly
+# better on the liquidus.
 #
-# At L/D 9 the bed reaches 1832 K and breaks
-# BOUNDS["Ts_any_zone_max"] = 1773 K, the clinker liquidus. So
-# the LOWER half of the literature's preferred range is
-# incompatible with this model's own physical bound, and 11 is
-# simultaneously the literature value and the furthest this
-# plant can go without violating one. It is a bounded stopping
-# point, not a fitted one.
+# MEASURED at the committed operating point (nodes_per_stage=1),
+# with the transit held at the residence band's slow end and the
+# bore the only thing moving:
 #
-# NOT COMFORTABLE, and not to be forgotten: 1771.16 K leaves
-# 1.8 K of margin to the liquidus. A model sitting on a limit
-# has none left for a disturbance.
+#    D     L/D    Ts_burning max   liquidus margin   secondary air
+#   4.0   15.00      1757.88 K         15.12 K          1060.06 K
+#   4.2   14.29      1758.47 K         14.53 K          1057.71 K
+#   4.5   13.33      1758.78 K         14.22 K          1054.33 K
 #
-# THE OTHER LITERATURE CONSTRAINT IS STILL NOT MET. Modern
-# precalciner systems run 25-35 min of kiln residence; at
-# u_s = 0.01492 m/s this tube gives 51.85 min, and only L/D 7
-# (29.4 m) would reach the band -- far past where the liquidus
-# breaks. That gap is NOT length. u_s comes from
-# bed_motion_from_continuity, so it falls out of rpm, slope,
-# diameter and feed: D = 4.2 m is sized for 35-46 kg/s of
-# clinker and this plant makes 19.18, leaving the bed thin and
-# slow. The diameter is the next question, and it is a
-# different one.
+# The bore is worth ~1 K across its whole stated range, so this
+# choice is being made on kiln TYPE, which is the thing L/D
+# actually states, and not on the temperatures -- they cannot
+# tell these three apart.
+#
+# RESIDENCE TIME IS NOW MET, and it is the constraint that set
+# the motion below: 25-35 min for a modern precalciner system.
+# See the `motion` block for why the band's LOWER half is closed.
+#
+# Superseded: the tube was 46.2 m at L/D 11.00, chosen against
+# `bed_motion_from_continuity`, which mis-stated Sullivan's
+# transit correlation (see physics.rotary_bed_motion). That kiln
+# read 51.85 min of residence and could not reach the band at
+# any length -- a conclusion that was an artifact of the
+# correlation, not a fact about the plant.
 kiln:
-  length: 46.2   # m, transition + burning; L/D = 11.0
+  length: 60.0     # m, transition + burning
+  diameter: 4.5    # m, inside bore; L/D = 13.33
 
 transition:
   length: 25.0   # m, the kiln's back end; burning gets the rest
@@ -163,11 +182,64 @@ cooler_air:
   tertiary_air_fraction: 0.28
 
 
+# ======================================================
+# HOW THE TUBE TURNS
+#
+# These three set the solid transit through the kiln, and the
+# transit is the constraint: a modern precalciner system runs
+# 25-35 min. physics.rotary_bed_motion gives
+#
+#   tau = 1.77 L sqrt(theta) / (D N beta)      [minutes]
+#
+# so at a fixed L and D the band fixes the product N*beta and
+# nothing else -- rpm and slope are ONE handle for the transit,
+# with rpm entering a second and much weaker time through the
+# rotational Reynolds number in nusselt_gas_bed (about -13 K on
+# the bed from 3.0 to 4.0 rpm at fixed tau).
+#
+# 3.5 rpm and 2.2 % give tau = 33.84 min over the 60 m tube.
+#
+# WHY THE SLOW END OF THE BAND. MEASURED across the transit at
+# the committed geometry (nodes_per_stage=1):
+#
+#   tau      fill    Ts_burning max   secondary air   discharge
+#   25 min   3.09%      1818.39 K        1084.47 K     1530.27 K
+#   28 min   3.46%      1800.27 K        1075.62 K     1516.84 K
+#   30 min   3.70%      1789.35 K        1070.31 K     1508.77 K
+#   32 min   3.95%      1779.24 K        1065.40 K     1501.29 K
+#   35 min   4.31%      1765.27 K        1058.66 K     1491.00 K
+#
+# BOUNDS["Ts_any_zone_max"] = 1773 K is the clinker liquidus, so
+# everything faster than about 33 min breaks it. The band's
+# lower half is closed by a physical bound, not by preference --
+# and it is closed only because this plant is over-fuelled: it
+# burns 4440 kJ/kg clinker against SHC_BAND = (2900, 3300). Fix
+# the fuel and the whole band reopens. That is a separate
+# question and it is NOT settled here.
+#
+# The slope is a PERCENT, which is how a kiln is built and
+# quoted. It used to read `inclination_deg: 3.0` -- 5.24 %,
+# outside the 2-4 % a cement kiln is laid on, and the unit
+# confusion is exactly the one Sullivan's correlation invites,
+# since it takes the inclination in DEGREES (1.26 deg here).
 motion:
-  rpm_default: 1.5
-  rpm_min: 1.0
-  rpm_max: 3.0
-  inclination_deg: 3.0
+  rpm_default: 3.5
+  rpm_min: 2.0
+  rpm_max: 5.0
+  inclination_pct: 2.2     # = 1.26030 deg; tau = 33.84 min
+
+  # Dynamic angle of repose of the kiln bed [degrees]. A MATERIAL
+  # property, read only by physics.rotary_bed_motion, where it is
+  # the sqrt(theta) in Sullivan's numerator.
+  #
+  # The cement industry quotes the same correlation with theta
+  # already folded into a constant -- t = 11.2 L/(r D s) -- and
+  # 1.77*sqrt(40) = 11.194, i.e. that shorthand IS theta = 40 deg
+  # to within 0.1%. The US Bureau of Mines foot-and-RPH form
+  # implies 37.8 deg on the same arithmetic. 40 is stated
+  # directly in the cement-industry literature for raw material
+  # and is the value the most-used constant encodes.
+  repose_angle_deg: 40.0
 
 
 feed:

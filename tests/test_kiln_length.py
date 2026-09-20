@@ -1,53 +1,40 @@
-"""The rotary tube has ONE length, and it is 46.2 m.
+"""The rotary tube has ONE length and ONE bore, and they belong to
+it alone.
 
 `plant.length: 60.0  # burning zone length` was consumed by the
-burning zone alone, with `transition.length: 25.0` on top. The
-rotary tube was therefore 85 m at D = 4.2 m, i.e. L/D = 20.2.
+burning zone ALONE, with `transition.length: 25.0` on top, so the
+tube was 85 m. `kiln.length` is now the whole tube and the burning
+zone is the remainder, so the two cannot disagree.
 
-L/D is what says whether a kiln is the right kiln. This plant sets
-`fuel.kiln_fraction = 0.40`, so 60% of the fuel burns in the
-calciner and it is an in-line calciner (ILC) plant. A precalciner
-kiln is SHORT: US4425092 puts it below 14:1 and preferably at
-7:1-11:1, against 15:1-17:1 for a conventional cyclone-preheater
-kiln with no precalciner. 20.2 was not merely long -- it was the
-wrong kiln type, long-dry/wet territory, on a plant configured as
-a precalciner.
+`kiln.diameter` is the same idea for the bore. Every zone used to
+carry its own literal 4.2, which is how five separate pieces of
+equipment came to share one number by accident. The two ROTATING
+zones -- burning and transition -- now read the config; the
+calciner, preheater and cooler keep their literals, because a
+vertical riser, a cyclone string and a grate are not this tube and
+must not follow it when it moves.
 
-Now `kiln.length` is the whole tube and the burning zone is the
-remainder after `transition.length`, so the two cannot disagree
-about how long the kiln is. Changing `transition.length` used to
-silently lengthen the tube; now it only moves the internal split.
+WHAT L/D MEANS HERE. It is a statement about the ROTARY KILN, and
+about kiln TYPE. With fuel.kiln_fraction = 0.40 this plant burns
+60% of its fuel in a separate static calciner, which is what lets
+the rotary tube be short: US4425092 puts the rotary kiln of such a
+plant below 14:1. It says nothing about the precalciner vessel.
 
-MEASURED, nodes_per_stage=1, across the whole sweep:
+  tube  bore   L/D    what it is
+  85.0   4.2  20.24   long-dry/wet territory -- wrong kiln type
+  60.0   4.2  14.29   misses the < 14:1 criterion
+  60.0   4.5  13.33   committed
+  60.0   4.0  15.00   past even a conventional preheater kiln
 
-  tube   L/D    Ts_burning max   secondary air   kiln discharge
-  85.0  20.24      1622.64 K        948.69 K       1295.42 K
-  60.0  14.29      1703.51 K       1020.02 K       1415.94 K
-  46.2  11.00      1771.16 K       1085.57 K       1524.09 K
-  37.8   9.00      1832.07 K       1148.30 K       1625.04 K
-
-The kiln's discharge end is its coldest section -- the bed peaks
-mid-kiln and is re-cooled against incoming secondary air over the
-last cells -- so less of that re-cooling, and less shell to lose
-through, both push the discharge up.
-
-WHY IT STOPS AT 11 AND NOT AT 9. At L/D 9 the bed reaches 1832 K
-and breaks BOUNDS["Ts_any_zone_max"] = 1773 K, the clinker
-liquidus. The lower half of the literature's own preferred range
-is incompatible with this model's physical bound, so 11 is
-simultaneously the literature value and the furthest this plant
-can go without violating one. Bounded, not fitted.
-
-AND IT IS TIGHT: 1771.16 K leaves 1.8 K of margin to the liquidus.
+The length is the user's, fixed at 60 m. The bore is therefore
+what has to satisfy L/D, and it is the only free geometric
+quantity left.
 """
 
 import math
 import unittest
 
 import main
-
-
-VESSEL_D = 4.2
 
 
 class TheTubeHasOneLengthTest(unittest.TestCase):
@@ -60,7 +47,7 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         kiln = self.cfg["kiln"]["length"]
         transition = self.cfg["transition"]["length"]
 
-        self.assertAlmostEqual(kiln, 46.2)
+        self.assertAlmostEqual(kiln, 60.0)
         self.assertAlmostEqual(transition, 25.0)
 
         burning = main.Burning(
@@ -70,7 +57,7 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         )
 
         self.assertAlmostEqual(burning.L, kiln - transition)
-        self.assertAlmostEqual(burning.L, 21.2)
+        self.assertAlmostEqual(burning.L, 35.0)
 
     def test_moving_the_split_does_not_lengthen_the_tube(self):
         """The regression. Before this, transition.length was
@@ -96,10 +83,10 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
     def test_a_split_that_leaves_no_kiln_is_rejected(self):
 
         cfg = main.load_cfg("configs/twin_cfg.yaml")
-        cfg["transition"]["length"] = 46.2
+        cfg["transition"]["length"] = 60.0
 
         with self.assertRaises(ValueError) as caught:
-            main.Burning(N=20, L=46.2, cfg=cfg)
+            main.Burning(N=20, L=60.0, cfg=cfg)
 
         self.assertIn("must be positive", str(caught.exception))
 
@@ -111,106 +98,270 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         self.assertNotIn("length", self.cfg["plant"])
 
 
-class TheRatioIsAPrecalcinerKilnTest(unittest.TestCase):
-    """L/D is the acceptance test, and it is a statement about
-    kiln TYPE, not a tuned number."""
+class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
+    """The point the user raised: 60 m and L/D 13.33 size the
+    ROTARY KILN. No static equipment may follow them."""
+
+    def setUp(self):
+        self.cfg = main.load_cfg("configs/twin_cfg.yaml")
+        self.N = self.cfg["plant"]["N"]
+
+    def _zone(self, cls, length_key):
+        return cls(
+            N=self.N,
+            L=self.cfg[length_key]["length"],
+            cfg=self.cfg,
+        )
+
+    def test_the_two_rotating_zones_share_the_configured_bore(self):
+        """They are one tube, so one bore."""
+
+        D = self.cfg["kiln"]["diameter"]
+        self.assertAlmostEqual(D, 4.5)
+
+        burning = main.Burning(
+            N=self.N, L=self.cfg["kiln"]["length"], cfg=self.cfg
+        )
+        transition = self._zone(main.Transition, "transition")
+
+        self.assertAlmostEqual(burning.D, D)
+        self.assertAlmostEqual(transition.D, D)
+
+    def test_the_static_equipment_does_not_follow_the_kiln(self):
+        """A vertical riser, a cyclone string and a grate. Moving
+        the kiln's bore must not resize any of them."""
+
+        for cls, key in (
+            (main.Calciner, "calciner"),
+            (main.Preheater, "preheater"),
+            (main.Cooler, "cooler"),
+        ):
+            self.assertAlmostEqual(
+                self._zone(cls, key).D, 4.2, msg=cls.__name__
+            )
+
+    def test_changing_the_kiln_bore_moves_only_the_kiln(self):
+
+        cfg = main.load_cfg("configs/twin_cfg.yaml")
+        cfg["kiln"]["diameter"] = 4.0
+
+        burning = main.Burning(
+            N=self.N, L=cfg["kiln"]["length"], cfg=cfg
+        )
+        transition = main.Transition(
+            N=self.N, L=cfg["transition"]["length"], cfg=cfg
+        )
+        calciner = main.Calciner(
+            N=self.N, L=cfg["calciner"]["length"], cfg=cfg
+        )
+
+        self.assertAlmostEqual(burning.D, 4.0)
+        self.assertAlmostEqual(transition.D, 4.0)
+        self.assertAlmostEqual(calciner.D, 4.2)
+
+    def test_the_cross_section_follows_the_configured_bore(self):
+        """Not just the attribute -- the geometry built from it."""
+
+        burning = main.Burning(
+            N=self.N, L=self.cfg["kiln"]["length"], cfg=self.cfg
+        )
+
+        self.assertAlmostEqual(
+            burning.A_cross,
+            math.pi * self.cfg["kiln"]["diameter"] ** 2 / 4.0,
+            places=9,
+        )
+
+
+class TheRatioIsAPrecalcinerPlantsKilnTest(unittest.TestCase):
 
     def setUp(self):
         self.cfg = main.load_cfg("configs/twin_cfg.yaml")
         self.L = self.cfg["kiln"]["length"]
+        self.D = self.cfg["kiln"]["diameter"]
 
     def test_the_plant_is_configured_as_a_precalciner(self):
-        """Which is what makes the short-kiln band the right one."""
+        """Which is what makes the short-kiln band the right one:
+        most of the fuel fires in static equipment, so the rotary
+        tube does not have to do the calcining."""
 
         self.assertLess(self.cfg["fuel"]["kiln_fraction"], 0.5)
 
-    def test_the_ratio_is_inside_the_precalciner_band(self):
+    def test_the_ratio_is_inside_the_band(self):
 
-        self.assertAlmostEqual(self.L / VESSEL_D, 11.00, delta=0.01)
+        self.assertAlmostEqual(self.L / self.D, 13.33, delta=0.01)
 
-        # US4425092: below 14:1, preferably 7:1-11:1.
-        self.assertLess(self.L / VESSEL_D, 14.0)
-        self.assertGreaterEqual(self.L / VESSEL_D, 7.0)
+        # US4425092: below 14:1 for the rotary kiln of a
+        # precalciner plant.
+        self.assertLess(self.L / self.D, 14.0)
+
+    def test_the_committed_bore_is_what_puts_it_there(self):
+        """At 60 m the length cannot move, so the bore is the only
+        thing that can satisfy the criterion -- and the previously
+        committed 4.2 m would not."""
+
+        self.assertGreater(self.L / 4.2, 14.0)
+        self.assertLess(self.L / 4.5, 14.0)
+
+        # Both are inside the stated 4.0-4.5 m range, so this is a
+        # choice the range itself contains.
+        self.assertGreaterEqual(self.D, 4.0)
+        self.assertLessEqual(self.D, 4.5)
 
     def test_the_old_tube_was_the_wrong_kiln_type(self):
 
-        old = (60.0 + 25.0) / VESSEL_D
+        old = (60.0 + 25.0) / 4.2
 
         self.assertAlmostEqual(old, 20.24, delta=0.01)
-
-        # Past even the conventional preheater kiln range, on a
-        # plant burning 60% of its fuel in the calciner.
         self.assertGreater(old, 17.0)
-
-    def test_the_shell_area_the_change_removes(self):
-
-        old_area = math.pi * VESSEL_D * 85.0
-        new_area = math.pi * VESSEL_D * self.L
-
-        self.assertAlmostEqual(new_area / old_area - 1.0, -0.456, delta=0.001)
 
 
 class WhatItMovedTest(unittest.TestCase):
     """Pinned so the next reader does not re-measure it.
 
-    Still out of band afterwards, and said so here rather than
-    left to be discovered: the kiln discharge wants (1600, 1780)
-    and reaches 1524.09 K.
+    Measured at nodes_per_stage=1. Still out of band afterwards,
+    and said here rather than left to be discovered: the kiln
+    discharge wants (1600, 1780) and does not respond to motion at
+    all -- it sits at 1481-1531 K across the ENTIRE stated search
+    box. That is a fuel question, not a geometry one.
     """
 
+    # 46.2 m, 4.2 m bore, 5.24 % slope, 1.5 rpm, on the transit
+    # correlation as it was.
     BEFORE = {
-        "Ts_burning_max": 1622.64,
-        "secondary_air": 948.69,
-        "kiln_discharge": 1295.42,
-    }
-    AFTER = {
         "Ts_burning_max": 1771.16,
         "secondary_air": 1085.57,
         "kiln_discharge": 1524.09,
+        "transit_min": 51.85,
+    }
+    # 60 m, 4.5 m bore, 2.2 %, 3.5 rpm, Sullivan's correlation.
+    AFTER = {
+        "Ts_burning_max": 1758.78,
+        "secondary_air": 1054.33,
+        "kiln_discharge": 1480.89,
+        "transit_min": 33.84,
     }
 
-    # The next step down the literature's range, which this does
-    # NOT take, and the bound that stops it.
-    AT_LD_9 = {"Ts_burning_max": 1832.07, "secondary_air": 1148.30}
     LIQUIDUS = 1773.0
 
-    def test_every_gate_quantity_moved_the_right_way(self):
+    def test_the_residence_band_is_reached_for_the_first_time(self):
+        """25-35 min. The previous kiln read 51.85 and was judged
+        unable to reach the band at any length -- a conclusion
+        that was an artifact of the correlation."""
 
-        for key in self.BEFORE:
-            self.assertGreater(self.AFTER[key], self.BEFORE[key], key)
+        self.assertGreater(self.BEFORE["transit_min"], 35.0)
 
-    def test_the_burning_zone_is_now_a_plausible_one(self):
-        """Real burning zones run a bed around 1700-1750 K, under
-        the 1773 K liquidus. 1622 K was cold for a kiln making
-        C3S."""
+        self.assertGreaterEqual(self.AFTER["transit_min"], 25.0)
+        self.assertLessEqual(self.AFTER["transit_min"], 35.0)
 
-        self.assertGreater(self.AFTER["Ts_burning_max"], 1650.0)
-        self.assertLess(self.AFTER["Ts_burning_max"], 1773.0)
-
-    def test_secondary_air_finally_reaches_its_band(self):
-        """586.06 lumped -> 717.81 cross-flow -> 948.69 with the
-        right contact area -> 1085.57 here. The gate this whole
-        line of work was aimed at."""
+    def test_secondary_air_stays_in_its_band(self):
+        """It entered the band with the cooler work and must not
+        be given back here."""
 
         self.assertGreaterEqual(self.AFTER["secondary_air"], 1050.0)
         self.assertLessEqual(self.AFTER["secondary_air"], 1350.0)
 
-    def test_going_further_would_break_the_liquidus(self):
+    def test_the_liquidus_margin_improved_but_is_still_thin(self):
+        """1.8 K before, 14.2 K now. Better, and still not a lot
+        for a model that has to take a disturbance."""
 
-        self.assertLess(self.AFTER["Ts_burning_max"], self.LIQUIDUS)
-        self.assertGreater(self.AT_LD_9["Ts_burning_max"], self.LIQUIDUS)
+        before = self.LIQUIDUS - self.BEFORE["Ts_burning_max"]
+        after = self.LIQUIDUS - self.AFTER["Ts_burning_max"]
 
-    def test_the_margin_to_the_liquidus_is_uncomfortably_thin(self):
-        """Recorded rather than smoothed over: a model sitting on
-        a limit has nothing left for a disturbance."""
+        self.assertAlmostEqual(before, 1.84, delta=0.02)
+        self.assertAlmostEqual(after, 14.22, delta=0.02)
 
-        self.assertLess(
-            self.LIQUIDUS - self.AFTER["Ts_burning_max"], 5.0
-        )
+        self.assertGreater(after, before)
+        self.assertLess(after, 25.0)
 
     def test_the_kiln_discharge_is_still_out_of_band(self):
+        """And got slightly worse, which is worth stating plainly:
+        the transit band and the discharge band pull opposite
+        ways, and motion cannot serve both."""
 
         self.assertLess(self.AFTER["kiln_discharge"], 1600.0)
+        self.assertLess(
+            self.AFTER["kiln_discharge"],
+            self.BEFORE["kiln_discharge"],
+        )
+
+
+class TheClinkerGotWorseTest(unittest.TestCase):
+    """THE COST OF THIS CHANGE, pinned so it cannot be forgotten.
+
+    A COMPENSATING ERROR WAS REMOVED AND THE ERROR IT WAS HIDING IS
+    NOW VISIBLE. The old correlation gave this kiln 51.85 min of
+    transit where Sullivan's gives 33.84, so every residence-driven
+    reaction had ~1.5x the time it should have had, and the
+    chemistry was leaning on it. With the transit corrected, the
+    clinker is measurably worse:
+
+      kg/s at the cooler outlet      46.2 m tube    60 m tube
+        CaCO3, never calcined            2.5073       4.5833
+        C3S, the alite                   1.1502       0.5765
+        C2S                              5.7882       4.6854
+
+    That is a quarter of the "clinker" leaving as raw limestone.
+    It is NOT an argument for putting the correlation back --
+    keeping a verifiably wrong transit to protect a number that
+    was right for the wrong reason is the exact
+    compensating-error pattern chemistry/calcination.py already
+    documents being dismantled.
+
+    IT IS AN ARGUMENT ABOUT WHERE CALCINATION BELONGS. It belongs
+    in the calciner, and the calciner is not doing it: at the
+    calciner outlet 15.42 of 21.0 kg/s of CaCO3 is still CaCO3, so
+    the vessel that should finish ~90% of the job finishes ~26%
+    and hands the rest to a kiln that no longer has the time. Two
+    reasons, both already identified and neither fixed here:
+
+      1. The calciner is modelled as a ROTATING, inclined cylinder
+         and gets a 1340 s solids transit where a vertical riser
+         gives ~5 s. Wrong equipment, and the error does not even
+         help -- 22 minutes still only reaches 26%.
+      2. Its kinetics are ~5 orders of magnitude too slow
+         (committed pair 42.5 1/s, 150 kJ/mol). The literature
+         pair is patched and still unlandable: it diverges the
+         outer solve at sweep 3 with Ts_burning 4674 K, on the old
+         geometry and this one alike, so it is independent of
+         everything this commit touches.
+    """
+
+    CLINKER = {
+        # zone outlet, kg/s
+        "CaCO3": (2.5073, 4.5833),
+        "C3S": (1.1502, 0.5765),
+        "C2S": (5.7882, 4.6854),
+    }
+    CALCINER_OUT_CaCO3 = (14.0230, 15.4169)
+
+    def test_the_uncalcined_carry_over_nearly_doubled(self):
+
+        before, after = self.CLINKER["CaCO3"]
+
+        self.assertGreater(after, before)
+        self.assertAlmostEqual(after / before, 1.83, delta=0.01)
+
+    def test_the_alite_halved(self):
+        """C3S is what makes cement cement."""
+
+        before, after = self.CLINKER["C3S"]
+
+        self.assertLess(after, 0.55 * before)
+
+    def test_the_calciner_is_where_this_actually_fails(self):
+        """It was already failing before this commit -- the kiln
+        was covering for it, and now it cannot."""
+
+        before, after = self.CALCINER_OUT_CaCO3
+
+        # Barely moved: the calciner's own shortfall is not what
+        # this commit changed.
+        self.assertLess(abs(after - before) / before, 0.11)
+
+        # And it is large in both. ~21 kg/s of CaCO3 enters.
+        self.assertGreater(before, 13.0)
+        self.assertGreater(after, 13.0)
 
 
 if __name__ == "__main__":

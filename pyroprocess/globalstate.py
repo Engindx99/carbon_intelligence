@@ -39,10 +39,15 @@ class GlobalState:
     Residence_time_target: float = 0.0 #min
     Fuel_rate_total: float = 2.0 # kg/s
     rpm: float = 0.0
-    residence_time: float = 0.0 #min
+    # SECONDS, and over the BURNING ZONE only -- it is what
+    # physics.rotary_bed_motion returns for burning.L. The whole
+    # tube's transit is kiln.length / solid_velocity. The comment
+    # here said "min" while every consumer read it as seconds;
+    # the correlation's minutes are now converted at the source.
+    residence_time: float = 0.0 # s
     solid_velocity: float = 0.0 #m/s
-    # Bed cross-section fraction, solved together with the transit
-    # time from mass continuity (physics.bed_motion_from_continuity).
+    # Bed cross-section fraction, an OUTPUT of the transit time
+    # through mass continuity (physics.rotary_bed_motion).
     # Distinct from operational.kiln_load, which is a capacity figure.
     bed_fill_fraction: float = 0.0 # -
 

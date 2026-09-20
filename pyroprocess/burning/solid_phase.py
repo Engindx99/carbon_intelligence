@@ -1,6 +1,6 @@
 import numpy as np
 
-from physics.physics import bed_motion_from_continuity
+from physics.physics import rotary_bed_motion
 from physics.physics import outlet_face_value
 
 
@@ -21,26 +21,33 @@ def resolve_solid_motion(burning, state, inputs):
     )
 
     # ======================================================
-    # The transit time and the bed fill are one unknown, not
-    # two: the correlation gives tau from the fill fraction and
-    # mass continuity gives the fill fraction back from tau.
-    # bed_motion_from_continuity solves that pair in closed form.
+    # Sullivan's transit correlation (physics.rotary_bed_motion)
+    # gives tau from the geometry and the motion; the bed fill
+    # fraction then follows from mass continuity. It is an
+    # OUTPUT here, not an input -- the correlation has no
+    # fill-fraction term.
     #
     # This used to pass burning.fill_fraction, read from
     # operational.kiln_load, which the config sets to 1.0 -- a
     # capacity-utilisation figure standing in for a bed fill
-    # fraction, i.e. a completely full kiln. That made the
-    # transit time 5.4 min against the ~an-hour the same
-    # correlation gives once the bed is consistent with the feed
-    # rate, and every residence-time-driven reaction rate was
-    # scaled by it.
+    # fraction, i.e. a completely full kiln. That was replaced
+    # by a continuity closure, and the closure has now been
+    # replaced in turn by the correlation the closure was
+    # standing in for.
+    #
+    # NOTE ON L. tau scales with L and u_s = L/tau does not, so
+    # passing the burning zone's length rather than the whole
+    # tube's changes nothing about the velocity the zones share.
+    # state.residence_time is therefore the BURNING ZONE's
+    # transit; the tube's is kiln.length / u_s.
     # ======================================================
 
-    tau, u_s, bed_fill_fraction = bed_motion_from_continuity(
+    tau, u_s, bed_fill_fraction = rotary_bed_motion(
         L=burning.L,
         D=burning.D,
         slope_deg=burning.slope_deg,
         rpm=rpm,
+        repose_deg=burning.repose_deg,
         m_dot_s=state.m_dot_s,
         rho_bulk=burning.rho_s,
         A_cross=burning.A_cross,

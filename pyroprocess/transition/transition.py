@@ -37,7 +37,8 @@ class Transition:
         self.energy_residual = 0.0
 
         # ================= GEOMETRY =================
-        self.D = 4.2
+        # Same bore as the burning zone -- it is the same tube.
+        self.D = float(cfg.get("kiln", {}).get("diameter", 4.2))
         self.A_cross = np.pi * self.D**2 / 4.0
         self.V_total = self.A_cross * self.L
         self.V_cell = self.V_total / self.N
@@ -114,7 +115,13 @@ class Transition:
         motion = cfg.get("motion", {})
 
         self.rpm_default = motion.get("rpm_default", 1.5)
-        self.slope_deg = motion.get("inclination_deg", 3.0)
+        # No slope here. The transition zone is the back end of the
+        # same tube, so it shares the kiln's inclination -- but it
+        # never used this value: it reads state.u_s, which the
+        # burning zone solves once for the whole tube. Keeping a
+        # second, unread copy of a geometric property is how the two
+        # halves of `kiln.length` came to disagree, and the same
+        # trap is not being reopened for the slope.
 
         # ================= HEAT TRANSFER =================
         # Faz 5: hv_gs / hv_gw / hv_ws are gone from this zone, the
