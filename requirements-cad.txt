@@ -1,0 +1,31 @@
+# CAD geometry only. DELIBERATELY SEPARATE FROM requirements.txt.
+#
+# The Digital Twin runs on numpy/pyyaml/matplotlib and must keep
+# running on them: nothing under pyroprocess/, physics/, chemistry/
+# or solver/ imports cadquery, and `geometry/` imports nothing from
+# the twin except the universal gas constant and the raw-meal repose
+# angle it reads out of configs/twin_cfg.yaml.
+#
+# A unit's *_spec modules need NONE of this -- the whole parameter
+# model and both reports run in the twin's own environment:
+#
+#   python3 -m geometry.preheater
+#
+# Only the *_build modules, and geometry/{measure,pipes,export}.py,
+# import the kernel.
+#
+# INSTALLED SEPARATELY, NOT INTO THE TWIN'S ENVIRONMENT. cadquery
+# resolves its own numpy (2.x), which would displace the 1.21.5 the
+# twin runs on. This machine has no ensurepip and no virtualenv, so
+# the isolation is a target directory rather than a venv:
+#
+#   python3 -m pip install --target=/home/wsl/.cad-libs -r requirements-cad.txt
+#   PYTHONPATH=/home/wsl/.cad-libs:. python3 -m geometry.preheater.tower_build
+#
+#   python3 -m pip install -r requirements-cad.txt
+#
+# cadquery brings OCP (the OpenCASCADE binding), which is ~500 MB.
+# That is the price of a real B-rep kernel -- STEP output that any
+# CAD package can open and dimension -- and it is why it is not in
+# the twin's own requirements.
+cadquery==2.7.0
