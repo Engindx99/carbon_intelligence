@@ -2,17 +2,16 @@
 #
 # The Digital Twin runs on numpy/pyyaml/matplotlib and must keep
 # running on them: nothing under pyroprocess/, physics/, chemistry/
-# or solver/ imports cadquery, and `geometry/` imports nothing from
-# the twin except the universal gas constant and the raw-meal repose
-# angle it reads out of configs/twin_cfg.yaml.
+# or solver/ imports cadquery, and `geometry/` imports no twin module;
+# it only reads configs/twin_cfg.yaml.
 #
-# A unit's *_spec modules need NONE of this -- the whole parameter
-# model and both reports run in the twin's own environment:
+# The catalogue, the closed-form properties and the report need NONE
+# of this and run in the twin's own environment:
 #
-#   python3 -m geometry.preheater
+#   python3 -m geometry
 #
-# Only the *_build modules, and geometry/{measure,pipes,export}.py,
-# import the kernel.
+# Only geometry/{solids,export}.py import the kernel, and
+# geometry/components.py only when a solid is built.
 #
 # INSTALLED SEPARATELY, NOT INTO THE TWIN'S ENVIRONMENT. cadquery
 # resolves its own numpy (2.x), which would displace the 1.21.5 the
@@ -20,7 +19,7 @@
 # the isolation is a target directory rather than a venv:
 #
 #   python3 -m pip install --target=/home/wsl/.cad-libs -r requirements-cad.txt
-#   PYTHONPATH=/home/wsl/.cad-libs:. python3 -m geometry.preheater.tower_build
+#   PYTHONPATH=/home/wsl/.cad-libs:. python3 -m geometry --export
 #
 #   python3 -m pip install -r requirements-cad.txt
 #

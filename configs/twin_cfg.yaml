@@ -342,3 +342,17 @@ kiln_closure:
 # it does not change the twin's feed, capacity or kiln size.
 geometry:
   reference_line: "2500"
+
+  # Where the CFD model's boundary faces sit. Modelling choices,
+  # NOT plant dimensions: no source gives them and none enters the
+  # catalogue. geometry/ has no defaults for them.
+  #   inlet_extension_over_D: inlet face upstream of the cyclone
+  #     axis, x D. Must put the face outside the barrel (> 0.40
+  #     for the catalogue's inlet_w = 0.2 D; checked per cyclone).
+  #   outlet_extension_over_vortex_D: outlet face above the roof,
+  #     x vortex finder diameter.
+  #   vortex_finder_wall_m: vortex finder wall thickness [m].
+  cfd_boundary:
+    inlet_extension_over_D: 0.6
+    outlet_extension_over_vortex_D: 1.0
+    vortex_finder_wall_m: 0.012

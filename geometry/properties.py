@@ -36,7 +36,7 @@ class MissingGeometry(ValueError):
         super().__init__(f"{what}: missing {', '.join(self.fields)}")
 
 
-def _require(what, part, prefix, names):
+def require_fields(what, part, prefix, names):
     """The values of `names` on `part`, or MissingGeometry."""
 
     missing = [f"{prefix}.{n}" for n in names if getattr(part, n) is None]
@@ -141,7 +141,7 @@ CYCLONE_FIELDS = (
 def cyclone_properties(stage):
 
     D, barrel_h, cone_h, _vortex_len, vortex_D, dust_D, inlet_w, inlet_h = (
-        _require(f"cyclone C{stage.stage}", stage, f"C{stage.stage}", CYCLONE_FIELDS)
+        require_fields(f"cyclone C{stage.stage}", stage, f"C{stage.stage}", CYCLONE_FIELDS)
     )
 
     return CycloneProperties(
@@ -174,7 +174,7 @@ class VesselProperties:
 def vessel_properties(vessel, name):
     """A cylinder D x length: calciner, or kiln (with `kiln` as name)."""
 
-    D, length = _require(name, vessel, name, ("D", "length"))
+    D, length = require_fields(name, vessel, name, ("D", "length"))
 
     return VesselProperties(
         volume=cylinder_volume(D, length),
@@ -186,6 +186,6 @@ def vessel_properties(vessel, name):
 def duct_section(duct, name):
     """Cross-section of a riser or the gooseneck."""
 
-    (D,) = _require(name, duct, name, ("D",))
+    (D,) = require_fields(name, duct, name, ("D",))
 
     return circle(D)
