@@ -13,7 +13,7 @@ Her alan şu durumlardan birindedir:
 | `model_assumption` | Kaynakta yazar, ama ölçülmüş bir değer değil, kaynağın kendi modelleme varsayımıdır. Yalnızca FLS'nin giriş genişliği `w_in = 0.4 r_c` ve buna bağlı giriş yüksekliği için kullanılır. |
 | yok (`None`) | Kaynakta bulunamamıştır. Değer uydurulmaz, alan boş kalır. |
 
-Bir değer, durumundan ayrı olarak **varsayım notları** (`assumptions`) da taşıyabilir. Bu notlar değerin dayandığı aktarım ya da çıkarım varsayımlarını açıkça yazar: çift C1'e aktarım, riser eşlemesi, `w_in` model varsayımı. Rapor bunları değerin yanında gösterir.
+Bir değer, durumundan ayrı olarak **varsayım notları** (`assumptions`) da taşıyabilir. Bu notlar değerin dayandığı aktarım ya da model varsayımlarını açıkça yazar: çift C1'e aktarım ve `w_in` model varsayımı. Riser eşlemesi artık bir varsayım değildir; FLS Tablo 7'de açıkça yazılıdır (aşağıda uyarı 3). Rapor bunları değerin yanında gösterir.
 
 Kapasite, debi, hız, alan ya da kalma süresi üzerinden hiçbir ölçü hesaplanmaz. Örneğin HFC'nin yayınladığı "6.9 m/s × 3.19 s" çarpımından kalsinatör boyu **türetilmez**.
 
@@ -34,6 +34,7 @@ Hepsi 2026-09-21'de kontrol edildi.
 Kaynak doğrulandı ama kataloğa **girmeyen** değerler:
 - **Tersiyer hava kanalı çapları:** 2500 hattı için AGICO'nun bir tesisinde 2.2 m, 1500'e büyütülmüş bir tesiste Φ1577 mm efektif. İkisi de tek bir tesisin değeri ve yalnızca özetleyici bir araçla okundu; ham metinleri doğrulanmadı.
 - **3000–3200 t/d siklon seti:** kaynak sayfası artık 404 veriyor.
+- **İki tesisin kaz boynu ölçüleri:** başka tesislere ve başka kalsinatör tasarımlarına ait; gerekçe "Kaz boynu: bulundu, hiçbir hatta atanmadı" bölümünde.
 
 ## FLS referans oranları
 
@@ -63,8 +64,8 @@ Kalsinatör ve fırın oranları:
 **Oranlar için uyarılar:**
 1. **Cy1 tek, büyük bir üst siklondur.** Holderbank da FLS'nin tek üst siklonlu tesisler kurduğunu not eder. Satıcı hatlarında ise C1 çift siklondur. Cy1 oranlarını çift C1'e uygulamak bir **aktarım varsayımıdır**.
 2. **`w_in = 0.4 r_c` makalenin kendi modelleme varsayımıdır, ölçülmüş bir değer değildir.** Buradan çıkan `inlet_h` değeri Cy2–Cy5'te gövde yüksekliğinin yaklaşık 2.5 katıdır, yani giriş koni bölgesine uzanır. HFC'nin "270° eğik volüt, kısaltılmış C2–C4 gövdesi" tarifiyle tutarlı olsa da açık bir varsayım olarak işaretlenir.
-3. **Riser eşlemesi çıkarımdır.** R_k'nin C(k+1)'in çıkışından C(k)'yi besleyen kanal olduğunu varsayıyorum. Makale eşlemeyi yazmıyor, ama iki gözlem bunu destekliyor: çaplar aşağı kademelere doğru büyüyor, HFC'nin "C2出口管道 → C5出口管道" sıralaması da aynı yönde.
-4. **R5 (61 m, r = 1.13 m) makalede adlandırılmamış.** Tersiyer kanal olması muhtemel ama bu yazmadığı için kullanılmıyor.
+3. **Riser eşlemesi kaynakta yazılıdır** (arXiv 2504.02886 v1, Tablo 7, s. 13; 2026-09-21'de PDF metninden doğrulandı). Tablo 7 bağlantıları "To\From" matrisiyle verir. R1 satırı gazını Cy2'nin çıkışından alır (`Ax,cy2/Ain,r1`), Cy1 satırı R1'den beslenir (`Aout,r1/Ain,cy1`); R2–R4 de aynı düzendedir. Yani R_k gazı Cy(k+1)'in çıkışından Cy(k)'ye taşır. Önceki sürümde bu bir çıkarım olarak işaretliydi. Artık FLS riser değerleri Tablo 7'ye atıf yapar. `riser_D/D_src` oranının dayandığı eşleme de doğrudan kaynaktadır; bu yüzden oranla doldurulan riser çapları (1500, 5000) eşleme varsayımı taşımaz. Hiçbir sayısal değer değişmedi.
+4. **R5 (61 m, r = 1.13 m) makalede adlandırılmamıştır.** Tablo 7'ye göre gazını soğutucudan alır ve kalsinatöre verir. Metin şöyle der: "Ay2,co connects to the tertiary pipe" ve "Py2 = Pin,r5" (bölüm 3.10, denklem 90b). Buradan R5'in tersiyer hava borusu olduğu **çıkarılabilir**, ama makale bunu açıkça söylemez. Tersiyer kanal kapsam dışı olduğu için (Kararlar, 3) R5 kullanılmaz.
 5. **Riser oranı, kanalın çıktığı siklonun çapına göre alınır.** Beslediği siklona göre alınsaydı, satıcı hatlarındaki çift C1 R1'i olması gerekenden küçük gösterirdi, çünkü R1 ayrılmadan önce gazın tamamını taşır. FLS oranı (≈0.72), HFC2500'ün yayınlanmış oranından (0.50–0.55) belirgin biçimde büyüktür. Oranla doldurulan riserler bu yüzden daha düşük gaz hızına göre tasarlanmış bir kuleyi temsil eder.
 
 ## Hat tabloları
@@ -171,12 +172,12 @@ Kaz boynu için kaynak yok.
 
 Değerler FLS Tablo 8'den **P** olarak alınır ve efektif iç ölçüdür. Aritmetik dönüşümler (D = 2·r_c, gövde h = h_t − h_c) yayınlanmış değer sayılır.
 - **Siklonlar:** yukarıdaki oran tablosunun ham değerleri. Giriş alanı A_in **P**'dir. Giriş genişliği w_in ve giriş yüksekliği A_in/w_in ise **`model_assumption`**'dır.
-- **Riserler R1–R4:** D = 4.90 / 4.90 / 5.10 / 5.10 m, L = 21.38 / 19.38 / 20.37 / 19.87 m. Üst koni ve uç çapı da tabloda yayınlanmış. Hangi riserin hangi iki siklonu bağladığı çıkarımdır (uyarı 3).
+- **Riserler R1–R4:** D = 4.90 / 4.90 / 5.10 / 5.10 m, L = 21.38 / 19.38 / 20.37 / 19.87 m. Üst koni ve uç çapı da tabloda yayınlanmış. Hangi riserin hangi iki siklonu bağladığı Tablo 7'de yazılıdır (uyarı 3).
 - **Kalsinatör:** Φ6.16 × 33.0 m.
 - **Fırın:** Φ3.96 × 51 m (efektif), 4 rpm.
 - **Soğutucu:** 36 × 4 m.
 
-Kapasite yayınlanmamış. Makale yalnızca besleme debisini veriyor: 85.7 kg/s farin. Kaz boynu ve tersiyer kanal da yok (R5 adlandırılmamış).
+Kapasite yayınlanmamış. Makale yalnızca besleme debisini veriyor: 85.7 kg/s farin. Kaz boynu yoktur: Tablo 7 kalsinatör çıkışını doğrudan Cy5'e bağlar. R5 muhtemelen tersiyer borudur (uyarı 4) ve kullanılmaz.
 
 ## Açık belirsizlikler
 
@@ -220,7 +221,33 @@ Silindir sütunu, 3. maddedeki alt koniyi hesaba katmaz (R3 ve R4).
 - `geometry/properties.py` riserler için yalnızca kesit özelliklerini verir (`duct_section`).
 - Riser katısı ve kule montajı bu belirsizlik çözülmeden FLS riserlerini kullanamaz.
 
-**Çözüm yolu:** Makalenin yazarlarından (DTU / FLSmidth) ya da aynı modelin kalsinatör ve riser makalesinden (Svensen et al. 2024, kalsinatör modeli) sütun anlamlarının doğrulanması. Doğrulama gelene kadar bu bölüm geçerlidir.
+**Kalsinatör makalesindeki tanım (2026-09-21'de kontrol edildi).** Aynı grubun kalsinatör makalesi (arXiv 2405.03208; ADCHEM 2024 / IFAC-PapersOnLine sürümü de aynı ifadeyi taşır), bölüm 2:
+
+> "The calciner has a total height of htot and is a cylinder with radius rc between the heights hcl and hcu. The cone sections have the smaller radii, rl and ru for the lower and upper cone, respectively."
+
+Bu tanıma göre h_cl ve h_cu koni boyu değil, **silindirin başladığı ve bittiği eksenel konumlardır**. Denklem (33b, 33c) ile tutarlıdır. Ama çelişkiyi çözmez:
+- Tablo 8'de riserler için h_cu = 0'dır. Bu tanımla silindir 0 yüksekliğinde biter, yani anlamsızdır. Ayrıca denklem (34a) h_cu'ya böldüğü için sıfıra bölme ortaya çıkar.
+- Kalsinatör satırında h_cl = 33 ve h_cu = 0'dır. Sütunlar yer değiştirmiş olsaydı (h_cl = 0, h_cu = 33) kalsinatör düz bir silindir olur ve "h_cl is zero for the risers" ifadesi de tutardı. **Bunu destekleyen hiçbir kaynak yoktur.** Yalnızca gözlemdir ve benimsenmez.
+- Kalsinatör makalesi h_cl ve h_cu için sayısal değer vermez. Verdiği tek ölçü şudur: "a 33 m high calciner with an inner radius of 3.08 m and refractory and shell thicknesses of 0.21 m and 0.01 m". Bu, Tablo 8'deki r_c = 3.08, r_r = 3.29, r_w = 3.30 değerleriyle tutarlıdır.
+
+Kontrol edilen ama bir şey vermeyen kaynaklar:
+- arXiv 2504.02886'nın yalnızca v1 sürümü vardır; düzeltme yayınlanmamıştır.
+- Siklon (2409.10916), fırın (2405.03200), soğutucu (2409.09076) ve PI kontrol (2605.03489) makalelerinde riser geometrisi yoktur.
+- Svensen'in doktora tezi bulunamadı.
+- Herkese açık bir kaynak kodu bulunamadı.
+
+**Çözüm yolu:** Sütun anlamlarının yazarlardan (DTU Compute / FLSmidth Cement) doğrulanması. Doğrulama gelene kadar bu bölüm geçerlidir: riser şekli ve hacmi hesaplanmaz, iki okumadan hiçbiri benimsenmez.
+
+### Kaz boynu: bulundu, hiçbir hatta atanmadı
+
+Kaz boynunun (kalsinatör çıkışından C5'e giden kanal) boyutlarını doğrudan veren iki kaynak bulundu. İkisinin de ham sayfa metni 2026-09-21'de okundu. İkisi de **başka tesislerin genişletme sırasında eklenmiş parçalarıdır**, bu yüzden kataloğa girmez.
+
+| Kaynak | Tesis | Yayınlanan değer | Neden atanmadı |
+|---|---|---|---|
+| [RSP预分解窑生产线改造设计](https://m.ccement.com/news/content/700902.html) | 1000 t/d kapasiteli RSP hattı 1500 t/d'ye büyütülürken eklenmiş ("系统产量按1500t/d设计"; fiilen ortalama 1400, en fazla 1600 t/d) | "鹅颈管的尺寸为φ3.1m×31m" | PF1500 hattının kalsinatörü CDC tipi ve Φ6.3; bu değer RSP kalsinatörlü başka bir tesisin genişletme parçası. Çapın gövde mi efektif mi olduğu yazılmıyor; 31 m'nin tüm borunun ekseni mi yoksa düz bir parça mı olduğu da belirsiz. |
+| [预分解窑烧成系统的技改 (Pengfei, 2017)](http://www.pengfei.com.cn/pengfei/News/Technical_News/2017/0329/2676.html) | Tianjin enstitüsü tasarımı 5000 t/d hat (çift dizi, DD kalsinatör, Ф4.8×72 m fırın), fiilen 5900 t/d | "鹅颈管主体截面是5.4×4.4m长方形，总高度18m" | PF5000 hattından farklı bir tesis ve farklı bir kalsinatör. Kesit dikdörtgen; boyu tesisin çelik taşıyıcı kirişlerine göre belirlenmiş ("由于框架梁的限制"). Özgün tasarımda kaz boynu yok, kalsinatör C5'e yatay bir kanalla bağlanıyor ("原分解炉出风口与C5旋风筒通过平管道相联"). |
+
+Riser (bağlantı kanalı) boyları hiçbir hat için metin olarak yayınlanmış bulunamadı. Yalnızca hacim ya da gaz kalma süresi veren kaynaklar kurallar gereği dışarıda bırakıldı: Guigang 2500 t/d'nin yalnızca hacim veren kaydı ve Pengfei'nin 1.0 s kalma süresi.
 
 ## Kararlar (kullanıcı onayladı, 2026-09-21)
 

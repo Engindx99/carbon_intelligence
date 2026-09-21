@@ -18,7 +18,7 @@ from geometry.catalog import (
     PUBLISHED,
     SOURCES,
     C1_TRANSFER_ASSUMPTION,
-    RISER_MAPPING_ASSUMPTION,
+    RISER_MAPPING_REF,
     W_IN_ASSUMPTION,
     Measure,
     derive,
@@ -225,13 +225,26 @@ class AssumptionsAreVisibleTest(unittest.TestCase):
                             C1_TRANSFER_ASSUMPTION, getattr(c, name).assumptions
                         )
 
-    def test_ratio_filled_risers_carry_the_mapping_assumption(self):
+    def test_the_riser_mapping_is_cited_not_assumed(self):
+        """FLS Table 7 states which cyclones each riser connects, so
+        neither the FLS risers nor the ratio-filled ones carry a mapping
+        assumption; the FLS risers cite Table 7 instead."""
 
         for key in ("1500", "5000"):
             for d in CATALOG[key].ducts:
                 with self.subTest(line=key, duct=d.name):
                     self.assertEqual(d.D.basis, DERIVED)
-                    self.assertIn(RISER_MAPPING_ASSUMPTION, d.D.assumptions)
+                    self.assertEqual(d.D.assumptions, ())
+
+        for d in CATALOG["FLS"].ducts:
+            for name in ("shell_D", "D", "length", "end_cone_len", "end_D"):
+                m = getattr(d, name)
+
+                with self.subTest(duct=d.name, field=name):
+                    self.assertEqual(m.basis, PUBLISHED)
+                    self.assertEqual(m.assumptions, ())
+                    self.assertIn(RISER_MAPPING_REF, m.ref)
+                    self.assertIn("Table 7", m.ref)
 
 
 class MatchesSourcesMdTest(unittest.TestCase):

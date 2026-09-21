@@ -38,10 +38,11 @@ C1_TRANSFER_ASSUMPTION = (
     "transfer: FLS Cy1 is a single top cyclone, this line's C1 is a "
     "multi-cyclone stage"
 )
-RISER_MAPPING_ASSUMPTION = (
-    "inferred: FLS riser R_k is taken to run from C(k+1)'s outlet to C(k); "
-    "the paper does not state the mapping"
-)
+
+# Not an assumption: stated by the source. Table 7 of arXiv 2504.02886
+# connects R_k's gas inlet to Cy(k+1)'s outlet (A_x,cy(k+1)/A_in,rk)
+# and R_k's outlet to Cy(k) (A_out,rk/A_in,cyk).
+RISER_MAPPING_REF = "connection: FLS Table 7, R_k from Cy(k+1) to Cy(k)"
 
 
 SOURCES = {
@@ -111,7 +112,10 @@ FLS_CYCLONES = {
     5: dict(h_t=11.94, h_c=8.09, h_x=3.54, A_in=14.83, r_c=3.54, r_r=3.74, r_d=0.45, r_x=2.58, w_in=1.42),
 }
 
-# R1..R4. R5 (61 m, r_c 1.13 m) is unnamed in the paper and not used.
+# R1..R4; which cyclones each connects is stated in Table 7
+# (RISER_MAPPING_REF). R5 (61 m, r_c 1.13 m) runs from the cooler to
+# the calciner in Table 7 and the text implies it is the tertiary pipe,
+# without saying so; it is not used (no tertiary duct, SOURCES.md).
 FLS_RISERS = {
     1: dict(h_tot=21.38, h_cl=4.83, r_c=2.45, r_r=2.47, r_u=1.72),
     2: dict(h_tot=19.38, h_cl=4.18, r_c=2.45, r_r=2.47, r_u=1.90),
@@ -149,6 +153,8 @@ for _stage in FLS_CYCLONES:
     for _name, _value in _cyclone_ratios(_stage).items():
         FLS_RATIOS[(_name, _stage)] = _value
 
+# R_k's diameter over that of the cyclone it leaves, Cy(k+1): the
+# pairing is Table 7's (RISER_MAPPING_REF), not an assumption.
 for _k, _riser in FLS_RISERS.items():
     FLS_RATIOS[("riser_D/D_src", _k)] = (
         _riser["r_c"] / FLS_CYCLONES[_k + 1]["r_c"]
@@ -167,7 +173,6 @@ FLS_RATIOS[("kiln_eff_over_shell", None)] = FLS_KILN["r_c"] / FLS_KILN["r_r"]
 _RATIO_ASSUMPTIONS = {
     "inlet_w/D": (W_IN_ASSUMPTION,),
     "inlet_h/D": (W_IN_ASSUMPTION,),
-    "riser_D/D_src": (RISER_MAPPING_ASSUMPTION,),
 }
 
 
@@ -511,11 +516,11 @@ def _line_fls():
             name=f"R{k}",
             from_stage=k + 1,
             to_stage=k,
-            shell_D=published(2.0 * r["r_r"], f"{ref}: 2 r_r[R{k}]", (RISER_MAPPING_ASSUMPTION,)),
-            D=published(2.0 * r["r_c"], f"{ref}: 2 r_c[R{k}]", (RISER_MAPPING_ASSUMPTION,)),
-            length=published(r["h_tot"], f"{ref}: h_tot[R{k}]", (RISER_MAPPING_ASSUMPTION,)),
-            end_cone_len=published(r["h_cl"], f"{ref}: h_cl[R{k}]", (RISER_MAPPING_ASSUMPTION,)),
-            end_D=published(2.0 * r["r_u"], f"{ref}: 2 r_u[R{k}]", (RISER_MAPPING_ASSUMPTION,)),
+            shell_D=p(2.0 * r["r_r"], f"2 r_r[R{k}]; {RISER_MAPPING_REF}"),
+            D=p(2.0 * r["r_c"], f"2 r_c[R{k}]; {RISER_MAPPING_REF}"),
+            length=p(r["h_tot"], f"h_tot[R{k}]; {RISER_MAPPING_REF}"),
+            end_cone_len=p(r["h_cl"], f"h_cl[R{k}]; {RISER_MAPPING_REF}"),
+            end_D=p(2.0 * r["r_u"], f"2 r_u[R{k}]; {RISER_MAPPING_REF}"),
         )
         for k, r in FLS_RISERS.items()
     )
