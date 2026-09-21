@@ -178,6 +178,50 @@ Değerler FLS Tablo 8'den **P** olarak alınır ve efektif iç ölçüdür. Arit
 
 Kapasite yayınlanmamış. Makale yalnızca besleme debisini veriyor: 85.7 kg/s farin. Kaz boynu ve tersiyer kanal da yok (R5 adlandırılmamış).
 
+## Açık belirsizlikler
+
+### FLS riser geometrisi: metin ile denklemler çelişiyor
+
+Riser **hacmi hesaplanmaz**. Kaynak netleşene kadar iki okumadan hiçbiri doğru kabul edilmez (kullanıcı kararı, 2026-09-21).
+
+**Metin** (arXiv 2504.02886, bölüm 3.5.2):
+
+> "The risers are cylinders with angled pipes on top. The angled pipes are modeled as truncated cones, where the height of the cones equals the pipe length and the top areas equal the cross-sectional area of the pipes' end."
+
+**Denklemler (32)–(34)** kesit hacmini silindir + üst koni (h_cu, r_u) + alt koni (h_cl, r_l) olarak kurar. Makale ayrıca "h_cl is zero for the risers" der.
+
+**Tablo 8'in riser satırları** ise şöyledir:
+
+| | h_tot | h_cl | h_cu | r_c | r_l | r_u |
+|---|---|---|---|---|---|---|
+| R1 | 21.38 | 4.83 | 0 | 2.45 | 2.45 | 1.72 |
+| R2 | 19.38 | 4.18 | 0 | 2.45 | 2.45 | 1.90 |
+| R3 | 20.37 | 4.18 | 0 | 2.55 | 2.45 | 1.90 |
+| R4 | 19.87 | 4.37 | 0 | 2.55 | 2.45 | 1.99 |
+
+Çelişkiler:
+1. Metin risers için h_cl = 0 der, tablo ise h_cl > 0 verir.
+2. Metinde "üstte koni" vardır, ama tabloda üst koninin boyu h_cu = 0'dır.
+3. Tabloyu denklemlere olduğu gibi koyunca üst koni hiç oluşmaz. Alt koni de R1 ve R2'de r_l = r_c olduğu için düz silindirdir; R3 ve R4'te ise r_c'den r_l'ye hafifçe daralan bir koni olur. Hiçbir riserde r_u kullanılmaz, yani metnin anlattığı "uca doğru daralan koni" ortaya çıkmaz.
+
+İki okumanın hacim farkı (yalnızca bu belge için hesaplandı, kodda kullanılmıyor):
+
+| | Silindir D × h_tot [m³] | Metin okuması: silindir (h_tot − h_cl) + koni D → 2r_u, boyu h_cl [m³] | Fark |
+|---|---|---|---|
+| R1 | 403.2 | 378.7 | −6.1 % |
+| R2 | 365.5 | 349.1 | −4.5 % |
+| R3 | 416.1 | 396.2 | −4.8 % |
+| R4 | 405.9 | 387.7 | −4.5 % |
+
+Silindir sütunu, 3. maddedeki alt koniyi hesaba katmaz (R3 ve R4).
+
+**Katalogdaki durum:**
+- FLS riserlerinin `length` (h_tot), `end_cone_len` (h_cl) ve `end_D` (2 r_u) değerleri tablodan **yayınlanmış** olarak tutulur, ama hiçbir hesapta kullanılmaz.
+- `geometry/properties.py` riserler için yalnızca kesit özelliklerini verir (`duct_section`).
+- Riser katısı ve kule montajı bu belirsizlik çözülmeden FLS riserlerini kullanamaz.
+
+**Çözüm yolu:** Makalenin yazarlarından (DTU / FLSmidth) ya da aynı modelin kalsinatör ve riser makalesinden (Svensen et al. 2024, kalsinatör modeli) sütun anlamlarının doğrulanması. Doğrulama gelene kadar bu bölüm geçerlidir.
+
 ## Kararlar (kullanıcı onayladı, 2026-09-21)
 
 1. **Kaz boynunun uzunluğu:** hiçbir kaynakta yok, bu yüzden `None`. Sayı uydurulmaz. Kule oluşturucu bu alanı zorunlu sayar ve eksik olduğunda açık bir hata verir.

@@ -20,7 +20,8 @@ Conventions, all SI:
     gooseneck and the vendor risers have no published length. The FLS
     risers do, but the paper's end-cone description and its volume
     equations (32)-(34) disagree for the Table 8 values, so no riser
-    volume is computed until that is settled.
+    volume is computed until the source settles it. Neither reading is
+    adopted; see "Açık belirsizlikler" in geometry/SOURCES.md.
 """
 
 from dataclasses import dataclass
