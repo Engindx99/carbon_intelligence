@@ -331,3 +331,14 @@ kiln_closure:
 #       - [magnesia-spinel brick, 0.225,  2.80]
 #       - [steel shell,           0.025, 45.00]
 # ======================================================
+
+# ======================================================
+# CFD fluid-volume geometry (geometry/ package only)
+# ======================================================
+#
+# Which catalogue line geometry/ builds from. Keys are in
+# geometry/catalog.py; every dimension's source is in
+# geometry/SOURCES.md. This picks a GEOMETRY reference only:
+# it does not change the twin's feed, capacity or kiln size.
+geometry:
+  reference_line: "2500"
