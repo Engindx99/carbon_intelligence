@@ -50,7 +50,8 @@ def line_report(line):
         "Assumptions",
         *[f"  [{i + 1}] {a}" for i, a in enumerate(notes)],
         "",
-        "Closed-form properties (one cyclone; x count for the stage)",
+        "Equipment volumes and areas, catalogue dimensions only, no CFD extensions",
+        "(one cyclone; x count for the stage). Use these for residence time and hold-up.",
     ]
 
     for stage in line.cyclones:

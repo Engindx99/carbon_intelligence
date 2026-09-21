@@ -9,6 +9,11 @@
     solids.py      B-rep primitives (CadQuery)
     export.py      STEP / STL under output/<line>/ (CadQuery)
     report.py      the provenance report; `python -m geometry`
+    tower.py       what a tower needs, and why no line has it yet
+
+Volumes: properties.py gives EQUIPMENT volumes, for residence time and
+hold-up. A solid from components.py is the CFD domain, which adds
+inlet and outlet extensions set by CFD modelling parameters.
 
 Dimensions are taken from published equipment tables. None is solved
 for, and none is scaled from capacity, flow or velocity (SOURCES.md).

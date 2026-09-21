@@ -6,6 +6,7 @@ geometry/output/<line>/; that part needs CadQuery (requirements-cad.txt).
 """
 
 import argparse
+from dataclasses import fields
 
 from geometry.catalog import reference_line
 from geometry.config import reference_line_key
@@ -27,13 +28,33 @@ def main(argv=None):
         from geometry.export import export_solid
         from geometry.modelling import cfd_boundary_params
 
+        from geometry.properties import cyclone_properties, vessel_properties
+
         cfd = cfd_boundary_params()
-        print("\nSolids")
+        print(
+            "\nCFD modelling parameters (geometry.cfd_boundary; NOT plant dimensions,"
+            " no source)"
+        )
+        for f in fields(cfd):
+            print(f"  {f.name:<32} {getattr(cfd, f.name)}")
+
+        print(
+            "\nSolids: CFD volume = equipment volume + boundary extensions."
+            " Physical estimates use the equipment volume."
+        )
 
         for name in component_names(line):
+            if name == "calciner":
+                equipment = vessel_properties(line.calciner, "calciner").volume
+            else:
+                equipment = cyclone_properties(line.cyclones[int(name[1:]) - 1]).body_volume
+
             solid = build_component(line, name, cfd)
             step, _ = export_solid(solid, line.key, name)
-            print(f"  {name:<9} V {solid.Volume():8.1f} m3   {step}")
+            print(
+                f"  {name:<9} equipment V {equipment:8.1f} m3   CFD solid V"
+                f" {solid.Volume():8.1f} m3   {step}"
+            )
 
 
 if __name__ == "__main__":

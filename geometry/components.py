@@ -37,6 +37,11 @@ No riser solid is built: see "Açık belirsizlikler" in SOURCES.md.
 
 These checks refuse a combination that cannot be built; they never
 adjust a dimension to make it buildable.
+
+VOLUMES. A solid here is the CFD domain: the equipment plus the inlet
+and outlet extensions. Its volume is not the equipment volume and is
+not to be used for residence time or hold-up; that is
+properties.py's body_volume / vessel volume.
 """
 
 from dataclasses import dataclass

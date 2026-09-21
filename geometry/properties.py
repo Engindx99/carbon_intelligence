@@ -5,6 +5,13 @@ the dimensions in geometry/catalog.py and nothing else. Each function
 names the fields it needs; if any is None, it raises MissingGeometry
 listing them. No missing value is filled in here.
 
+Every volume here is an EQUIPMENT volume, from catalogue dimensions
+only. The CFD solids built in components.py are larger: they carry
+inlet and outlet extensions whose lengths are CFD modelling
+parameters (modelling.py), not plant dimensions. Residence time,
+hold-up and any other physical estimate use the volumes here, never
+a CFD solid's.
+
 Conventions, all SI:
 
   * D is the effective inner diameter, so every property is of the
@@ -127,7 +134,14 @@ class CycloneProperties:
 
     @property
     def body_volume(self):
-        """Barrel plus cone [m3], vortex finder interior included."""
+        """EQUIPMENT volume: barrel plus cone [m3], vortex finder
+        interior included.
+
+        This is the volume any physical hold-up or residence-time
+        estimate should use. It is NOT the volume of the CFD solid
+        (components.py), which adds the inlet and outlet extensions
+        set by the CFD boundary parameters.
+        """
 
         return self.barrel_volume + self.cone_volume
 

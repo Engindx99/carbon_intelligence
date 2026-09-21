@@ -189,6 +189,27 @@ class ReportTest(unittest.TestCase):
 
                 self.assertIn("no volume", text)
 
+    def test_report_volumes_are_labelled_as_equipment_volumes(self):
+
+        text = line_report(CATALOG["2500"])
+        self.assertIn("Equipment volumes", text)
+        self.assertIn("no CFD extensions", text)
+        self.assertIn("residence time", text)
+
+    def test_cfd_parameters_are_not_in_the_catalogue_or_its_report(self):
+
+        names = {f.name for f in dataclasses.fields(CfdBoundaryParams)}
+
+        for key, line in CATALOG.items():
+            text = line_report(line)
+            paths = {p.split(".")[-1] for p, _ in line.measures()}
+
+            with self.subTest(line=key):
+                self.assertFalse(names & paths)
+
+                for name in names:
+                    self.assertNotIn(name, text)
+
 
 @unittest.skipUnless(HAVE_CADQUERY, "CadQuery not installed (requirements-cad.txt)")
 class SolidTest(unittest.TestCase):
