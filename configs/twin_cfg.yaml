@@ -87,6 +87,44 @@ transition:
 calciner:
   length: 25.0   # m
 
+  # ======================================================
+  # THE CALCINER IS A VERTICAL RISER. IT DOES NOT ROTATE.
+  #
+  # It used to carry slope_deg = 3.0, fill_fraction = 0.10 and
+  # rpm = 3.0 hard-coded, put them through a ROTARY KILN transit
+  # correlation, and read `state.rpm` -- the kiln's speed -- on
+  # top, so turning the kiln faster moved the calciner's meal.
+  # That gave a 670 s solids transit. An ILC calciner runs 2-5 s.
+  #
+  # What it does now is transport: u_s = u_g - u_t, the gas
+  # velocity less the Stokes slip the particle's own weight costs
+  # it (physics.suspension_transport). The suspension density
+  # then follows from continuity, so there is no fill fraction
+  # left to configure.
+  #
+  # These two are the only material properties that slip needs.
+  # NOTE THE DENSITY: it is the mineral PARTICLE density, not the
+  # ~1100 kg/m3 bulk density the zone carries as rho_s. Bulk
+  # density already contains the void fraction of a settled heap,
+  # which means nothing for a particle falling through gas, and
+  # using it here would understate the slip by 2.5x.
+  #
+  # Cement raw meal is ground to 12-14 % residue on 90 um, so the
+  # mass-mean particle is tens of microns. IT BARELY MATTERS, and
+  # that is what makes this a mechanism and not a knob -- measured
+  # on the converged calciner stream:
+  #
+  #   d_p     u_t          slip       transit
+  #   10 um   0.0028 m/s   0.023 %     2.02 s
+  #   25 um   0.0175 m/s   0.142 %     2.03 s
+  #   50 um   0.0701 m/s   0.567 %     2.03 s
+  #   90 um   0.2271 m/s   1.838 %     2.06 s
+  #
+  # Every defensible meal size lands within 2 % of the same
+  # answer, and all of them inside the 2-5 s band.
+  particle_diameter_m: 25.0e-6
+  particle_density_kg_m3: 2700.0
+
 preheater:
   length: 25.0   # m, equivalent solid path length (stage volume sizing)
   nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
@@ -331,6 +369,7 @@ kiln_closure:
 #       - [magnesia-spinel brick, 0.225,  2.80]
 #       - [steel shell,           0.025, 45.00]
 # ======================================================
+
 
 # ======================================================
 # CFD fluid-volume geometry (geometry/ package only)

@@ -3,6 +3,29 @@ from physics.physics import T_gas_from_h
 
 
 # ======================================================
+# THE GAS ENTERING THE CALCINER
+#
+# ONE definition, because there are now two consumers: the
+# enthalpy inversion below, and the riser velocity in
+# Calciner.apply(). Keeping a second copy of this sum is exactly
+# how the inlet divisor went stale in the first place -- see the
+# note on gas_temperature_from_enthalpy -- and a second copy of a
+# flow is a second thing to forget to update.
+#
+# The fuel mass belongs here because the scalar chain puts it in
+# the zone outlet. Its ENTHALPY does not: fuel enters the gas row
+# as q_fuel_cells along the zone.
+# ======================================================
+def inlet_gas_flow(state):
+
+    return (
+        state.m_dot_g_transition
+        + state.m_dot_tertiary_air
+        + getattr(state, "m_dot_fuel_calciner", 0.0)
+    )
+
+
+# ======================================================
 # TEMPERATURE FROM ENTHALPY
 #
 # Moved from Calciner.gas_temperature_from_enthalpy() and
@@ -49,11 +72,7 @@ def gas_temperature_from_enthalpy(calciner, H, state):
     # the inlet ~4% cold in specific terms. That asymmetry is
     # real and predates this; it is not corrected here because
     # it is a different question from the lag.
-    m_dot_g = (
-        state.m_dot_g_transition
-        + state.m_dot_tertiary_air
-        + getattr(state, "m_dot_fuel_calciner", 0.0)
-    )
+    m_dot_g = inlet_gas_flow(state)
 
     # H = m_dot_g * h_gas(T, T_ref)
     #

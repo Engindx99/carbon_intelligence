@@ -46,6 +46,16 @@ class GlobalState:
     # the correlation's minutes are now converted at the source.
     residence_time: float = 0.0 # s
     solid_velocity: float = 0.0 #m/s
+
+    # The calciner is a vertical riser, so its meal moves with the
+    # gas, not with the kiln. These three come from
+    # physics.suspension_transport and are the calciner's OWN
+    # transport -- nothing here follows state.rpm, which belongs
+    # to the one piece of equipment that rotates.
+    u_s_calciner: float = 0.0               # m/s
+    residence_time_calciner: float = 0.0    # s
+    solids_volume_fraction_calciner: float = 0.0   # -
+
     # Bed cross-section fraction, an OUTPUT of the transit time
     # through mass continuity (physics.rotary_bed_motion).
     # Distinct from operational.kiln_load, which is a capacity figure.

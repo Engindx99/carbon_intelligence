@@ -4,8 +4,10 @@ import yaml
 from physics.physics import h_gas
 from physics.physics import interfacial_areas
 from physics.physics import kiln_geometry
+from physics.physics import mu_gas
 from physics.physics import outlet_face_value
-from physics.physics import solid_axial_velocity
+from physics.physics import suspension_transport
+from physics.kiln_closures import gas_density
 
 from chemistry.phases import get_cell_solid_flow
 from chemistry.phases import raw_meal_solid_flow
@@ -118,23 +120,79 @@ class Calciner:
 
         # ======================================================
         # CALCINER OPERATING PARAMETERS
+        #
+        # THE CALCINER DOES NOT ROTATE AND IS NOT INCLINED. It is
+        # a vertical riser: meal is fed in and carried up by the
+        # process gas. It used to carry
+        #
+        #     self.slope_deg = 3.0
+        #     self.fill_fraction = 0.10
+        #     self.rpm = 3.0
+        #
+        # and put them through physics.solid_axial_velocity, a
+        # ROTARY KILN transit correlation, while apply() read the
+        # kiln's own `state.rpm` on top -- so turning the kiln
+        # faster made the calciner's meal move faster, which is
+        # not a thing that happens. That gave a 670 s solids
+        # transit against the 2-5 s an ILC calciner runs.
+        #
+        # What replaces it is transport, not a correlation:
+        # u_s = u_g - u_t, resolved per sweep in apply() because
+        # it depends on the gas flow and temperature. Nothing is
+        # set here except the material property the slip needs.
         # ======================================================
 
-        self.slope_deg = 3.0
-        self.fill_fraction = 0.10
-        self.rpm = 3.0
+        # Raw meal particle diameter and PARTICLE density, for the
+        # Stokes slip in physics.suspension_transport. rho_s above
+        # is the BULK density of a settled heap and is the wrong
+        # one for a particle falling through gas.
+        #
+        # Cement raw meal is ground to 12-14 % residue on 90 um,
+        # so the mass-mean particle is tens of microns. IT DOES
+        # NOT MATTER, and that is the point -- measured on the
+        # converged calciner stream:
+        #
+        #   d_p     u_t        slip      transit
+        #   10 um   0.0028 m/s 0.023 %    2.02 s
+        #   25 um   0.0175 m/s 0.142 %    2.03 s
+        #   50 um   0.0701 m/s 0.567 %    2.03 s
+        #   90 um   0.2271 m/s 1.838 %    2.06 s
+        #
+        # Every defensible meal size lands within 2 % of the same
+        # answer, because the slip is a fraction of a percent of
+        # the gas velocity. That plateau is what makes this a
+        # mechanism being corrected and not a parameter being
+        # fitted.
+        calciner_cfg = (cfg or {}).get("calciner", {})
+
+        self.particle_diameter = float(
+            calciner_cfg.get("particle_diameter_m", 25.0e-6)
+        )
+
+        self.particle_density = float(
+            calciner_cfg.get("particle_density_kg_m3", 2700.0)
+        )
+
+        if not (1.0e-6 <= self.particle_diameter <= 5.0e-4):
+            raise ValueError(
+                "calciner.particle_diameter_m outside the range "
+                "raw meal is ground to (1 um - 0.5 mm), got "
+                f"{self.particle_diameter}"
+            )
+
+        if not (1500.0 <= self.particle_density <= 4000.0):
+            raise ValueError(
+                "calciner.particle_density_kg_m3 must be a mineral "
+                "PARTICLE density, not a bulk density, got "
+                f"{self.particle_density}"
+            )
 
         # ================= FLOW =================
+        # Both are resolved in apply(); there is no gas stream yet.
         self.u_g = 0.0
-
-        self.u_s = solid_axial_velocity(
-            L=self.L,
-            D=self.D,
-            slope_deg=self.slope_deg,
-            fill_fraction=self.fill_fraction,
-            rpm=self.rpm,
-            eps=self.eps,
-        )
+        self.u_s = 0.0
+        self.u_t = 0.0
+        self.solids_volume_fraction = 0.0
 
         # ================= HEAT TRANSFER =================
         cfg = ZONE_HT_CONFIG[self.zone]
@@ -271,29 +329,49 @@ class Calciner:
         #
         #     u_s * dm/dz = -r
         #
-        # No residence-time chemistry is used here.
+        # so u_s is what turns the kinetics into a conversion
+        # along the riser, and it is the whole residence time.
+        #
+        # PNEUMATIC TRANSPORT, not rotation. The meal is carried
+        # up by the process gas at u_g less the slip its own
+        # weight costs it. This used to run a rotary-kiln transit
+        # correlation on a hard-coded 3 degree inclination and
+        # 3 rpm -- and read `state.rpm`, the KILN's speed, on top
+        # of that -- for a 670 s transit against the 2-5 s an ILC
+        # calciner runs.
+        #
+        # Evaluated per sweep because it follows the gas: the gas
+        # flow is the inlet stream and the density is taken at the
+        # inlet temperature this same handoff just solved, which
+        # is the coldest and therefore densest the gas gets in
+        # this zone -- so u_g here is the SLOWEST it is anywhere
+        # along the riser and the transit is an upper bound.
         # ======================================================
 
-        rpm = float(
-            getattr(
-                state,
-                "rpm",
-                self.rpm,
-            )
-        )
+        m_dot_g_in = raw_meal_inlet.inlet_gas_flow(state)
 
-        self.u_s = solid_axial_velocity(
-            L=self.L,
-            D=self.D,
-            slope_deg=self.slope_deg,
-            fill_fraction=self.fill_fraction,
-            rpm=rpm,
+        rho_g_in = gas_density(Tg_in)
+
+        (
+            self.u_s,
+            self.u_g,
+            self.u_t,
+            self.solids_volume_fraction,
+        ) = suspension_transport(
+            m_dot_g=m_dot_g_in,
+            m_dot_s=float(state.m_dot_s_calciner),
+            rho_g=rho_g_in,
+            A_cross=self.A_cross,
+            d_p=self.particle_diameter,
+            rho_particle=self.particle_density,
+            mu=mu_gas(Tg_in),
             eps=self.eps,
         )
 
-        self.u_s = max(
-            float(self.u_s),
-            self.eps,
+        state.u_s_calciner = float(self.u_s)
+        state.residence_time_calciner = float(self.L / self.u_s)
+        state.solids_volume_fraction_calciner = float(
+            self.solids_volume_fraction
         )
 
 

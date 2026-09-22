@@ -892,6 +892,123 @@ def gas_axial_velocity(m_dot_g, rho_g, A_cross, eps):
 
     return m_dot_g / (rho_g * A_cross + eps)
 
+
+# ======================================================
+# SOLID TRANSPORT IN SUSPENSION
+#
+# For the equipment that does NOT rotate and is NOT a packed bed:
+# the precalciner riser and the cyclone preheater's ducts. In both
+# the meal is carried by the process gas, so its velocity is the
+# gas velocity less the slip the particle's own weight costs it,
+#
+#   u_s = u_g - u_t
+#
+# and the suspension density follows from continuity afterwards,
+# exactly as the kiln's bed fill does. There is no fill fraction
+# to configure and no correlation: this is transport.
+#
+# u_t is the terminal settling velocity. Cement raw meal is
+# ground to ~12-14 % residue on 90 um, so the particles are tens
+# of microns and the particle Reynolds number is far below 1 --
+# Stokes' law, which the function CHECKS rather than assumes:
+#
+#   u_t = (rho_p - rho_g) g d_p^2 / (18 mu)
+#
+# NOTE WHICH DENSITY. rho_p is the PARTICLE density, ~2700 kg/m3
+# for limestone and clay, not the ~1100 kg/m3 BULK density the
+# zones carry as `rho_s`. Bulk density already contains the void
+# fraction of a settled heap, which is meaningless for a particle
+# falling through gas, and using it here would understate the
+# slip by a factor of 2.5.
+#
+# The slip turns out to be tiny -- fractions of a percent of u_g
+# for meal-sized particles -- which is the physical content of
+# "pneumatic conveying": the meal goes where the gas goes. That
+# is why these vessels hold their solids for SECONDS while a
+# rotary kiln holds its bed for half an hour, and it is the whole
+# distinction the packed-bed treatment erased.
+# ======================================================
+G_ACCEL = 9.80665      # m/s2
+
+
+def stokes_terminal_velocity(d_p, rho_p, rho_g, mu):
+
+    if min(d_p, rho_p, rho_g, mu) <= 0.0:
+        raise ValueError(
+            "d_p, rho_p, rho_g and mu must be > 0, got "
+            f"d_p={d_p}, rho_p={rho_p}, rho_g={rho_g}, mu={mu}"
+        )
+
+    if rho_p <= rho_g:
+        raise ValueError(
+            "a particle lighter than the gas does not settle: "
+            f"rho_p={rho_p}, rho_g={rho_g}"
+        )
+
+    u_t = (rho_p - rho_g) * G_ACCEL * d_p ** 2 / (18.0 * mu)
+
+    # Stokes' law holds for Re_p < 1; past that the drag is no
+    # longer linear in velocity and this expression overstates
+    # u_t. Checked, not assumed, because d_p is configurable.
+    reynolds = rho_g * u_t * d_p / mu
+
+    if reynolds >= 1.0:
+        raise ValueError(
+            "particle Reynolds number "
+            f"{reynolds:.3f} >= 1: outside Stokes' law, where this "
+            "expression overstates the settling velocity. A "
+            "correlation valid in the intermediate regime is "
+            "needed, not a wider tolerance."
+        )
+
+    return u_t
+
+
+def suspension_transport(
+    m_dot_g,
+    m_dot_s,
+    rho_g,
+    A_cross,
+    d_p,
+    rho_particle,
+    mu,
+    eps,
+):
+    """(u_s, u_g, u_t, solids_volume_fraction) for a vessel whose
+    solids are carried by the gas."""
+
+    if A_cross <= 0.0 or m_dot_s <= 0.0:
+        raise ValueError(
+            f"A_cross and m_dot_s must be > 0, got A_cross={A_cross}, "
+            f"m_dot_s={m_dot_s}"
+        )
+
+    u_g = gas_axial_velocity(m_dot_g, rho_g, A_cross, eps)
+    u_t = stokes_terminal_velocity(d_p, rho_particle, rho_g, mu)
+
+    u_s = u_g - u_t
+
+    if u_s <= 0.0:
+        raise ValueError(
+            "the gas cannot carry the solids upward: "
+            f"u_g={u_g:.4f} m/s against a terminal velocity of "
+            f"{u_t:.4f} m/s. The vessel would fill, which is a "
+            "statement about the plant, not a number to clamp."
+        )
+
+    # Continuity, the same statement rotary_bed_motion makes about
+    # the kiln's bed -- on the PARTICLE density, because this is a
+    # dispersion of individual particles, not a settled heap.
+    solids_fraction = m_dot_s / (rho_particle * u_s * A_cross)
+
+    if not (0.0 < solids_fraction < 1.0):
+        raise ValueError(
+            "suspension solids fraction out of range: "
+            f"{solids_fraction} (u_s={u_s}, u_g={u_g})"
+        )
+
+    return u_s, u_g, u_t, solids_fraction
+
 # ======================================================
 # COMBUSTION
 # ======================================================
