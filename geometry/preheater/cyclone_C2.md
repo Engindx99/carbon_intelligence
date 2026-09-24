@@ -49,7 +49,7 @@ Modelleme sadeleştirmeleri:
 - Farin borusu yok; toz çıkışı bir sınır yüzü.
 
 Hazır dosya: tek parça, kapalı katı `geometry/output/2500/C2.step` (ayrıca `.stl`).
-Kontrol: `C2.step` tek parça ve kapalı bir katı olmalı, hacmi 273.1 m³ olmalı (`tests/test_geometry_solid.py`).
+Kontrol: `C2.step` tek parça ve kapalı bir katı olmalı, hacmi 273.1 m³ olmalı. Bunu sabitleyen test, dayandığı `geometry/` paketiyle birlikte kaldırıldı; kontrolü artık katıyı kuran makro export öncesi kendisi yapar ([macros/README.md](../macros/README.md)).
 
 ## Boundary Faces
 
