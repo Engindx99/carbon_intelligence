@@ -389,14 +389,21 @@ geometry:
   #     axis, x D. Must put the face outside the barrel (> 0.40
   #     for the catalogue's inlet_w = 0.2 D; checked per cyclone).
   #   outlet_extension_over_vortex_D: outlet face above the roof,
-  #     x vortex finder diameter.
+  #     x vortex finder diameter. 1.0 cut through the reverse
+  #     flow core still open above the roof: 40-44 % of the
+  #     outlet face had gas coming back in, and the solution sat
+  #     in a limit cycle instead of converging. 2.5 clears it.
   #   vortex_finder_wall_m: vortex finder wall thickness [m].
   #     The flow does not care how thick the plate is, but the
   #     mesh does: this width is also the finder's lower rim
   #     face, a ribbon running its whole circumference. At
   #     0.012 that face is 631:1 and skews to 0.95; 0.05 is
-  #     154:1. Must stay under the duct's inner wall radius.
+  #     154:1 and 0.08 is 96:1. 0.05 still failed once the core
+  #     was refined to the 0.05 m cells a cyclone needs -- a rim
+  #     one cell wide gave 0.015 orthogonal quality, at Fluent's
+  #     floor. Must stay under the duct's inner wall radius, and
+  #     shares a 0.10 m budget with the macro's tangent relief.
   cfd_boundary:
     inlet_extension_over_D: 0.6
-    outlet_extension_over_vortex_D: 1.0
-    vortex_finder_wall_m: 0.05
+    outlet_extension_over_vortex_D: 2.5
+    vortex_finder_wall_m: 0.08

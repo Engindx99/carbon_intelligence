@@ -65,14 +65,32 @@ Const H_INLET        As Double = 2.16
 ' Modelling parameters -- NOT plant dimensions. No source gives
 ' them; they say where the CFD boundary faces sit.
 ' configs/twin_cfg.yaml : geometry.cfd_boundary
-Const OUTLET_EXT_OVER_VORTEX_D As Double = 1#     ' outlet face above roof, x vortex D
+' How far above the roof the outlet face sits, in vortex finder
+' diameters. 1.0 was too short and the first Fluent run said so:
+' the swirl leaving up the bore carries a reverse-flow core that
+' was still open where the boundary cut it, so 40-44 % of the
+' outlet face had gas coming back IN. Fluent then has to impose the
+' backflow values there, the imposed state fights the state the
+' domain wants, and the whole solution sat in a limit cycle of
+' +/- 0.3 % on the mass balance instead of converging. 2.5 puts the
+' face 6.0 m above the roof, well past where the core closes.
+Const OUTLET_EXT_OVER_VORTEX_D As Double = 2.5    ' outlet face above roof, x vortex D
 ' Vortex finder wall thickness [m]. What this carves out of the
 ' fluid is a slot 2.16 m deep and this wide, running the finder's
 ' whole 7.6 m circumference, and its lower rim is an annular face of
 ' the same width. At the 0.012 m this started as, that face is a
 ' 631:1 ribbon: a mesher spans it with one sliver element and the
 ' skewness there runs to 0.95 while the rest of the mesh averages
-' 0.28. 0.05 m brings it to 154:1.
+' 0.28. 0.05 m brings it to 154:1, and 0.08 m to 96:1.
+'
+' 0.05 m was not enough. It held at the 0.15 m cells the first mesh
+' was built with, but the cyclone needs about 0.05 m cells in the
+' core to resolve the vortex at all, and at that size a 50 mm rim
+' is one cell wide. Refining the core in Fluent drove the minimum
+' orthogonal quality to 0.015 -- Fluent's floor is 0.01 -- and both
+' of the worst cells sat under this rim, at r = 1.23-1.25,
+' z = 9.22, 60 mm below its face. A feature thinner than the cell
+' size cannot be meshed, only worked around.
 '
 ' Thickening it costs nothing physically. The wall's job is to keep
 ' the swirl in the annulus apart from the gas leaving up the bore,
@@ -81,11 +99,24 @@ Const OUTLET_EXT_OVER_VORTEX_D As Double = 1#     ' outlet face above roof, x vo
 ' with no source either way (configs/twin_cfg.yaml says so), and it
 ' takes the annulus from 0.948 to 0.910 m, 4 % narrower.
 '
-' The limit is the duct: its inner wall sits at y = R - inlet_w =
-' 1.30 m, so the finder's outer radius must stay under that. At
-' 0.05 m the margin is 0.050 m; 0.10 m would meet it exactly and
-' PreChecks refuses it.
-Const VORTEX_WALL              As Double = 0.05
+' The limit is the duct: its inner wall sits at
+' y = R - INLET_TANGENT_RELIEF - inlet_w, so the finder's outer
+' radius must stay under that. The two parameters share one budget:
+'
+'     VORTEX_WALL + INLET_TANGENT_RELIEF < 0.10 m
+'
+' and they cannot both be spent. This file spends it on the rim,
+' because that is where the measurement says the mesh actually
+' fails: 0.015 orthogonal quality under the rim against 0.135 at
+' the tangent edge, an order of magnitude apart. The tangent edge
+' is handled with a face sizing in the mesher instead, which costs
+' no geometry. 0.08 m leaves a 0.020 m margin to the duct wall.
+'
+' 80 mm is also the more physical of the two ends of the range: a
+' preheater dip tube is heat resistant steel or SiC, often
+' refractory lined, and 80 mm of it is ordinary. The 12 mm this
+' started at was the least physical value of the three.
+Const VORTEX_WALL              As Double = 0.08
 Const L_INLET                  As Double = 3#     ' duct length from the barrel tangent plane [m]
 Const INLET_SLOPE_DEG          As Double = 5#     ' duct inclined this far DOWNWARD toward the cyclone
 
@@ -107,8 +138,16 @@ Const INLET_ROOF_CLEARANCE As Double = 0.05
 ' cells there. A small positive value shifts BOTH duct walls inward
 ' so that edge has a finite included angle -- the published section
 ' 0.86 x 4.97 and hence the inlet velocity are preserved exactly.
-' 0.02 m is the largest that still leaves useful clearance to the
-' vortex finder. Record it in cyclone_C1.md if you use it.
+' It stays at 0 deliberately. It shares the 0.10 m budget above
+' with VORTEX_WALL, and the measurements put the rim an order of
+' magnitude ahead of this edge as a mesh problem: 0.015 orthogonal
+' quality against 0.135. A 0.135 cell is usable; a 0.015 one is
+' not. So the budget goes to the rim and this edge is left as the
+' real tangent geometry, to be handled with a local face sizing.
+' If a future mesh proves that insufficient, 0.02 here forces
+' VORTEX_WALL down to 0.06 -- section 0.86 x 2.16 and hence the
+' inlet velocity survive either way. Record it in cyclone_C1.md if
+' you use it.
 Const INLET_TANGENT_RELIEF As Double = 0#
 
 ' Output
