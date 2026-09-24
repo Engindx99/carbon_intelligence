@@ -66,7 +66,26 @@ Const H_INLET        As Double = 2.16
 ' them; they say where the CFD boundary faces sit.
 ' configs/twin_cfg.yaml : geometry.cfd_boundary
 Const OUTLET_EXT_OVER_VORTEX_D As Double = 1#     ' outlet face above roof, x vortex D
-Const VORTEX_WALL              As Double = 0.012  ' vortex finder wall thickness [m]
+' Vortex finder wall thickness [m]. What this carves out of the
+' fluid is a slot 2.16 m deep and this wide, running the finder's
+' whole 7.6 m circumference, and its lower rim is an annular face of
+' the same width. At the 0.012 m this started as, that face is a
+' 631:1 ribbon: a mesher spans it with one sliver element and the
+' skewness there runs to 0.95 while the rest of the mesh averages
+' 0.28. 0.05 m brings it to 154:1.
+'
+' Thickening it costs nothing physically. The wall's job is to keep
+' the swirl in the annulus apart from the gas leaving up the bore,
+' and a 12 mm plate and a 50 mm one do that identically -- the flow
+' does not care how thick the plate is. It is a modelling choice
+' with no source either way (configs/twin_cfg.yaml says so), and it
+' takes the annulus from 0.948 to 0.910 m, 4 % narrower.
+'
+' The limit is the duct: its inner wall sits at y = R - inlet_w =
+' 1.30 m, so the finder's outer radius must stay under that. At
+' 0.05 m the margin is 0.050 m; 0.10 m would meet it exactly and
+' PreChecks refuses it.
+Const VORTEX_WALL              As Double = 0.05
 Const L_INLET                  As Double = 3#     ' duct length from the barrel tangent plane [m]
 Const INLET_SLOPE_DEG          As Double = 5#     ' duct inclined this far DOWNWARD toward the cyclone
 
@@ -139,6 +158,12 @@ Dim xInletNear As Double, zDuctTop As Double
 Dim uSign As Double, vSign As Double
 Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve profiles
 Dim uSignD As Double, vSignD As Double      ' the duct's own plane, for its side view
+
+' The off-plane component of the first point drawn in the sketch
+' now open. Every later point in the same sketch has to match it;
+' see G2S for why the value itself is not compared against zero.
+Dim wRef As Double
+Dim wRefSet As Boolean
 
 ' expected volumes, all closed form
 Dim vEquip As Double, vDuctFree As Double, vPipe As Double, vWall As Double
@@ -393,9 +418,8 @@ Private Sub Build()
     ' Both probes run while the part is still empty. Once the barrel
     ' is there a probe would land inside it, merge with it, and then
     ' measure the merged body instead of itself.
-    Set planeDuct = OffsetPlane(planeY0, yInner)
+    Set planeDuct = OffsetPlane(planeY0, yInner, uSignD, vSignD)
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
-    CalibrateSketchAxes planeDuct, 0#, yInner, 0#, uSignD, vSignD
 
     '--- 1. barrel + cone -------------------------------------------
     Set f = RevolveProfile(planeX0, Array( _
@@ -475,6 +499,7 @@ Private Function RevolveProfile(planeX0 As SldWorks.Feature, pts As Variant, _
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open a sketch on the x = 0 plane."
+    wRefSet = False
 
     For i = 0 To n - 1
         j = (i + 1) Mod n
@@ -513,11 +538,27 @@ Private Function RevolveProfile(planeX0 As SldWorks.Feature, pts As Variant, _
 End Function
 
 
-' A plane parallel to y = 0 at the given y. Which side of the base
-' plane the offset lands on is not ours to choose, so the plane is
-' built, probed, and rebuilt the other way round if it came out
-' mirrored.
-Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double) As SldWorks.Feature
+' A plane parallel to y = 0 at the given y, with the sketch axes on
+' it measured at the same time.
+'
+' Which side of the base plane InsertRefPlane puts the offset on is
+' not ours to choose, and it cannot be read back off the sketch
+' transform either. That is how the first C1.step came out with its
+' inlet duct mirrored to -y while every check in this file passed:
+' the plane answered "yes, the point at +1.30 is on me" while
+' sitting at -1.30, the duct was then extruded away from the origin
+' as asked and landed at -2.16, and nothing downstream could see
+' it. The barrel is symmetric in y, so the bounding box matched;
+' a mirror image has the same volume, so the volume matched; the
+' inlet face has the same area either way, so the area matched.
+'
+' So the side is not read, it is measured. The plane is built, a
+' test block of known model coordinates is dropped on it and its
+' bounding box read back. The box says where the plane really is
+' as well as which way its axes run. A plane on the wrong side
+' fails that test and is deleted, and the other side is tried.
+Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double, _
+                             ByRef us As Double, ByRef vs As Double) As SldWorks.Feature
 
     Dim pl As SldWorks.Feature
     Dim opt As Long
@@ -535,7 +576,8 @@ Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double) As S
             Fail "InsertRefPlane failed for the duct plane at y = " & Fmt(atY) & " m."
         End If
 
-        If PointIsOnPlane(pl, 0#, atY, 0#) Then
+        If TryCalibrateSketchAxes(pl, 0#, atY, 0#, us, vs) Then
+            Note "duct plane measured at y = " & Fmt(atY) & " m"
             Set OffsetPlane = pl
             Exit Function
         End If
@@ -546,8 +588,8 @@ Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double) As S
         swModel.ClearSelection2 True
     Next k
 
-    Fail "the duct plane could not be placed at y = " & Fmt(atY) & " m; it came out on " & _
-         "the wrong side of the origin both ways round."
+    Fail "the duct plane could not be placed at y = " & Fmt(atY) & " m; a test block " & _
+         "dropped on it landed somewhere else both ways round."
 
 End Function
 
@@ -592,6 +634,7 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open the inlet duct sketch."
+    wRefSet = False
 
     For i = 0 To 3
         j = (i + 1) Mod 4
@@ -652,9 +695,18 @@ End Function
 ' which way round they go differs from plane to plane. Rather than
 ' write that mapping out and hope, every point below is given in
 ' MODEL coordinates and put through the plane's own transform at
-' run time. The third component has to come out zero -- if it does
-' not, the point is not on the plane and the macro says so instead
-' of drawing something plausible in the wrong place.
+' run time.
+'
+' The third component is compared against the FIRST point drawn in
+' the same sketch, not against zero. ModelToSketchTransform's
+' translation does not run in the direction its name promises, so
+' the absolute value is not a distance from the plane and testing
+' it against zero silently accepts a plane mirrored about the
+' origin -- which is how the first C1.step came out with its inlet
+' duct at -y. Where a plane actually sits is measured instead, by
+' OffsetPlane; what is checked here is the thing this comparison
+' can settle on its own: that all the points of one sketch are
+' coplanar, whatever plane that turns out to be.
 '==================================================================
 Private Sub G2S(sk As SldWorks.Sketch, ByVal gx As Double, ByVal gy As Double, ByVal gz As Double, _
                 ByRef u As Double, ByRef v As Double)
@@ -667,9 +719,12 @@ Private Sub G2S(sk As SldWorks.Sketch, ByVal gx As Double, ByVal gy As Double, B
     v = ((a(3) * gx + a(4) * gy + a(5) * gz) * s + a(10)) * vSign
     w = (a(6) * gx + a(7) * gy + a(8) * gz) * s + a(11)
 
-    If Abs(w) > PLANE_TOL Then
+    If Not wRefSet Then
+        wRef = w
+        wRefSet = True
+    ElseIf Abs(w - wRef) > PLANE_TOL Then
         Fail "point (" & Fmt(gx) & ", " & Fmt(gy) & ", " & Fmt(gz) & ") lies " & _
-             Fmt(w) & " m off its sketch plane."
+             Fmt(w - wRef) & " m off the plane of the other points in its sketch."
     End If
 
 End Sub
@@ -702,6 +757,23 @@ Private Sub CalibrateSketchAxes(pl As SldWorks.Feature, _
                                 ByVal bx As Double, ByVal by As Double, ByVal bz As Double, _
                                 ByRef us As Double, ByRef vs As Double)
 
+    If Not TryCalibrateSketchAxes(pl, bx, by, bz, us, vs) Then
+        Fail "sketch axis calibration failed on plane " & pl.Name & ": no combination of " & _
+             "sketch axis signs put a test block where it was asked for. Either the sketch " & _
+             "axes are not a sign flip of the model axes on this plane, or the plane is not " & _
+             "where it was asked to be."
+    End If
+
+End Sub
+
+
+' The same measurement, reporting failure instead of stopping the
+' macro, so OffsetPlane can use a failed calibration as its signal
+' that a candidate plane came out on the wrong side.
+Private Function TryCalibrateSketchAxes(pl As SldWorks.Feature, _
+                                        ByVal bx As Double, ByVal by As Double, ByVal bz As Double, _
+                                        ByRef us As Double, ByRef vs As Double) As Boolean
+
     Dim mx As Double, my As Double, mz As Double
     Dim i1 As Long, i2 As Long
     Dim p0(2) As Double, p1(2) As Double
@@ -729,15 +801,14 @@ Private Sub CalibrateSketchAxes(pl As SldWorks.Feature, _
         vs = 1#: If (k And 2) <> 0 Then vs = -1#
         If ProbeLandsWhereAsked(pl, p0, p1, i1, i2, us, vs) Then
             Note "sketch axes on plane " & pl.Name & ": u x " & Fmt(us) & ", v x " & Fmt(vs)
-            Exit Sub
+            TryCalibrateSketchAxes = True
+            Exit Function
         End If
     Next k
 
-    Fail "sketch axis calibration failed on plane " & pl.Name & ": none of the four sign " & _
-         "combinations put a test rectangle where it was asked for. The sketch axes are " & _
-         "not a sign flip of the model axes on this plane."
+    TryCalibrateSketchAxes = False
 
-End Sub
+End Function
 
 
 ' Draw the test rectangle with the given signs, extrude it, compare
@@ -751,6 +822,7 @@ Private Function ProbeLandsWhereAsked(pl As SldWorks.Feature, p0() As Double, p1
     Dim skFeat As SldWorks.Feature, f As SldWorks.Feature
     Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
     Dim bodies As Variant, box As Variant
+    Dim i3 As Long
     Dim ok As Boolean
 
     uSign = us: vSign = vs
@@ -769,6 +841,7 @@ Private Function ProbeLandsWhereAsked(pl As SldWorks.Feature, p0() As Double, p1
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open the sketch axis calibration sketch."
+    wRefSet = False
 
     G2S sk, p0(0), p0(1), p0(2), u0, v0
     G2S sk, p1(0), p1(1), p1(2), u1, v1
@@ -798,8 +871,17 @@ Private Function ProbeLandsWhereAsked(pl As SldWorks.Feature, p0() As Double, p1
             ok = False
         Else
             box = bodies(0).GetBodyBox     ' xmin ymin zmin xmax ymax zmax
+            ' The two in-plane axes say which way the sketch axes
+            ' run. The third says where the plane itself is: the
+            ' block starts on the plane and grows one way or the
+            ' other off it, so one of its two bounds on that axis
+            ' has to be the plane's own coordinate. Without this
+            ' line a plane mirrored about the origin passes, and
+            ' everything built on it comes out mirrored too.
+            i3 = 3 - i1 - i2
             ok = Near(box(i1), p0(i1)) And Near(box(i1 + 3), p1(i1)) And _
-                 Near(box(i2), p0(i2)) And Near(box(i2 + 3), p1(i2))
+                 Near(box(i2), p0(i2)) And Near(box(i2 + 3), p1(i2)) And _
+                 (Near(box(i3), p0(i3)) Or Near(box(i3 + 3), p0(i3)))
         End If
         swModel.ClearSelection2 True
         f.Select2 False, 0
@@ -847,30 +929,6 @@ Private Sub PlaneNormal(pl As SldWorks.Feature, ByRef mx As Double, ByRef my As 
     swModel.ClearSelection2 True
 
 End Sub
-
-
-' Whether a model-space point lies on a plane, measured through the
-' plane's own transform rather than assumed from how it was built.
-Private Function PointIsOnPlane(pl As SldWorks.Feature, _
-                                ByVal gx As Double, ByVal gy As Double, ByVal gz As Double) As Boolean
-
-    Dim sk As SldWorks.Sketch
-    Dim a As Variant
-    Dim w As Double
-
-    swModel.ClearSelection2 True
-    pl.Select2 False, 0
-    swSkMgr.InsertSketch True
-    Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open a probe sketch on a reference plane."
-    a = sk.ModelToSketchTransform.ArrayData
-    w = (a(6) * gx + a(7) * gy + a(8) * gz) * a(12) + a(11)
-    swSkMgr.InsertSketch True
-    swModel.ClearSelection2 True
-
-    PointIsOnPlane = (Abs(w) < PLANE_TOL)
-
-End Function
 
 
 ' The default plane whose normal is the given direction, found by

@@ -391,7 +391,12 @@ geometry:
   #   outlet_extension_over_vortex_D: outlet face above the roof,
   #     x vortex finder diameter.
   #   vortex_finder_wall_m: vortex finder wall thickness [m].
+  #     The flow does not care how thick the plate is, but the
+  #     mesh does: this width is also the finder's lower rim
+  #     face, a ribbon running its whole circumference. At
+  #     0.012 that face is 631:1 and skews to 0.95; 0.05 is
+  #     154:1. Must stay under the duct's inner wall radius.
   cfd_boundary:
     inlet_extension_over_D: 0.6
     outlet_extension_over_vortex_D: 1.0
-    vortex_finder_wall_m: 0.012
+    vortex_finder_wall_m: 0.05

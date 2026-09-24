@@ -58,7 +58,7 @@ bu ve `cyclone_C1.md` de bunu söylüyor. Bedeli, birleşimin teğet çizgi boyu
 bir bıçak kenarına kapanması ve Fluent Meshing'in orada sliver hücre üretmesi.
 Fluent zorlanırsa `0.02` yap: **her iki** kanal duvarı içeri kayar, yani kullanılan
 0.86 × 2.16 kesiti ve dolayısıyla giriş hızı birebir korunur. Vorteks bulucuya kalan
-boşluk 0.088 m olduğundan 0.02'nin üstüne çıkma. Kullanırsan `cyclone_C1.md`'ye yaz.
+pay 0.050 m olduğundan 0.05'e dayanmadan kal — 0.02 güvenli. Kullanırsan `cyclone_C1.md`'ye yaz.
 
 **Kanal boyu `L_INLET = 3.0 m`** — Gövdenin teğet düzleminden (x = 0) dışarı, kanal ekseni
 boyunca, **kesit ağırlık merkezinden** ölçülür. Yüz eğik olduğu için başka bir datum
@@ -158,9 +158,9 @@ değişir; geometri kodunun geri kalanı bundan etkilenmez.
 type library** işaretli olmalı. Tools → Macro → New ile açılan bir makroda ikisi de
 varsayılan olarak gelir.
 
-## SolidWorks'ün üç sürprizi
+## SolidWorks'ün dört sürprizi
 
-İkisi de makroda çözülü, ama not düşmeye değer — başka bir makro yazarken aynı yere
+Hepsi makroda çözülü, ama not düşmeye değer — başka bir makro yazarken aynı yere
 düşülüyor.
 
 **Çizim düzleminin eksen yönü düzlemden düzleme değişiyor.** `ModelToSketchTransform`'un
@@ -168,6 +168,24 @@ bildirdiği eşleme ile `CreateLine`'ın koordinatları yorumlaması aynı şey 
 her düzlemde aynı bile değil: 2026 SP4.1'de `Sağ Düzlem` için `u × −1, v × +1`,
 kanalın ofset düzlemi için `u × +1, v × −1` ölçüldü. Bu yüzden makro varsaymıyor,
 her düzlemde bir test dikdörtgeni kurup ölçüyor.
+
+**`ModelToSketchTransform`'un ötelemesi adının vaat ettiği yönde değil.** Üçüncü
+bileşeni sıfırla karşılaştırmak, noktanın düzlem üzerinde olduğunu değil,
+noktanın düzlemin **orijine göre aynası** üzerinde olduğunu da kabul eder.
+`InsertRefPlane` ofset düzlemi hangi tarafa koyacağını kendi seçtiği ve makro da
+tarafı bu karşılaştırmayla denetlediği için, kanal düzlemi y = +1.30 yerine
+y = −1.30'da kuruldu ve bütün kanal −y'de, aynalanmış olarak çıktı. Makronun
+hiçbir kontrolü bunu göremedi: gövde y'de simetrik olduğu için sınırlayıcı kutu
+tuttu, ayna hacmi değiştirmediği için hacim tuttu, giriş yüzü aynı kaldığı için
+alan tuttu. İlk üretilen `C1.step` bu hâldeydi ve hata ancak Fluent'te giriş
+yüzünün y ağırlık merkezi okunarak bulundu.
+
+Çözüm iki parçalı ve ikisi de ölçüme dayanıyor: düzlemin **nerede olduğu** artık
+üzerine bırakılan test bloğunun sınırlayıcı kutusundan okunuyor (`OffsetPlane`,
+`ProbeLandsWhereAsked`'ın üçüncü ekseni), noktaların **eş düzlemli olduğu** ise
+aynı çizimdeki ilk noktaya göre karşılaştırılıyor (`G2S`) — mutlak değere hiçbir
+yerde anlam yüklenmiyor. Ders: bir düzlemin yerini onun kendi dönüşümüne sorma,
+üstüne bir şey koyup nereye düştüğüne bak.
 
 **`IModelDocExtension::SaveAs` başarılı olduğu hâlde `False` dönebiliyor.** Dosya
 diske yazıldı, hata kodu 0 geldi, dönüş değeri yine de `False`'tu. Makro dönüş
@@ -184,6 +202,11 @@ rengi geri okuyup kontrol ediyor. (`IFace2`'de `SetMaterialPropertyValues2` yok;
 
 ## Sonraki adımlar
 
+* **Düzlem tarafı düzeltmesinden sonra makro henüz çalıştırılmadı.** Diskteki
+  `C1.step` (24 Eylül 2026, 22:28) hâlâ kanalı −y'de taşıyan aynalanmış sürüm;
+  Fluent'teki mesh ve çözüm ondan üretildi ve geçerli (tek siklonda ayna görüntüsü
+  birebir aynı fiziktir). Makro bir dahaki koşuda kanalı +y'ye koymalı ve
+  `meal_inlet` yüzünün y ağırlık merkezi **+1.73 m** çıkmalı — ölçüp doğrula.
 * Üretilen `C1.step`'i Fluent Meshing'e alıp renklerden named selection üretimini
   doğrulamak — dışarıdan teyit edilmemiş tek halka bu.
 * İstenirse sınır başına ayrı STL patch'i (`IFace2::GetTessTriangles`) — OpenFOAM'a
