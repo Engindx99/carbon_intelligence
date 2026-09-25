@@ -171,6 +171,17 @@ Const INLET_TANGENT_RELIEF As Double = 0#
 ' that is about 27 cells across the core and roughly 365 000 cells
 ' inside the region -- the size the mesher is given is a mesher
 ' setting, not a geometry one, so tune it there.
+' Off by default. Two bodies in one geometry turned out to be more
+' than the mesher's region detection wanted to handle: Fluent
+' Meshing's watertight workflow merged the sizing cylinder into the
+' fluid region instead of keeping it aside, and the cone vanished
+' inside it. Until that is set up properly the cyclone is meshed on
+' its own, with the core size controlled by the volume mesh task's
+' max cell length instead. Turn this back on when the core needs
+' more than a global size can give it -- the geometry below is
+' correct and checked, it is only the mesher hand-off that is not.
+Const EXPORT_BOI      As Boolean = False
+
 Const BOI_RADIUS      As Double = 1.6    ' about the cyclone axis [m]
 Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m]
 
@@ -277,8 +288,10 @@ Sub main()
     TagBoundaryFaces
     phase = "exporting"
     ExportFiles
-    phase = "building the mesh sizing cylinder"
-    BuildBoi
+    If EXPORT_BOI Then
+        phase = "building the mesh sizing cylinder"
+        BuildBoi
+    End If
 
     Restore
     MsgBox CYCLONE_NAME & " built and exported." & vbLf & vbLf & buildLog, vbInformation, "Cyclone"
@@ -439,6 +452,7 @@ Private Sub PreChecks()
     ' The sizing cylinder's wall is a refinement front, not a
     ' surface, and a front that coincides with real geometry makes
     ' slivers there. Keep it in open fluid on both sides.
+    If EXPORT_BOI Then
     If BOI_RADIUS - (rVortex + VORTEX_WALL) < BOI_CLEARANCE Then
         Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
              Fmt(BOI_RADIUS - rVortex - VORTEX_WALL) & " m of the vortex finder's outer " & _
@@ -448,6 +462,7 @@ Private Sub PreChecks()
         Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
              Fmt(R - BOI_RADIUS) & " m of the barrel wall at r = " & Fmt(R) & " m; it needs " & _
              Fmt(BOI_CLEARANCE) & " m."
+    End If
     End If
 
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"

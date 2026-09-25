@@ -189,23 +189,30 @@ Hücre bütçesi (Student lisansı 1 milyon):
 0.06 m'de çekirdek çapı boyunca 27 hücre var, yeterli. Hücre boyu bir mesher ayarıdır,
 geometri değil; sayı düşük gelirse 0.05'e indirilebilir.
 
-Çekirdek bölgesi (BOI), makronun ürettiği ikinci bir dosyadır: `geometry/output/2500/C1_boi.step`
-— eksende, yarıçap 1.6 m, z = 0 → 12.44 m, 100.05 m³'lük düz bir silindir. **Akışkan geometrisi değil**,
-`C1.step`'in içinde de değil; mesher'ın boyut bölgesi olarak okuyup mesh'lemediği ayrı bir gövde.
-Fluent Meshing, Body of Influence'ı ancak CAD bir gövde verdiğinde sunuyor, ve o gövdeyi her ölçü
-değişiminde elle çizmek mesh'in geometriyle uyumunu kaybettiği yerdir.
+Mesh, Fluent Meshing'in **Watertight Geometry** workflow'uyla ve **poly-hexcore** ile kurulur.
+Ansys Meshing'in tet → poly yolu kullanılmaz: dönüşüm hücre sayısını beşte bire düşürüyor ve
+Student lisansının 1 milyonluk bütçesinin %80'i orada gidiyor.
 
-Yarıçap 1.6, gerçek yüzeylerin hepsinden en az 0.3 m uzakta (vorteks bulucu dış yarıçapı 1.28'e
-0.32 m, gövde duvarı 2.16'ya 0.56 m) ve makro bunu ön kontrolle zorluyor. Sebebi ölçülmüş: ilk
-iyileştirme denemesinde cephe r = 1.25'e, yani vorteks bulucunun dış yarıçapının tam üstüne
-konmuştu ve minimum orthogonal quality 0.015'e düştü. **İyileştirme cephesi bir geometrik kenara
-oturmamalı.**
+| Görev | Ayar |
+|---|---|
+| Import Geometry | `C1.step`, birim m |
+| Add Local Sizing | Face Size, vorteks bulucunun alt halka yüzü (80 mm) → **0.02 m** |
+| Generate the Surface Mesh | min **0.02**, max **0.10**, büyüme 1.2 |
+| Describe Geometry | *only fluid regions without voids* |
+| Update Boundaries | `meal_inlet` mass-flow-inlet, `gas_outlet` pressure-outlet, **`dust_outlet` wall** |
+| Add Boundary Layers | 8 katman, ilk katman **5 mm**, büyüme 1.2 (y+ ≈ 50, u_τ ≈ 0.8 m/s'den) |
+| Generate the Volume Mesh | poly-hexcore, Max Cell Length **0.08 m** |
 
-Çekirdek bölgesi çatının ~1 m üstünde **bilerek** bitiyor. Ondan yukarısı düz bir borudur ve
-ilgilendiğimiz fizik orada değil; oraya da 0.05 m vermek 27.14 m³'e ~217 bin hücre demek olurdu,
-0.10 m ise ~27 bin. Aradaki 190 bin hücre, Student lisansının bütçesinin beşte biri, hiçbir şey
-kazandırmadan harcanırdı. Uzatmanın işi sınır koşulunu akıştan uzaklaştırmak, çözünürlük taşımak
-değil.
+Beklenen ~500 bin hücre; çekirdek çapı boyunca ~12 hücre. Hedef 20'ydi, ulaşılamıyor — çünkü
+`Max Cell Length` bütün iç hacme aynı boyu verir, sadece çekirdeğe değil. Çekirdeği ayrıca
+inceltmek Body of Influence ister, o da geometride **ayrı bir gövde** ister.
+
+Makro o gövdeyi üretebiliyor (`BuildBoi`, eksende r = 1.6 m, z = 0 → 12.44, ayrı `C1_boi.step`)
+ama `EXPORT_BOI = False` ile **kapalı**. Sebep mesher tarafı: iki gövdeli geometride Fluent
+Meshing'in watertight workflow'u silindiri ayrı bölge olarak tutmak yerine akışkan bölgeye kattı
+ve koni onun içinde kayboldu. Geometri doğru, aktarım kurulmadı. Çekirdek çözünürlüğü yetersiz
+çıkarsa dönülecek yer burası: `EXPORT_BOI = True`, ve `Update Regions` görevinde silindir
+bölgesinin `dead` olduğundan emin olmak. BOI'li hedef 0.06 m hücre ve ~665 bin toplamdı.
 
 ## Derived Properties
 
