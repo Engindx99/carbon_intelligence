@@ -86,7 +86,9 @@ CFD sınır varsayımları (config `geometry.cfd_boundary`; tesis ölçüsü de�
 
 `outlet_extension_over_vortex_D`: 2.5 — Çıkış yüzü çatıdan 2.5 vorteks bulucu çapı (6.00 m) yukarıda, z = 17.44.
 
-Başlangıçta 1.0'dı. İlk Fluent koşusu bunun yetmediğini gösterdi: çıkış borusundan yukarı çıkan girdabın merkezinde aşağı yönlü bir ters akım çekirdeği var ve 2.40 m'lik uzatma o çekirdek hâlâ açıkken sınırı kesiyordu — çıkış yüzünün **%40–44'ünde gaz içeri giriyordu**. Fluent orada kullanıcının verdiği backflow değerlerini dayatmak zorunda kalıyor, dayatılan durum domenin istediği durumla çatışıyor ve çözüm yakınsamak yerine kütle dengesinde ±%0.3'lük bir limit çevrimine oturuyordu. 6.00 m, çekirdeğin kapandığı noktanın belirgin biçimde ötesi.
+Bu, çatının üstündeki **çıkış kanalıdır**, vorteks bulucu değil — vorteks bulucu çatıdan aşağı inen 2.16 m'lik daldırma borusudur ve bu parametre ona dokunmaz. Gerçek tesiste çatının üstünde bir kanal vardır (gaz ID fana gider) ama boyu tesis yerleşimine göre belirlenir; buradaki uzunluk bir CFD seçimidir. Siklon CFD literatüründe tipik uzatma 1–5 vorteks bulucu çapıdır.
+
+Başlangıçta 1.0'dı. İlk Fluent koşusu bunun yetmediğini gösterdi: çıkış borusundan yukarı çıkan girdabın merkezinde aşağı yönlü bir ters akım çekirdeği var ve 2.40 m'lik uzatma o çekirdek hâlâ açıkken sınırı kesiyordu — çıkış yüzünün **%40–44'ünde gaz içeri giriyordu**. Fluent orada kullanıcının verdiği backflow değerlerini dayatmak zorunda kalıyor, dayatılan durum domenin istediği durumla çatışıyor ve çözüm yakınsamak yerine kütle dengesinde ±%0.3'lük bir limit çevrimine oturuyordu. 6.00 m, çekirdeğin kapanması için belirgin biçimde daha fazla yer bırakır. Garanti değil: girdap eksenel mesafeyle yavaş söner, dolayısıyla 2.5 D'nin sonunda teğetsel hız hâlâ belirgin olabilir ve bir miktar geri akış kalabilir. Kalırsa seçenekler uzatmayı 4 D'ye çıkarmak ya da geri akışı kabul edip backflow değerlerinin (603 K) doğruluğuna güvenmek — tek girişli ve izotermal bu koşuda o değer zaten doğru.
 
 `vortex_finder_wall_m`: 0.08 m — Halkadaki girdabı borudan çıkan gazdan ayıran duvar; hacme etkisi %1.08.
 
@@ -168,10 +170,17 @@ tet→poly yolu Student lisansının hücre bütçesinin %80'ini harcıyor):
 | Bölge | Hedef eleman boyu |
 |---|---|
 | Global | 0.10 m |
-| Çekirdek (silindir r = 1.6 m, z = 0 → 17.44) | 0.05 m |
+| Çekirdek (silindir r = 1.6 m, **z = 0 → 12.5**) | 0.05 m |
+| Çıkış borusu uzatması (z = 12.5 → 17.44) | 0.10 m |
 | Vorteks bulucu alt ağzı (halka yüzü, 80 mm) | 0.02 m |
 | Teğet giriş kenarı | 0.03 m |
 | Duvar inflation | ilk katman 5 mm, 8 katman, büyüme 1.2 (y+ ≈ 50) |
+
+Çekirdek bölgesi çatının ~1 m üstünde **bilerek** bitiyor. Ondan yukarısı düz bir borudur ve
+ilgilendiğimiz fizik orada değil; oraya da 0.05 m vermek 27.14 m³'e ~217 bin hücre demek olurdu,
+0.10 m ise ~27 bin. Aradaki 190 bin hücre, Student lisansının bütçesinin beşte biri, hiçbir şey
+kazandırmadan harcanırdı. Uzatmanın işi sınır koşulunu akıştan uzaklaştırmak, çözünürlük taşımak
+değil.
 
 ## Derived Properties
 
