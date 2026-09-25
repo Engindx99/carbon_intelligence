@@ -40,7 +40,7 @@ CFD sınır varsayımları (config `geometry.cfd_boundary`; tesis ölçüsü de�
 
 `inlet_extension_over_D`: 0.6 — Giriş yüzü eksenden 0.6 D uzakta. En az 0.401 olmalı, yoksa yüz gövdenin içinde kalır; kod bunu kontrol eder. Her +1 D için hacim ≈ +65 m³.
 `outlet_extension_over_vortex_D`: 1.0 — Çıkış yüzü çatıdan 1 vorteks bulucu çapı yukarıda. Hacme en çok etki eden parametre: her +1 çap için ≈ +64.5 m³.
-`vortex_finder_wall_m`: 0.012 m — İnce bir ayırıcı duvar; hacme etkisi yaklaşık %0.2.
+`vortex_finder_wall_m`: C2 için **henüz seçilmedi**. Burada uzun süre 0.012 m yazılıydı ve config bugün 0.08 tutuyor; tek skaler iki dokümanda farklı değer iddia ediyordu. C1'de ölçülen kural şu: ağzın genişliği, mesh'in oraya koyacağı yerel yüzey boyutunun 3–4 katı olmalı ([cyclone_C1.md](cyclone_C1.md)). C2 makroyla kurulduğunda değer o ölçüte göre belirlenecek. 0.012 m'de hacme etki ~%0.2 idi.
 
 Modelleme sadeleştirmeleri:
 

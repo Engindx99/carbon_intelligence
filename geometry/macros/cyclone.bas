@@ -134,21 +134,43 @@ Const INLET_ROOF_CLEARANCE As Double = 0.05
 ' Mesh aid, NOT physics. 0.0 keeps the duct's outer wall exactly
 ' tangent to the barrel, which is the real geometry and what
 ' cyclone_C1.md describes; the union then closes to a zero-angle
-' knife edge along the tangent line and Fluent Meshing makes sliver
-' cells there. A small positive value shifts BOTH duct walls inward
-' so that edge has a finite included angle -- the published section
-' 0.86 x 4.97 and hence the inlet velocity are preserved exactly.
-' It stays at 0 deliberately. It shares the 0.10 m budget above
-' with VORTEX_WALL, and the measurements put the rim an order of
-' magnitude ahead of this edge as a mesh problem: 0.015 orthogonal
-' quality against 0.135. A 0.135 cell is usable; a 0.015 one is
-' not. So the budget goes to the rim and this edge is left as the
-' real tangent geometry, to be handled with a local face sizing.
-' If a future mesh proves that insufficient, 0.02 here forces
-' VORTEX_WALL down to 0.06 -- section 0.86 x 2.16 and hence the
-' inlet velocity survive either way. Record it in cyclone_C1.md if
-' you use it.
-Const INLET_TANGENT_RELIEF As Double = 0#
+' knife edge along the tangent line, and the fluid between the two
+' walls thins to nothing along it.
+'
+' That edge is the one defect in this model that meshing cannot
+' reach. A dihedral angle is scale invariant: halve the cell size
+' and the same sliver comes back at half the size, for ever. Every
+' other thin feature here -- the vortex finder's rim, the strip of
+' shell above the duct opening -- is a WIDTH, and a width yields to
+' a local face size. An angle does not.
+'
+' It is also a converging gap rather than a ledge, which is the
+' worse of the two: both surfaces are no-slip walls, so prism
+' layers grow towards each other and are crushed. A ledge grows its
+' layers apart and costs nothing.
+'
+' Measured on the 0.15 m mesh: orthogonal quality 0.135 and aspect
+' ratio 79 in the cell sitting on this edge, at (-0.262, -2.155,
+' 9.109). After hierarchical refinement the aspect ratio went to
+' 175 -- refining made it worse, as the scale argument predicts.
+'
+' Read the value as the smallest fluid thickness allowed near the
+' tangent line: the wedge thickens as x^2 / 2R, so 0.03 m cuts away
+' everything thinner than 30 mm, over |x| < 0.359 m, and opens the
+' included angle from 0 to 9.56 deg.
+'
+' It shifts the OUTER wall only. Shifting both, as it used to, kept
+' the 0.86 x 2.16 section but dragged the inner wall towards the
+' vortex finder, whose outer radius it has to clear by construction
+' -- that is the shared 0.10 m budget that used to make this
+' parameter and VORTEX_WALL compete for the same millimetres. The
+' outer wall borders nothing, so moving it alone costs no clearance
+' at all. What it costs is section: 0.86 -> 0.83 m, 1.858 -> 1.793
+' m2, -3.5 %, and the inlet velocity rises 16.5 -> 17.1 m/s, still
+' inside the 15-20 m/s a preheater cyclone runs at. b/D goes 0.199
+' -> 0.192 against Stairmand's 0.20. The width is an FLS ratio
+' anyway, not a published plant size (geometry/catalog.md).
+Const INLET_TANGENT_RELIEF As Double = 0.03
 
 ' Mesh sizing cylinder -- the body of influence, written out on its
 ' own as <name>_boi.step. NOT fluid geometry and NOT part of the
@@ -226,6 +248,7 @@ Dim R As Double, rDust As Double, rVortex As Double
 Dim zRoof As Double, zVortexBottom As Double, zOutletTop As Double
 Dim zBoiTop As Double                       ' top of the mesh sizing cylinder
 Dim yOuter As Double, yInner As Double, yMid As Double
+Dim wDuct As Double                         ' built duct width = W_INLET - relief
 Dim dx As Double, dz As Double          ' duct axis direction d = (dx, 0, dz)
 Dim nx As Double, nz As Double          ' duct section "up"  n = (nx, 0, nz)
 Dim zTopAt0 As Double, zBotAt0 As Double
@@ -324,8 +347,13 @@ Private Sub Derive()
     zOutletTop = zRoof + OUTLET_EXT_OVER_VORTEX_D * D_VORTEX
     zBoiTop = zRoof + BOI_ROOF_MARGIN
 
+    ' The relief moves the outer wall only, so the inner wall -- the
+    ' one that has to clear the vortex finder -- does not move with
+    ' it. wDuct is the width the duct is actually built and checked
+    ' against; W_INLET is the catalogue width it starts from.
     yOuter = R - INLET_TANGENT_RELIEF
-    yInner = yOuter - W_INLET
+    yInner = R - W_INLET
+    wDuct = yOuter - yInner
     yMid = 0.5 * (yInner + yOuter)
 
     th = INLET_SLOPE_DEG * PI / 180#
@@ -360,7 +388,7 @@ Private Sub Derive()
     ' The duct outside the barrel. Integrating the free axial length
     ' over the section gives a closed form; the part that varies
     ' along the section's own "up" axis cancels by symmetry.
-    vDuctFree = H_INLET * L_INLET * W_INLET - (H_INLET / nz) * Segment(R, yInner, yOuter)
+    vDuctFree = H_INLET * L_INLET * wDuct - (H_INLET / nz) * Segment(R, yInner, yOuter)
 
     vPipe = PI * rVortex * rVortex * (zOutletTop - zRoof)
     vWall = PI * ((rVortex + VORTEX_WALL) ^ 2 - rVortex * rVortex) * L_VORTEX
@@ -428,7 +456,8 @@ Private Sub PreChecks()
     '    passes within a few centimetres on these dimensions
     If yInner <= rVortex + VORTEX_WALL Then
         Fail "the duct's inner wall at y = " & Fmt(yInner) & " m runs into the vortex finder " & _
-             "(outer radius " & Fmt(rVortex + VORTEX_WALL) & " m). Reduce INLET_TANGENT_RELIEF."
+             "(outer radius " & Fmt(rVortex + VORTEX_WALL) & " m). Reduce VORTEX_WALL -- " & _
+             "INLET_TANGENT_RELIEF moves the outer wall only and buys no clearance here."
     End If
 
     ' 6. the opening must fit under the roof with its clearance intact.
@@ -469,11 +498,13 @@ Private Sub PreChecks()
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
     Note "duct top / bottom at x = 0        " & Fmt(zTopAt0) & " / " & Fmt(zBotAt0) & " m"
     Note "vortex finder clearance           " & Fmt(yInner - rVortex - VORTEX_WALL) & " m"
+    Note "built duct width                  " & Fmt(wDuct) & " m (catalogue " & _
+         Fmt(W_INLET) & " less " & Fmt(INLET_TANGENT_RELIEF) & " tangency relief)"
     If INLET_TANGENT_RELIEF = 0# Then
         Note "NOTE tangency relief is 0: the duct's outer wall is exactly"
         Note "     tangent to the barrel and the union closes to a zero-angle"
-        Note "     edge. If Fluent Meshing makes slivers there, set"
-        Note "     INLET_TANGENT_RELIEF to 0.02 and rebuild."
+        Note "     edge. Meshing cannot fix that -- a dihedral angle does"
+        Note "     not change with cell size. Set INLET_TANGENT_RELIEF."
     End If
 
 End Sub
@@ -759,7 +790,7 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
         Set f = swFeat.FeatureExtrusion3( _
             True, False, (k = 1), _
             swEndCondBlind, swEndCondBlind, _
-            W_INLET, 0.01, _
+            wDuct, 0.01, _
             False, False, False, False, _
             0#, 0#, _
             False, False, False, False, _
@@ -1227,7 +1258,7 @@ Private Sub TagBoundaryFaces()
 
     CheckArea "dust_outlet", aDust, PI * rDust * rDust
     CheckArea "gas_outlet", aGas, PI * rVortex * rVortex
-    CheckArea "meal_inlet", aInlet, W_INLET * H_INLET
+    CheckArea "meal_inlet", aInlet, wDuct * H_INLET
 
     Note "meal_inlet " & Fmt(aInlet) & " m2 (green), gas_outlet " & Fmt(aGas) & _
          " m2 (blue), dust_outlet " & Fmt(aDust) & " m2 (orange)"

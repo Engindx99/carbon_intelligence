@@ -372,22 +372,31 @@ kiln_closure:
 
 
 # ======================================================
-# CFD fluid-volume geometry (geometry/ package only)
+# CFD fluid-volume geometry
 # ======================================================
 #
-# Which catalogue line geometry/ builds from. Keys are in
-# geometry/catalog.py; every dimension's source is in
-# geometry/SOURCES.md. This picks a GEOMETRY reference only:
-# it does not change the twin's feed, capacity or kiln size.
+# DEAD CONFIG. The geometry/ Python package that read this block
+# was removed in c99b93a; nothing loads these keys today and
+# main.py's yaml.safe_load accepts them without complaint. They
+# are kept as the written record of what the SolidWorks macro
+# geometry/macros/cyclone.bas is set to build. The macro's own
+# Const block is the source of truth -- if the two disagree, the
+# macro wins and this block is stale.
+#
+# Which catalogue line the geometry is built from. The dimensions
+# and their sources now live in geometry/catalog.md. This picks a
+# GEOMETRY reference only: it does not change the twin's feed,
+# capacity or kiln size.
 geometry:
   reference_line: "2500"
 
-  # Where the CFD model's boundary faces sit. Modelling choices,
-  # NOT plant dimensions: no source gives them and none enters the
-  # catalogue. geometry/ has no defaults for them.
+  # Where the CFD model's boundary faces sit, plus the two thin
+  # features the mesher cares about. Modelling choices, NOT plant
+  # dimensions: no source gives them and none enters the catalogue.
   #   inlet_extension_over_D: inlet face upstream of the cyclone
   #     axis, x D. Must put the face outside the barrel (> 0.40
   #     for the catalogue's inlet_w = 0.2 D; checked per cyclone).
+  #     Unused for C1, whose 3.0 m duct is a published length.
   #   outlet_extension_over_vortex_D: outlet face above the roof,
   #     x vortex finder diameter. 1.0 cut through the reverse
   #     flow core still open above the roof: 40-44 % of the
@@ -396,14 +405,30 @@ geometry:
   #   vortex_finder_wall_m: vortex finder wall thickness [m].
   #     The flow does not care how thick the plate is, but the
   #     mesh does: this width is also the finder's lower rim
-  #     face, a ribbon running its whole circumference. At
+  #     face, a ribbon running its whole 7.8 m circumference. At
   #     0.012 that face is 631:1 and skews to 0.95; 0.05 is
-  #     154:1 and 0.08 is 96:1. 0.05 still failed once the core
-  #     was refined to the 0.05 m cells a cyclone needs -- a rim
-  #     one cell wide gave 0.015 orthogonal quality, at Fluent's
-  #     floor. Must stay under the duct's inner wall radius, and
-  #     shares a 0.10 m budget with the macro's tangent relief.
+  #     154:1 and 0.08 is 96:1.
+  #     The rim is a LEDGE, not a converging gap: prism layers
+  #     grow off it in opposite directions and never meet, so the
+  #     only requirement is that the surface mesh can put a few
+  #     elements across it. At the 0.02 m local face size the
+  #     mesh plan uses, 0.08 gives 4. (An earlier note blamed a
+  #     0.015 orthogonal quality on 0.05 being too thin. That
+  #     measurement came from hierarchical adaption with no local
+  #     sizing, which cannot make a cell narrower than the
+  #     feature it is splitting -- it was an artefact of the
+  #     method, not evidence about the thickness.)
+  #   inlet_tangent_relief_m: how far the duct's OUTER wall is
+  #     pulled off the barrel [m]. Exactly tangent (0) closes the
+  #     union to a zero-angle edge with the fluid vanishing along
+  #     it, and unlike a thin feature that is scale invariant --
+  #     refining reproduces the sliver at every cell size, and did
+  #     (aspect ratio 79 -> 175 after refinement). 0.03 opens the
+  #     angle to 9.56 deg and removes fluid thinner than 30 mm.
+  #     Costs inlet section: 0.86 -> 0.83 m wide, 1.858 -> 1.793
+  #     m2, inlet velocity 16.5 -> 17.1 m/s.
   cfd_boundary:
     inlet_extension_over_D: 0.6
     outlet_extension_over_vortex_D: 2.5
     vortex_finder_wall_m: 0.08
+    inlet_tangent_relief_m: 0.03

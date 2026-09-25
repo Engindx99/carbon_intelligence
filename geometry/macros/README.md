@@ -37,7 +37,7 @@ Eğimi olmayan bir siklon için `INLET_SLOPE_DEG = 0` yeterlidir.
 ## Koordinat sistemi
 
 Eksen **z**, toz çıkışı **z = 0**, gaz **+x** yönünde girer — `cyclone_C2.md`'nin kurduğu
-kural. Gaz y ∈ [R − inlet_w, R] aralığından girdiği için girdap **yukarıdan bakıldığında
+kural. Gaz y ∈ [R − inlet_w, R − relief] aralığından girdiği için girdap **yukarıdan bakıldığında
 saat yönündedir**. (Silinen `geometry/components.py` docstring'i "anticlockwise" diyordu;
 o yazı yanlıştı, kurduğu geometri buydu.)
 
@@ -53,12 +53,23 @@ sivrilerek biten, çıkmaz bir akışkan kaması bırakır. Bu boşluk çatıyı
 gövdedeki temiz bir delik olarak tutar. Sıfır olamaz: sıfırda kanal tavanı, siklon çatısı
 ve gövde tek bir dejenere noktada buluşur.
 
-**`INLET_TANGENT_RELIEF = 0.0 m`** — Kanalın dış duvarı gövdeye tam teğet; gerçek geometri
-bu ve `cyclone_C1.md` de bunu söylüyor. Bedeli, birleşimin teğet çizgi boyunca sıfır açılı
-bir bıçak kenarına kapanması ve Fluent Meshing'in orada sliver hücre üretmesi.
-Fluent zorlanırsa `0.02` yap: **her iki** kanal duvarı içeri kayar, yani kullanılan
-0.86 × 2.16 kesiti ve dolayısıyla giriş hızı birebir korunur. Vorteks bulucuya kalan
-pay 0.050 m olduğundan 0.05'e dayanmadan kal — 0.02 güvenli. Kullanırsan `cyclone_C1.md`'ye yaz.
+**`INLET_TANGENT_RELIEF = 0.03 m`** — Kanalın **dış** duvarını gövdeye teğet düzlemden
+içeri çeker. Tam teğetken (0) birleşim, teğet çizgi boyunca sıfır açılı bir bıçak kenarına
+kapanıyor ve akışkan orada sıfır kalınlığa iniyor.
+
+Bu, modelde **mesh'in ulaşamadığı tek kusur**. Dihedral açı ölçekten bağımsızdır: hücreyi
+yarıya indirince aynı sliver yarı boyunda geri gelir — ölçüldü de, en-boy oranı incelttikçe
+79'dan 175'e çıktı. Modeldeki diğer ince yapılar (vorteks bulucu ağzı, çatı altı şeridi) birer
+**genişliktir** ve yerel yüzey boyutlandırmasıyla kapanır; açı kapanmaz.
+
+Değeri, teğet çizgiye yakın bölgede izin verilen **en küçük akışkan kalınlığı** olarak okuyun:
+kama x²/2R ile kalınlaştığından 0.03 m, |x| < 0.359 m'de 30 mm'den inceyi kesip atar ve açıyı
+9.56°'ye açar.
+
+Yalnızca dış duvarı kaydırır. Eskiden iki duvarı birden kaydırıyordu; kesit korunuyordu ama iç
+duvar vorteks bulucuya yaklaştığı için `VORTEX_WALL` ile 0.10 m'lik bir bütçe paylaşmak zorunda
+kalıyordu. Dış duvar hiçbir şeye komşu değil, o bütçe kalktı. Bedeli kesit: kurulan genişlik
+0.86 − relief = **0.83 m**, alan 1.793 m², giriş hızı 16.5 → 17.1 m/s.
 
 **Kanal boyu `L_INLET = 3.0 m`** — Gövdenin teğet düzleminden (x = 0) dışarı, kanal ekseni
 boyunca, **kesit ağırlık merkezinden** ölçülür. Yüz eğik olduğu için başka bir datum
@@ -87,7 +98,7 @@ ve parçayı ekranda inceleme için bırakır.
 * **Kapalılık** — her kenarın tam iki komşu yüzü olmalı. Serbest kenar = açık kabuk = CFD'de
   kaçak.
 * **Sınır yüzleri** — `meal_inlet` / `gas_outlet` / `dust_outlet` her biri tam bir kez
-  bulunmalı ve alanları sırasıyla 1.858 / 4.524 / 0.126 m² çıkmalı. İki giriş yüzü bulunması,
+  bulunmalı ve alanları sırasıyla 1.793 / 4.524 / 0.126 m² çıkmalı. İki giriş yüzü bulunması,
   kanalın gövdeye girememiş ve uç kapağının açıklığı tıkıyor olması demektir.
 
 ## Sınır yüzlerinin Fluent'e taşınması
@@ -101,7 +112,7 @@ named selection üretir.
 
 | Sınır | Renk | Alan |
 |---|---|---|
-| `meal_inlet` | yeşil | 1.858 m² |
+| `meal_inlet` | yeşil | 1.793 m² |
 | `gas_outlet` | mavi | 4.524 m² |
 | `dust_outlet` | turuncu | 0.126 m² |
 | duvarlar | gri | — |
