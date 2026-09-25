@@ -37,7 +37,7 @@ Eğimi olmayan bir siklon için `INLET_SLOPE_DEG = 0` yeterlidir.
 ## Koordinat sistemi
 
 Eksen **z**, toz çıkışı **z = 0**, gaz **+x** yönünde girer — `cyclone_C2.md`'nin kurduğu
-kural. Gaz y ∈ [R − inlet_w, R − relief] aralığından girdiği için girdap **yukarıdan bakıldığında
+kural. Gaz y ∈ [R − inlet_w, R] aralığından girdiği için girdap **yukarıdan bakıldığında
 saat yönündedir**. (Silinen `geometry/components.py` docstring'i "anticlockwise" diyordu;
 o yazı yanlıştı, kurduğu geometri buydu.)
 
@@ -53,23 +53,29 @@ sivrilerek biten, çıkmaz bir akışkan kaması bırakır. Bu boşluk çatıyı
 gövdedeki temiz bir delik olarak tutar. Sıfır olamaz: sıfırda kanal tavanı, siklon çatısı
 ve gövde tek bir dejenere noktada buluşur.
 
-**`INLET_TANGENT_RELIEF = 0.03 m`** — Kanalın **dış** duvarını gövdeye teğet düzlemden
-içeri çeker. Tam teğetken (0) birleşim, teğet çizgi boyunca sıfır açılı bir bıçak kenarına
-kapanıyor ve akışkan orada sıfır kalınlığa iniyor.
+**`INLET_TONGUE = 0.05 m`** — Kanal, gövdeye teğet düzlemine varmadan **x = −√(t(2R−t))**'de
+biter; uç kapağının dışarıda kalan `t` genişliğindeki şeridi kör bir yüz olarak ayakta kalır.
+Gerçek makinedeki cut-water'ın karşılığı.
 
-Bu, modelde **mesh'in ulaşamadığı tek kusur**. Dihedral açı ölçekten bağımsızdır: hücreyi
-yarıya indirince aynı sliver yarı boyunda geri gelir — ölçüldü de, en-boy oranı incelttikçe
-79'dan 175'e çıktı. Modeldeki diğer ince yapılar (vorteks bulucu ağzı, çatı altı şeridi) birer
-**genişliktir** ve yerel yüzey boyutlandırmasıyla kapanır; açı kapanmaz.
+Kanalın dış duvarı (y = R düzlemi) ile gövde (r = R silindiri) x = 0'da **teğettir**. Oraya
+kadar sürdürülürse birleşim sıfır açılı bir kenara kapanır ve akışkan o çizgi boyunca sıfıra
+iner. Bu, modelde **mesh'in ulaşamadığı tek kusur**: dihedral açı ölçekten bağımsızdır, hücreyi
+yarıya indirince aynı sliver yarı boyunda geri gelir — ölçüldü, en-boy oranı incelttikçe 79'dan
+175'e çıktı. Diğer bütün ince yapılar birer **genişliktir** ve yerel yüzey boyutlandırmasıyla
+kapanır; açı kapanmaz.
 
-Değeri, teğet çizgiye yakın bölgede izin verilen **en küçük akışkan kalınlığı** olarak okuyun:
-kama x²/2R ile kalınlaştığından 0.03 m, |x| < 0.359 m'de 30 mm'den inceyi kesip atar ve açıyı
-9.56°'ye açar.
+Erken bitince teğetlik x = −xTrim ile 0 arasında **katı kabuğun içinde** kalır, akışkan
+sınırlamaz, mesh'lenmez. Kesilen akışkan 0.0166 m³ (domenin %0.011'i) ve katalog kesiti
+0.86 × 2.16 ile 16.5 m/s giriş hızı **aynen korunur**.
 
-Yalnızca dış duvarı kaydırır. Eskiden iki duvarı birden kaydırıyordu; kesit korunuyordu ama iç
-duvar vorteks bulucuya yaklaştığı için `VORTEX_WALL` ile 0.10 m'lik bir bütçe paylaşmak zorunda
-kalıyordu. Dış duvar hiçbir şeye komşu değil, o bütçe kalktı. Bedeli kesit: kurulan genişlik
-0.86 − relief = **0.83 m**, alan 1.793 m², giriş hızı 16.5 → 17.1 m/s.
+Dil yüzü bir çıkıntı: 0.02 m yüzey boyutuyla 2.5, 0.0125 m ile 4 eleman. Yüzün normali x ekseni
+boyunca olduğu için `TagBoundaryFaces` onu giriş yüzü sanmaz (fark |cos5°−1| = 0.0038,
+`DIR_TOL` = 1e-6).
+
+**`INLET_TANGENT_RELIEF = 0.0 m`** — Aynı kusura eski, daha pahalı çözüm: dış duvarı kanal
+boyunca içeri çeker. Açıyı 0'dan 9.56°'ye açar ama kamanın **ucunu yok etmez**, yalnızca
+x = −0.359'a taşır; üstelik kesit götürür (0.86 → 0.83 m, giriş hızı 17.1 m/s). Dil varken
+gereksiz, 0'da tutulur — makro ikisinin birlikte kullanılmasını reddeder.
 
 **Kanal boyu `L_INLET = 3.0 m`** — Gövdenin teğet düzleminden (x = 0) dışarı, kanal ekseni
 boyunca, **kesit ağırlık merkezinden** ölçülür. Yüz eğik olduğu için başka bir datum
@@ -98,7 +104,7 @@ ve parçayı ekranda inceleme için bırakır.
 * **Kapalılık** — her kenarın tam iki komşu yüzü olmalı. Serbest kenar = açık kabuk = CFD'de
   kaçak.
 * **Sınır yüzleri** — `meal_inlet` / `gas_outlet` / `dust_outlet` her biri tam bir kez
-  bulunmalı ve alanları sırasıyla 1.793 / 4.524 / 0.126 m² çıkmalı. İki giriş yüzü bulunması,
+  bulunmalı ve alanları sırasıyla 1.858 / 4.524 / 0.126 m² çıkmalı. İki giriş yüzü bulunması,
   kanalın gövdeye girememiş ve uç kapağının açıklığı tıkıyor olması demektir.
 
 ## Sınır yüzlerinin Fluent'e taşınması
@@ -112,7 +118,7 @@ named selection üretir.
 
 | Sınır | Renk | Alan |
 |---|---|---|
-| `meal_inlet` | yeşil | 1.793 m² |
+| `meal_inlet` | yeşil | 1.858 m² |
 | `gas_outlet` | mavi | 4.524 m² |
 | `dust_outlet` | turuncu | 0.126 m² |
 | duvarlar | gri | — |

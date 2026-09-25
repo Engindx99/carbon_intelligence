@@ -80,12 +80,8 @@ calciner_eff_over_shell   calciner_H/D   kiln_eff_over_shell
 ## Bu tablodan sapmalar
 
 Bir bileşen dokümanı katalog değerinden bilerek sapabilir; sapma o dokümanda gerekçesiyle
-yazılır ve bu tablo değişmez. Şu an iki sapma, ikisi de C1'de:
+yazılır ve bu tablo değişmez. Şu an tek sapma:
 
 - [cyclone_C1.md](preheater/cyclone_C1.md) — giriş yüksekliği 4.97 yerine **2.16 m**.
   Yayınlanmış uzun giriş 270°'lik volütle beslendiği için anlamlı; CFD modeli volütü
   kurmadığından gerekçesini kaybediyor.
-- [cyclone_C1.md](preheater/cyclone_C1.md) — giriş genişliği 0.86 yerine kurulan
-  **0.83 m**. Fiziksel bir karar değil, mesh kaynaklı: kanalın dış duvarı gövdeye tam
-  teğet olduğunda birleşim sıfır açılı bir kenara kapanıyor ve bu kusur hücre boyundan
-  bağımsız olduğu için inceltmeyle geçmiyor. Dış duvar 0.03 m içeri çekildi.

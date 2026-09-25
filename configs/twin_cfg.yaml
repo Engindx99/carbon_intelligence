@@ -418,17 +418,21 @@ geometry:
   #     sizing, which cannot make a cell narrower than the
   #     feature it is splitting -- it was an artefact of the
   #     method, not evidence about the thickness.)
-  #   inlet_tangent_relief_m: how far the duct's OUTER wall is
-  #     pulled off the barrel [m]. Exactly tangent (0) closes the
-  #     union to a zero-angle edge with the fluid vanishing along
-  #     it, and unlike a thin feature that is scale invariant --
-  #     refining reproduces the sliver at every cell size, and did
-  #     (aspect ratio 79 -> 175 after refinement). 0.03 opens the
-  #     angle to 9.56 deg and removes fluid thinner than 30 mm.
-  #     Costs inlet section: 0.86 -> 0.83 m wide, 1.858 -> 1.793
-  #     m2, inlet velocity 16.5 -> 17.1 m/s.
+  #   inlet_tongue_m: shell left between the duct's outer wall and
+  #     the barrel's tangent line [m]. The duct stops that far
+  #     short of the tangent plane instead of running onto it.
+  #     Running onto it closes the union to a zero-angle edge with
+  #     the fluid vanishing along it, and unlike a thin feature
+  #     that is scale invariant -- refining reproduces the sliver
+  #     at every cell size, and did (aspect ratio 79 -> 175).
+  #     Stopping short puts the tangency inside the solid shell,
+  #     where it bounds no fluid. Costs 0.0166 m3, 0.011 % of the
+  #     domain, and leaves the catalogue 0.86 x 2.16 section and
+  #     the 16.5 m/s inlet velocity untouched. It is also the more
+  #     faithful geometry: a real shell-to-duct joint is plate
+  #     plus refractory, blunt, 50-100 mm.
   cfd_boundary:
     inlet_extension_over_D: 0.6
     outlet_extension_over_vortex_D: 2.5
     vortex_finder_wall_m: 0.08
-    inlet_tangent_relief_m: 0.03
+    inlet_tongue_m: 0.05

@@ -131,46 +131,21 @@ Const INLET_SLOPE_DEG          As Double = 5#     ' duct inclined this far DOWNW
 ' meet at one degenerate point.
 Const INLET_ROOF_CLEARANCE As Double = 0.05
 
-' Mesh aid, NOT physics. 0.0 keeps the duct's outer wall exactly
-' tangent to the barrel, which is the real geometry and what
-' cyclone_C1.md describes; the union then closes to a zero-angle
-' knife edge along the tangent line, and the fluid between the two
-' walls thins to nothing along it.
+' Superseded by INLET_TONGUE below, and kept at 0.
 '
-' That edge is the one defect in this model that meshing cannot
-' reach. A dihedral angle is scale invariant: halve the cell size
-' and the same sliver comes back at half the size, for ever. Every
-' other thin feature here -- the vortex finder's rim, the strip of
-' shell above the duct opening -- is a WIDTH, and a width yields to
-' a local face size. An angle does not.
+' It pulls the duct's OUTER wall in off the barrel. That opens the
+' tangent junction from 0 to sqrt(2a/R) radians -- 9.56 deg at
+' 0.03 m -- but it does not remove it: the offset plane still meets
+' the cylinder, just at x = -0.359 instead of x = 0, and the fluid
+' still closes to nothing there. Two tips instead of one, at a
+' finite angle. It also costs inlet section, because the outer wall
+' runs the whole length of the duct: 0.03 m takes 0.86 -> 0.83 m,
+' 1.858 -> 1.793 m2, and pushes the inlet velocity 16.5 -> 17.1 m/s.
 '
-' It is also a converging gap rather than a ledge, which is the
-' worse of the two: both surfaces are no-slip walls, so prism
-' layers grow towards each other and are crushed. A ledge grows its
-' layers apart and costs nothing.
-'
-' Measured on the 0.15 m mesh: orthogonal quality 0.135 and aspect
-' ratio 79 in the cell sitting on this edge, at (-0.262, -2.155,
-' 9.109). After hierarchical refinement the aspect ratio went to
-' 175 -- refining made it worse, as the scale argument predicts.
-'
-' Read the value as the smallest fluid thickness allowed near the
-' tangent line: the wedge thickens as x^2 / 2R, so 0.03 m cuts away
-' everything thinner than 30 mm, over |x| < 0.359 m, and opens the
-' included angle from 0 to 9.56 deg.
-'
-' It shifts the OUTER wall only. Shifting both, as it used to, kept
-' the 0.86 x 2.16 section but dragged the inner wall towards the
-' vortex finder, whose outer radius it has to clear by construction
-' -- that is the shared 0.10 m budget that used to make this
-' parameter and VORTEX_WALL compete for the same millimetres. The
-' outer wall borders nothing, so moving it alone costs no clearance
-' at all. What it costs is section: 0.86 -> 0.83 m, 1.858 -> 1.793
-' m2, -3.5 %, and the inlet velocity rises 16.5 -> 17.1 m/s, still
-' inside the 15-20 m/s a preheater cyclone runs at. b/D goes 0.199
-' -> 0.192 against Stairmand's 0.20. The width is an FLS ratio
-' anyway, not a published plant size (geometry/catalog.md).
-Const INLET_TANGENT_RELIEF As Double = 0.03
+' INLET_TONGUE removes the junction outright and costs none of
+' that, so this stays at 0. Setting both is refused by PreChecks --
+' the combination is not worked out and the volume term below
+' assumes the outer wall is the barrel's own tangent plane.
 
 ' Mesh sizing cylinder -- the body of influence, written out on its
 ' own as <name>_boi.step. NOT fluid geometry and NOT part of the
@@ -213,6 +188,47 @@ Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m
 ' cells and buys no physics.
 Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
 
+' How thick the shell is left between the duct's outer wall and
+' the barrel's tangent line [m]. The cut-water.
+'
+' The duct's outer wall is the plane y = R and the barrel is the
+' cylinder r = R: tangent at x = 0, so running the duct all the way
+' there closes the union to a zero-angle edge with the fluid
+' vanishing along it. That is the one defect in this model meshing
+' cannot reach. A dihedral angle is scale invariant -- halve the
+' cell and the same sliver returns at half the size, and it did:
+' orthogonal quality 0.135 and aspect ratio 79 on the 0.15 m mesh,
+' aspect ratio 175 after refinement. Refining made it worse. Every
+' other thin feature here is a WIDTH and yields to a local face
+' size; an angle does not.
+'
+' So the duct stops short of the tangent plane instead, at
+'
+'     xTrim = sqrt(t (2R - t))
+'
+' where the wedge between the plane and the cylinder is exactly t
+' thick. The part of the end cap inside the barrel dissolves in the
+' merge as it always did; what survives is a blunt rectangle t wide
+' and one duct height tall. The tangency still exists as geometry,
+' but between x = -xTrim and x = 0 it lies inside the solid shell,
+' where it bounds no fluid and nothing meshes it. The worst corner
+' left in the opening is the 53 deg one at x = -reach, which was
+' always there.
+'
+' It costs almost nothing. 0.05 m removes 0.0166 m3, 0.011 % of the
+' domain, and leaves the catalogue section 0.86 x 2.16 and the
+' 16.5 m/s inlet velocity exactly as they were.
+'
+' It is also the more faithful geometry. No real cyclone closes the
+' shell-to-duct joint to a knife edge; it is plate plus refractory,
+' blunt, 50-100 mm. A model that sharpens it to zero is further
+' from the machine, not closer.
+'
+' The surviving face is a ledge, not a converging gap, so it only
+' has to take a few surface elements across it: 0.05 m is 2.5 at a
+' 0.02 m face size and 4 at 0.0125 m.
+Const INLET_TONGUE As Double = 0.05
+
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
@@ -253,6 +269,7 @@ Dim dx As Double, dz As Double          ' duct axis direction d = (dx, 0, dz)
 Dim nx As Double, nz As Double          ' duct section "up"  n = (nx, 0, nz)
 Dim zTopAt0 As Double, zBotAt0 As Double
 Dim reach As Double                     ' |x| where the duct's inner wall meets the barrel
+Dim xTrim As Double                     ' |x| where the duct stops, short of the tangent plane
 Dim ceX As Double, ceY As Double, ceZ As Double   ' inlet face centre
 Dim xInletNear As Double, zDuctTop As Double
 
@@ -364,6 +381,7 @@ Private Sub Derive()
     ' inner wall meets the barrel there, and that is the duct's
     ' highest point inside the barrel's footprint.
     reach = Sqr(R * R - yInner * yInner)
+    xTrim = Sqr(INLET_TONGUE * (2# * R - INLET_TONGUE))
 
     ' Anchor: the top of the opening sits INLET_ROOF_CLEARANCE below
     ' the roof. Everything else follows from the constant section.
@@ -389,6 +407,14 @@ Private Sub Derive()
     ' over the section gives a closed form; the part that varies
     ' along the section's own "up" axis cancels by symmetry.
     vDuctFree = H_INLET * L_INLET * wDuct - (H_INLET / nz) * Segment(R, yInner, yOuter)
+
+    ' Less the wedge the tongue keeps out of the fluid: the part of
+    ' the duct between x = -xTrim and the tangent plane that lay
+    ' outside the barrel. Seen from the y axis that region runs from
+    ' yOuter - INLET_TONGUE to yOuter, and the closed form is the
+    ' rectangle minus the circular segment under it.
+    vDuctFree = vDuctFree - (H_INLET / nz) * _
+                (xTrim * INLET_TONGUE - Segment(R, yOuter - INLET_TONGUE, yOuter))
 
     vPipe = PI * rVortex * rVortex * (zOutletTop - zRoof)
     vWall = PI * ((rVortex + VORTEX_WALL) ^ 2 - rVortex * rVortex) * L_VORTEX
@@ -494,19 +520,31 @@ Private Sub PreChecks()
     End If
     End If
 
+    ' 8. the tongue
+    If INLET_TONGUE <= 0# Then
+        Fail "INLET_TONGUE is " & Fmt(INLET_TONGUE) & " m. At zero the duct's outer wall " & _
+             "runs onto the barrel's tangent line and the union closes to a zero-angle " & _
+             "edge, which no mesh size can resolve."
+    End If
+    If INLET_TANGENT_RELIEF <> 0# Then
+        Fail "INLET_TONGUE and INLET_TANGENT_RELIEF are both set. The tongue's volume term " & _
+             "assumes the duct's outer wall is the barrel's own tangent plane, and the two " & _
+             "together have not been worked out. Use the tongue and leave the relief at 0."
+    End If
+    If xTrim >= reach Then
+        Fail "the tongue stops the duct at x = " & Fmt(-xTrim) & " m, at or outside where " & _
+             "its inner wall meets the barrel (" & Fmt(-reach) & " m); the duct would never " & _
+             "break into the shell. Reduce INLET_TONGUE."
+    End If
+
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
     Note "duct top / bottom at x = 0        " & Fmt(zTopAt0) & " / " & Fmt(zBotAt0) & " m"
     Note "vortex finder clearance           " & Fmt(yInner - rVortex - VORTEX_WALL) & " m"
     Note "built duct width                  " & Fmt(wDuct) & " m (catalogue " & _
          Fmt(W_INLET) & " less " & Fmt(INLET_TANGENT_RELIEF) & " tangency relief)"
-    If INLET_TANGENT_RELIEF = 0# Then
-        Note "NOTE tangency relief is 0: the duct's outer wall is exactly"
-        Note "     tangent to the barrel and the union closes to a zero-angle"
-        Note "     edge. Meshing cannot fix that -- a dihedral angle does"
-        Note "     not change with cell size. Set INLET_TANGENT_RELIEF."
-    End If
-
+    Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
+         Fmt(-xTrim) & " m"
 End Sub
 
 
@@ -735,12 +773,17 @@ End Function
 ' tilted inlet face are carried by the sketch, so the extrusion
 ' itself is an ordinary blind one along a principal axis.
 '
-' The quadrilateral's downstream edge is the barrel's tangent plane
-' x = 0, which is where the duct has to end. Short of it the duct's
-' end cap survives the merge as a wall across the opening; past it
-' the duct breaks back out through the far side of the shell,
-' because at y = R the barrel reaches no further than x = 0. The
-' deleted builder ran its box from x0 to 0.0 for the same reason.
+' The quadrilateral's downstream edge is x = -xTrim: the duct stops
+' INLET_TONGUE of shell short of the barrel's tangent plane rather
+' than running into it. See INLET_TONGUE for why.
+'
+' Its end cap does not become a wall across the opening. Below
+' y = R - INLET_TONGUE the cap is inside the barrel and dissolves
+' in the merge, exactly as the cap at x = 0 used to; only the strip
+' above that survives, and that strip is the tongue. What the duct
+' must not do is run PAST the tangent plane, where it would break
+' back out through the far side of the shell -- at y = R the barrel
+' reaches no further than x = 0.
 Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
 
     Dim sk As SldWorks.Sketch
@@ -759,8 +802,11 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
 
     qx(0) = ceX - hh * nx: qz(0) = ceZ - hh * nz      ' inlet face, bottom
     qx(1) = ceX + hh * nx: qz(1) = ceZ + hh * nz      ' inlet face, top
-    qx(2) = 0#:            qz(2) = zTopAt0            ' tangent plane, top
-    qx(3) = 0#:            qz(3) = zBotAt0            ' tangent plane, bottom
+    ' The duct slopes down towards the cyclone, so stepping xTrim
+    ' back up the axis lifts both edges by xTrim * tan(slope), and
+    ' nx / nz is that tangent -- the same ratio PreChecks uses.
+    qx(2) = -xTrim:        qz(2) = zTopAt0 + xTrim * (nx / nz)   ' tongue, top
+    qx(3) = -xTrim:        qz(3) = zBotAt0 + xTrim * (nx / nz)   ' tongue, bottom
 
     swModel.ClearSelection2 True
     planeDuct.Select2 False, 0

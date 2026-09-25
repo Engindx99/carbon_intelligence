@@ -30,19 +30,19 @@ Giriş tipi: Teğetsel
 
 Giriş kesiti: Dikdörtgen, sabit kesit
 
-Giriş genişliği: 0.86 m — FLS oranı (türetilmiş). Kurulan kanal **0.83 m**; aradaki 0.03 m, teğet kenarı açan `INLET_TANGENT_RELIEF`'tir (aşağıya bakın).
+Giriş genişliği: 0.86 m — FLS oranı (türetilmiş)
 
 Giriş yüksekliği: 2.16 m — **kullanıcı kararı**, katalog değeri değil
 
 FLS oranı 4.97 m veriyor (a/D = 1.15); giriş bilerek kısaltıldı. Gerekçe: yayınlanmış uzun giriş, gerçek makinede 270°'lik sarmal volütle beslendiği için anlamlıdır, bu model ise volütü bilerek kurmuyor. Volüt yerine düz teğetsel kanal konunca uzun giriş gerekçesini kaybediyor — 4.97 m'de açıklığın %61'i vorteks bulucu ağzının (z = 9.28) altında kalıyor ve oradan giren gaz halkayı atlayarak kısa devre yapabiliyor; giriş hızı da ~7 m/s'ye düşüyor, oysa preheater siklonları 15–20 m/s'de çalışır.
 
-2.16 m ise a/D = 0.50 ve a/b = 2.51: Stairmand'in klasik oranı. Açıklığın yalnızca %10'u vorteks bulucu ağzının altında kalıyor ve giriş hızı ~16 m/s'ye dönüyor. Genişlik zaten klasikti (b/D = 0.86/4.32 = 0.199; teğet payından sonra kurulan değer 0.83/4.32 = 0.192).
+2.16 m ise a/D = 0.50 ve a/b = 2.51: Stairmand'in klasik oranı. Açıklığın yalnızca %10'u vorteks bulucu ağzının altında kalıyor ve giriş hızı ~16 m/s'ye dönüyor. Genişlik zaten klasikti (b/D = 0.86/4.32 = 0.199).
 
 Ekipman hacmi değişmiyor, dolayısıyla kalma süresi ve holdup etkilenmiyor. Katalog tablosu ([catalog.md](../catalog.md)) yayınlanmış 4.97 değerini taşımaya devam eder; sapma bu dokümanda kayıtlıdır.
 
-Giriş kesit alanı: 1.793 m² (kurulan kesit; katalog genişliğiyle 1.858 m² olurdu)
+Giriş kesit alanı: 1.858 m²
 
-Giriş kanalı: 0.83 × 2.16 m, 3.0 m uzunluğunda, teğetsel, sabit kesitli, 5° aşağı eğimli
+Giriş kanalı: 0.86 × 2.16 m, 3.0 m uzunluğunda, teğetsel, sabit kesitli, 5° aşağı eğimli
 
 Giriş yönü: Cyclone gövdesine teğetsel ve düşey düzlemde 5° aşağı eğimli
 
@@ -58,7 +58,7 @@ Katı `geometry/output/2500/C1.step` (ayrıca `.stl` ve `.SLDPRT`), `geometry/ma
 
 CFD domeni, tek C1 cyclone + sabit kesitli teğetsel ve eğimli farin giriş kanalının akış hacmından oluşturulur.
 
-Koordinatlar: siklon ekseni z, toz çıkışı z = 0. Gaz +x yönünde girer; giriş y ∈ [1.30, 2.13] aralığında olduğundan girdap **yukarıdan bakıldığında saat yönündedir**.
+Koordinatlar: siklon ekseni z, toz çıkışı z = 0. Gaz +x yönünde girer; giriş y ∈ [1.30, 2.16] aralığında olduğundan girdap **yukarıdan bakıldığında saat yönündedir**.
 
 Koni: z = 0 → 4.650 m (Φ0.40 → Φ4.32)
 
@@ -68,17 +68,17 @@ Vorteks bulucu duvarı: z = 9.280 → 11.440 m, 0.08 m kalınlığında (oyulmu�
 
 Çıkış borusu (vorteks bulucunun içi): z = 9.280 → 17.440 m, Φ2.40
 
-Giriş kanalı: y = 1.300 → 2.130 (dış duvar gövdeye teğet düzlemden 0.03 m içeride); ekseni (cos5°, 0, −sin5°); gövdenin teğet düzleminde (x = 0) z = 9.071 → 11.239 m; gövdedeki açıklığın en yukarı ulaştığı nokta x = −1.725, z = 11.390 m
+Giriş kanalı: y = 1.300 → 2.160 (dış duvar gövdeye teğet); ekseni (cos5°, 0, −sin5°); teğet düzlemine varmadan **x = −0.462'de** biter (dil, aşağıya bakın); gövdenin teğet düzleminde (x = 0) izdüşümü z = 9.071 → 11.239 m; gövdedeki açıklığın en yukarı ulaştığı nokta x = −1.725, z = 11.390 m
 
-Giriş yüzü: merkezi (−2.989, 1.715, 10.416), x = −3.083 → −2.895, z = 9.341 → 11.492 m
+Giriş yüzü: merkezi (−2.989, 1.730, 10.416), x = −3.083 → −2.895, z = 9.341 → 11.492 m
 
 Hacim ayrımı:
 
 Ekipman hacmi (gövde + koni): 124.54 m³
-+ Gövdenin dışında kalan serbest kanal: 3.15 m³
++ Gövdenin dışında kalan serbest kanal: 3.31 m³
 + Çatının üstündeki çıkış borusu: 27.14 m³
 − Vorteks bulucu duvarı: 1.35 m³
-CFD domen hacmi (`C1.step`): 153.48 m³
+CFD domen hacmi (`C1.step`): 153.65 m³
 
 CFD domen hacmi, modelleme parametrelerine bağlı uzatmaları içerir; fiziksel hesapta kullanılmaz.
 
@@ -90,7 +90,7 @@ Bu, çatının üstündeki **çıkış kanalıdır**, vorteks bulucu değil — 
 
 Başlangıçta 1.0'dı. İlk Fluent koşusu bunun yetmediğini gösterdi: çıkış borusundan yukarı çıkan girdabın merkezinde aşağı yönlü bir ters akım çekirdeği var ve 2.40 m'lik uzatma o çekirdek hâlâ açıkken sınırı kesiyordu — çıkış yüzünün **%40–44'ünde gaz içeri giriyordu**. Fluent orada kullanıcının verdiği backflow değerlerini dayatmak zorunda kalıyor, dayatılan durum domenin istediği durumla çatışıyor ve çözüm yakınsamak yerine kütle dengesinde ±%0.3'lük bir limit çevrimine oturuyordu. 6.00 m, çekirdeğin kapanması için belirgin biçimde daha fazla yer bırakır. Garanti değil: girdap eksenel mesafeyle yavaş söner, dolayısıyla 2.5 D'nin sonunda teğetsel hız hâlâ belirgin olabilir ve bir miktar geri akış kalabilir. Kalırsa seçenekler uzatmayı 4 D'ye çıkarmak ya da geri akışı kabul edip backflow değerlerinin (603 K) doğruluğuna güvenmek — tek girişli ve izotermal bu koşuda o değer zaten doğru.
 
-`inlet_tangent_relief_m`: 0.03 m — Kanalın dış duvarını gövdeye teğet düzlemden içeri çeker; aşağıdaki modelleme sadeleştirmeleri listesinde gerekçesi var.
+`inlet_tongue_m`: 0.05 m — Kanalın teğet düzlemine varmadan bittiği yerde bırakılan kabuk kalınlığı (cut-water); aşağıdaki modelleme sadeleştirmeleri listesinde gerekçesi var.
 
 `vortex_finder_wall_m`: 0.08 m — Halkadaki girdabı borudan çıkan gazdan ayıran duvar; hacme etkisi %1.08.
 
@@ -112,8 +112,8 @@ paylaşmadığı için düşürmeyi gerektiren bir şey yok.
 
 Halka 0.948 → 0.910 → 0.880 m'ye daralıyor. Üst sınır kanalın iç duvarı (y = R − 0.86 = 1.30): vorteks bulucunun dış yarıçapı onun altında
 kalmalı, 0.08 m'de pay 0.020 m, 0.10 m tam değerse dayanır ve ön kontrol reddeder. `INLET_TANGENT_RELIEF`
-**artık bu payı yemiyor**: yalnızca dış duvarı kaydırdığı için iç duvar 1.30'da sabit. İki parametrenin
-0.10 m'lik ortak bütçeyi paylaştığı düzen kaldırıldı.
+kullanılmıyor (0), teğet kusuru `inlet_tongue_m` ile çözüldüğü için; iki parametrenin 0.10 m'lik
+ortak bütçeyi paylaştığı düzen de böylece kalktı.
 
 `inlet_extension_over_D` C1 için **kullanılmaz**: kanal boyu 3.0 m yayınlanmış bir tesis ölçüsüdür, CFD uzatması değil. Gövdenin teğet düzleminden dışarı, kanal ekseni boyunca, kesit ağırlık merkezinden ölçülür — yüz 5° eğik olduğu için başka bir datumla boy ±0.22 m belirsiz kalırdı.
 
@@ -121,30 +121,33 @@ Modelleme sadeleştirmeleri:
 
 - Yayınlanmış volüt modellenmiyor; giriş düz, teğet, 5° eğimli bir kanal.
 - Kanalın en yüksek noktası çatının 0.05 m altında tutuluyor (`INLET_ROOF_CLEARANCE`). Kanal siklona doğru indiği için üst kenarını doğrudan çatıya dayamak, kanalı gövdenin izdüşümü üzerinde çatının üstüne çıkarır ve çatı plakasının üzerinde sivrilerek biten çıkmaz bir akışkan kaması bırakırdı. Bu boşluk çatıyı düz, açıklığı gövdede temiz bir delik olarak tutar. Tesis ölçüsü değil, modelleme seçimi.
-- Kanalın dış duvarı gövdeye **teğet değil**: `INLET_TANGENT_RELIEF = 0.03` m ile içeri
-  çekildi, dış duvar y = 2.130'da. Tam teğetken (0) birleşim, teğet çizgi boyunca sıfır açılı
-  bir kenara kapanıyor ve akışkan orada sıfır kalınlığa iniyordu.
+- Kanal, gövdeye teğet düzlemine **varmadan biter**: `inlet_tongue_m = 0.05` m ile x = −0.462'de.
+  Uç kapağının gövdenin içinde kalan kısmı birleşmede erir, dışarıda kalan **0.05 × 2.168 m**'lik
+  dikdörtgen kör bir yüz olarak ayakta kalır — gerçek makinedeki **cut-water**'ın karşılığı.
 
-  Bu, modeldeki **mesh'in ulaşamadığı tek kusurdu**. Dihedral açı ölçekten bağımsızdır: hücre
-  boyunu yarıya indirince aynı sliver yarı boyunda geri gelir. Ölçüldü de — 0.15 m'lik mesh'te
-  o kenardaki hücrenin orthogonal quality'si 0.135 ve en-boy oranı 79'du; adaptasyonla
-  inceltilince en-boy oranı **175'e çıktı**, yani incelttikçe kötüleşti. Modeldeki diğer bütün
-  ince yapılar (vorteks bulucu ağzı, çatı altı şeridi) bir **genişliktir** ve genişlik yerel
-  yüzey boyutlandırmasına boyun eğer; açı eğmez.
+  Gerekçe: kanalın dış duvarı (y = 2.16 düzlemi) ile gövde (r = 2.16 silindiri) x = 0'da
+  **teğettir**. Kanal oraya kadar sürdürülürse birleşim sıfır açılı bir kenara kapanıyor ve
+  akışkan o çizgi boyunca sıfır kalınlığa iniyor. Bu, modeldeki **mesh'in ulaşamadığı tek
+  kusurdu**: dihedral açı ölçekten bağımsızdır, hücreyi yarıya indirince aynı sliver yarı boyunda
+  geri gelir. Ölçüldü de — 0.15 m'lik mesh'te o kenardaki hücre orthogonal quality 0.135 / en-boy
+  79; adaptasyonla inceltilince en-boy **175'e çıktı**. Modeldeki diğer ince yapılar (vorteks
+  bulucu ağzı, çatı altı şeridi) birer **genişliktir** ve yerel yüzey boyutlandırmasına boyun
+  eğer; açı eğmez.
 
-  Ayrıca bir **daralan boşluk**, çıkıntı değil: her iki yüzey de no-slip duvar, prizma
-  katmanları birbirine doğru büyüyüp eziliyordu.
+  Kanal erken bittiğinde teğetlik geometrik olarak hâlâ var ama x = −0.462 ile 0 arasında **katı
+  kabuğun içinde** kalıyor; orada akışkan sınırlamıyor, dolayısıyla mesh'lenmiyor. Açıklıkta
+  kalan en kötü köşe, zaten var olan x = −1.725'teki 53°'lik köşe.
 
-  Değeri şöyle okuyun: **teğet çizgiye yakın bölgede izin verilen en küçük akışkan kalınlığı.**
-  Kama x²/2R ile kalınlaştığından 0.03 m, |x| < 0.359 m aralığında 30 mm'den ince akışkanı
-  kesip atıyor ve içerdeki açıyı 0°'den **9.56°**'ye açıyor.
+  Kalınlık t ile durma noktası: x = √(t(2R − t)). Kesilen akışkan **0.0166 m³**, domenin
+  %0.011'i. Katalog kesiti 0.86 × 2.16 ve giriş hızı 16.5 m/s **birebir korunur** — bu yüzden
+  dış duvarı içeri çeken `INLET_TANGENT_RELIEF` yerine bu tercih edildi; o, açıyı 0'dan 9.56°'ye
+  açıyor ama kamanın ucunu yok etmiyor (yalnızca x = −0.359'a taşıyor) ve kanal boyunca kesit
+  götürüyordu (0.86 → 0.83 m, giriş hızı 17.1 m/s). Makro ikisinin birlikte kullanılmasını
+  reddeder.
 
-  Yalnızca **dış duvarı** kaydırıyor. Eskiden iki duvarı birden kaydırıyordu; o zaman 0.86 × 2.16
-  kesiti korunuyordu ama iç duvar vorteks bulucuya yaklaşıyor ve `vortex_finder_wall_m` ile
-  0.10 m'lik bir bütçeyi paylaşmak zorunda kalıyordu. Dış duvar hiçbir şeye komşu olmadığı için
-  tek başına kaydırmak hiç pay yemiyor. Bedeli kesit: 0.86 → 0.83 m, 1.858 → 1.793 m² (−%3.5),
-  giriş hızı 16.5 → 17.1 m/s (preheater bandı 15–20 m/s), b/D 0.199 → 0.192 (Stairmand 0.20).
-  Genişlik zaten yayınlanmış bir tesis ölçüsü değil, FLS oranından türetilmiş bir değer.
+  Dil yüzü bir **çıkıntı**, daralan boşluk değil: 0.02 m yüzey boyutuyla 2.5, 0.0125 m ile 4
+  eleman. Kanalın fiziksel boyu 3.0 → 2.54 m'ye iner; 3.0 m, teğet düzlemine ölçülen datum
+  olmayı sürdürür ve giriş yüzü yerinde kalır.
 
 - Kanalın açıklığı ile çatı arasında kalan gövde duvarı şeridi, `INLET_ROOF_CLEARANCE = 0.05`
   yüzünden 0.78 m'lik bir yay boyunca 0.10 m'nin altına, en dar yerde 0.05 m'ye iniyor.
@@ -157,11 +160,11 @@ Modelleme sadeleştirmeleri:
 - Farin borusu yok; toz çıkışı bir sınır yüzü.
 - C1 Y ayrımı modellenmiyor: tek C1 kuruluyor.
 
-Kontrol: `C1.step` tek parça ve kapalı bir katı olmalı, hacmi 153.48 m³ olmalı. Makro bunu ve ara adımların her birini export etmeden önce kendisi doğrular.
+Kontrol: `C1.step` tek parça ve kapalı bir katı olmalı, hacmi 153.65 m³ olmalı. Makro bunu ve ara adımların her birini export etmeden önce kendisi doğrular.
 
 STEP'i dosyadan okuyarak doğrulanacak değerler: `CYLINDRICAL_SURFACE` yarıçapları
-**200 / 1200 / 1280 / 2160 mm**, kanal köşeleri **y = +1300 … +2130 mm**, z = **0 … 17440 mm**.
-Dış duvarın 2160 değil 2130 olması, teğet payının uygulandığının tek satırlık kanıtı.
+**200 / 1200 / 1280 / 2160 mm**, kanal köşeleri **y = +1300 … +2160 mm**, z = **0 … 17440 mm**,
+ve kanalın uç köşelerinin x'i **−462 mm** (0 değil) — dilin uygulandığının tek satırlık kanıtı.
 (Diskteki STEP, 25 Eylül 03:20, pay uygulanmadan önce üretildi ve dış duvarı 2160'ta taşıyor;
 kanalın +y'de olduğu orada zaten doğrulandı.)
 (Bir ara makro kanalı −y'de kuruyordu — referans düzlemi orijine göre aynalanmış tarafa
@@ -172,7 +175,7 @@ geçiyordu. Düzlemin yeri artık üzerine bırakılan bir test bloğuyla **öl�
 
 ## Boundary Faces
 
-Giriş kanalının uç yüzü: `meal_inlet` — merkezi (−2.989, 1.715, 10.416), normali kanal ekseni, 1.793 m² (yeşil)
+Giriş kanalının uç yüzü: `meal_inlet` — merkezi (−2.989, 1.730, 10.416), normali kanal ekseni, 1.858 m² (yeşil)
 
 Çıkış borusunun üst yüzü: `gas_outlet` — z = 17.440 m, 4.524 m² (mavi)
 
@@ -185,7 +188,7 @@ Yüzler adla değil, geometrileriyle (düzlem mi, normali, üzerindeki nokta) bu
 ## İlk CFD Koşusu (kaba mesh, 24–25 Eylül 2026)
 
 Bu bölüm **aşılmış bir geometriyle** (vorteks bulucu 0.05 m, çıkış uzatması 1.0 D, kanal −y'de,
-teğet payı yok, giriş genişliği 0.86 m) ve kaba bir mesh'le alınmış sonuçları taşır. Aşağıdaki
+kanal teğet düzlemine kadar sürüyor) ve kaba bir mesh'le alınmış sonuçları taşır. Aşağıdaki
 sayılar o koşunun kendi geometrisine aittir ve güncellenmez. Silinmiyor: yeni mesh'in karşılaştırma tabanı bu.
 
 Akışkan: hava, `incompressible-ideal-gas`, Sutherland viskozitesi, işletme basıncı 101325 Pa.
@@ -276,9 +279,9 @@ Toplam yükseklik (gövde + koni): 11.44 m
 
 Koni duvarının yatayla açısı: 67.1° — farinin 40°'lik yığılma açısının üstünde
 
-Giriş kesit alanı: 1.793 m²
+Giriş kesit alanı: 1.858 m²
 
-Giriş hidrolik çapı: 1.199 m
+Giriş hidrolik çapı: 1.23 m
 
 Vorteks bulucu kesiti: 4.524 m²
 
