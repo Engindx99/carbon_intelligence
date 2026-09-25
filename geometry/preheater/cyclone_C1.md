@@ -138,6 +138,21 @@ Modelleme sadeleştirmeleri:
   kabuğun içinde** kalıyor; orada akışkan sınırlamıyor, dolayısıyla mesh'lenmiyor. Açıklıkta
   kalan en kötü köşe, zaten var olan x = −1.725'teki 53°'lik köşe.
 
+  **Ölçüldü (25 Eylül 2026, Ansys Meshing, tet, inflation yok).** Dilin etkisi, element boyu
+  dilsiz koşuyla birebir aynı tutularak ayrıştırıldı:
+
+  | metrik | 150 mm, dilsiz | 150 mm, dilli | 200 mm, dilli |
+  |---|---|---|---|
+  | min orthogonal quality | 0.135 | **0.209** | 0.206 |
+  | max skewness | 0.965 | **0.791** | 0.794 |
+  | max en-boy oranı | 79 | **9.50** | 10.05 |
+
+  Skewness ve orthogonal quality tek başına kanıt sayılmazdı (kabalaşma da onları düzeltir).
+  Kanıt en-boy oranında: teğet kama ölçek-değişmez bir kusurdu ve inceltilince 79'dan 175'e
+  *çıkıyordu*, dolayısıyla 1.33× kabalaşma onu 8× düşüremez. 79 → 9.50 geometriden gelir.
+  İkinci kanıt, 200 mm ile 150 mm sütunlarının birbirinin aynı olması: mesh artık inceltmeyle
+  **bozulmuyor**. Sorunun tanımı buydu.
+
   Kalınlık t ile durma noktası: x = √(t(2R − t)). Kesilen akışkan **0.0166 m³**, domenin
   %0.011'i. Katalog kesiti 0.86 × 2.16 ve giriş hızı 16.5 m/s **birebir korunur** — bu yüzden
   dış duvarı içeri çeken `INLET_TANGENT_RELIEF` yerine bu tercih edildi; o, açıyı 0'dan 9.56°'ye
@@ -165,8 +180,9 @@ Kontrol: `C1.step` tek parça ve kapalı bir katı olmalı, hacmi 153.65 m³ olm
 STEP'i dosyadan okuyarak doğrulanacak değerler: `CYLINDRICAL_SURFACE` yarıçapları
 **200 / 1200 / 1280 / 2160 mm**, kanal köşeleri **y = +1300 … +2160 mm**, z = **0 … 17440 mm**,
 ve kanalın uç köşelerinin x'i **−462 mm** (0 değil) — dilin uygulandığının tek satırlık kanıtı.
-(Diskteki STEP, 25 Eylül 03:20, pay uygulanmadan önce üretildi ve dış duvarı 2160'ta taşıyor;
-kanalın +y'de olduğu orada zaten doğrulandı.)
+(Diskteki STEP 25 Eylül 14:30'da dille birlikte yeniden üretildi ve dosyadan okunarak
+doğrulandı: yarıçaplar 1200/1280/2160, kanal y = 1300…2160, kanal ucu x = −462.1, dil yüzü
+y = 2110 (= 2160 − 50), z = 0…17440 mm. Birim bloğu `SI_UNIT(.MILLI., .METRE.)`.)
 (Bir ara makro kanalı −y'de kuruyordu — referans düzlemi orijine göre aynalanmış tarafa
 koyuyor ve hiçbir doğrulama bunu göremiyordu, çünkü gövde y'de simetrik olduğundan sınırlayıcı
 kutu, ayna hacmi değiştirmediğinden hacim, giriş yüzü aynı kaldığından alan kontrolü hepsi
