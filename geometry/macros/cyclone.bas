@@ -146,6 +146,7 @@ Const INLET_ROOF_CLEARANCE As Double = 0.05
 ' that, so this stays at 0. Setting both is refused by PreChecks --
 ' the combination is not worked out and the volume term below
 ' assumes the outer wall is the barrel's own tangent plane.
+Const INLET_TANGENT_RELIEF As Double = 0#
 
 ' Mesh sizing cylinder -- the body of influence, written out on its
 ' own as <name>_boi.step. NOT fluid geometry and NOT part of the
