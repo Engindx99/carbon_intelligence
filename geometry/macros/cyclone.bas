@@ -164,23 +164,32 @@ Const INLET_TANGENT_RELIEF As Double = 0#
 ' floor of 0.01. BOI_CLEARANCE is the margin and PreChecks enforces
 ' it on both sides.
 '
-' 1.6 m covers the forced vortex core and the tangential velocity
-' peak, which sits near the vortex finder radius. At 0.06 m cells
-' that is about 27 cells across the core and roughly 365 000 cells
-' inside the region -- the size the mesher is given is a mesher
+' 0.8 m is what the first resolved run measured the core to need,
+' not a guess. That run put a tangential velocity profile across
+' the barrel at z = 8 m: the velocity rises linearly out to
+' r = 1.0 m before it peaks, so the solver is turning a core that
+' should be 0.25 - 0.35 m across into a 1 m solid-body wheel, and
+' the peak reaches only 1.1 times the inlet velocity where a
+' cyclone gives 1.5 - 2.5. The profile also crosses zero at
+' x = +0.35, so the vortex axis sits off centre and the region has
+' to be wide enough to hold it there. 0.8 m covers r = 1.0 m of
+' core about an axis displaced 0.35 m, with the peak inside it.
+'
+' 1.6 m was the earlier value, chosen to reach the vortex finder
+' radius. At the 0.04 m cells the core actually needs it would be
+' about 1.5 million cells in the region alone, which does not fit;
+' 0.8 m is about 320 000. The size the mesher is given is a mesher
 ' setting, not a geometry one, so tune it there.
-' Off by default. Two bodies in one geometry turned out to be more
-' than the mesher's region detection wanted to handle: Fluent
-' Meshing's watertight workflow merged the sizing cylinder into the
-' fluid region instead of keeping it aside, and the cone vanished
-' inside it. Until that is set up properly the cyclone is meshed on
-' its own, with the core size controlled by the volume mesh task's
-' max cell length instead. Turn this back on when the core needs
-' more than a global size can give it -- the geometry below is
-' correct and checked, it is only the mesher hand-off that is not.
-Const EXPORT_BOI      As Boolean = False
+'
+' Two bodies in one geometry broke the mesher once: the watertight
+' workflow merged the sizing cylinder into the fluid region and the
+' cone vanished inside it. That happened with the cylinder inserted
+' into the cyclone's own part. Hand the two STEP files to Import
+' Geometry separately instead (Import Type: Multiple Files) and
+' pick the cylinder in Add Local Sizing -> Body of Influence.
+Const EXPORT_BOI      As Boolean = True
 
-Const BOI_RADIUS      As Double = 1.6    ' about the cyclone axis [m]
+Const BOI_RADIUS      As Double = 0.8    ' about the cyclone axis [m]
 Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m]
 
 ' Where the sizing cylinder stops, above the roof. Everything above
@@ -188,6 +197,14 @@ Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m
 ' the boundary condition away from the flow; resolving it costs
 ' cells and buys no physics.
 Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
+
+' The cylinder also has to stop before it reaches the cone wall,
+' for the same reason it has to clear the barrel: a refinement
+' front sitting on a wall is what wrecked the first refined mesh.
+' The floor is derived, not set -- it is the height where the cone
+' has opened to BOI_RADIUS + BOI_CLEARANCE. Below it the cone is
+' narrower than the region, so there is nothing there to size that
+' the global setting cannot.
 
 ' How thick the shell is left between the duct's outer wall and
 ' the barrel's tangent line [m]. The cut-water.
@@ -264,6 +281,7 @@ Dim oldStlDev As Double, oldStlAngle As Double
 Dim R As Double, rDust As Double, rVortex As Double
 Dim zRoof As Double, zVortexBottom As Double, zOutletTop As Double
 Dim zBoiTop As Double                       ' top of the mesh sizing cylinder
+Dim zBoiBot As Double                       ' floor of the mesh sizing cylinder
 Dim yOuter As Double, yInner As Double, yMid As Double
 Dim wDuct As Double                         ' built duct width = W_INLET - relief
 Dim dx As Double, dz As Double          ' duct axis direction d = (dx, 0, dz)
@@ -364,6 +382,10 @@ Private Sub Derive()
     zVortexBottom = zRoof - L_VORTEX
     zOutletTop = zRoof + OUTLET_EXT_OVER_VORTEX_D * D_VORTEX
     zBoiTop = zRoof + BOI_ROOF_MARGIN
+
+    ' Where the cone has opened to BOI_RADIUS + BOI_CLEARANCE.
+    zBoiBot = H_CONE * (BOI_RADIUS + BOI_CLEARANCE - rDust) / (R - rDust)
+    If zBoiBot < 0# Then zBoiBot = 0#
 
     ' The relief moves the outer wall only, so the inner wall -- the
     ' one that has to clear the vortex finder -- does not move with
@@ -518,6 +540,10 @@ Private Sub PreChecks()
         Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
              Fmt(R - BOI_RADIUS) & " m of the barrel wall at r = " & Fmt(R) & " m; it needs " & _
              Fmt(BOI_CLEARANCE) & " m."
+    End If
+    If zBoiBot >= zBoiTop Then
+        Fail "the mesh sizing cylinder has no height left: its floor is at z = " & _
+             Fmt(zBoiBot) & " m and its roof at z = " & Fmt(zBoiTop) & " m."
     End If
     End If
 
@@ -1404,15 +1430,15 @@ Private Sub BuildBoi()
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
 
     Set f = RevolveProfile(planeX0, Array( _
-        0#, 0#, _
-        BOI_RADIUS, 0#, _
+        0#, zBoiBot, _
+        BOI_RADIUS, zBoiBot, _
         BOI_RADIUS, zBoiTop, _
         0#, zBoiTop), False)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the mesh sizing cylinder."
 
     Set body = TheBody("mesh sizing cylinder")
     mp = body.GetMassProperties(1000#)
-    expect = PI * BOI_RADIUS * BOI_RADIUS * zBoiTop
+    expect = PI * BOI_RADIUS * BOI_RADIUS * (zBoiTop - zBoiBot)
     If Abs(mp(3) - expect) > VOL_TOL * expect Then
         Fail "the mesh sizing cylinder came out at " & Fmt(mp(3)) & " m3, expected " & _
              Fmt(expect) & " m3."
@@ -1423,8 +1449,8 @@ Private Sub BuildBoi()
     swModel.ViewZoomtofit2
 
     SaveOne OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & "_boi.step"
-    Note "sizing cylinder  r = " & Fmt(BOI_RADIUS) & " m, z = 0 .. " & Fmt(zBoiTop) & _
-         " m, " & Fmt(mp(3)) & " m3 -- a mesher input, not fluid"
+    Note "sizing cylinder  r = " & Fmt(BOI_RADIUS) & " m, z = " & Fmt(zBoiBot) & _
+         " .. " & Fmt(zBoiTop) & " m, " & Fmt(mp(3)) & " m3 -- a mesher input, not fluid"
 
     swApp.ActivateDoc2 cycTitle, False, errs
 

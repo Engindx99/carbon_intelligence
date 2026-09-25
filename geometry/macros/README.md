@@ -217,19 +217,43 @@ Renkler sınır adlarını Fluent'e taşıyan tek kanal olduğu için makro art�
 rengi geri okuyup kontrol ediyor. (`IFace2`'de `SetMaterialPropertyValues2` yok;
 çağrılırsa çalışma anında "Object doesn't support this property or method" verir.)
 
+## Body of Influence
+
+Makro, siklonun yanı sıra mesher'a bir **Body of Influence** silindiri üretir
+(`BuildBoi`, ayrı bir `<ad>_boi.step`). `EXPORT_BOI = True` ile **açık**.
+
+```
+r     = BOI_RADIUS                    0.80 m
+taban = koninin BOI_RADIUS + BOI_CLEARANCE'e açıldığı yükseklik   z = 2.135 m  (türetilir)
+tavan = çatı + BOI_ROOF_MARGIN                                    z = 12.440 m
+hacim = 20.719 m³
+```
+
+Yarıçap ölçülmüş bir sayı: ilk çözülmüş koşuda z = 8 m'de alınan teğetsel hız
+profili, hızın r = 1.0 m'ye kadar doğrusal yükseldiğini gösterdi — yani çözücü
+0.25–0.35 m olması gereken çekirdeği 1 m'lik bir katı tekerleğe yayıyor. Profil
+ayrıca x = +0.35'te sıfırlanıyor, girdap ekseni merkezden kaymış. 0.80 m ikisini
+de kapsar. Önceki 1.6 m değeri, çekirdeğin gerçekten ihtiyaç duyduğu 0.04 m
+elemanla ~1.5 milyon hücre ederdi; 0.80 m ~320 bin eder.
+
+Taban **türetilir, ayarlanmaz**: koni duvarını kestiği yerde bir iyileştirme
+cephesi oluşur ve cephenin geometrik yüzeye oturması sliver üretir (ölçüldü:
+r = 1.25'te orthogonal quality 0.015). Ön kontrol hem bu tabanı hem de yarıçapın
+gövde duvarına ve vorteks bulucuya `BOI_CLEARANCE` kadar uzak kalmasını zorlar.
+
+**Mesher'a nasıl verilir.** İlk denemede silindir siklonun kendi parçasına
+eklenmişti; watertight workflow onu akışkan bölgeye kaynaştırdı ve koni içinde
+kayboldu. Doğrusu iki STEP'i ayrı dosya olarak vermek:
+
+```
+Import Geometry → Import Type: Multiple Files → C1.step + C1_boi.step
+Add Local Sizing → Body of Influence → yalnızca BOI gövdesini seç → 0.04 m
+```
+
 ## Sonraki adımlar
 
-* Makro mesher'a bir **Body of Influence** silindiri de üretebilir (`BuildBoi`: eksende
-  r = `BOI_RADIUS`, z = 0 → çatı + `BOI_ROOF_MARGIN`, ayrı bir `<ad>_boi.step`). `EXPORT_BOI`
-  ile **kapalı**. Açarsan ön kontrol yarıçapın gerçek yüzeylerin hepsinden en az `BOI_CLEARANCE`
-  uzakta olduğunu zorlar — bir iyileştirme cephesi geometrik kenara oturduğunda orada sliver
-  çıkıyor (ölçüldü: r = 1.25'te orthogonal quality 0.015). Kapalı olmasının sebebi geometri
-  değil, Fluent Meshing'in iki gövdeli geometride bölgeleri ayırmaması.
-* **Düzlem tarafı düzeltmesinden sonra makro henüz çalıştırılmadı.** Diskteki
-  `C1.step` (24 Eylül 2026, 22:28) hâlâ kanalı −y'de taşıyan aynalanmış sürüm;
-  Fluent'teki mesh ve çözüm ondan üretildi ve geçerli (tek siklonda ayna görüntüsü
-  birebir aynı fiziktir). Makro bir dahaki koşuda kanalı +y'ye koymalı ve
-  `meal_inlet` yüzünün y ağırlık merkezi **+1.73 m** çıkmalı — ölçüp doğrula.
+* Çekirdek inceltmesi yapılmış mesh'le RSM koşusu; karşılaştırma tabanı
+  `cyclone_C1.md`'deki 254.4 Pa / 26.1 m/s ve z = 8 m teğetsel hız profili.
 * Üretilen `C1.step`'i Fluent Meshing'e alıp renklerden named selection üretimini
   doğrulamak — dışarıdan teyit edilmemiş tek halka bu.
 * İstenirse sınır başına ayrı STL patch'i (`IFace2::GetTessTriangles`) — OpenFOAM'a

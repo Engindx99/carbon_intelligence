@@ -258,7 +258,10 @@ ağzında orthogonal quality'yi 0.015'e düşürdü ve bu, cidarın 0.08 m'ye ç
 Yani **611 Pa ve 36.8 m/s alt sınır olarak okunmalıdır**, doğrulanmış değer olarak değil.
 
 Sıradaki mesh hedefi (Fluent Meshing, Watertight Geometry, poly-hexcore — Ansys Meshing'in
-tet→poly yolu Student lisansının hücre bütçesinin %80'ini harcıyor):
+tet→poly yolu Student lisansının hücre bütçesinin %80'ini harcıyor).
+**Bu plan aşıldı; ne olduğu aşağıdaki "İkinci CFD Koşusu" bölümünde.** Özellikle BOI
+yarıçapı 1.6 m ve çekirdek eleman boyu 0.06 m artık geçerli değil — ölçüm ikisini de
+değiştirdi.
 
 | Bölge | Hedef eleman boyu |
 |---|---|
@@ -306,6 +309,102 @@ Meshing'in watertight workflow'u silindiri ayrı bölge olarak tutmak yerine ak�
 ve koni onun içinde kayboldu. Geometri doğru, aktarım kurulmadı. Çekirdek çözünürlüğü yetersiz
 çıkarsa dönülecek yer burası: `EXPORT_BOI = True`, ve `Update Regions` görevinde silindir
 bölgesinin `dead` olduğundan emin olmak. BOI'li hedef 0.06 m hücre ve ~665 bin toplamdı.
+
+## İkinci CFD Koşusu (dilli geometri + prizma katmanları, 25 Eylül 2026)
+
+Geometri güncel: dil uygulanmış (kanal x = −0.462'de biter), vorteks bulucu cidarı 0.08 m,
+çıkış uzatması 2.5 D, kanal +y'de. Mesh **Ansys Meshing**, tet, global 150 mm, 8 prizma
+katmanı (ilk 5 mm, büyüme 1.2), **307 bin eleman**, min orthogonal quality 0.1076. Poly'ye
+çevrilmedi — bu, ilk koşuyla arasındaki farklardan biri ve sonucu etkiliyor (aşağıda).
+
+Akışkan: sabit ρ = 0.585 kg/m³, μ = 3.0e−05 Pa·s. Bu, ilk koşudaki
+`incompressible-ideal-gas` + Sutherland'ın 603 K ve 101325 Pa'daki değerlerine birebir eşit
+(ρ = 0.5855, μ = 3.03e−05), yani malzeme bir fark kaynağı değil.
+
+Sınır koşulları ilk koşuyla aynı: `inlet_farine` mass-flow-inlet 17.9 kg/s, `outlet_gas`
+pressure-outlet 0 Pa, **`outlet_farine` wall**. Tek fark türbülans şiddeti %5 (ilk koşu %3.5).
+Model RSM Linear Pressure-Strain + Scalable Wall Functions, SIMPLE, PRESTO!, ikinci mertebe.
+
+**Yakınsama.** 500 iterasyon, ΔP son 200 iterasyonda **287.16 Pa**, bant ±0.3 (%0.1), eğim
+0.0005 Pa/iter. Kütle dengesizliği ±0.005 kg/s (%0.03). İlk koşudaki ±%0.28–0.50'lik limit
+çevrimi **kayboldu** — çıkış uzatmasının 1.0 D'den 2.5 D'ye çıkarılması amacına ulaştı.
+
+| Büyüklük | ilk koşu (45 bin poly) | bu koşu (307 bin tet) |
+|---|---|---|
+| ΔP, giriş statik basıncı | 611 Pa | **254.4 Pa** |
+| ΔP, toplam basınç farkı | ölçülmedi | 287.2 Pa |
+| Euler ΔP/q | 7.71 | **3.21** |
+| v_max | 36.83 m/s | **26.06 m/s** |
+| kütle dengesizliği | %0.005 | %0.03 |
+| çıkışta geri akış | %40–44 alan | limit çevrimi yok |
+
+Enerji bütçesi kapanıyor, çözümde aritmetik hata yok: P_t,giriş = 254.1 + 79.2 = 333.3 Pa,
+P_t,çıkış = 333.3 − 287.2 = 46.1 Pa; çıkıştaki 46.4 Pa kinetik enerji v_rms = 12.6 m/s
+demek, eksenel bileşen 17.9/(0.585 × 4.524) = 6.8 m/s, kalan teğetsel ≈ 10.6 m/s.
+
+### Teğetsel hız profili — asıl tanı
+
+z = 8.0 m'de (gövdenin ortası), y = 0 doğrusu boyunca. Bu doğruda teğetsel yön x > 0 için
++y, x < 0 için −y.
+
+| x [m] | \|v_t\| [m/s] |
+|---|---|
+| −2.16 (duvar) | ~1 |
+| −2.10 | 15 |
+| −1.10 | **18** (tepe) |
+| −0.50 | 8 |
+| **+0.35** | **0** |
+| +0.95 | 17 |
+| +2.05 | 17 |
+| +2.16 (duvar) | ~1 |
+
+Üç bulgu:
+
+1. **Girdap ekseni kaymış.** Sıfır geçişi x = 0'da değil **x = +0.35**'te. Gerçek siklonlarda
+   girdap salınır (precessing vortex core); kararlı RANS bunu sabit bir kayma olarak gösterir.
+2. **Çekirdek 3–4 kat şişmiş.** |v_t| merkezden dışa doğru **r ≈ 1.0 m**'ye kadar doğrusal
+   yükseliyor, yani 1 m yarıçaplı bir zorlanmış girdap (katı cisim dönmesi). Gerçek siklonda
+   çekirdek yarıçapı D_e/2'nin %20–30'u, burada **0.25–0.35 m** olmalı.
+3. **Girdap güçlenmiyor.** Tepe 18 m/s, giriş hızı 16.5 m/s, oran **1.1**; siklonlarda
+   1.5–2.5 olur. Giriş açısal momentumu Γ = 16.46 × 1.73 = 28.5 m²/s; kayıpsız serbest
+   girdap r = 1.1'de 26 m/s, r = 0.35'te 81 m/s verirdi. Momentum gövdeye giriyor ama merkeze
+   **yoğunlaşamıyor**.
+
+Duvar tarafı buna karşılık temiz: profil duvarda tek hücrede sıfıra iniyor, prizma katmanları
+çalışıyor.
+
+### İki koşu neden doğrudan karşılaştırılamaz
+
+Dört fark var, ikisi lehte ikisi aleyhte, ve tek skalerle ayrıştırılamazlar:
+
+| fark | yön |
+|---|---|
+| hücre tipi: 45 bin **poly** → 307 bin **ham tet** (dönüştürülmedi) | aleyhte, poly daha az difüzyon üretir |
+| çekirdek çözünürlüğü: global 150 mm, **değişmedi** | aleyhte, mesh çalışmasının tamamı duvara gitti |
+| duvar işlemi: prizmasız y+ ≈ 700–1000 → prizmalı **y+ ≈ 34** | lehte, ilki duvar fonksiyonunun geçerlilik bandının dışındaydı ve sürtünmeyi eksik hesaplıyordu |
+| çıkış uzatması 1.0 D → 2.5 D, %40–44 geri akış kayboldu | lehte, geri akış Fluent'e sınırda değer dayattırıyor ve kaybı yapay şişiriyordu |
+
+611 Pa ile 254 Pa arasındaki farkın bir kısmı gerçek düzelme, bir kısmı gerileme.
+**İkisi de doğrulanmış değer değil.** Ayrıca ilk koşunun kaydı ΔP'yi *giriş statik basıncı*
+olarak tanımlıyor; bu koşuda önce toplam basınç farkı ölçüldü (287.2) ve karşılaştırma için
+statik basınç ayrıca okundu (254.4). Sonraki koşularda **her ikisi de** kaydedilecek.
+
+### Sonuç
+
+Geometri tarafı bitti: teğet kama yok, duvar profili temiz, hacim doğru, limit çevrimi yok.
+Kalan sorun tek başına **çekirdek çözünürlüğü** ve o bir mesher işi.
+
+Çekirdeği 0.30 m yarıçapa oturtmak için doğrusal yükselişi 8–10 hücreyle örmek gerek →
+eleman boyu **~0.04 m**. BOI hacmi (r = 0.8 m, z = 2.135 → 12.44) **20.72 m³**:
+
+| | hücre |
+|---|---|
+| tet @ 0.04 m | 2.75 milyon — yalnızca çekirdek, Student tavanının üstünde |
+| hex @ 0.04 m | **324 bin** — dış bölge ve prizmalarla toplam ~500 bin |
+
+Bu, tet yolunu kapatan ilk ölçülmüş argüman: daha önce "limit bağlamıyor" doğruydu (45 bin →
+307 bin), ama sorunun nerede olduğu belli olunca tetle ödenemiyor. Sıradaki mesh
+**Fluent Meshing, poly-hexcore, BOI ile çekirdekte 0.04 m**.
 
 ## Derived Properties
 
