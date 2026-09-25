@@ -161,8 +161,14 @@ Const INLET_TANGENT_RELIEF As Double = 0#
 ' wrecked the first refined mesh: the front was put at r = 1.25,
 ' which is the vortex finder's outer radius to the millimetre, and
 ' the minimum orthogonal quality fell to 0.015 against Fluent's
-' floor of 0.01. BOI_CLEARANCE is the margin and PreChecks enforces
-' it on both sides.
+' floor of 0.01. BOI_CLEARANCE is the margin.
+'
+' Against the vortex finder the margin is two-sided: the cylinder
+' may sit inside the bore or outside the shell, but not on either
+' surface and not in the annulus between them. At 0.08 m wall and
+' 0.3 m clearance that means r <= 0.90 m or r >= 1.58 m. The core
+' lives inside the bore, so 0.8 m takes the inside branch with
+' 0.40 m to spare.
 '
 ' 0.8 m is what the first resolved run measured the core to need,
 ' not a guess. That run put a tangential velocity profile across
@@ -531,10 +537,16 @@ Private Sub PreChecks()
     ' surface, and a front that coincides with real geometry makes
     ' slivers there. Keep it in open fluid on both sides.
     If EXPORT_BOI Then
-    If BOI_RADIUS - (rVortex + VORTEX_WALL) < BOI_CLEARANCE Then
-        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
-             Fmt(BOI_RADIUS - rVortex - VORTEX_WALL) & " m of the vortex finder's outer " & _
-             "radius " & Fmt(rVortex + VORTEX_WALL) & " m; it needs " & Fmt(BOI_CLEARANCE) & " m."
+    ' The cylinder may sit inside the vortex finder's bore or outside
+    ' its shell. What it must not do is land on either surface, or in
+    ' the annulus between them.
+    If BOI_RADIUS > rVortex - BOI_CLEARANCE And _
+       BOI_RADIUS < rVortex + VORTEX_WALL + BOI_CLEARANCE Then
+        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m is too close to the " & _
+             "vortex finder, whose bore is r = " & Fmt(rVortex) & " m and whose outer radius " & _
+             "is " & Fmt(rVortex + VORTEX_WALL) & " m. With " & Fmt(BOI_CLEARANCE) & " m of " & _
+             "clearance it has to stay under " & Fmt(rVortex - BOI_CLEARANCE) & " m or over " & _
+             Fmt(rVortex + VORTEX_WALL + BOI_CLEARANCE) & " m."
     End If
     If R - BOI_RADIUS < BOI_CLEARANCE Then
         Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
