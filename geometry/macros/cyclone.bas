@@ -1288,6 +1288,14 @@ Private Sub BuildBoi()
     Dim body As SldWorks.Body2
     Dim mp As Variant
     Dim expect As Double
+    Dim cycTitle As String
+    Dim errs As Long
+
+    ' The cyclone's own document, to be brought back to the front
+    ' when this one is done. Otherwise the macro ends showing a
+    ' plain cylinder and it looks as though it built the wrong
+    ' thing.
+    cycTitle = swModel.GetTitle
 
     Set swModel = swApp.NewPart
     If swModel Is Nothing Then Fail "could not create a new part for the sizing cylinder."
@@ -1324,6 +1332,8 @@ Private Sub BuildBoi()
     SaveOne OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & "_boi.step"
     Note "sizing cylinder  r = " & Fmt(BOI_RADIUS) & " m, z = 0 .. " & Fmt(zBoiTop) & _
          " m, " & Fmt(mp(3)) & " m3 -- a mesher input, not fluid"
+
+    swApp.ActivateDoc2 cycTitle, False, errs
 
 End Sub
 
