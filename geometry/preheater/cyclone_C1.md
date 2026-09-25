@@ -153,6 +153,26 @@ Modelleme sadeleştirmeleri:
   İkinci kanıt, 200 mm ile 150 mm sütunlarının birbirinin aynı olması: mesh artık inceltmeyle
   **bozulmuyor**. Sorunun tanımı buydu.
 
+  **Yeni en kötü hücre dilin kendisinde.** 8 katman prizma eklenmiş 307 bin elemanlı mesh'te
+  (Ansys Meshing 150 mm + inflation, ilk katman 5 mm, büyüme 1.2) Fluent'in ölçtüğü minimum
+  orthogonal quality **0.1076** ve yeri **(−0.482, 2.125, 10.00)** — uç kapağının hemen
+  gerisi, dil yüzünün kapladığı y = 2.110–2.160 bandı. Teğet bölgede değil artık.
+
+  Bu bir sınıf değişimi: kusur 0° dihedral açı değil, **50 mm genişliğinde bir şerit**, ve
+  prizma yığını 82.5 mm ile şeritten kalın. Ölçek-bağımlı olduğu için inceltmek düzeltir,
+  bozmaz. 0.10 eşiğinin üstünde kaldığı için dokunulmadı; gerekirse iki çaresi var —
+  `inlet_tongue_m` 0.05 → 0.10 (şerit prizma yığınından kalın olur) ya da o yüze 0.02 m
+  yerel yüzey boyutu.
+
+  Aynı mesh'te max en-boy oranı 32.5 @ (−1.281, −0.045, 9.335), yani r = 1.282'de vorteks
+  bulucunun dış duvarında bir **prizma** hücresi (5 mm × ~150 mm). Kusur değil, prizma
+  katmanının tanımı.
+
+  Fluent'in `Domain → Check` hacmi **153.5135 m³**, makronun analitik 153.646970 m³'üne göre
+  %0.087 düşük. Bu faceting açığı ve büyüklüğü öngörülebilir: r = 2.16 m'lik gövde 150 mm
+  kirişle ~90 parçaya bölünür, alan açığı (2π/n)²/6 = %0.081. Geometri tolerans içinde değil,
+  **doğru** okunmuş.
+
   Kalınlık t ile durma noktası: x = √(t(2R − t)). Kesilen akışkan **0.0166 m³**, domenin
   %0.011'i. Katalog kesiti 0.86 × 2.16 ve giriş hızı 16.5 m/s **birebir korunur** — bu yüzden
   dış duvarı içeri çeken `INLET_TANGENT_RELIEF` yerine bu tercih edildi; o, açıyı 0'dan 9.56°'ye
