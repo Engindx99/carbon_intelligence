@@ -202,6 +202,12 @@ rengi geri okuyup kontrol ediyor. (`IFace2`'de `SetMaterialPropertyValues2` yok;
 
 ## Sonraki adımlar
 
+* Makro **iki** dosya seti üretir: `C1.step` / `.stl` / `.SLDPRT` akışkan hacmi, ve ayrıca
+  `C1_boi.step` — mesher'ın Body of Influence'ı. İkincisi akışkan değildir, Fluent Meshing'de
+  `Add Local Sizing → Body of Influence` adımında seçilir ve mesh'lenmez. Yarıçapı gerçek
+  yüzeylerin hepsinden en az `BOI_CLEARANCE` kadar uzak olmak zorunda; ön kontrol bunu reddeder,
+  çünkü bir iyileştirme cephesi geometrik kenara oturduğunda orada sliver çıkıyor (ölçüldü:
+  r = 1.25'te orthogonal quality 0.015).
 * **Düzlem tarafı düzeltmesinden sonra makro henüz çalıştırılmadı.** Diskteki
   `C1.step` (24 Eylül 2026, 22:28) hâlâ kanalı −y'de taşıyan aynalanmış sürüm;
   Fluent'teki mesh ve çözüm ondan üretildi ve geçerli (tek siklonda ayna görüntüsü

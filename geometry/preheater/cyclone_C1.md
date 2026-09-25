@@ -170,11 +170,36 @@ tet→poly yolu Student lisansının hücre bütçesinin %80'ini harcıyor):
 | Bölge | Hedef eleman boyu |
 |---|---|
 | Global | 0.10 m |
-| Çekirdek (silindir r = 1.6 m, **z = 0 → 12.5**) | 0.05 m |
-| Çıkış borusu uzatması (z = 12.5 → 17.44) | 0.10 m |
+| Çekirdek (`C1_boi.step`: r = 1.6 m, z = 0 → 12.44) | **0.06 m** |
+| Çıkış borusu uzatması (z = 12.44 → 17.44) | 0.10 m |
 | Vorteks bulucu alt ağzı (halka yüzü, 80 mm) | 0.02 m |
 | Teğet giriş kenarı | 0.03 m |
 | Duvar inflation | ilk katman 5 mm, 8 katman, büyüme 1.2 (y+ ≈ 50) |
+
+Hücre bütçesi (Student lisansı 1 milyon):
+
+| | hücre |
+|---|---|
+| BOI içi, 78.6 m³ @ 0.06 m | ~365.000 |
+| BOI dışı, 75.0 m³ @ 0.10 m | ~75.000 |
+| Duvar prizma katmanları (tahmin) | ~225.000 |
+| **toplam** | **~665.000** |
+
+0.05 m hücreyle BOI içi 629.000'e çıkıyor ve toplam ~930.000 oluyor — sınıra fazla yakın.
+0.06 m'de çekirdek çapı boyunca 27 hücre var, yeterli. Hücre boyu bir mesher ayarıdır,
+geometri değil; sayı düşük gelirse 0.05'e indirilebilir.
+
+Çekirdek bölgesi (BOI), makronun ürettiği ikinci bir dosyadır: `geometry/output/2500/C1_boi.step`
+— eksende, yarıçap 1.6 m, z = 0 → 12.44 m, 100.05 m³'lük düz bir silindir. **Akışkan geometrisi değil**,
+`C1.step`'in içinde de değil; mesher'ın boyut bölgesi olarak okuyup mesh'lemediği ayrı bir gövde.
+Fluent Meshing, Body of Influence'ı ancak CAD bir gövde verdiğinde sunuyor, ve o gövdeyi her ölçü
+değişiminde elle çizmek mesh'in geometriyle uyumunu kaybettiği yerdir.
+
+Yarıçap 1.6, gerçek yüzeylerin hepsinden en az 0.3 m uzakta (vorteks bulucu dış yarıçapı 1.28'e
+0.32 m, gövde duvarı 2.16'ya 0.56 m) ve makro bunu ön kontrolle zorluyor. Sebebi ölçülmüş: ilk
+iyileştirme denemesinde cephe r = 1.25'e, yani vorteks bulucunun dış yarıçapının tam üstüne
+konmuştu ve minimum orthogonal quality 0.015'e düştü. **İyileştirme cephesi bir geometrik kenara
+oturmamalı.**
 
 Çekirdek bölgesi çatının ~1 m üstünde **bilerek** bitiyor. Ondan yukarısı düz bir borudur ve
 ilgilendiğimiz fizik orada değil; oraya da 0.05 m vermek 27.14 m³'e ~217 bin hücre demek olurdu,

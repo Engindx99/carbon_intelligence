@@ -150,6 +150,36 @@ Const INLET_ROOF_CLEARANCE As Double = 0.05
 ' you use it.
 Const INLET_TANGENT_RELIEF As Double = 0#
 
+' Mesh sizing cylinder -- the body of influence, written out on its
+' own as <name>_boi.step. NOT fluid geometry and NOT part of the
+' exported solid: a separate body the mesher reads as a sizing
+' region and never meshes. Fluent Meshing only offers a body of
+' influence when the CAD hands it a body, and drawing that by hand
+' after every dimension change is how a mesh stops matching the
+' geometry it was built for.
+'
+' The radius has to clear every real surface by a margin, because a
+' refinement front landing on a geometric edge is exactly what
+' wrecked the first refined mesh: the front was put at r = 1.25,
+' which is the vortex finder's outer radius to the millimetre, and
+' the minimum orthogonal quality fell to 0.015 against Fluent's
+' floor of 0.01. BOI_CLEARANCE is the margin and PreChecks enforces
+' it on both sides.
+'
+' 1.6 m covers the forced vortex core and the tangential velocity
+' peak, which sits near the vortex finder radius. At 0.06 m cells
+' that is about 27 cells across the core and roughly 365 000 cells
+' inside the region -- the size the mesher is given is a mesher
+' setting, not a geometry one, so tune it there.
+Const BOI_RADIUS      As Double = 1.6    ' about the cyclone axis [m]
+Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m]
+
+' Where the sizing cylinder stops, above the roof. Everything above
+' that is the straight outlet extension, whose only job is to hold
+' the boundary condition away from the flow; resolving it costs
+' cells and buys no physics.
+Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
+
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
@@ -183,6 +213,7 @@ Dim oldStlDev As Double, oldStlAngle As Double
 ' (b) derived coordinates -- every one computed, none typed in
 Dim R As Double, rDust As Double, rVortex As Double
 Dim zRoof As Double, zVortexBottom As Double, zOutletTop As Double
+Dim zBoiTop As Double                       ' top of the mesh sizing cylinder
 Dim yOuter As Double, yInner As Double, yMid As Double
 Dim dx As Double, dz As Double          ' duct axis direction d = (dx, 0, dz)
 Dim nx As Double, nz As Double          ' duct section "up"  n = (nx, 0, nz)
@@ -246,6 +277,8 @@ Sub main()
     TagBoundaryFaces
     phase = "exporting"
     ExportFiles
+    phase = "building the mesh sizing cylinder"
+    BuildBoi
 
     Restore
     MsgBox CYCLONE_NAME & " built and exported." & vbLf & vbLf & buildLog, vbInformation, "Cyclone"
@@ -276,6 +309,7 @@ Private Sub Derive()
     zRoof = H_CONE + H_BARREL
     zVortexBottom = zRoof - L_VORTEX
     zOutletTop = zRoof + OUTLET_EXT_OVER_VORTEX_D * D_VORTEX
+    zBoiTop = zRoof + BOI_ROOF_MARGIN
 
     yOuter = R - INLET_TANGENT_RELIEF
     yInner = yOuter - W_INLET
@@ -401,6 +435,20 @@ Private Sub PreChecks()
     ' On C2-C5 the published inlet is taller than the barrel and the
     ' duct runs down into the cone region. That is what the
     ' catalogue describes and it is built as described.
+
+    ' The sizing cylinder's wall is a refinement front, not a
+    ' surface, and a front that coincides with real geometry makes
+    ' slivers there. Keep it in open fluid on both sides.
+    If BOI_RADIUS - (rVortex + VORTEX_WALL) < BOI_CLEARANCE Then
+        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
+             Fmt(BOI_RADIUS - rVortex - VORTEX_WALL) & " m of the vortex finder's outer " & _
+             "radius " & Fmt(rVortex + VORTEX_WALL) & " m; it needs " & Fmt(BOI_CLEARANCE) & " m."
+    End If
+    If R - BOI_RADIUS < BOI_CLEARANCE Then
+        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
+             Fmt(R - BOI_RADIUS) & " m of the barrel wall at r = " & Fmt(R) & " m; it needs " & _
+             Fmt(BOI_CLEARANCE) & " m."
+    End If
 
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
@@ -1221,6 +1269,65 @@ End Sub
 '==================================================================
 ' (h) Export
 '==================================================================
+' The mesh sizing cylinder, built in a part of its own.
+'
+' It is deliberately a separate document and a separate file. Put
+' in the same part it would either merge with the fluid body or
+' survive as a second body, and every volume check in Verify would
+' have to learn about it; exported inside C1.step it would be a
+' second solid for the mesher to wrap. A plain cylinder in its own
+' file is the whole of what Fluent Meshing needs.
+'
+' The plane axes are measured again here: calibration is per plane
+' and these are a new document's planes, so nothing measured in the
+' cyclone's part carries over.
+Private Sub BuildBoi()
+
+    Dim planeX0 As SldWorks.Feature
+    Dim f As SldWorks.Feature
+    Dim body As SldWorks.Body2
+    Dim mp As Variant
+    Dim expect As Double
+
+    Set swModel = swApp.NewPart
+    If swModel Is Nothing Then Fail "could not create a new part for the sizing cylinder."
+    Set swPart = swModel
+    Set swFeat = swModel.FeatureManager
+    Set swSkMgr = swModel.SketchManager
+
+    swSkMgr.AddToDB = True
+    swSkMgr.DisplayWhenAdded = False
+
+    Set planeX0 = FindPlaneWithNormal(1#, 0#, 0#)
+    If planeX0 Is Nothing Then Fail "could not find the X normal plane in the sizing cylinder part."
+    CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
+
+    Set f = RevolveProfile(planeX0, Array( _
+        0#, 0#, _
+        BOI_RADIUS, 0#, _
+        BOI_RADIUS, zBoiTop, _
+        0#, zBoiTop), False)
+    If f Is Nothing Then Fail "FeatureRevolve2 failed on the mesh sizing cylinder."
+
+    Set body = TheBody("mesh sizing cylinder")
+    mp = body.GetMassProperties(1000#)
+    expect = PI * BOI_RADIUS * BOI_RADIUS * zBoiTop
+    If Abs(mp(3) - expect) > VOL_TOL * expect Then
+        Fail "the mesh sizing cylinder came out at " & Fmt(mp(3)) & " m3, expected " & _
+             Fmt(expect) & " m3."
+    End If
+
+    swSkMgr.AddToDB = False
+    swSkMgr.DisplayWhenAdded = True
+    swModel.ViewZoomtofit2
+
+    SaveOne OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & "_boi.step"
+    Note "sizing cylinder  r = " & Fmt(BOI_RADIUS) & " m, z = 0 .. " & Fmt(zBoiTop) & _
+         " m, " & Fmt(mp(3)) & " m3 -- a mesher input, not fluid"
+
+End Sub
+
+
 Private Sub ExportFiles()
 
     Dim outDir As String
