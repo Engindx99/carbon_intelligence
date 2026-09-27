@@ -83,6 +83,23 @@ seçilirse boy ±0.22 m belirsiz kalır; ağırlık merkezi datumu ayrıca hacim
 tam yapar. Bu bir tesis ölçüsü olduğundan `twin_cfg.yaml`'daki
 `inlet_extension_over_D` C1 için kullanılmaz.
 
+**Çıkış dirseği** — Çıkış borusu çatının üstünde `OUTLET_EXT_OVER_VORTEX_D = 2.5` (6.0 m)
+düz yükselir, sonra **kavisli bir 90° dirsekle** (merkez çizgisi yarıçapı
+`ELBOW_R_OVER_VORTEX_D = 1.5` → 3.6 m) −x yönüne, giriş kanalının tarafına döner ve `OUTLET_RUN_OVER_VORTEX_D = 2.0`
+(4.8 m) yatay gider. `gas_outlet` bu kanalın ucundaki dikey yüzdür (x = −8.40 m).
+
+Gerekçe ölçülmüş: düz borunun ucundaki çıkış yüzünde, girdap güçlenince (k-ω SST, 26 Eylül 2026)
+alanın **%38'inde geri akış** vardı. Kütle dengesizliği, ΔP ve geri akış oranı aynı
+18 iterasyonluk periyotla birlikte salınıyordu (korelasyon ~0.8). Girdap düz boruda çok yavaş
+söndüğü için uzatma bunu makul bir boyda çözmez; dirsek girdabı ve ters akım çekirdeğini kırar.
+Tesiste de gaz C1'den fana giden bir kanala döner. Dönüş yönü tek siklon için keyfi; kaynak
+aşağı akış kanalını yerleştirmiyor. Yükseliş 2.5'te bırakıldı, böylece %38'i ölçen koşuya
+göre değişen tek şey dirsek oldu.
+
+Dirsek, borunun z = 17.44'teki kesit diskinin, aynı düzlemdeki x'e paralel bir eksen etrafında
+90° döndürülmesiyle kurulur (çeyrek torus). Hacmi Pappus'tan tamdır: A · (π/2) · R_b.
+Dönüş yönü ölçülür, varsayılmaz: ters dönerse hacim ve kutunun tepesi söyler, diğer yön denenir.
+
 Volüt modellenmez; farin borusu yoktur, toz çıkışı bir sınır yüzüdür.
 
 ## Makro kendini nasıl doğrular
@@ -95,9 +112,9 @@ ve parçayı ekranda inceleme için bırakır.
   vorteks bulucu duvarı sığıyor mu, kanalın iç duvarı vorteks bulucuya çarpıyor mu,
   açıklık çatının altında mı. Silinen `cyclone_layout()`'un reddettiği dördü artı eğimin
   getirdiği ikisi.
-* **Adım başına hacim** — 4 adımın her birinin beklenen hacmi kapalı formda hesaplanır ve
+* **Adım başına hacim** — 6 adımın her birinin beklenen hacmi kapalı formda hesaplanır ve
   ‰1 toleransla karşılaştırılır. En sıkı olanı ilki: gövde + koni = **124.54 m³**,
-  dokümanın fiziksel hesapta kullandığı sayı.
+  dokümanın fiziksel hesapta kullandığı sayı. Son adımın sonunda CFD domeni **200.94 m³**.
 * **Adım başına sınırlayıcı kutu** — yanlış düzlem eşlemesini, ters eğimi, ters ötelemeyi
   metre mertebesinde yakalar.
 * **Gövde sayısı** — her adımda tam olarak 1. İkiye çıkması birleşimin tutmadığı demektir.
@@ -119,7 +136,7 @@ named selection üretir.
 | Sınır | Renk | Alan |
 |---|---|---|
 | `meal_inlet` | yeşil | 1.858 m² |
-| `gas_outlet` | mavi | 4.524 m² |
+| `gas_outlet` | mavi | 4.524 m², yatay kanalın ucu, x = −8.40 m |
 | `dust_outlet` | turuncu | 0.126 m² |
 | duvarlar | gri | — |
 

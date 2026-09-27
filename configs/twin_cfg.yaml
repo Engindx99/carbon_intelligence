@@ -397,11 +397,19 @@ geometry:
   #     axis, x D. Must put the face outside the barrel (> 0.40
   #     for the catalogue's inlet_w = 0.2 D; checked per cyclone).
   #     Unused for C1, whose 3.0 m duct is a published length.
-  #   outlet_extension_over_vortex_D: outlet face above the roof,
-  #     x vortex finder diameter. 1.0 cut through the reverse
-  #     flow core still open above the roof: 40-44 % of the
-  #     outlet face had gas coming back in, and the solution sat
-  #     in a limit cycle instead of converging. 2.5 clears it.
+  #   outlet_extension_over_vortex_D: straight rise of the outlet
+  #     pipe above the roof, x vortex finder diameter. 1.0 cut
+  #     through the reverse flow core still open above the roof:
+  #     40-44 % of the outlet face had gas coming back in, and the
+  #     solution sat in a limit cycle instead of converging. 2.5
+  #     cleared it only while the vortex was weak; resolved, it
+  #     was 38 % backflow again. The bend below is the fix.
+  #   outlet_bend_r_over_vortex_D / outlet_run_over_vortex_D: the
+  #     rise ends in a 90 deg bend of this centreline radius and a
+  #     straight horizontal run of this length, and the outlet face
+  #     is at the end of the run. The bend breaks up the swirl and
+  #     its reverse flow core; the plant's C1 gas also turns into a
+  #     duct to the fan. 1.5 D is an ordinary long-radius elbow.
   #   vortex_finder_wall_m: vortex finder wall thickness [m].
   #     The flow does not care how thick the plate is, but the
   #     mesh does: this width is also the finder's lower rim
@@ -434,5 +442,7 @@ geometry:
   cfd_boundary:
     inlet_extension_over_D: 0.6
     outlet_extension_over_vortex_D: 2.5
+    outlet_bend_r_over_vortex_D: 1.5
+    outlet_run_over_vortex_D: 2.0
     vortex_finder_wall_m: 0.08
     inlet_tongue_m: 0.05

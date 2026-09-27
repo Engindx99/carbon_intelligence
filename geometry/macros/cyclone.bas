@@ -4,7 +4,8 @@ Attribute VB_Name = "cyclone"
 '
 ' Builds ONE closed solid: the gas volume inside a single preheater
 ' cyclone, plus its tangential meal/gas inlet duct and the outlet
-' pipe above the roof. Nothing structural is modelled -- no shell,
+' pipe above the roof, which rises, turns through a 90 deg bend and
+' runs off horizontally. Nothing structural is modelled -- no shell,
 ' no refractory, no volute (CLAUDE.md rule 8).
 '
 ' Coordinates: cyclone axis = z, dust outlet at z = 0. Gas enters
@@ -65,16 +66,48 @@ Const H_INLET        As Double = 2.16
 ' Modelling parameters -- NOT plant dimensions. No source gives
 ' them; they say where the CFD boundary faces sit.
 ' configs/twin_cfg.yaml : geometry.cfd_boundary
-' How far above the roof the outlet face sits, in vortex finder
-' diameters. 1.0 was too short and the first Fluent run said so:
+' How far the outlet pipe rises straight above the roof before the
+' bend starts, in vortex finder diameters. Until the bend was added
+' this was where the outlet face sat. 1.0 was too short and the
+' first Fluent run said so:
 ' the swirl leaving up the bore carries a reverse-flow core that
 ' was still open where the boundary cut it, so 40-44 % of the
 ' outlet face had gas coming back IN. Fluent then has to impose the
 ' backflow values there, the imposed state fights the state the
 ' domain wants, and the whole solution sat in a limit cycle of
-' +/- 0.3 % on the mass balance instead of converging. 2.5 puts the
-' face 6.0 m above the roof, well past where the core closes.
-Const OUTLET_EXT_OVER_VORTEX_D As Double = 2.5    ' outlet face above roof, x vortex D
+' +/- 0.3 % on the mass balance instead of converging. 2.5 put the
+' face 6.0 m above the roof, and that held only while the vortex
+' was weak. Once the mesh stopped smearing the core (tet -> poly)
+' the swirl got stronger, v_max 26 -> 34 m/s, its reverse-flow core
+' reached the face again, and the face was 38 % backflow (k-omega
+' SST, 26 Sep 2026). The mass imbalance, the pressure drop and the
+' backflow fraction all swung together on one 18-iteration period,
+' correlation 0.8. A straight pipe cannot fix this at any sensible
+' length, because swirl decays very slowly in one.
+'
+' The bend below is the fix, and it is what the plant has: the gas
+' leaving C1 turns into a duct to the fan. The rise is left at 2.5
+' so that the bend is the only thing that changed against the run
+' that measured the 38 %.
+Const OUTLET_EXT_OVER_VORTEX_D As Double = 2.5    ' straight rise above roof, x vortex D
+
+' The outlet bend: the pipe section swept through 90 deg about a
+' horizontal axis, turning the flow from +z to -x, then a straight
+' horizontal run to the outlet face. The bend breaks up the swirl
+' and its reverse-flow core, so the outlet face sits in flow that
+' is going the one way. Modelling parameters, no plant source.
+'
+' Bend radius is the centreline radius, 1.5 diameters: an ordinary
+' long-radius elbow. Anything under half a diameter folds the inner
+' wall through itself; PreChecks refuses it.
+'
+' Which way the bend turns is arbitrary for a single cyclone -- no
+' source places the downstream duct. -x turns it back over the inlet
+' side, and the build stays on planes parallel to the ones the macro
+' already measures. It clears everything by construction: the bend
+' starts above the roof, the inlet duct is below it.
+Const ELBOW_R_OVER_VORTEX_D   As Double = 1.5    ' bend centreline radius, x vortex D
+Const OUTLET_RUN_OVER_VORTEX_D As Double = 2#    ' straight run after the bend, x vortex D
 ' Vortex finder wall thickness [m]. What this carves out of the
 ' fluid is a slot 2.16 m deep and this wide, running the finder's
 ' whole 7.6 m circumference, and its lower rim is an annular face of
@@ -286,6 +319,10 @@ Dim oldStlDev As Double, oldStlAngle As Double
 ' (b) derived coordinates -- every one computed, none typed in
 Dim R As Double, rDust As Double, rVortex As Double
 Dim zRoof As Double, zVortexBottom As Double, zOutletTop As Double
+Dim rBend As Double                         ' bend centreline radius
+Dim zRunAxis As Double                      ' height of the horizontal run's axis
+Dim zElbowTop As Double                     ' highest point of the bend and run
+Dim xGasOut As Double                       ' the gas outlet face, x = this (negative)
 Dim zBoiTop As Double                       ' top of the mesh sizing cylinder
 Dim zBoiBot As Double                       ' floor of the mesh sizing cylinder
 Dim yOuter As Double, yInner As Double, yMid As Double
@@ -304,6 +341,8 @@ Dim xInletNear As Double, zDuctTop As Double
 Dim uSign As Double, vSign As Double
 Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve profiles
 Dim uSignD As Double, vSignD As Double      ' the duct's own plane, for its side view
+Dim uSignZ As Double, vSignZ As Double      ' z = zOutletTop, where the bend starts
+Dim uSignR As Double, vSignR As Double      ' x = -rBend, where the horizontal run starts
 
 ' The off-plane component of the first point drawn in the sketch
 ' now open. Every later point in the same sketch has to match it;
@@ -313,7 +352,9 @@ Dim wRefSet As Boolean
 
 ' expected volumes, all closed form
 Dim vEquip As Double, vDuctFree As Double, vPipe As Double, vWall As Double
-Dim vStage1 As Double, vStage2 As Double, vStage3 As Double, vFinal As Double
+Dim vElbow As Double, vRun As Double
+Dim vStage1 As Double, vStage2 As Double, vStage3 As Double
+Dim vStage4 As Double, vStage5 As Double, vFinal As Double
 
 Dim buildLog As String
 
@@ -387,6 +428,10 @@ Private Sub Derive()
     zRoof = H_CONE + H_BARREL
     zVortexBottom = zRoof - L_VORTEX
     zOutletTop = zRoof + OUTLET_EXT_OVER_VORTEX_D * D_VORTEX
+    rBend = ELBOW_R_OVER_VORTEX_D * D_VORTEX
+    zRunAxis = zOutletTop + rBend
+    zElbowTop = zRunAxis + rVortex
+    xGasOut = -(rBend + OUTLET_RUN_OVER_VORTEX_D * D_VORTEX)
     zBoiTop = zRoof + BOI_ROOF_MARGIN
 
     ' Where the cone has opened to BOI_RADIUS + BOI_CLEARANCE.
@@ -448,10 +493,18 @@ Private Sub Derive()
     vPipe = PI * rVortex * rVortex * (zOutletTop - zRoof)
     vWall = PI * ((rVortex + VORTEX_WALL) ^ 2 - rVortex * rVortex) * L_VORTEX
 
+    ' Pappus: a section swept about an axis it does not cross sweeps
+    ' its area times the path of its centroid, here a quarter circle
+    ' of radius rBend. Exact, not an approximation, while rBend > rVortex.
+    vElbow = PI * rVortex * rVortex * (0.5 * PI * rBend)
+    vRun = PI * rVortex * rVortex * (-xGasOut - rBend)
+
     vStage1 = vEquip                       ' barrel + cone
     vStage2 = vStage1 + vDuctFree          ' + inlet duct
     vStage3 = vStage2 - vWall              ' - vortex finder wall
-    vFinal = vStage3 + vPipe               ' + outlet pipe above the roof
+    vStage4 = vStage3 + vPipe              ' + outlet pipe above the roof
+    vStage5 = vStage4 + vElbow             ' + 90 deg bend
+    vFinal = vStage5 + vRun                ' + horizontal run to the outlet face
 
 End Sub
 
@@ -576,6 +629,23 @@ Private Sub PreChecks()
              "break into the shell. Reduce INLET_TONGUE."
     End If
 
+    ' 9. the outlet bend. At rBend <= rVortex the inner wall of the
+    '    bend passes through the axis it is swept about and the solid
+    '    folds through itself; Pappus stops being the volume, too.
+    If rBend <= rVortex Then
+        Fail "the outlet bend radius " & Fmt(rBend) & " m is not larger than the pipe radius " & _
+             Fmt(rVortex) & " m; the bend would fold through itself. ELBOW_R_OVER_VORTEX_D " & _
+             "must exceed 0.5."
+    End If
+    If OUTLET_RUN_OVER_VORTEX_D <= 0# Then
+        Fail "OUTLET_RUN_OVER_VORTEX_D is " & Fmt(OUTLET_RUN_OVER_VORTEX_D) & ". The outlet face " & _
+             "would sit on the end of the bend, where the flow is still turning."
+    End If
+    If OUTLET_EXT_OVER_VORTEX_D <= 0# Then
+        Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & ". The bend has to " & _
+             "start above the roof, not on it."
+    End If
+
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
     Note "duct top / bottom at x = 0        " & Fmt(zTopAt0) & " / " & Fmt(zBotAt0) & " m"
@@ -584,13 +654,15 @@ Private Sub PreChecks()
          Fmt(W_INLET) & " less " & Fmt(INLET_TANGENT_RELIEF) & " tangency relief)"
     Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
          Fmt(-xTrim) & " m"
+    Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, bend R " & Fmt(rBend) & _
+         " m, run to x = " & Fmt(xGasOut) & " m at z = " & Fmt(zRunAxis) & " m"
 End Sub
 
 
 '==================================================================
 ' (d) Build
 '
-' Four features, all merged on creation, so the part never holds
+' Six features, all merged on creation, so the part never holds
 ' more than one solid body and no Combine feature is needed.
 '==================================================================
 Private Sub Build()
@@ -598,6 +670,10 @@ Private Sub Build()
     Dim planeX0 As SldWorks.Feature       ' the x = 0 plane
     Dim planeY0 As SldWorks.Feature       ' the y = 0 plane
     Dim planeDuct As SldWorks.Feature     ' y = yInner, the duct's inner wall
+    Dim planeZ0 As SldWorks.Feature       ' the z = 0 plane
+    Dim planeBend As SldWorks.Feature     ' z = zOutletTop, where the bend starts
+    Dim planeRun As SldWorks.Feature      ' x = -rBend, where the horizontal run starts
+    Dim xMin5 As Double
     Dim f As SldWorks.Feature
 
     Set swModel = swApp.NewPart
@@ -623,12 +699,16 @@ Private Sub Build()
     If planeX0 Is Nothing Then Fail "could not find the default plane whose normal is X."
     Set planeY0 = FindPlaneWithNormal(0#, 1#, 0#)
     If planeY0 Is Nothing Then Fail "could not find the default plane whose normal is Y."
+    Set planeZ0 = FindPlaneWithNormal(0#, 0#, 1#)
+    If planeZ0 Is Nothing Then Fail "could not find the default plane whose normal is Z."
 
-    '--- 0. measure both planes' sketch axes -------------------------
-    ' Both probes run while the part is still empty. Once the barrel
+    '--- 0. measure every plane's sketch axes ------------------------
+    ' All probes run while the part is still empty. Once the barrel
     ' is there a probe would land inside it, merge with it, and then
     ' measure the merged body instead of itself.
-    Set planeDuct = OffsetPlane(planeY0, yInner, uSignD, vSignD)
+    Set planeDuct = OffsetPlane(planeY0, 0#, yInner, 0#, uSignD, vSignD)
+    Set planeBend = OffsetPlane(planeZ0, 0#, 0#, zOutletTop, uSignZ, vSignZ)
+    Set planeRun = OffsetPlane(planeX0, -rBend, 0#, 0#, uSignR, vSignR)
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
 
     '--- 1. barrel + cone -------------------------------------------
@@ -667,8 +747,23 @@ Private Sub Build()
         rVortex, zOutletTop, _
         0#, zOutletTop), False)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the outlet pipe."
-    CheckStage "4  + outlet pipe", vFinal, _
+    CheckStage "4  + outlet pipe", vStage4, _
                ceX - 0.5 * H_INLET * nx, -R, 0#, R, R, zOutletTop
+
+    '--- 5. 90 deg bend ---------------------------------------------
+    ' The bend ends in the plane x = -rBend, so it reaches that far in
+    ' -x; the inlet face reaches its own edge. Whichever is further is
+    ' the box.
+    xMin5 = ceX - 0.5 * H_INLET * nx
+    If -rBend < xMin5 Then xMin5 = -rBend
+    Set f = RevolveElbow(planeBend)
+    CheckStage "5  + outlet bend", vStage5, _
+               xMin5, -R, 0#, R, R, zElbowTop
+
+    '--- 6. horizontal run to the outlet face -----------------------
+    Set f = ExtrudeRun(planeRun)
+    CheckStage "6  + outlet run", vFinal, _
+               xGasOut, -R, 0#, R, R, zElbowTop
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -748,8 +843,11 @@ Private Function RevolveProfile(planeX0 As SldWorks.Feature, pts As Variant, _
 End Function
 
 
-' A plane parallel to y = 0 at the given y, with the sketch axes on
-' it measured at the same time.
+' A plane parallel to a default plane, through the given model
+' point, with the sketch axes on it measured at the same time. The
+' point lies on the base plane's normal axis -- (0, y, 0) for the
+' y = 0 plane, (0, 0, z) for z = 0 -- so its one nonzero coordinate
+' is the offset.
 '
 ' Which side of the base plane InsertRefPlane puts the offset on is
 ' not ours to choose, and it cannot be read back off the sketch
@@ -767,12 +865,16 @@ End Function
 ' bounding box read back. The box says where the plane really is
 ' as well as which way its axes run. A plane on the wrong side
 ' fails that test and is deleted, and the other side is tried.
-Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double, _
+Private Function OffsetPlane(base As SldWorks.Feature, _
+                             ByVal bx As Double, ByVal by As Double, ByVal bz As Double, _
                              ByRef us As Double, ByRef vs As Double) As SldWorks.Feature
 
     Dim pl As SldWorks.Feature
     Dim opt As Long
     Dim k As Long
+    Dim at As String
+
+    at = "(" & Fmt(bx) & ", " & Fmt(by) & ", " & Fmt(bz) & ")"
 
     For k = 0 To 1
         opt = swRefPlaneReferenceConstraint_Distance
@@ -780,14 +882,14 @@ Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double, _
 
         swModel.ClearSelection2 True
         base.Select2 False, 0
-        Set pl = swFeat.InsertRefPlane(opt, Abs(atY), 0, 0#, 0, 0#)
+        Set pl = swFeat.InsertRefPlane(opt, Abs(bx) + Abs(by) + Abs(bz), 0, 0#, 0, 0#)
         swModel.ClearSelection2 True
         If pl Is Nothing Then
-            Fail "InsertRefPlane failed for the duct plane at y = " & Fmt(atY) & " m."
+            Fail "InsertRefPlane failed for the offset plane through " & at & "."
         End If
 
-        If TryCalibrateSketchAxes(pl, 0#, atY, 0#, us, vs) Then
-            Note "duct plane measured at y = " & Fmt(atY) & " m"
+        If TryCalibrateSketchAxes(pl, bx, by, bz, us, vs) Then
+            Note "offset plane measured through " & at
             Set OffsetPlane = pl
             Exit Function
         End If
@@ -798,7 +900,7 @@ Private Function OffsetPlane(base As SldWorks.Feature, ByVal atY As Double, _
         swModel.ClearSelection2 True
     Next k
 
-    Fail "the duct plane could not be placed at y = " & Fmt(atY) & " m; a test block " & _
+    Fail "the offset plane could not be placed through " & at & "; a test block " & _
          "dropped on it landed somewhere else both ways round."
 
 End Function
@@ -902,6 +1004,176 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
 
     Fail "the inlet duct could not be extruded to the right volume in either " & _
          "direction along y. Expected " & Fmt(vStage2) & " m3 after the merge."
+
+End Function
+
+
+' The outlet bend.
+'
+' The pipe's section at the top of the rise -- a disc in the plane
+' z = zOutletTop -- revolved 90 deg about the line through
+' (-rBend, 0, zOutletTop) parallel to y. That line lies in the same
+' plane as the disc, which is what a revolve needs, and it clears the
+' disc by rBend - rVortex, so the result is a quarter torus. It
+' leaves the rise going up and ends in the plane x = -rBend, facing -x.
+'
+' Which way a revolve turns is not ours to choose any more than which
+' way an extrusion goes. Turned the wrong way the bend runs back down
+' into the pipe; the volume then comes out short and the top of the
+' box stays at the rise. Either says so, and the other way is tried.
+Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim segs As Variant
+    Dim axisSeg As SldWorks.SketchSegment
+    Dim selData As SldWorks.SelectData
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim f As SldWorks.Feature
+    Dim body As SldWorks.Body2
+    Dim mp As Variant, box As Variant
+    Dim i As Long, k As Long
+
+    uSign = uSignZ: vSign = vSignZ
+
+    swModel.ClearSelection2 True
+    planeBend.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the outlet bend sketch."
+    wRefSet = False
+
+    G2S sk, 0#, 0#, zOutletTop, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the outlet bend section."
+    End If
+    G2S sk, -rBend, -1#, zOutletTop, u0, v0
+    G2S sk, -rBend, 1#, zOutletTop, u1, v1
+    If swSkMgr.CreateCenterLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+        Fail "CreateCenterLine failed on the outlet bend axis."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        ' A segment pointer does not survive a deleted feature, so the
+        ' axis is looked up again from the sketch on every attempt.
+        Set sk = skFeat.GetSpecificFeature2
+        segs = sk.GetSketchSegments
+        Set axisSeg = Nothing
+        For i = 0 To UBound(segs)
+            If segs(i).ConstructionGeometry Then Set axisSeg = segs(i)
+        Next i
+        If axisSeg Is Nothing Then Fail "the outlet bend sketch has lost its axis."
+
+        swModel.ClearSelection2 True
+        Set selData = swModel.SelectionManager.CreateSelectData
+        selData.Mark = 16
+        axisSeg.Select4 False, selData
+        skFeat.Select2 True, 0
+
+        Set f = swFeat.FeatureRevolve2( _
+            True, True, False, False, (k = 1), False, _
+            0, 0, 0.5 * PI, 0#, _
+            False, False, 0.01, 0.01, _
+            0, 0#, 0#, _
+            True, True, True)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            Set body = TheBody("5  + outlet bend")
+            mp = body.GetMassProperties(1000#)
+            box = body.GetBodyBox
+            ' Up or down is all this has to tell apart, so the box is
+            ' only asked which side of the rise's top the bend went;
+            ' CheckStage then holds the box to BOX_TOL.
+            If Abs(mp(3) - vStage5) <= VOL_TOL * vStage5 And _
+               box(5) > zOutletTop + 0.5 * rBend Then
+                Set RevolveElbow = f
+                Exit Function
+            End If
+            Note "outlet bend turned the wrong way (volume " & Fmt(mp(3)) & " m3, top " & _
+                 Fmt(box(5)) & " m); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the outlet bend could not be revolved to the right volume in either direction. " & _
+         "Expected " & Fmt(vStage5) & " m3 after the merge, top at z = " & Fmt(zElbowTop) & " m."
+
+End Function
+
+
+' The straight horizontal run from the end of the bend to the gas
+' outlet face: the bend's end section, a disc in the plane x = -rBend
+' centred at (-rBend, 0, zRunAxis), extruded along -x. Extruded the
+' wrong way it runs back into the bend and the volume comes out short.
+Private Function ExtrudeRun(planeRun As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim u0 As Double, v0 As Double
+    Dim f As SldWorks.Feature
+    Dim body As SldWorks.Body2
+    Dim mp As Variant, box As Variant
+    Dim k As Long
+
+    uSign = uSignR: vSign = vSignR
+
+    swModel.ClearSelection2 True
+    planeRun.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the outlet run sketch."
+    wRefSet = False
+
+    G2S sk, -rBend, 0#, zRunAxis, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the outlet run section."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            -xGasOut - rBend, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            Set body = TheBody("6  + outlet run")
+            mp = body.GetMassProperties(1000#)
+            box = body.GetBodyBox
+            If Abs(mp(3) - vFinal) <= VOL_TOL * vFinal And box(0) < 0.5 * (xGasOut - rBend) Then
+                Set ExtrudeRun = f
+                Exit Function
+            End If
+            Note "outlet run extruded the wrong way (volume " & Fmt(mp(3)) & " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the outlet run could not be extruded to the right volume in either direction " & _
+         "along x. Expected " & Fmt(vFinal) & " m3 after the merge, ending at x = " & _
+         Fmt(xGasOut) & " m."
 
 End Function
 
@@ -1314,12 +1586,15 @@ Private Sub TagBoundaryFaces()
                 If Abs(pz) < 0.0001 Then
                     Paint face, 0.85, 0.55, 0.15          ' dust_outlet
                     nDust = nDust + 1: aDust = aDust + face.GetArea
-                ElseIf Abs(pz - zOutletTop) < 0.0001 Then
-                    Paint face, 0.2, 0.45, 0.85           ' gas_outlet
-                    nGas = nGas + 1: aGas = aGas + face.GetArea
                 Else
                     Paint face, 0.72, 0.72, 0.72          ' roof, vortex finder rim
                 End If
+            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xGasOut) < 0.0001 Then
+                ' The tongue is an x-normal plane too, but at x = -xTrim;
+                ' only the end of the run is here. Checked before the
+                ' inlet, whose normal is only 5 deg off x.
+                Paint face, 0.2, 0.45, 0.85               ' gas_outlet
+                nGas = nGas + 1: aGas = aGas + face.GetArea
             ElseIf Abs(e1) < DIR_TOL And Abs(Abs(e0 * dx + e2 * dz) - 1#) < DIR_TOL Then
                 Paint face, 0.2, 0.7, 0.35                ' meal_inlet
                 nInlet = nInlet + 1: aInlet = aInlet + face.GetArea
