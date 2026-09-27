@@ -562,6 +562,64 @@ Pseudo-time + RSM denemesinde durum çok farklıydı: hücrelerin %25'i ihlaldey
 - Ara kademe CFD'si de SST-CC ile çözülecek. Böylece model yanlılığı Euler ölçeklemesinde sadeleşir.
 - İki model arasındaki farkı, modelden bağımsız Muschelknautz tahmini (adım E) değerlendirecek.
 
+## Muschelknautz Karşılaştırması (E, 28 Eylül 2026)
+
+**Yöntem:** Muschelknautz yöntemi (MM), Hoffmann & Stein, *Gas Cyclones and Swirl Tubes*, 2. baskı, Böl. 6.
+- Giriş daralma katsayısı α, yarık giriş için.
+- Duvarda teğetsel hız, v_θw = v_in·R_in/(α·R).
+- Duvar sürtünmesiyle kontrol yüzeyindeki (CS: vorteks bulucu yarıçapında, onun altındaki silindir) teğetsel hız v_θCS.
+- ΔP = Δp_gövde (duvar sürtünmesi) + Δp_x (çekirdek ve vorteks bulucu).
+- f = 0.005: temiz gaz, düz duvar. CFD duvarları da pürüzsüz.
+
+**Girdiler:**
+- Bu dokümandaki CFD ölçüleri: giriş 0.86 × 2.16 m, vorteks bulucu iç Φ2.40, dış Φ2.56.
+- Gaz: 17.9 kg/s, ρ 0.5855 kg/m³, Q 30.57 m³/s.
+- Hızlar: v_in 16.46 m/s, v_x 6.76 m/s, ½ρv_in² = 79.3 Pa.
+- Sürtünme alanı A_R = 156.4 m²: çatı 9.5, gövde 92.2, koni 37.4, vorteks bulucu dışı 17.4.
+
+| | MM | CFD SST-CC (seviye 0, ortalama alan) | CFD RSM (seviye 1) |
+|---|---|---|---|
+| α | 0.622 | – | – |
+| v_θ, duvar (giriş seviyesi) | 21.2 m/s | 15.0 m/s (r > 2.0 m ortalaması) | 14.4 m/s |
+| v_θCS (r = 1.2 m) | **28.0 m/s** | **26.9 m/s** | 26.7 m/s |
+| Statik ΔP | **642 Pa** (gövde 120 + vorteks bulucu 522) | 503.8 Pa (seviye 1: ~510) | 480.5 Pa, düşüyor |
+| Euler sayısı | 8.10 | 6.35 (6.43) | 6.06 |
+
+MM'nin f'ye duyarlılığı ters yönde: pürüzlü duvar girdabı zayıflattığı için ΔP düşer.
+- f 0.0065 → 602 Pa
+- f 0.008 → 569 Pa
+
+**Bulgular:**
+- **Girdap gücü uyuşuyor.** Kontrol yüzeyindeki teğetsel hızda MM ile CFD arasındaki fark %4. CS boyunca CFD değeri z'ye neredeyse bağlı değil (26.4–27.0 m/s); MM'nin sabit v_θCS varsayımına uyuyor.
+- **ΔP'de MM, SST'nin %27 üstünde.** Fark vorteks bulucu kaybı (Δp_x) bağıntısından geliyor. MM'ye CFD'nin kendi v_θCS değeri (26.9) verilince Δp_x tek başına 492 Pa, toplam 605 Pa. Yani CFD ile tam aynı girdapla bile MM'nin çekirdek/çıkış kaybı CFD'nin toplam ΔP'sine yaklaşık eşit.
+- **Duvardaki hızı MM daha yüksek veriyor** (21 m/s'ye karşı 15). CFD değeri duvar sınır tabakasına kadar uzanan bir halkanın ortalaması, bu yüzden düşük kalıyor. z = 8 m'de r = 2.1 m'deki değer 19.2 m/s.
+- **Cebirsel bağıntılar CFD'nin iki yanına düşüyor:**
+
+| Bağıntı | Eu | ΔP |
+|---|---|---|
+| Casal–Martinez | 4.51 | 357 Pa |
+| Shepherd–Lapple | 5.16 | 409 Pa |
+| CFD SST-CC | 6.35–6.43 | 504–510 Pa |
+| Dirgo | 7.03 | 558 Pa |
+| MM | 8.10 | 642 Pa |
+
+  CFD, bağıntıların %40'lık yayılımının ortasında. RSM (480 Pa) de bu aralıkta; D'deki SST ile RSM farkını bağıntılar ayırt edemiyor.
+
+**Sonuç:**
+- C1 için kalibrasyon: CFD/MM = 504/642 = **0.785**.
+- Twin'e giden değer değişmedi: 504–510 Pa.
+- MM kalibre edilmiş haliyle köprü olarak kullanılabilir. Faktörün geometriden geometriye taşınıp taşınmadığını ara kademe CFD'si gösterecek: C1'in ab/De² değeri 0.32, ara kademeninki 0.56. Taşınmıyorsa ara kademe CFD'sinin kendi Euler sayısı kullanılır.
+
+**Ara kademe ve C5 için MM ön tahmini** (f 0.005, aynı 0.08 m vorteks bulucu duvarı):
+
+| | ab/De² | Eu_MM | Gövde / vorteks bulucu payı |
+|---|---|---|---|
+| C4 (= C2 = C3) | 0.559 | 8.66 | 0.31 / 8.35 |
+| C5 | 0.555 | 8.69 | 0.32 / 8.38 |
+
+- C5'in Euler sayısı C4'ünkinden %0.4 farklı. MM, C5'in ara kademe CFD'sinden Euler sayısıyla ölçeklenmesini destekliyor.
+- Uyarı: C4 ve C5'in girişi (9.44 m) gövdeden (3.46 m) uzun ve koniye iniyor. MM'nin varsayımı girişin gövde içinde kalması. Bu geometride MM'nin mutlak değeri C1'dekinden daha az güvenilir; asıl sayıyı ara kademe CFD'si verecek.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
