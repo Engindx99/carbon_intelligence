@@ -505,6 +505,30 @@ Siklonun sıcaklık alanı gaz-yalnız ve adiabatik koşuda anlamsız (her yer 6
 
 Not: Çıkış raporundaki alan ağırlıklı t_out 1.75 K düşüş gösteriyor. Çıkıştaki geri akış bölgesi alan ortalamasını bozduğu için sıcaklık kütle ağırlıklı ya da entalpiden okunmalı.
 
+## Mesh Bağımsızlığı, Seviye 1 (27 Eylül 2026)
+
+**İnceltme:** Fluent region adaption, silindir r = 1.3 m, z = 3.0–9.8 m (çekirdek, teğetsel tepe ve sıfır eksenel hız yüzeyi). İnceltme **steady modda** yapıldı: transient + BSOI'de adaption, zaman terimlerini yeni hücrelere taşırken Fluent'i çökertti (`Add_Continuity_Time_Sources` segfault).
+
+**Mesh:**
+- 8 923 hücre inceltildi → **277 145 hücre** (+126 567)
+- Çekirdekte hücre boyu ~0.16 → ~0.065 m
+- `improve-quality` sonrası min orthogonal quality 0.174
+
+**Koşu:** URANS, aynı ayarlar.
+- Oturma: Δt 0.02 s ile 3.3 s.
+- Sonra Δt 0.01 s ile 2.55 s. Çekirdekte Courant ~5.
+
+| Büyüklük | Seviye 0 (150.6 bin) | Seviye 1 (277 bin) | Fark |
+|---|---|---|---|
+| Statik ΔP | 503.8 Pa | tepe 522 → son periyot **509.9**, periyot başına ~1 Pa düşüyor | **+%1.2 … +%3.6** |
+| Toplam basınç farkı | 525.9 Pa | 526.4 Pa (son periyot) | ~%0 |
+| v_max | 34.7 m/s | 38.1 m/s | +%10 |
+| Salınım periyodu | 0.338 s (Δt 0.02) | 0.32 s (Δt 0.02) / 0.30 s (Δt 0.01) | |
+
+**Karar (kullanıcı):** ΔP'nin iki seviye arasındaki farkı, sürüklenme bandının tamamında literatürün %5 kriterinin içinde. Mesh bağımsızlığı ΔP için kabul edildi. Twin'e verilecek değer **504–510 Pa** (gaz-yalnız, 17.9 kg/s, 603 K). Sürüklenmenin sonu beklenmedi.
+
+Çekirdekteki tepe hız mesh bağımsız değil (+%10). ΔP bütünleşik bir büyüklük olduğu için çözünürlüğe daha az duyarlı; tepe hız ise çekirdeğin ne kadar inceltildiğine bağlı. Twin'e ΔP aktarıldığı için belirleyici olan ΔP.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
