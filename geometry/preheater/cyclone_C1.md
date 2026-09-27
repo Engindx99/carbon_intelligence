@@ -68,6 +68,10 @@ Vorteks bulucu duvarı: z = 9.280 → 11.440 m, 0.08 m kalınlığında (oyulmu�
 
 Çıkış borusu (vorteks bulucunun içi): z = 9.280 → 17.440 m, Φ2.40
 
+Çıkış dirseği: z = 17.440'ta başlayıp −x yönüne (giriş kanalının tarafına) dönen kavisli 90° dirsek, merkez çizgisi yarıçapı 3.60 m (1.5 D); ekseni (−3.60, 0, 17.44)'ten geçen y'ye paralel doğru. Bittiği yer x = −3.60 düzlemi, kesit merkezi z = 21.04
+
+Yatay çıkış kanalı: x = −3.60 → −8.40 m, ekseni z = 21.04, Φ2.40; en yüksek nokta z = 22.24
+
 Giriş kanalı: y = 1.300 → 2.160 (dış duvar gövdeye teğet); ekseni (cos5°, 0, −sin5°); teğet düzlemine varmadan **x = −0.462'de** biter (dil, aşağıya bakın); gövdenin teğet düzleminde (x = 0) izdüşümü z = 9.071 → 11.239 m; gövdedeki açıklığın en yukarı ulaştığı nokta x = −1.725, z = 11.390 m
 
 Giriş yüzü: merkezi (−2.989, 1.730, 10.416), x = −3.083 → −2.895, z = 9.341 → 11.492 m
@@ -77,18 +81,26 @@ Hacim ayrımı:
 Ekipman hacmi (gövde + koni): 124.54 m³
 + Gövdenin dışında kalan serbest kanal: 3.31 m³
 + Çatının üstündeki çıkış borusu: 27.14 m³
++ Çıkış dirseği (Pappus, A · π/2 · 3.60): 25.58 m³
++ Yatay çıkış kanalı: 21.71 m³
 − Vorteks bulucu duvarı: 1.35 m³
-CFD domen hacmi (`C1.step`): 153.65 m³
+CFD domen hacmi (`C1.step`): 200.94 m³ (dirsekten önce 153.65 m³)
 
 CFD domen hacmi, modelleme parametrelerine bağlı uzatmaları içerir; fiziksel hesapta kullanılmaz.
 
 CFD sınır varsayımları (config `geometry.cfd_boundary`; tesis ölçüsü değil, kaynakları yok, modelleme seçimi):
 
-`outlet_extension_over_vortex_D`: 2.5 — Çıkış yüzü çatıdan 2.5 vorteks bulucu çapı (6.00 m) yukarıda, z = 17.44.
+`outlet_extension_over_vortex_D`: 2.5 — Çıkış borusu çatıdan 2.5 vorteks bulucu çapı (6.00 m) düz yükselir, z = 17.44. Dirsek eklenene kadar çıkış yüzü buradaydı.
 
 Bu, çatının üstündeki **çıkış kanalıdır**, vorteks bulucu değil — vorteks bulucu çatıdan aşağı inen 2.16 m'lik daldırma borusudur ve bu parametre ona dokunmaz. Gerçek tesiste çatının üstünde bir kanal vardır (gaz ID fana gider) ama boyu tesis yerleşimine göre belirlenir; buradaki uzunluk bir CFD seçimidir. Siklon CFD literatüründe tipik uzatma 1–5 vorteks bulucu çapıdır.
 
 Başlangıçta 1.0'dı. İlk Fluent koşusu bunun yetmediğini gösterdi: çıkış borusundan yukarı çıkan girdabın merkezinde aşağı yönlü bir ters akım çekirdeği var ve 2.40 m'lik uzatma o çekirdek hâlâ açıkken sınırı kesiyordu — çıkış yüzünün **%40–44'ünde gaz içeri giriyordu**. Fluent orada kullanıcının verdiği backflow değerlerini dayatmak zorunda kalıyor, dayatılan durum domenin istediği durumla çatışıyor ve çözüm yakınsamak yerine kütle dengesinde ±%0.3'lük bir limit çevrimine oturuyordu. 6.00 m, çekirdeğin kapanması için belirgin biçimde daha fazla yer bırakır. Garanti değil: girdap eksenel mesafeyle yavaş söner, dolayısıyla 2.5 D'nin sonunda teğetsel hız hâlâ belirgin olabilir ve bir miktar geri akış kalabilir. Kalırsa seçenekler uzatmayı 4 D'ye çıkarmak ya da geri akışı kabul edip backflow değerlerinin (603 K) doğruluğuna güvenmek — tek girişli ve izotermal bu koşuda o değer zaten doğru.
+
+Kaldı. Tet → poly dönüşümünden sonra çekirdek daha az yayıldı, girdap güçlendi (v_max 26 → 34 m/s) ve ters akım çekirdeği 6.00 m'nin sonuna yine ulaştı: k-ω SST steady koşusunda (26 Eylül 2026) çıkış yüzünün **%38'inde** (salınım içinde %33–42) geri akış ölçüldü. Kütle dengesizliği, ΔP ve geri akış oranı aynı 18 iterasyonluk periyotla birlikte salınıyordu (korelasyon ~0.8). Bu yüzden 4 D'ye uzatmak yerine çıkışa bir dirsek eklendi (kullanıcı kararı): girdap düz boruda çok yavaş söner, dirsek onu ve ters akım çekirdeğini kırar, tesiste de gaz C1'den fana giden bir kanala döner.
+
+`outlet_bend_r_over_vortex_D`: 1.5 — Dirseğin merkez çizgisi yarıçapı, 3.60 m. Olağan uzun yarıçaplı dirsek; 0.5'in altında dirseğin iç duvarı kendi içinden geçer, makro reddeder. Dönüş yönü (−x, giriş kanalıyla aynı taraf; kullanıcı kararı) keyfi: tek siklon için aşağı akış kanalını yerleştiren bir kaynak yok.
+
+`outlet_run_over_vortex_D`: 2.0 — Dirsekten sonraki yatay düz kanal, 4.80 m. Çıkış yüzü bunun ucunda, x = −8.40 m; hâlâ dönen akışın içinde durmasın diye dirseğin hemen ucunda değil.
 
 `inlet_tongue_m`: 0.05 m — Kanalın teğet düzlemine varmadan bittiği yerde bırakılan kabuk kalınlığı (cut-water); aşağıdaki modelleme sadeleştirmeleri listesinde gerekçesi var.
 
@@ -213,7 +225,7 @@ geçiyordu. Düzlemin yeri artık üzerine bırakılan bir test bloğuyla **öl�
 
 Giriş kanalının uç yüzü: `meal_inlet` — merkezi (−2.989, 1.730, 10.416), normali kanal ekseni, 1.858 m² (yeşil)
 
-Çıkış borusunun üst yüzü: `gas_outlet` — z = 17.440 m, 4.524 m² (mavi)
+Yatay çıkış kanalının uç yüzü: `gas_outlet` — x = −8.400 m, merkezi (−8.40, 0, 21.04), normali −x, 4.524 m² (mavi)
 
 Toz çıkışı diski: `dust_outlet` — z = 0, 0.126 m² (turuncu)
 
@@ -405,6 +417,93 @@ eleman boyu **~0.04 m**. BOI hacmi (r = 0.8 m, z = 2.135 → 12.44) **20.72 m³*
 Bu, tet yolunu kapatan ilk ölçülmüş argüman: daha önce "limit bağlamıyor" doğruydu (45 bin →
 307 bin), ama sorunun nerede olduğu belli olunca tetle ödenemiyor. Sıradaki mesh
 **Fluent Meshing, poly-hexcore, BOI ile çekirdekte 0.04 m**.
+
+## Üçüncü CFD Koşusu (dirsekli çıkış, URANS, 26–27 Eylül 2026)
+
+Geometri: çıkışa −x yönünde 90° dirsek + 2 D düz kanal eklendi, domen 200.94 m³. Mesh:
+- Ansys Meshing tet, global 0.15 m, 5 prizma katmanı (ilk 5 mm, büyüme 1.2)
+- Fluent'te poly'ye çevrildi + `improve-quality` → **150.6 bin hücre**, min orthogonal quality 0.22
+- Fluent'in ölçtüğü hacim 200.47 m³, analitik değer 200.94
+
+Model:
+- k-ω SST + Curvature Correction, Scalable WF, y+ ≈ 35–40
+- SIMPLE, PRESTO!, ikinci mertebe, Bounded Second Order Implicit
+- Çıkışta backflow yönü **From Neighboring Cell**; "Normal to Boundary" geri giren akışın dönmesini siliyordu
+- ρ = 0.585 kg/m³, μ = 3.0e−05 Pa·s, 603 K
+
+Yöntem literatürden alındı (endüstriyel preheater siklonu için DTU / Mirzaei ve ark. 2023: SST-CC + URANS).
+
+**Neden transient.** Steady çözüm 18.8 iterasyonluk bir salınıma oturdu ve oturmadı. Salınım çıkış geometrisinden (düz boru / dirsek) ve türbülans modelinden (SST / RSM) bağımsızdı: girdap çekirdeğinin kendi salınımı. Steady ΔP 490.2 ± 11.6 Pa.
+
+**Zaman adımı.**
+- Oturma: Δt 0.005 s, sonra 0.02 s.
+- Δt testi: 0.02 s ile 0.01 s arasında ortalama ΔP farkı ~%0.1, salınım periyodu 0.35 / 0.33 s. **Δt = 0.02 s kabul.** Adım başına 20 iterasyon, residual düşüşü ≥ 2 mertebe.
+
+**Ortalama penceresi:** 585–913. adımlar, 6.6 s = 1 gaz geçiş süresi = 19 periyot.
+
+| Büyüklük | Zaman ortalaması | Anlık salınım (std) |
+|---|---|---|
+| **Statik ΔP (giriş statik basıncı)** | **503.8 Pa** (standart hata 0.08) | ±12.3 |
+| Toplam basınç farkı (dirsek + kanal dahil) | 525.9 Pa | ±7.3 |
+| Euler ΔP/q | 6.35 | |
+| v_max | 34.70 m/s | ±0.2 |
+| Kütle dengesizliği | 3e−4 kg/s (%0.002) | |
+| Çıkışta geri akış | ~%30 alan | |
+| Salınım | 0.338 ± 0.006 s → **2.96 Hz** | |
+
+- Pencerenin iki yarısı arasındaki fark **%0.01**.
+- URANS, steady'den %2.8 yüksek. Mesh çalışması bu yüzden URANS ile yapılacak.
+- Shepherd-Lapple (409 Pa) CFD'nin %23 altında.
+
+**Zaman ortalamalı profiller (z = 8 m, y = 0).** Rankine girdabı:
+
+| | +x | −x |
+|---|---|---|
+| Teğetsel tepe | 26.2 m/s, r = 1.11 m | 27.8 m/s, r = 1.20 m |
+| Çekirdek açısal hızı | 22.6 1/s | 22.1 1/s |
+| Dış bölge üssü n (v_t·rⁿ = sabit) | 0.52 | 0.65 |
+| Eksenel hızın sıfır olduğu yarıçap | 1.17 m | 1.12 m |
+
+- Teğetsel tepe / giriş hızı = 1.6–1.7.
+- Eksenel profil "M" biçimli: çekirdekte +3.8 / +4.1 m/s, merkezde +2.5 m/s'lik çukur, duvar yanında −2 m/s.
+- Sıfır eksenel hız yüzeyi vorteks bulucu yarıçapında (1.20 m). Literatürle uyumlu.
+- Eksen z = 8'de merkezde (v_t = 0 noktası x = −0.03). Konide ortalama alanda bile hafif kıvrık: tek teğetsel girişin asimetrisi.
+
+**Düzeltmeler:**
+- İkinci koşu bölümündeki "çekirdek 0.25–0.35 m olmalı" hedefinin kaynağı yoktu. Ölçülen tepe yarıçapı vorteks bulucu yarıçapına yakın (0.92–1.0 r_x). Kaba mesh ve eddy-viscosity modeli çekirdeği yayma eğiliminde; mesh çalışması ve RSM kontrolü bunun ne kadarının sayısal olduğunu gösterecek.
+- Aynı bölümdeki "8 prizma katmanı" ifadesi mesh'te 5 katman olarak ölçüldü.
+
+**Çıkış geri akışı için ölçüt.** Keyfi bir "%5 geri akış" sınırı kullanılmıyor. Ölçüt ΔP'nin çıkışa duyarlılığı: düz 2.5 D çıkıştan dirsekli çıkışa geçince steady ΔP 483.4 → 479.1 Pa değişti (−%0.9). Geri akışın kaynağı, çıkış borusunun merkezinde dirseğe kadar uzanan ters akış çekirdeği.
+
+Yedek: `c1_gas_files\dp0\FLU\Fluent\urans_B\` (case, 913. adımın data dosyası, rapor dosyaları, profiller).
+
+## Duvar Isı Kaybı (T1, 27 Eylül 2026)
+
+Siklonun sıcaklık alanı gaz-yalnız ve adiabatik koşuda anlamsız (her yer 603 K). Literatüre göre gaz ile farin arasındaki ısı alışverişinin neredeyse tamamı siklondan önceki riser'da oluyor; siklon esas olarak bir ayırıcı. Bu yüzden ilk termal adım yalnızca kabuk kaybı.
+
+**Kurulum:**
+- Malzeme: ideal gaz + Sutherland; cp 1150 (twin'in `Cp_g` değeri), k 0.045.
+- Dış duvar (gövde, koni, çatı, giriş kanalı; Fluent'te 147.05 m²): **Mixed** koşul.
+  - Dış h = 3.92 W/m²K: twin'in Churchill-Chu dikey formülü, L = 11.44 m.
+  - T_amb 300 K, emisivite 0.85.
+  - Twin'in preheater katmanları ([physics/shell.py](../../physics/shell.py)) eşdeğer tek katmana çevrildi: 0.21 m, k = 0.227 W/mK, R = 0.924 m²K/W.
+- Vorteks bulucu, çıkış borusu, dirsek ve toz çıkışı adiabatik. Vorteks bulucu iki yüzünden de gazla temas ediyor; çıkış hattı CFD uzatması, ekipman değil.
+- Yüzeyler Fluent'te hücre bölgesiyle ayrıldı: silindir r = 1.30, z = 9.0–17.6 ve kutu x −9…1.3, z 17.5–22.5.
+- Akış t = 12.685 s'deki anlık alanda donduruldu, yalnızca enerji çözüldü (27 iterasyonda yakınsadı).
+
+**Sonuç:**
+
+| Büyüklük | CFD | Twin kabuk modeli (iç film yok) |
+|---|---|---|
+| Kayıp | **41.80 kW** | 41.1 kW (139.1 m²) |
+| Ortalama akı | **284 W/m²** | 296 W/m² |
+| Gaz sıcaklık düşüşü (kütle ağırlıklı, entalpiden) | **2.05 K** | 2.09 K |
+
+**Enerji dengesi:** net 453 W, giriş entalpisinin (6.28 MW) %0.007'si. Bunun ~323 W'ı dondurulmuş alanın kendi kütle dengesizliğinden (9.3e−4 kg/s) geliyor.
+
+**Yorum:** CFD akısı %4 düşük. Fark, gaz tarafındaki film direncinden geliyor: ~0.04 m²K/W, yani h_iç ≈ 26 W/m²K. Duvar direncinin (0.92) yanında küçük. Twin'in kabuk yaklaşımı C1 için doğrulanmış oluyor. Duvar kaybı C1'de gazı yalnızca ~2 K soğutuyor. Termal olarak önemli olan gaz-farin alışverişi ve farin yükü (plandaki T2 ve T3 adımları).
+
+Not: Çıkış raporundaki alan ağırlıklı t_out 1.75 K düşüş gösteriyor. Çıkıştaki geri akış bölgesi alan ortalamasını bozduğu için sıcaklık kütle ağırlıklı ya da entalpiden okunmalı.
 
 ## Derived Properties
 
