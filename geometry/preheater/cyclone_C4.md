@@ -5,6 +5,8 @@ Farin borusu: [meal_pipe_C4.md](meal_pipe_C4.md)
 
 ## Geometrik Ölçüler
 
+**Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2 ve C3 bu siklonla özdeş; ölçüler aşağıdaki C4 değerleri.
+
 Efektif iç çap, D: 6.30 m — HFC2500 (yayınlanmış)
 Silindirik gövde yüksekliği: 3.46 m — FLS oranı (türetilmiş)
 Koni yüksekliği: 7.30 m — FLS oranı (türetilmiş)

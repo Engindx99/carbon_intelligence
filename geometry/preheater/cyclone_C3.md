@@ -5,14 +5,16 @@ Farin borusu: [meal_pipe_C3.md](meal_pipe_C3.md)
 
 ## Geometrik Ölçüler
 
-Efektif iç çap, D: 6.30 m — HFC2500 (yayınlanmış)
-Silindirik gövde yüksekliği: 3.22 m — FLS oranı (türetilmiş)
-Koni yüksekliği: 7.26 m — FLS oranı (türetilmiş)
-Vorteks bulucu çapı: 4.62 m — FLS oranı (türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.15 m — FLS oranı (türetilmiş)
-Toz çıkışı çapı: 0.84 m — FLS oranı (türetilmiş)
-Giriş genişliği: 1.26 m — FLS oranı (türetilmiş)
-Giriş yüksekliği: 9.46 m — FLS oranı (türetilmiş)
+**Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2, C3 ve C4 özdeş siklonlar; ölçüler C4'ünkiler. Bu kademenin katalog değerleri (D 6.30, gövde 3.22, koni 7.26, vorteks bulucu 4.62 / 3.15, toz çıkışı 0.84, giriş 1.26 × 9.46 m) [catalog.md](../catalog.md)'de duruyor; sapmanın gerekçesi orada.
+
+Efektif iç çap, D: 6.30 m — C4 ile özdeş (ara kademe standardı; C4'ün yayınlanmış HFC2500 değeri)
+Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Koni yüksekliği: 7.30 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Vorteks bulucu çapı: 4.63 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Toz çıkışı çapı: 0.81 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Giriş genişliği: 1.27 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Giriş yüksekliği: 9.44 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Volüt geometrisi: TBD — 2500 hattı için kaynak yok
 
 ## CFD Geometry
@@ -25,4 +27,4 @@ TBD (CFD_VIEW.pdf'te C3 için verilmemiş).
 
 ## Derived Properties
 
-Ekipman hacmi: 187.0 m³
+Ekipman hacmi: 194.5 m³ (C4 ile özdeş; katalog ölçüleriyle 187.0 m³ idi)

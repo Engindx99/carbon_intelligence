@@ -529,6 +529,39 @@ Not: Çıkış raporundaki alan ağırlıklı t_out 1.75 K düşüş gösteriyor
 
 Çekirdekteki tepe hız mesh bağımsız değil (+%10). ΔP bütünleşik bir büyüklük olduğu için çözünürlüğe daha az duyarlı; tepe hız ise çekirdeğin ne kadar inceltildiğine bağlı. Twin'e ΔP aktarıldığı için belirleyici olan ΔP.
 
+## Türbülans Modeli Kontrolü, RSM (D, 27 Eylül 2026)
+
+**Kurulum:** Seviye 1 mesh (277 145 hücre), SST-CC çözümünden (adım 1498, t = 21.84 s) RSM'e geçildi.
+- Linear Pressure-Strain, Scalable wall functions
+- Diğer ayarlar URANS ile aynı: BSOI, PRESTO!, ikinci mertebe
+- Δt 0.01 s, adım başına en fazla 20 iterasyon, ~26 s/adım
+- Koşu adım 1499–2008 arası: 510 adım, 5.1 s akış süresi. Domenin kalma süresi ~6.6 s (201 m³ / 30.6 m³/s), yani ~0.8 kalma süresi.
+
+**Kararlılık ve gerçekçilik** (adım 2000, `.dat.h5`):
+- Residual sıçraması yok.
+- Negatif normal gerilme yok.
+- Schwarz eşitsizliği 64 hücrede bozuluyor (%0.02).
+- k medyanı 3.1 m²/s², μt/μ medyanı 800.
+
+Pseudo-time + RSM denemesinde durum çok farklıydı: hücrelerin %25'i ihlaldeydi, μt/μ medyanı 31 000'di. Bu çözümün türbülans alanı fiziksel.
+
+| Büyüklük | SST-CC seviye 1 | RSM, 1709–2008 arası periyot ortalamaları (0.34 s) | Son periyot, SST'ye göre |
+|---|---|---|---|
+| Statik ΔP | ~510 Pa | 500.5 → 496.6 → 488.1 → 481.6 → **480.5** | **−%6** |
+| Toplam basınç farkı | 526.4 Pa | 518.4 → 512.3 → 505.2 → 500.0 → **499.0** | −%5 |
+| v_max | 38.1 m/s | 35.96 → 35.81 → 35.45 → 35.16 → **35.07** | −%8 |
+
+- Geçişte ΔP önce +%6 yükseldi (adım 1508'de 535 Pa), sonra sürekli düştü.
+- Periyottan periyoda düşüş 4.5 → 3.8 → 2.7 → 1.1 Pa: yavaşlıyor ama durmadı.
+- Üstel fit anlamlı bir asimptot vermedi.
+- RSM girdabı SST'den daha zayıf tahmin ediyor.
+
+**Sonuç (kullanıcı kararı):** RSM yakınsatılmadı. Plato için 3–5 kalma süresi, yani 10+ saat daha gerekirdi.
+- Kayıt: **RSM, SST-CC'nin en az %6 altında ve hâlâ düşüyor.**
+- Twin değeri SST-CC ile **504–510 Pa** kalıyor. C1'in statik ΔP belirsizlik bandı 480–510 Pa.
+- Ara kademe CFD'si de SST-CC ile çözülecek. Böylece model yanlılığı Euler ölçeklemesinde sadeleşir.
+- İki model arasındaki farkı, modelden bağımsız Muschelknautz tahmini (adım E) değerlendirecek.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır

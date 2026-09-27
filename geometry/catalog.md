@@ -80,8 +80,17 @@ calciner_eff_over_shell   calciner_H/D   kiln_eff_over_shell
 ## Bu tablodan sapmalar
 
 Bir bileşen dokümanı katalog değerinden bilerek sapabilir; sapma o dokümanda gerekçesiyle
-yazılır ve bu tablo değişmez. Şu an tek sapma:
+yazılır ve bu tablo değişmez. Şu anki sapmalar:
 
 - [cyclone_C1.md](preheater/cyclone_C1.md) — giriş yüksekliği 4.97 yerine **2.16 m**.
   Yayınlanmış uzun giriş 270°'lik volütle beslendiği için anlamlı; CFD modeli volütü
   kurmadığından gerekçesini kaybediyor.
+- [cyclone_C2.md](preheater/cyclone_C2.md), [cyclone_C3.md](preheater/cyclone_C3.md) — ara kademeler
+  **C4 ile özdeş** (kullanıcı kararı, 27 Eylül 2026). C1 (üst, ikiz) ve C5 (alt) kendi ölçülerini
+  koruyor. C3 ve C4'ün yayınlanmış çapı zaten ortak (6.30 m) ve oranları birkaç yüzde içinde;
+  asıl değişen C2 (6.10 → 6.30 m). Gerekçe: tek bir ara kademe CFD'si C2–C4'ü ölçeklemesiz
+  temsil eder; kademeler arasındaki gaz hacmi farkı ölçülere değil giriş hızına yansır ve
+  Euler sayısı üzerinden taşınır. Birçok tesiste ara kademeler aynı gövde ölçüsüyle yapılır.
+  C5 bilerek dışarıda: çapı yayınlanmış (6.50 m) ve en sıcak, en büyük hacimli gazı taşıdığı
+  için büyük; 6.30'a indirmek giriş hızını ~%6.5, ΔP'yi ~%13 artırırdı. Oranları ara kademeyle
+  %1–2 içinde aynı olduğundan ΔP'si ara kademe CFD'sinin Euler sayısıyla ölçeklenir.
