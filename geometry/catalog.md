@@ -98,3 +98,6 @@ yazılır ve bu tablo değişmez. Şu anki sapmalar:
   yayınlanmış Ø3.07 m ikiz C1'leri birlikte beslediği için C1 başına alanının yarısı. 1.5 m'lik
   bir geçişle C1 giriş kanalına (0.86 × 2.16) bağlanır (kullanıcı kararı, 29 Eylül 2026).
   Riser'ın boyları yayınlanmamış, CFD için türetilmiştir; tablo değişmez.
+- [gooseneck.md](preheater/gooseneck.md) — kalsinatörün kaz boynu CFD'de **çift kol, her biri Ø2.475 m**:
+  yayınlanmış Ø3.50'nin alanının yarısı. İki Ø3.50 boru Ø5.50'lik tavana sığmaz; toplam kesit korunur
+  (kullanıcı kararı, 29 Eylül 2026).

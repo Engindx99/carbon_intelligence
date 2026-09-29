@@ -7,6 +7,10 @@ akışkan hacmini kuran, kendini doğrulayan ve dışa aktaran makrolar.
 | Dosya | Ne yapar |
 |---|---|
 | `cyclone.bas` | Tek bir siklonun CFD akışkan hacmi → STEP (AP214) + STL + SLDPRT |
+| `calciner.bas` | ILC kalsinatörün CFD akışkan hacmi; şu an boğaz + koni + gövde ve çift kaz boynu, export yok. Ölçüler ve kaynakları: [`calciner.md`](../calciner/calciner.md) |
+
+`calciner.bas` aynı yoldan çalıştırılır (makro adı ör. `calciner.swp`) ve `cyclone.bas`'ın doğrulanmış
+yardımcılarını kendi içinde kopya olarak taşır; iki makro birbirinden bağımsızdır.
 
 Kaynak `.bas` olarak tutulur: VBA modülünün düz metin biçimi, `git diff` ile okunabilir.
 SolidWorks'ün ürettiği `.swp` ikili bir dosyadır, depoya girmez.
