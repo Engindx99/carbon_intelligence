@@ -83,10 +83,13 @@ seçilirse boy ±0.22 m belirsiz kalır; ağırlık merkezi datumu ayrıca hacim
 tam yapar. Bu bir tesis ölçüsü olduğundan `twin_cfg.yaml`'daki
 `inlet_extension_over_D` C1 için kullanılmaz.
 
-**Çıkış dirseği** — Çıkış borusu çatının üstünde `OUTLET_EXT_OVER_VORTEX_D = 2.5` (6.0 m)
-düz yükselir, sonra **kavisli bir 90° dirsekle** (merkez çizgisi yarıçapı
-`ELBOW_R_OVER_VORTEX_D = 1.5` → 3.6 m) −x yönüne, giriş kanalının tarafına döner ve `OUTLET_RUN_OVER_VORTEX_D = 2.0`
-(4.8 m) yatay gider. `gas_outlet` bu kanalın ucundaki dikey yüzdür (x = −8.40 m).
+**Çıkış kaz boynu** — Çıkış borusu çatının üstünde `OUTLET_EXT_OVER_VORTEX_D = 1.25` (3.0 m; 29 Eylül'de kaz boynu tesisteki gibi çatıya yakın dursun diye 2.5'ten yarıya indirildi)
+düz yükselir, sonra **180°'lik bir dirsekle** (merkez çizgisi yarıçapı `ELBOW_R_OVER_VORTEX_D = 1.5`
+→ 3.6 m, eksen (+3.6, y, 14.44)) +x yönüne dönüp aşağı iner ve `OUTLET_DOWN_OVER_VORTEX_D` kadar (yükselişe eşit, 3.0 m; bacakları eşit
+düz bir U) düz iner. `gas_outlet` bu borunun ucundaki, aşağı bakan yatay disktir (x = 7.2, z = 11.44). Bu yüz çatıyla aynı düzlemde ama x'te gövdenin dışında; etiketleme onu yüzün x alt sınırıyla (> R) ayırır.
+C1 en üst siklon; tesiste gaz duct'ı böyle ters U biçiminde fana iner (kullanıcı kararı, 29 Eylül
+2026). +x yönü riser'ın ters tarafı. 28 Eylül'e kadar çıkış 90° dirsek + −x'e 4.8 m yatay
+kanaldı; doğrulanmış gaz-yalnız sonuçlar (200.94 m³'lük `C1.step`) o geometriye aittir.
 
 Gerekçe ölçülmüş: düz borunun ucundaki çıkış yüzünde, girdap güçlenince (k-ω SST, 26 Eylül 2026)
 alanın **%38'inde geri akış** vardı. Kütle dengesizliği, ΔP ve geri akış oranı aynı
@@ -96,11 +99,56 @@ Tesiste de gaz C1'den fana giden bir kanala döner. Dönüş yönü tek siklon i
 aşağı akış kanalını yerleştirmiyor. Yükseliş 2.5'te bırakıldı, böylece %38'i ölçen koşuya
 göre değişen tek şey dirsek oldu.
 
-Dirsek, borunun z = 17.44'teki kesit diskinin, aynı düzlemdeki x'e paralel bir eksen etrafında
-90° döndürülmesiyle kurulur (çeyrek torus). Hacmi Pappus'tan tamdır: A · (π/2) · R_b.
+Dirsek, borunun z = 14.44'teki kesit diskinin, aynı düzlemdeki y'ye paralel bir eksen etrafında
+180° döndürülmesiyle kurulur (yarım torus) ve aynı düzleme geri iner; inen boru o düzlemden aşağı
+extrude edilir. Hacmi Pappus'tan tamdır: A · π · R_b.
 Dönüş yönü ölçülür, varsayılmaz: ters dönerse hacim ve kutunun tepesi söyler, diğer yön denenir.
 
 Volüt modellenmez; farin borusu yoktur, toz çıkışı bir sınır yüzüdür.
+
+**Riser ve farin beslemesi (`RISER_ON = True`, 28 Eylül 2026)** — Gaz artık giriş kanalının
+ucundan değil, önündeki dikey bir **riser**'ın tabanından girer; farin riser'a duvarından giren
+eğimli bir **besleme oluğundan** verilir (tesisteki "distribution box"). Gerekçe: farini kanal ucundan
+542 K'de vermek hem iki yönlü DPM'i hem DDPM'i ıraksattı, 542 K de gaz–farin ısı alışverişinin
+80/20 riser/siklon paylaşımı *varsayımıydı*. DTU'nun endüstriyel DDPM siklonu (Mirzaei 2023)
+farini aynı nedenle riser'a verir; ısı alışverişi orada olur ve paylaşım artık bir sonuçtur.
+
+* **Kesit** — tesisteki gibi **yuvarlak** riser ve dirsek. Yayınlanmış R1 (Ø3.07 m) ikiz C1'leri
+  birlikte besler; C1'e alanının yarısı düşer: **Ø2.171 m, 3.70 m²** (`D_RISER_SRC`,
+  `RISER_AREA_SHARE = 0.5`). 17.9 kg/s'de hız 8.7–10.6 m/s (DTU'nun riser'ı 7.5–9.3 m/s).
+  Siklona yine doğrulanmış **0.86 × 2.16 m**'lik kanaldan girilir. Kare giriş elendi: 1.36 m'lik
+  kare vorteks bulucuya çarpar, halka 0.88 m (kullanıcı kararları, 28–29 Eylül 2026).
+* **Geçiş** — kanal ekseni boyunca `RISER_TRANS_LEN = 1.5 m`: G = (−4.483, 1.73, 10.547)'deki
+  daireden kanalın uç yüzündeki dikdörtgene bir **loft** (y'de yarım açı 24°). İki profil de var
+  olan düzlem yüzlerdir, geometriyle bulunur; eğik düzlemde çizim gerekmez. Loft hacminin
+  kapalı formu yok, bu yüzden tek gevşek kontrol burada: hacim iki uç prizmanın arasında
+  (2.79…5.55 m³) olmalı; ölçülen değer log'a yazılır ve oluk bunun üstüne ‰1 ile doğrulanır.
+* **Dirsek** — daire, y'ye paralel bir eksen etrafında **90° + eğim = 95°** döndürülür (çıkış
+  dirseğiyle aynı yapı); merkez çizgisi yarıçapı `RISER_BEND_R_OVER_D = 1.0` → 2.171 m, eksen
+  (−4.672, y, 8.385). Son kesiti G'deki dairedir. Tepesi z = 11.64 m (gövdenin dışında).
+  Hacim Pappus: π r² · R_b · (π/2 + 5°) = 13.32 m³. Dirsek 1.5 D'den, geçiş 2.0 m'den
+  riser siklona 1.7 m yaklaşsın diye kısaltıldı (29 Eylül 2026); 3.0 m'lik kanal yayınlanmış ölçü, kalır.
+* **Riser** — eksen x = −6.843, y = 1.73; z = 8.385'ten aşağı: beslemeye `RISER_ABOVE_FEED = 3.0 m`,
+  besleme altında `RISER_BELOW_FEED = 4.5 m` (~2 D); taban **z = 0.885**. Hacim 27.76 m³. Beslemeden
+  gövdeye yol ~11 m; 200 µm'lik farinin ısıl zaman sabiti ~0.08 s. Besleme altı 2.5 m idi, ama bu
+  ince riser'ın 2 D_h'siydi, bu riser'da 1.15 D ediyordu (29 Eylül 2026).
+* **Besleme oluğu** — 0.6 × 0.6 m kare kesit, yatayla `FEED_SLOPE_DEG = 60°`, riser'dan −x yönünde
+  dışarı doğru yükselir; ekseni riser duvarını z = 5.385'te keser. Riser ekseninde z = 3.505'ten
+  başlar (içteki kısmı birleşimde erir), duvardan eksen boyunca `FEED_DEPTH = 1.0 m` dışarı çıkar.
+  Bu değer (H/2)·tan θ = 0.52'yi aşmalı, yoksa uç yüzün bir kenarı riser'ın içinde kalır.
+  Kanal gibi yan görünüşü (x–z'de dönmüş bir dikdörtgen) y = 1.43 düzlemine çizilip y boyunca
+  0.6 m extrude edilir. Uç yüzünün merkezi (−8.428, 1.73, 6.251). Hacim kapalı formda
+  0.6·[0.6·L − segment/cos θ] = 0.370 m³, L = r/cos θ + 1.0 = 3.171 m (θ = 0'da düz stub'ın
+  formülü). Yatay stub farini duvara şerit hâlinde döküyordu; iki yönlü DPM'i ıraksatan buydu
+  (kullanıcı kararı, 29 Eylül 2026).
+* Dirsek ve riser, loft onları birleştirene kadar **ikinci bir gövde** olarak durur; 7–8.
+  aşamalar iki gövdenin toplam hacmi ve ortak kutusuyla kontrol edilir.
+
+`RISER_ON = False` riser'sız, kaz boyunlu gaz-yalnız domeni kurar ve `C1.*` adıyla yazar (doğrulanmış
+90° dirsekli domen değil; o, commit 1249eb9'daki makroda);
+açıkken çıktı `C1_riser.*`. Riser açıkken domen **≈ 250.2 m³** (eşit bacaklı kaz boynuyla;
+loft'a bağlı, log kesin değeri verir), riser'sız ≈ 204.8 m³. Kutu değişir: x min = −8.688 (oluk ucunun alt kenarı), x max = 8.4 (inen boru),
+y max = 2.815 (yuvarlak kesit).
 
 ## Makro kendini nasıl doğrular
 
@@ -112,9 +160,18 @@ ve parçayı ekranda inceleme için bırakır.
   vorteks bulucu duvarı sığıyor mu, kanalın iç duvarı vorteks bulucuya çarpıyor mu,
   açıklık çatının altında mı. Silinen `cyclone_layout()`'un reddettiği dördü artı eğimin
   getirdiği ikisi.
-* **Adım başına hacim** — 6 adımın her birinin beklenen hacmi kapalı formda hesaplanır ve
-  ‰1 toleransla karşılaştırılır. En sıkı olanı ilki: gövde + koni = **124.54 m³**,
-  dokümanın fiziksel hesapta kullandığı sayı. Son adımın sonunda CFD domeni **200.94 m³**.
+* **Adım başına hacim** — 6 adımın (riser açıkken 10) her birinin beklenen hacmi kapalı formda
+  hesaplanır ve ‰1 toleransla karşılaştırılır. En sıkı olanı ilki: gövde + koni = **124.54 m³**,
+  dokümanın fiziksel hesapta kullandığı sayı. 6. adımın sonunda domen **200.94 m³**, riser,
+  dirseği, geçişi, oluğu ve kaz boynuyla **≈ 250.2 m³**. Loft'un hacmi yalnız bir aralıkla kontrol edilir
+  (kapalı formu yok). Oluğun y yönü hacimle ayırt edilemez: ters yönde fark ~0.14 m³, yani ‰1'in
+  altında. Bu yüzden uç yüzü bulunur ve y aralığı okunur; ters dönen riser dirseği aşağı gider
+  ve kendi gövdesinin kutusuyla yakalanır.
+* **Riser ön kontrolleri** — riser kanaldan geniş, geçiş boyu > 0, geçişin yuvarlak ucu gövdeden
+  uzak, dirsek kendi içinden geçmiyor, dirsek çıkış
+  borusuna ve çıkış dirseğine ulaşmıyor, oluğun duvardaki açıklığı dirsekle taban arasına sığıyor,
+  uç yüzü tamamen riser'ın dışında, başlangıç yüzü riser'ın içinde ve tabanın üstünde, eğim
+  0–90° arasında, riser tabanı z = 0'ın üstünde.
 * **Adım başına sınırlayıcı kutu** — yanlış düzlem eşlemesini, ters eğimi, ters ötelemeyi
   metre mertebesinde yakalar.
 * **Gövde sayısı** — her adımda tam olarak 1. İkiye çıkması birleşimin tutmadığı demektir.
@@ -122,7 +179,9 @@ ve parçayı ekranda inceleme için bırakır.
   kaçak.
 * **Sınır yüzleri** — `meal_inlet` / `gas_outlet` / `dust_outlet` her biri tam bir kez
   bulunmalı ve alanları sırasıyla 1.858 / 4.524 / 0.126 m² çıkmalı. İki giriş yüzü bulunması,
-  kanalın gövdeye girememiş ve uç kapağının açıklığı tıkıyor olması demektir.
+  kanalın gövdeye girememiş ve uç kapağının açıklığı tıkıyor olması demektir. Riser
+  açıkken kanal eksenine dik **hiç** yüz kalmamalı (dirsek kanal ucunda erimiş olmalı); giriş
+  yüzü riser tabanıdır (daire, 3.70 m²) ve `meal_feed` 0.36 m² tam bir kez bulunur.
 
 ## Sınır yüzlerinin Fluent'e taşınması
 
@@ -135,8 +194,9 @@ named selection üretir.
 
 | Sınır | Renk | Alan |
 |---|---|---|
-| `meal_inlet` | yeşil | 1.858 m² |
-| `gas_outlet` | mavi | 4.524 m², yatay kanalın ucu, x = −8.40 m |
+| `meal_inlet` | yeşil | 1.858 m², kanalın ucu; riser açıkken riser tabanı (z = 0.885, daire 3.70 m²), Fluent'te `inlet_gas` |
+| `meal_feed` | mor | 0.36 m², yalnız riser açıkken; oluğun eğik uç yüzü; gaz için duvar, DPM için enjeksiyon yüzeyi |
+| `gas_outlet` | mavi | 4.524 m², inen borunun ucu, z = 11.44 (çatı düzlemi, x = 6.0–8.4), aşağı bakar |
 | `dust_outlet` | turuncu | 0.126 m² |
 | duvarlar | gri | — |
 

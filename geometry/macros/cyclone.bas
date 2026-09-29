@@ -4,8 +4,10 @@ Attribute VB_Name = "cyclone"
 '
 ' Builds ONE closed solid: the gas volume inside a single preheater
 ' cyclone, plus its tangential meal/gas inlet duct and the outlet
-' pipe above the roof, which rises, turns through a 90 deg bend and
-' runs off horizontally. Nothing structural is modelled -- no shell,
+' pipe above the roof, which rises, turns over through a 180 deg
+' gooseneck and drops to the outlet face; with RISER_ON, also the
+' round riser, its bend and the transition into the inlet duct, and
+' the meal feed chute. Nothing structural is modelled -- no shell,
 ' no refractory, no volute (CLAUDE.md rule 8).
 '
 ' Coordinates: cyclone axis = z, dust outlet at z = 0. Gas enters
@@ -86,28 +88,39 @@ Const H_INLET        As Double = 2.16
 ' length, because swirl decays very slowly in one.
 '
 ' The bend below is the fix, and it is what the plant has: the gas
-' leaving C1 turns into a duct to the fan. The rise is left at 2.5
-' so that the bend is the only thing that changed against the run
-' that measured the 38 %.
-Const OUTLET_EXT_OVER_VORTEX_D As Double = 2.5    ' straight rise above roof, x vortex D
+' leaving C1 turns into a duct to the fan. The rise was left at 2.5
+' so that the bend was the only thing that changed against the run
+' that measured the 38 %. With the 180 deg gooseneck it looked far
+' taller than a plant's, and it was halved to 1.25 (3.0 m) so the
+' gooseneck sits close over the roof as in the plant (user decision,
+' 29 Sep 2026). The bend, not the rise, is what breaks the swirl.
+Const OUTLET_EXT_OVER_VORTEX_D As Double = 1.25   ' straight rise above roof, x vortex D
 
-' The outlet bend: the pipe section swept through 90 deg about a
-' horizontal axis, turning the flow from +z to -x, then a straight
-' horizontal run to the outlet face. The bend breaks up the swirl
-' and its reverse-flow core, so the outlet face sits in flow that
-' is going the one way. Modelling parameters, no plant source.
+' The outlet gooseneck: the pipe section swept through 180 deg about
+' a horizontal axis, turning the flow from +z over the top and down,
+' then a straight drop to the outlet face. C1 is the top cyclone and
+' this is what its gas duct does in the plant -- up out of the roof,
+' over, and down to the duct to the fan (user decision, 29 Sep 2026).
+' The first bend had only the 90 deg and a horizontal run; either
+' breaks up the swirl and its reverse-flow core, so the outlet face
+' sits in flow that is going the one way. Modelling parameters, no
+' plant source.
 '
 ' Bend radius is the centreline radius, 1.5 diameters: an ordinary
 ' long-radius elbow. Anything under half a diameter folds the inner
 ' wall through itself; PreChecks refuses it.
 '
-' Which way the bend turns is arbitrary for a single cyclone -- no
-' source places the downstream duct. -x turns it back over the inlet
-' side, and the build stays on planes parallel to the ones the macro
-' already measures. It clears everything by construction: the bend
-' starts above the roof, the inlet duct is below it.
+' It turns to +x, away from the inlet side, where the riser now
+' stands: turned to -x the drop would come down beside the riser
+' bend. It clears everything by construction: the bend starts above
+' the roof and the drop lands outside the barrel.
 Const ELBOW_R_OVER_VORTEX_D   As Double = 1.5    ' bend centreline radius, x vortex D
-Const OUTLET_RUN_OVER_VORTEX_D As Double = 2#    ' straight run after the bend, x vortex D
+' The drop is as long as the rise, so the gooseneck is a plain U
+' with equal legs (user decision, 29 Sep 2026; 2.0 D hung too far
+' down). The outlet face then lies in the roof's own plane, well
+' clear of it in x; TagBoundaryFaces tells the two apart by where
+' the face sits in x.
+Const OUTLET_DOWN_OVER_VORTEX_D As Double = OUTLET_EXT_OVER_VORTEX_D   ' straight drop, x vortex D
 ' Vortex finder wall thickness [m]. What this carves out of the
 ' fluid is a slot 2.16 m deep and this wide, running the finder's
 ' whole 7.6 m circumference, and its lower rim is an annular face of
@@ -286,6 +299,67 @@ Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
 ' 0.02 m face size and 4 at 0.0125 m.
 Const INLET_TONGUE As Double = 0.05
 
+' The riser in front of the inlet duct: the gas comes up a vertical
+' riser, turns through a bend into the duct, and the raw meal is fed
+' into the riser down a sloping chute through its wall -- the plant's
+' "distribution box". Modelling choice, no plant source for any of
+' the lengths (geometry/preheater/riser_R1.md).
+'
+' Why it is here: fed straight into the duct at 542 K, the meal made
+' both two-way DPM and DDPM diverge (T2, 28 Sep 2026), and 542 K
+' itself was an assumed 80/20 riser/cyclone split of the gas-meal
+' heat exchange. DTU's industrial DDPM cyclone (Mirzaei 2023) feeds
+' the meal into a riser for the same reason: that is where the
+' exchange happens. With the riser the split is a result.
+'
+' Section: the published R1 is a 3.07 m round duct shared by the
+' twin C1s, so each C1's riser is round with half its area: 3.70 m2,
+' 2.17 m across, 8.7-10.6 m/s at 17.9 kg/s where DTU measured
+' 7.5-9.3 m/s. The riser and its bend are round, as in the plant;
+' the cyclone is still entered through the validated 0.86 x 2.16 m
+' duct, and a loft RISER_TRANS_LEN long, along the duct axis, turns
+' the round section into the duct's rectangle. A square inlet was
+' ruled out: 1.36 m of it would run through the vortex finder,
+' whose annulus is 0.88 m (user decisions, 28-29 Sep 2026).
+'
+' The bend is the round section swept about a horizontal axis
+' through 90 deg plus the duct slope, from straight up into the duct
+' axis, built like the outlet bend. Its centreline radius is 1.0
+' riser diameter, usual for riser bends, and the transition is
+' 1.5 m (24 deg half angle, still a comfortable contraction): both
+' were cut from 1.5 D and 2.0 m to bring the riser 1.7 m closer to
+' the cyclone (user decision, 29 Sep 2026). The 3.0 m duct is a
+' published plant length and stays. Below the bend the riser runs
+' straight down: RISER_ABOVE_FEED from the feed to the bend, which
+' gives the coarse meal (tau_T 0.08 s at 200 um) about 11 m of
+' riser, bend, transition and duct before the barrel, and
+' RISER_BELOW_FEED under the feed, about 2 D, so the gas arrives
+' developed and meal that falls back has riser to be caught in
+' before it leaves through the gas inlet. 2.5 m was 2 D_h of the
+' first, thin riser and only 1.15 D of this one.
+'
+' The meal comes in down a chute, as in the plant: a square pipe
+' sloping FEED_SLOPE_DEG below the horizontal, whose axis meets the
+' riser wall at zFeed. A horizontal stub drops the meal along the
+' riser wall as a strand, and a wall strand in thin prism cells is
+' what made two-way DPM diverge (T2, 28 Sep 2026). 60 deg clears
+' the raw meal's 40-45 deg angle of repose; no plant source gives
+' the angle or the section (user decision, 29 Sep 2026).
+'
+' Off, the macro builds the validated gas-only domain exactly as
+' before and writes it under the old name.
+Const RISER_ON              As Boolean = True
+Const D_RISER_SRC           As Double = 3.07  ' published R1 inner diameter [m], geometry/catalog.md
+Const RISER_AREA_SHARE      As Double = 0.5   ' the twin C1s share R1
+Const RISER_TRANS_LEN       As Double = 1.5   ' round-to-duct loft, along the duct axis [m]
+Const RISER_BEND_R_OVER_D   As Double = 1#    ' bend centreline radius, x riser diameter
+Const RISER_ABOVE_FEED      As Double = 3#    ' feed (chute axis at the wall) to bend start [m]
+Const RISER_BELOW_FEED      As Double = 4.5   ' riser gas inlet to feed [m]
+Const FEED_W                As Double = 0.6   ' feed chute section, along y [m]
+Const FEED_H                As Double = 0.6   ' feed chute section, normal to its axis in x-z [m]
+Const FEED_DEPTH            As Double = 1#    ' feed chute, along its axis beyond the riser wall [m]
+Const FEED_SLOPE_DEG        As Double = 60#   ' feed chute below the horizontal, rising away from the riser
+
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
@@ -320,9 +394,10 @@ Dim oldStlDev As Double, oldStlAngle As Double
 Dim R As Double, rDust As Double, rVortex As Double
 Dim zRoof As Double, zVortexBottom As Double, zOutletTop As Double
 Dim rBend As Double                         ' bend centreline radius
-Dim zRunAxis As Double                      ' height of the horizontal run's axis
-Dim zElbowTop As Double                     ' highest point of the bend and run
-Dim xGasOut As Double                       ' the gas outlet face, x = this (negative)
+Dim zElbowTop As Double                     ' highest point of the gooseneck
+Dim xLeg As Double                          ' axis of the drop after the gooseneck, x = this
+Dim zGasOut As Double                       ' the gas outlet face, z = this, facing down
+Dim xBoxMax As Double                       ' the domain's +x extreme, the drop's outer wall
 Dim zBoiTop As Double                       ' top of the mesh sizing cylinder
 Dim zBoiBot As Double                       ' floor of the mesh sizing cylinder
 Dim yOuter As Double, yInner As Double, yMid As Double
@@ -334,6 +409,20 @@ Dim reach As Double                     ' |x| where the duct's inner wall meets 
 Dim xTrim As Double                     ' |x| where the duct stops, short of the tangent plane
 Dim ceX As Double, ceY As Double, ceZ As Double   ' inlet face centre
 Dim xInletNear As Double, zDuctTop As Double
+Dim rRiser As Double                        ' riser radius
+Dim rRiserBend As Double                    ' riser bend centreline radius
+Dim gX As Double, gZ As Double              ' centre of the round end of the transition
+Dim xRiserAxis As Double, zRiserTop As Double   ' riser bend axis, parallel to y
+Dim xRiser As Double                        ' the straight riser's axis, x = this, y = yMid
+Dim xBoxMin As Double, yBoxMax As Double    ' the domain's box once the riser is on
+Dim zRiserBot As Double                     ' the riser's gas inlet face
+Dim zFeed As Double                         ' where the feed chute's axis meets the riser wall
+Dim fx As Double, fz As Double              ' feed chute axis e = (fx, 0, fz), up and away from the riser
+Dim wx As Double, wz As Double              ' feed chute section "up" w = (wx, 0, wz)
+Dim zFeedStart As Double, lFeed As Double   ' chute start on the riser axis, its length from there
+Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the chute's end face, the meal_feed
+Dim zRiserBendTop As Double                 ' highest point of the riser bend
+Dim outName As String                       ' file name the solid is written under
 
 ' Sketch axis directions, measured at run time by CalibrateSketchAxes.
 ' uSign/vSign are the pair in force for the sketch being drawn now;
@@ -342,7 +431,8 @@ Dim uSign As Double, vSign As Double
 Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve profiles
 Dim uSignD As Double, vSignD As Double      ' the duct's own plane, for its side view
 Dim uSignZ As Double, vSignZ As Double      ' z = zOutletTop, where the bend starts
-Dim uSignR As Double, vSignR As Double      ' x = -rBend, where the horizontal run starts
+Dim uSignQ As Double, vSignQ As Double      ' z = zRiserTop, where the riser meets its bend
+Dim uSignF As Double, vSignF As Double      ' y = yMid - FEED_W / 2, the feed chute's side, for its side view
 
 ' The off-plane component of the first point drawn in the sketch
 ' now open. Every later point in the same sketch has to match it;
@@ -352,9 +442,12 @@ Dim wRefSet As Boolean
 
 ' expected volumes, all closed form
 Dim vEquip As Double, vDuctFree As Double, vPipe As Double, vWall As Double
-Dim vElbow As Double, vRun As Double
+Dim vElbow As Double, vLeg As Double
+Dim vRiserBend As Double, vRiser As Double, vFeed As Double
+Dim vTransLo As Double, vTransHi As Double, vTransMid As Double
 Dim vStage1 As Double, vStage2 As Double, vStage3 As Double
-Dim vStage4 As Double, vStage5 As Double, vFinal As Double
+Dim vStage4 As Double, vStage5 As Double, vStage6 As Double
+Dim vStage7 As Double, vStage8 As Double, vStage9 As Double, vFinal As Double
 
 Dim buildLog As String
 
@@ -419,7 +512,7 @@ End Sub
 '==================================================================
 Private Sub Derive()
 
-    Dim th As Double
+    Dim th As Double, thF As Double
 
     R = 0.5 * D_BARREL
     rDust = 0.5 * D_DUST
@@ -429,9 +522,10 @@ Private Sub Derive()
     zVortexBottom = zRoof - L_VORTEX
     zOutletTop = zRoof + OUTLET_EXT_OVER_VORTEX_D * D_VORTEX
     rBend = ELBOW_R_OVER_VORTEX_D * D_VORTEX
-    zRunAxis = zOutletTop + rBend
-    zElbowTop = zRunAxis + rVortex
-    xGasOut = -(rBend + OUTLET_RUN_OVER_VORTEX_D * D_VORTEX)
+    zElbowTop = zOutletTop + rBend + rVortex
+    xLeg = 2# * rBend
+    zGasOut = zOutletTop - OUTLET_DOWN_OVER_VORTEX_D * D_VORTEX
+    xBoxMax = xLeg + rVortex
     zBoiTop = zRoof + BOI_ROOF_MARGIN
 
     ' Where the cone has opened to BOI_RADIUS + BOI_CLEARANCE.
@@ -496,15 +590,83 @@ Private Sub Derive()
     ' Pappus: a section swept about an axis it does not cross sweeps
     ' its area times the path of its centroid, here a quarter circle
     ' of radius rBend. Exact, not an approximation, while rBend > rVortex.
-    vElbow = PI * rVortex * rVortex * (0.5 * PI * rBend)
-    vRun = PI * rVortex * rVortex * (-xGasOut - rBend)
+    vElbow = PI * rVortex * rVortex * (PI * rBend)
+    vLeg = PI * rVortex * rVortex * (zOutletTop - zGasOut)
+
+    ' The transition runs RISER_TRANS_LEN back along the duct axis
+    ' from the inlet face; its round end, centred at G, is where the
+    ' bend ends. The bend's axis is rRiserBend below G along the
+    ' section's "up", so its last section is that circle. Swept from
+    ' straight up through 90 deg plus the slope, it passes the
+    ' vertical on the way, so its top is the outer radius right above
+    ' the axis.
+    rRiser = Sqr(RISER_AREA_SHARE * 0.25 * D_RISER_SRC * D_RISER_SRC)
+    rRiserBend = RISER_BEND_R_OVER_D * 2# * rRiser
+    gX = ceX - RISER_TRANS_LEN * dx
+    gZ = ceZ - RISER_TRANS_LEN * dz
+    xRiserAxis = gX - rRiserBend * nx
+    zRiserTop = gZ - rRiserBend * nz
+    xRiser = xRiserAxis - rRiserBend
+    zRiserBendTop = zRiserTop + rRiserBend + rRiser
+    zFeed = zRiserTop - RISER_ABOVE_FEED
+    zRiserBot = zFeed - RISER_BELOW_FEED
+
+    ' The chute starts on the riser's axis, low enough that its axis
+    ' meets the wall at zFeed, and runs FEED_DEPTH past the wall.
+    ' Checked here, not in PreChecks: at 90 deg the lines below divide
+    ' by zero before PreChecks runs.
+    If FEED_SLOPE_DEG < 0# Or FEED_SLOPE_DEG >= 90# Then
+        Fail "FEED_SLOPE_DEG is " & Fmt(FEED_SLOPE_DEG) & "; the chute has to slope between " & _
+             "0 (horizontal) and 90 deg (vertical, which would run along the riser wall)."
+    End If
+    thF = FEED_SLOPE_DEG * PI / 180#
+    fx = -Cos(thF): fz = Sin(thF)
+    wx = Sin(thF): wz = Cos(thF)
+    zFeedStart = zFeed - rRiser * (fz / -fx)
+    lFeed = rRiser / -fx + FEED_DEPTH
+    xFeedEnd = xRiser + lFeed * fx
+    zFeedEnd = zFeedStart + lFeed * fz
+    ' the end face's corner furthest out, the lower one
+    xBoxMin = xFeedEnd - 0.5 * FEED_H * wx
+    yBoxMax = R
+    If yMid + rRiser > yBoxMax Then yBoxMax = yMid + rRiser
+
+    ' Pappus again: the disc's centroid sits on the centreline.
+    vRiserBend = PI * rRiser * rRiser * rRiserBend * (0.5 * PI + th)
+    vRiser = PI * rRiser * rRiser * (RISER_ABOVE_FEED + RISER_BELOW_FEED)
+
+    ' The loft from the disc to the duct's rectangle has no closed
+    ' form -- it depends on how SolidWorks pairs the two outlines --
+    ' so it is held between the two prisms it has to lie between, and
+    ' the mean of its end areas is only reported against.
+    vTransLo = RISER_TRANS_LEN * wDuct * H_INLET
+    vTransHi = RISER_TRANS_LEN * PI * rRiser * rRiser
+    vTransMid = 0.5 * (vTransLo + vTransHi)
+
+    ' The chute starts on the riser's axis and runs out through the
+    ' wall. A line of it at (y, w) in its section leaves the riser
+    ' where the horizontal reach s cos + w sin equals sqrt(r^2 - y^2);
+    ' the w part is odd across the section and cancels, as it does for
+    ' the duct, so what the merge keeps is the prism less the circular
+    ' segment stretched by 1 / cos. At 0 deg this is a plain stub.
+    vFeed = FEED_H * (FEED_W * lFeed - Segment(rRiser, -0.5 * FEED_W, 0.5 * FEED_W) / -fx)
 
     vStage1 = vEquip                       ' barrel + cone
     vStage2 = vStage1 + vDuctFree          ' + inlet duct
     vStage3 = vStage2 - vWall              ' - vortex finder wall
     vStage4 = vStage3 + vPipe              ' + outlet pipe above the roof
-    vStage5 = vStage4 + vElbow             ' + 90 deg bend
-    vFinal = vStage5 + vRun                ' + horizontal run to the outlet face
+    vStage5 = vStage4 + vElbow             ' + 180 deg gooseneck
+    vStage6 = vStage5 + vLeg               ' + drop to the outlet face
+    vStage7 = vStage6 + vRiserBend         ' + riser bend, a second body for now
+    vStage8 = vStage7 + vRiser             ' + straight riser, same second body
+    vStage9 = vStage8 + vTransMid          ' + loft joining the two; measured once built
+    If RISER_ON Then
+        vFinal = vStage9 + vFeed           ' + meal feed chute; re-based on the measured loft
+        outName = CYCLONE_NAME & "_riser"
+    Else
+        vFinal = vStage6
+        outName = CYCLONE_NAME
+    End If
 
 End Sub
 
@@ -518,6 +680,18 @@ Private Function SegAntider(ByVal Rr As Double, ByVal y As Double) As Double
     q = Rr * Rr - y * y
     If q < 0# Then q = 0#
     SegAntider = 0.5 * y * Sqr(q) + 0.5 * Rr * Rr * ASin(y / Rr)
+End Function
+
+' How far the feed chute's hole in the riser wall reaches from zFeed.
+' Its edges leave the wall where s cos = sqrt(r^2 - y^2) -+ (H/2) sin,
+' which puts them (H/2) / cos above and below zFeed on the chute's
+' mid-plane; towards the sides the wall curves in, which drops both
+' edges by up to (r - sqrt(r^2 - (W/2)^2)) tan. The upper edge gains
+' nothing from that, the lower one loses it, and this returns the
+' larger reach, the lower one.
+Private Function FeedHoleHalf() As Double
+    FeedHoleHalf = 0.5 * FEED_H / -fx + _
+                   (rRiser - Sqr(rRiser * rRiser - 0.25 * FEED_W * FEED_W)) * (fz / -fx)
 End Function
 
 Private Function ASin(ByVal v As Double) As Double
@@ -637,13 +811,88 @@ Private Sub PreChecks()
              Fmt(rVortex) & " m; the bend would fold through itself. ELBOW_R_OVER_VORTEX_D " & _
              "must exceed 0.5."
     End If
-    If OUTLET_RUN_OVER_VORTEX_D <= 0# Then
-        Fail "OUTLET_RUN_OVER_VORTEX_D is " & Fmt(OUTLET_RUN_OVER_VORTEX_D) & ". The outlet face " & _
+    If OUTLET_DOWN_OVER_VORTEX_D <= 0# Then
+        Fail "OUTLET_DOWN_OVER_VORTEX_D is " & Fmt(OUTLET_DOWN_OVER_VORTEX_D) & ". The outlet face " & _
              "would sit on the end of the bend, where the flow is still turning."
+    End If
+    If xLeg - rVortex <= R Then
+        Fail "the outlet drop's inner wall at x = " & Fmt(xLeg - rVortex) & " m is not clear of " & _
+             "the barrel (x = " & Fmt(R) & " m). Raise ELBOW_R_OVER_VORTEX_D."
+    End If
+    ' The drop stands clear of the barrel in x, so it may come down
+    ' past the roof; it only has to stay above the dust outlet.
+    If zGasOut <= 0# Then
+        Fail "the outlet drop comes down to z = " & Fmt(zGasOut) & " m, at or below the dust " & _
+             "outlet."
     End If
     If OUTLET_EXT_OVER_VORTEX_D <= 0# Then
         Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & ". The bend has to " & _
              "start above the roof, not on it."
+    End If
+
+    ' 10. the riser. Built outside everything else by construction;
+    '     these say so with the numbers.
+    If RISER_ON Then
+    If RISER_BEND_R_OVER_D <= 0.5 Then
+        Fail "RISER_BEND_R_OVER_D is " & Fmt(RISER_BEND_R_OVER_D) & ". At 0.5 or under the " & _
+             "riser bend's inner wall reaches its own axis and the solid folds through itself."
+    End If
+    If RISER_TRANS_LEN <= 0# Then
+        Fail "RISER_TRANS_LEN is " & Fmt(RISER_TRANS_LEN) & " m; the round riser needs a " & _
+             "transition to reach the duct's rectangle."
+    End If
+    If 2# * rRiser <= wDuct Then
+        Fail "the riser (D " & Fmt(2# * rRiser) & " m) is no wider than the duct (" & _
+             Fmt(wDuct) & " m); the transition would be a diffuser."
+    End If
+    ' The circle at the transition's round end lies in a plane normal
+    ' to the duct axis; its furthest reach towards +x is r along n.
+    If gX + rRiser * nx >= -R Then
+        Fail "the transition's round end reaches x = " & Fmt(gX + rRiser * nx) & " m, not clear " & _
+             "of the barrel (x = " & Fmt(-R) & " m). Lengthen RISER_TRANS_LEN."
+    End If
+    If xInletNear >= -rVortex Then
+        Fail "the inlet face reaches x = " & Fmt(xInletNear) & " m, into the outlet pipe " & _
+             "above the roof (|x| <= " & Fmt(rVortex) & " m)."
+    End If
+    If zRiserBendTop >= zOutletTop Then
+        Fail "the riser bend rises to z = " & Fmt(zRiserBendTop) & " m, past the start of the " & _
+             "outlet bend at z = " & Fmt(zOutletTop) & " m."
+    End If
+    ' The chute's hole in the wall reaches at most this far above and
+    ' below zFeed: its section's height, stretched by the slope, plus
+    ' the rise across half its width where the wall curves back.
+    If RISER_ABOVE_FEED <= FeedHoleHalf() Or RISER_BELOW_FEED <= FeedHoleHalf() Then
+        Fail "the feed chute's hole in the riser wall reaches " & Fmt(FeedHoleHalf()) & _
+             " m above and below the feed; it does not fit between the riser's bend and its " & _
+             "inlet face."
+    End If
+    If FEED_W >= 2# * rRiser Then
+        Fail "the feed chute (" & Fmt(FEED_W) & " m wide) does not fit on the riser (D " & _
+             Fmt(2# * rRiser) & " m)."
+    End If
+    ' The end face has to lie wholly outside the riser, or part of the
+    ' meal_feed face is inside it and merges away. Its nearest edge,
+    ' the upper one, reaches in by half the section times the sine.
+    If FEED_DEPTH * -fx <= 0.5 * FEED_H * wx Then
+        Fail "the feed chute's end face reaches back into the riser; FEED_DEPTH must exceed " & _
+             Fmt(0.5 * FEED_H * wx / -fx) & " m at " & Fmt(FEED_SLOPE_DEG) & " deg."
+    End If
+    ' The start face has to lie wholly inside the riser, above its
+    ' inlet face, or the closed-form volume counts a piece that is not
+    ' there. Across it the reach is at most half the section times the
+    ' sine, and half the width across.
+    If Sqr((0.5 * FEED_H * wx) ^ 2 + (0.5 * FEED_W) ^ 2) >= rRiser Then
+        Fail "the feed chute's start face does not fit inside the riser."
+    End If
+    If zFeedStart - 0.5 * FEED_H * wz <= zRiserBot Then
+        Fail "the feed chute starts at z = " & Fmt(zFeedStart - 0.5 * FEED_H * wz) & _
+             " m, below the riser's inlet face at z = " & Fmt(zRiserBot) & " m."
+    End If
+    If zRiserBot <= 0# Then
+        Fail "the riser's inlet face is at z = " & Fmt(zRiserBot) & " m, at or below the " & _
+             "dust outlet."
+    End If
     End If
 
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
@@ -655,15 +904,25 @@ Private Sub PreChecks()
     Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
          Fmt(-xTrim) & " m"
     Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, bend R " & Fmt(rBend) & _
-         " m, run to x = " & Fmt(xGasOut) & " m at z = " & Fmt(zRunAxis) & " m"
+         " m over 180 deg, drop at x = " & Fmt(xLeg) & " m to the outlet face at z = " & Fmt(zGasOut) & " m"
+    If RISER_ON Then
+        Note "riser: D " & Fmt(2# * rRiser) & " m at x = " & Fmt(xRiser) & ", z " & Fmt(zRiserBot) & _
+             " .. " & Fmt(zRiserTop) & " m, bend R " & Fmt(rRiserBend) & " m to z " & _
+             Fmt(zRiserBendTop) & " m"
+        Note "feed chute: " & Fmt(FEED_SLOPE_DEG) & " deg, meets the riser wall at z " & Fmt(zFeed) & _
+             " m, end face centred (" & Fmt(xFeedEnd) & ", " & Fmt(yMid) & ", " & Fmt(zFeedEnd) & ")"
+        Note "transition: " & Fmt(RISER_TRANS_LEN) & " m from (" & Fmt(gX) & ", " & Fmt(gZ) & _
+             "), loft volume expected " & Fmt(vTransLo) & " .. " & Fmt(vTransHi) & " m3"
+    End If
 End Sub
 
 
 '==================================================================
 ' (d) Build
 '
-' Six features, all merged on creation, so the part never holds
-' more than one solid body and no Combine feature is needed.
+' Six features, ten with the riser, all merged on creation, so no
+' Combine feature is needed. The part holds one solid body except
+' while the riser waits for the transition loft to join it on.
 '==================================================================
 Private Sub Build()
 
@@ -671,8 +930,9 @@ Private Sub Build()
     Dim planeY0 As SldWorks.Feature       ' the y = 0 plane
     Dim planeDuct As SldWorks.Feature     ' y = yInner, the duct's inner wall
     Dim planeZ0 As SldWorks.Feature       ' the z = 0 plane
-    Dim planeBend As SldWorks.Feature     ' z = zOutletTop, where the bend starts
-    Dim planeRun As SldWorks.Feature      ' x = -rBend, where the horizontal run starts
+    Dim planeBend As SldWorks.Feature     ' z = zOutletTop: the gooseneck starts and ends here
+    Dim planeRiser As SldWorks.Feature    ' z = zRiserTop, where the riser meets its bend
+    Dim planeFeed As SldWorks.Feature     ' y = yMid - FEED_W / 2, the feed chute's side wall
     Dim xMin5 As Double
     Dim f As SldWorks.Feature
 
@@ -708,7 +968,10 @@ Private Sub Build()
     ' measure the merged body instead of itself.
     Set planeDuct = OffsetPlane(planeY0, 0#, yInner, 0#, uSignD, vSignD)
     Set planeBend = OffsetPlane(planeZ0, 0#, 0#, zOutletTop, uSignZ, vSignZ)
-    Set planeRun = OffsetPlane(planeX0, -rBend, 0#, 0#, uSignR, vSignR)
+    If RISER_ON Then
+        Set planeRiser = OffsetPlane(planeZ0, 0#, 0#, zRiserTop, uSignQ, vSignQ)
+        Set planeFeed = OffsetPlane(planeY0, 0#, yMid - 0.5 * FEED_W, 0#, uSignF, vSignF)
+    End If
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
 
     '--- 1. barrel + cone -------------------------------------------
@@ -750,20 +1013,46 @@ Private Sub Build()
     CheckStage "4  + outlet pipe", vStage4, _
                ceX - 0.5 * H_INLET * nx, -R, 0#, R, R, zOutletTop
 
-    '--- 5. 90 deg bend ---------------------------------------------
-    ' The bend ends in the plane x = -rBend, so it reaches that far in
-    ' -x; the inlet face reaches its own edge. Whichever is further is
-    ' the box.
+    '--- 5. 180 deg gooseneck ---------------------------------------
+    ' It goes over to +x and ends back in the plane z = zOutletTop,
+    ' so it takes the box to the far wall of the drop; in -x the inlet
+    ' face is still the extreme.
     xMin5 = ceX - 0.5 * H_INLET * nx
-    If -rBend < xMin5 Then xMin5 = -rBend
     Set f = RevolveElbow(planeBend)
-    CheckStage "5  + outlet bend", vStage5, _
-               xMin5, -R, 0#, R, R, zElbowTop
+    CheckStage "5  + outlet gooseneck", vStage5, _
+               xMin5, -R, 0#, xBoxMax, R, zElbowTop
 
-    '--- 6. horizontal run to the outlet face -----------------------
-    Set f = ExtrudeRun(planeRun)
-    CheckStage "6  + outlet run", vFinal, _
-               xGasOut, -R, 0#, R, R, zElbowTop
+    '--- 6. drop to the outlet face ---------------------------------
+    Set f = ExtrudeLeg(planeBend)
+    CheckStage "6  + outlet drop", vStage6, _
+               xMin5, -R, 0#, xBoxMax, R, zElbowTop
+
+    ' The riser and its bend are built apart from the cyclone as a
+    ' second body -- the transition that joins them is a loft between
+    ' two faces that have to exist first -- so stages 7 and 8 are
+    ' checked on the two bodies together. They reach past the inlet
+    ' face in -x and past the barrel in y, which moves the box.
+    If RISER_ON Then
+        '--- 7. round riser bend, ending on the transition's round end
+        Set f = RevolveRiserBend(planeRiser)
+        CheckBodies "7  + riser bend", 2, vStage7, _
+                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+
+        '--- 8. round riser down to its gas inlet -------------------
+        Set f = ExtrudeRiser(planeRiser)
+        CheckBodies "8  + riser", 2, vStage8, _
+                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+
+        '--- 9. loft from the round end to the duct's rectangle ------
+        Set f = LoftTransition()
+        CheckBodies "9  + transition", 1, vStage9, _
+                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+
+        '--- 10. meal feed chute out through the riser wall ----------
+        Set f = ExtrudeFeedChute(planeFeed)
+        CheckStage "10 + feed chute", vFinal, _
+                   xBoxMin, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+    End If
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -1008,19 +1297,21 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
 End Function
 
 
-' The outlet bend.
+' The outlet gooseneck.
 '
 ' The pipe's section at the top of the rise -- a disc in the plane
-' z = zOutletTop -- revolved 90 deg about the line through
-' (-rBend, 0, zOutletTop) parallel to y. That line lies in the same
+' z = zOutletTop -- revolved 180 deg about the line through
+' (rBend, 0, zOutletTop) parallel to y. That line lies in the same
 ' plane as the disc, which is what a revolve needs, and it clears the
-' disc by rBend - rVortex, so the result is a quarter torus. It
-' leaves the rise going up and ends in the plane x = -rBend, facing -x.
+' disc by rBend - rVortex, so the result is a half torus. It leaves
+' the rise going up, goes over the top and comes back down into the
+' same plane at x = 2 rBend, facing down.
 '
 ' Which way a revolve turns is not ours to choose any more than which
-' way an extrusion goes. Turned the wrong way the bend runs back down
-' into the pipe; the volume then comes out short and the top of the
-' box stays at the rise. Either says so, and the other way is tried.
+' way an extrusion goes. Turned the wrong way the bend runs down
+' through the pipe and the roof; the volume then comes out short and
+' the top of the box stays at the rise. Either says so, and the
+' other way is tried.
 Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
 
     Dim sk As SldWorks.Sketch
@@ -1040,17 +1331,17 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
     planeBend.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the outlet bend sketch."
+    If sk Is Nothing Then Fail "could not open the outlet gooseneck sketch."
     wRefSet = False
 
     G2S sk, 0#, 0#, zOutletTop, u0, v0
     If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
-        Fail "CreateCircleByRadius failed on the outlet bend section."
+        Fail "CreateCircleByRadius failed on the outlet gooseneck section."
     End If
-    G2S sk, -rBend, -1#, zOutletTop, u0, v0
-    G2S sk, -rBend, 1#, zOutletTop, u1, v1
+    G2S sk, rBend, -1#, zOutletTop, u0, v0
+    G2S sk, rBend, 1#, zOutletTop, u1, v1
     If swSkMgr.CreateCenterLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
-        Fail "CreateCenterLine failed on the outlet bend axis."
+        Fail "CreateCenterLine failed on the outlet gooseneck axis."
     End If
 
     swSkMgr.InsertSketch True
@@ -1065,7 +1356,7 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
         For i = 0 To UBound(segs)
             If segs(i).ConstructionGeometry Then Set axisSeg = segs(i)
         Next i
-        If axisSeg Is Nothing Then Fail "the outlet bend sketch has lost its axis."
+        If axisSeg Is Nothing Then Fail "the outlet gooseneck sketch has lost its axis."
 
         swModel.ClearSelection2 True
         Set selData = swModel.SelectionManager.CreateSelectData
@@ -1075,14 +1366,14 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
 
         Set f = swFeat.FeatureRevolve2( _
             True, True, False, False, (k = 1), False, _
-            0, 0, 0.5 * PI, 0#, _
+            0, 0, PI, 0#, _
             False, False, 0.01, 0.01, _
             0, 0#, 0#, _
             True, True, True)
         swModel.ClearSelection2 True
 
         If Not f Is Nothing Then
-            Set body = TheBody("5  + outlet bend")
+            Set body = TheBody("5  + outlet gooseneck")
             mp = body.GetMassProperties(1000#)
             box = body.GetBodyBox
             ' Up or down is all this has to tell apart, so the box is
@@ -1093,7 +1384,7 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
                 Set RevolveElbow = f
                 Exit Function
             End If
-            Note "outlet bend turned the wrong way (volume " & Fmt(mp(3)) & " m3, top " & _
+            Note "outlet gooseneck turned the wrong way (volume " & Fmt(mp(3)) & " m3, top " & _
                  Fmt(box(5)) & " m); reversing"
             swModel.ClearSelection2 True
             f.Select2 False, 0
@@ -1103,38 +1394,38 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
         End If
     Next k
 
-    Fail "the outlet bend could not be revolved to the right volume in either direction. " & _
+    Fail "the outlet gooseneck could not be revolved to the right volume in either direction. " & _
          "Expected " & Fmt(vStage5) & " m3 after the merge, top at z = " & Fmt(zElbowTop) & " m."
 
 End Function
 
 
-' The straight horizontal run from the end of the bend to the gas
-' outlet face: the bend's end section, a disc in the plane x = -rBend
-' centred at (-rBend, 0, zRunAxis), extruded along -x. Extruded the
-' wrong way it runs back into the bend and the volume comes out short.
-Private Function ExtrudeRun(planeRun As SldWorks.Feature) As SldWorks.Feature
+' The straight drop from the end of the gooseneck to the gas outlet
+' face: the bend's end section, a disc in the plane z = zOutletTop
+' centred at (xLeg, 0), extruded down. Extruded up instead it runs
+' back into the bend and the volume comes out short.
+Private Function ExtrudeLeg(planeBend As SldWorks.Feature) As SldWorks.Feature
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
     Dim u0 As Double, v0 As Double
     Dim f As SldWorks.Feature
     Dim body As SldWorks.Body2
-    Dim mp As Variant, box As Variant
+    Dim mp As Variant
     Dim k As Long
 
-    uSign = uSignR: vSign = vSignR
+    uSign = uSignZ: vSign = vSignZ
 
     swModel.ClearSelection2 True
-    planeRun.Select2 False, 0
+    planeBend.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the outlet run sketch."
+    If sk Is Nothing Then Fail "could not open the outlet drop sketch."
     wRefSet = False
 
-    G2S sk, -rBend, 0#, zRunAxis, u0, v0
+    G2S sk, xLeg, 0#, zOutletTop, u0, v0
     If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
-        Fail "CreateCircleByRadius failed on the outlet run section."
+        Fail "CreateCircleByRadius failed on the outlet drop section."
     End If
 
     swSkMgr.InsertSketch True
@@ -1146,7 +1437,7 @@ Private Function ExtrudeRun(planeRun As SldWorks.Feature) As SldWorks.Feature
         Set f = swFeat.FeatureExtrusion3( _
             True, False, (k = 1), _
             swEndCondBlind, swEndCondBlind, _
-            -xGasOut - rBend, 0.01, _
+            zOutletTop - zGasOut, 0.01, _
             False, False, False, False, _
             0#, 0#, _
             False, False, False, False, _
@@ -1155,14 +1446,13 @@ Private Function ExtrudeRun(planeRun As SldWorks.Feature) As SldWorks.Feature
         swModel.ClearSelection2 True
 
         If Not f Is Nothing Then
-            Set body = TheBody("6  + outlet run")
+            Set body = TheBody("6  + outlet drop")
             mp = body.GetMassProperties(1000#)
-            box = body.GetBodyBox
-            If Abs(mp(3) - vFinal) <= VOL_TOL * vFinal And box(0) < 0.5 * (xGasOut - rBend) Then
-                Set ExtrudeRun = f
+            If Abs(mp(3) - vStage6) <= VOL_TOL * vStage6 And HasPlaneFace(2, zGasOut) Then
+                Set ExtrudeLeg = f
                 Exit Function
             End If
-            Note "outlet run extruded the wrong way (volume " & Fmt(mp(3)) & " m3); reversing"
+            Note "outlet drop extruded the wrong way (volume " & Fmt(mp(3)) & " m3); reversing"
             swModel.ClearSelection2 True
             f.Select2 False, 0
             swModel.EditDelete
@@ -1171,9 +1461,481 @@ Private Function ExtrudeRun(planeRun As SldWorks.Feature) As SldWorks.Feature
         End If
     Next k
 
-    Fail "the outlet run could not be extruded to the right volume in either direction " & _
-         "along x. Expected " & Fmt(vFinal) & " m3 after the merge, ending at x = " & _
-         Fmt(xGasOut) & " m."
+    Fail "the outlet drop could not be extruded down to z = " & Fmt(zGasOut) & " m in either " & _
+         "direction. Expected " & Fmt(vStage6) & " m3 after the merge."
+
+End Function
+
+
+' The round riser bend.
+'
+' The riser's disc at the top of the straight riser -- centred on
+' (xRiser, yMid) in the plane z = zRiserTop -- revolved through 90 deg
+' plus the duct slope about the line through (xRiserAxis, 0,
+' zRiserTop) parallel to y. It leaves the riser going up, passes the
+' vertical, and ends on the circle at G, normal to the duct axis,
+' where the transition will start. The same construction as the
+' outlet bend.
+'
+' It touches nothing yet, so it is a second body either way round.
+' Turned the wrong way it swings down instead of up; the riser
+' body's own box says which.
+Private Function RevolveRiserBend(planeRiser As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim segs As Variant
+    Dim axisSeg As SldWorks.SketchSegment
+    Dim selData As SldWorks.SelectData
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim f As SldWorks.Feature
+    Dim box As Variant
+    Dim i As Long, k As Long
+
+    uSign = uSignQ: vSign = vSignQ
+
+    swModel.ClearSelection2 True
+    planeRiser.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the riser bend sketch."
+    wRefSet = False
+
+    G2S sk, xRiser, yMid, zRiserTop, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rRiser) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the riser bend section."
+    End If
+    G2S sk, xRiserAxis, yMid - 1#, zRiserTop, u0, v0
+    G2S sk, xRiserAxis, yMid + 1#, zRiserTop, u1, v1
+    If swSkMgr.CreateCenterLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+        Fail "CreateCenterLine failed on the riser bend axis."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        Set sk = skFeat.GetSpecificFeature2
+        segs = sk.GetSketchSegments
+        Set axisSeg = Nothing
+        For i = 0 To UBound(segs)
+            If segs(i).ConstructionGeometry Then Set axisSeg = segs(i)
+        Next i
+        If axisSeg Is Nothing Then Fail "the riser bend sketch has lost its axis."
+
+        swModel.ClearSelection2 True
+        Set selData = swModel.SelectionManager.CreateSelectData
+        selData.Mark = 16
+        axisSeg.Select4 False, selData
+        skFeat.Select2 True, 0
+
+        Set f = swFeat.FeatureRevolve2( _
+            True, True, False, False, (k = 1), False, _
+            0, 0, 0.5 * PI + INLET_SLOPE_DEG * PI / 180#, 0#, _
+            False, False, 0.01, 0.01, _
+            0, 0#, 0#, _
+            True, True, True)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            box = RiserBodyBox()
+            If Not IsEmpty(box) Then
+                If box(5) > zRiserTop + 0.5 * rRiserBend Then
+                    Set RevolveRiserBend = f
+                    Exit Function
+                End If
+                Note "riser bend turned down (top " & Fmt(box(5)) & " m); reversing"
+            End If
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the riser bend could not be revolved upwards in either direction; expected its " & _
+         "top at z = " & Fmt(zRiserBendTop) & " m."
+
+End Function
+
+
+' The box of the riser's own body while it is still apart from the
+' cyclone: the one lying wholly on the far side of x = -R. Empty if
+' there are not exactly two bodies.
+Private Function RiserBodyBox() As Variant
+
+    Dim bodies As Variant, box As Variant
+    Dim i As Long
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Exit Function
+    If UBound(bodies) <> 1 Then Exit Function
+    For i = 0 To 1
+        box = bodies(i).GetBodyBox
+        If box(3) < -R Then
+            RiserBodyBox = box
+            Exit Function
+        End If
+    Next i
+
+End Function
+
+
+' The straight round riser: the same disc extruded down from the
+' bend to the gas inlet face. Extruded up instead it runs into the
+' bend, and the overlap takes most of its volume away.
+Private Function ExtrudeRiser(planeRiser As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim u0 As Double, v0 As Double
+    Dim f As SldWorks.Feature
+    Dim got As Double
+    Dim k As Long
+
+    uSign = uSignQ: vSign = vSignQ
+
+    swModel.ClearSelection2 True
+    planeRiser.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the riser sketch."
+    wRefSet = False
+
+    G2S sk, xRiser, yMid, zRiserTop, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rRiser) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the riser section."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            zRiserTop - zRiserBot, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            got = BodiesVolume()
+            If Abs(got - vStage8) <= VOL_TOL * vStage8 And HasPlaneFace(2, zRiserBot) Then
+                Set ExtrudeRiser = f
+                Exit Function
+            End If
+            Note "riser extruded the wrong way (volume " & Fmt(got) & " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the riser could not be extruded down to z = " & Fmt(zRiserBot) & " m in either " & _
+         "direction. Expected " & Fmt(vStage8) & " m3 over the two bodies."
+
+End Function
+
+
+' The transition: a loft from the bend's round end to the duct's
+' rectangular end, merging the riser body into the cyclone.
+'
+' Both profiles are existing planar faces, found by what they are --
+' normal to the duct axis, at the inlet face and RISER_TRANS_LEN
+' upstream of it -- so nothing is sketched on a plane tilted with
+' the duct, which the axis calibration in this file cannot measure.
+'
+' A loft between a circle and a rectangle has no closed-form volume,
+' so this one stage is held between the two prisms of its end areas
+' instead of to the per-mille; the measured value becomes the base
+' the feed chute is checked on.
+Private Function LoftTransition() As SldWorks.Feature
+
+    Dim bodies As Variant, faces As Variant
+    Dim fc As SldWorks.Face2
+    Dim duct As SldWorks.Face2, roundEnd As SldWorks.Face2
+    Dim ent As SldWorks.Entity
+    Dim surf As SldWorks.Surface
+    Dim selData As SldWorks.SelectData
+    Dim p As Variant
+    Dim f As SldWorks.Feature
+    Dim b As Long, i As Long
+    Dim sOff As Double, got As Double
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail "no body to loft the transition on."
+    For b = 0 To UBound(bodies)
+        faces = bodies(b).GetFaces
+        For i = 0 To UBound(faces)
+            Set fc = faces(i)
+            Set surf = fc.GetSurface
+            If surf.IsPlane Then
+                p = surf.PlaneParams
+                If Abs(p(1)) < DIR_TOL And Abs(Abs(p(0) * dx + p(2) * dz) - 1#) < DIR_TOL Then
+                    sOff = (p(3) - ceX) * dx + (p(5) - ceZ) * dz
+                    If Abs(sOff) < 0.001 Then
+                        Set duct = fc
+                    ElseIf Abs(sOff + RISER_TRANS_LEN) < 0.001 Then
+                        Set roundEnd = fc
+                    End If
+                End If
+            End If
+        Next i
+    Next b
+    If duct Is Nothing Then Fail "the transition could not find the duct's end face."
+    If roundEnd Is Nothing Then Fail "the transition could not find the riser bend's end face."
+
+    swModel.ClearSelection2 True
+    Set selData = swModel.SelectionManager.CreateSelectData
+    selData.Mark = 1
+    Set ent = roundEnd
+    ent.Select4 False, selData
+    Set ent = duct
+    ent.Select4 True, selData
+
+    Set f = swFeat.InsertProtrusionBlend2( _
+        False, True, False, 1#, _
+        0, 0, 1#, 1#, True, True, _
+        False, 0#, 0#, 0, _
+        True, True, True, 0)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then
+        Fail "InsertProtrusionBlend2 refused the loft between the riser bend's round end and " & _
+             "the duct's end face."
+    End If
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If UBound(bodies) <> 0 Then
+        Fail "the transition left " & (UBound(bodies) + 1) & " bodies; the loft did not join " & _
+             "the riser to the cyclone."
+    End If
+    got = BodiesVolume()
+    If got < vStage8 + vTransLo * (1# - VOL_TOL) Or got > vStage8 + vTransHi * (1# + VOL_TOL) Then
+        Fail "the transition added " & Fmt(got - vStage8) & " m3; a loft between these ends " & _
+             "has to lie between " & Fmt(vTransLo) & " and " & Fmt(vTransHi) & " m3."
+    End If
+
+    Note "transition loft " & Fmt(got - vStage8) & " m3 (mean of the end prisms " & _
+         Fmt(vTransMid) & ", " & Fmt(100# * (got - vStage8 - vTransMid) / vTransMid) & " %)"
+    vStage9 = got
+    vFinal = vStage9 + vFeed
+    Set LoftTransition = f
+
+End Function
+
+
+' The meal feed chute. Drawn as its SIDE VIEW -- the rectangle it
+' cuts in the x-z plane, tilted FEED_SLOPE_DEG -- on the plane of its
+' own side wall y = yMid - FEED_W / 2, then extruded straight along y
+' by its width, as the inlet duct is. It starts on the riser's axis,
+' so its lower end lies inside the riser and dissolves in the merge.
+'
+' Extruded the wrong way along y it lands off the riser's middle and
+' cuts a different segment out of it, but only about 0.14 m3 of 250
+' different, under VOL_TOL; so the end face is found and its extent
+' in y read back, which settles it.
+Private Function ExtrudeFeedChute(planeFeed As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim qx(3) As Double, qz(3) As Double
+    Dim hh As Double, y0 As Double
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim f As SldWorks.Feature
+    Dim body As SldWorks.Body2
+    Dim mp As Variant
+    Dim i As Long, j As Long, k As Long
+
+    uSign = uSignF: vSign = vSignF
+
+    hh = 0.5 * FEED_H
+    y0 = yMid - 0.5 * FEED_W
+
+    qx(0) = xRiser - hh * wx:   qz(0) = zFeedStart - hh * wz      ' start, lower edge
+    qx(1) = xFeedEnd - hh * wx: qz(1) = zFeedEnd - hh * wz        ' end, lower edge
+    qx(2) = xFeedEnd + hh * wx: qz(2) = zFeedEnd + hh * wz        ' end, upper edge
+    qx(3) = xRiser + hh * wx:   qz(3) = zFeedStart + hh * wz      ' start, upper edge
+
+    swModel.ClearSelection2 True
+    planeFeed.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the feed chute sketch."
+    wRefSet = False
+
+    For i = 0 To 3
+        j = (i + 1) Mod 4
+        G2S sk, qx(i), y0, qz(i), u0, v0
+        G2S sk, qx(j), y0, qz(j), u1, v1
+        If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+            Fail "CreateLine failed on the feed chute side view."
+        End If
+    Next i
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            FEED_W, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            Set body = TheBody("10 + feed chute")
+            mp = body.GetMassProperties(1000#)
+            If Abs(mp(3) - vFinal) <= VOL_TOL * vFinal And Not FeedEndFace(body) Is Nothing Then
+                Set ExtrudeFeedChute = f
+                Exit Function
+            End If
+            Note "feed chute extruded the wrong way along y (volume " & Fmt(mp(3)) & _
+                 " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the feed chute could not be extruded to the right volume in either direction " & _
+         "along y. Expected " & Fmt(vFinal) & " m3 and an end face centred at (" & _
+         Fmt(xFeedEnd) & ", " & Fmt(yMid) & ", " & Fmt(zFeedEnd) & ")."
+
+End Function
+
+
+' The feed chute's end face: the plane face normal to the chute axis
+' through its end centre, spanning the chute's own width in y.
+' Nothing else in the part is normal to that axis; the position and
+' the y span are what tell a chute extruded the wrong way along y.
+Private Function FeedEndFace(body As SldWorks.Body2) As SldWorks.Face2
+
+    Dim faces As Variant
+    Dim surf As SldWorks.Surface
+    Dim p As Variant, bx As Variant
+    Dim i As Long
+
+    faces = body.GetFaces
+    For i = 0 To UBound(faces)
+        Set surf = faces(i).GetSurface
+        If surf.IsPlane Then
+            p = surf.PlaneParams
+            If Abs(p(1)) < DIR_TOL And Abs(Abs(p(0) * fx + p(2) * fz) - 1#) < DIR_TOL Then
+                If Abs((p(3) - xFeedEnd) * fx + (p(5) - zFeedEnd) * fz) < 0.0001 Then
+                    bx = faces(i).GetBox
+                    If Abs(bx(1) - (yMid - 0.5 * FEED_W)) < BOX_TOL And _
+                       Abs(bx(4) - (yMid + 0.5 * FEED_W)) < BOX_TOL Then
+                        Set FeedEndFace = faces(i)
+                        Exit Function
+                    End If
+                End If
+            End If
+        End If
+    Next i
+
+End Function
+
+
+' Total volume of every solid body in the part.
+Private Function BodiesVolume() As Double
+
+    Dim bodies As Variant, mp As Variant
+    Dim i As Long
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Exit Function
+    For i = 0 To UBound(bodies)
+        mp = bodies(i).GetMassProperties(1000#)
+        BodiesVolume = BodiesVolume + mp(3)
+    Next i
+
+End Function
+
+
+' CheckStage for the stages where the riser is still a body of its
+' own: the body count, the summed volume and the joint box.
+Private Sub CheckBodies(ByVal stage As String, ByVal nBodies As Long, ByVal expected As Double, _
+                        ByVal x0 As Double, ByVal y0 As Double, ByVal z0 As Double, _
+                        ByVal x1 As Double, ByVal y1 As Double, ByVal z1 As Double)
+
+    Dim bodies As Variant, box As Variant
+    Dim lo(2) As Double, hi(2) As Double
+    Dim got As Double
+    Dim i As Long, a As Long
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail "stage " & stage & " left no solid body."
+    If UBound(bodies) + 1 <> nBodies Then
+        Fail "stage " & stage & " left " & (UBound(bodies) + 1) & " solid bodies, expected " & _
+             nBodies & "."
+    End If
+
+    got = BodiesVolume()
+    Note "stage " & stage & ": " & Fmt(got) & " m3 (expected " & Fmt(expected) & ")"
+    If Abs(got - expected) > VOL_TOL * expected Then
+        Fail "stage " & stage & " volume is " & Fmt(got) & " m3 but should be " & _
+             Fmt(expected) & " m3 (" & Fmt(100# * (got - expected) / expected) & " %)."
+    End If
+
+    For i = 0 To UBound(bodies)
+        box = bodies(i).GetBodyBox
+        For a = 0 To 2
+            If i = 0 Or box(a) < lo(a) Then lo(a) = box(a)
+            If i = 0 Or box(a + 3) > hi(a) Then hi(a) = box(a + 3)
+        Next a
+    Next i
+    CheckExtent stage, "x min", lo(0), x0
+    CheckExtent stage, "y min", lo(1), y0
+    CheckExtent stage, "z min", lo(2), z0
+    CheckExtent stage, "x max", hi(0), x1
+    CheckExtent stage, "y max", hi(1), y1
+    CheckExtent stage, "z max", hi(2), z1
+
+End Sub
+
+
+' Whether any body has a planar face normal to model axis ax
+' (0 = x, 1 = y, 2 = z) lying at that coordinate.
+Private Function HasPlaneFace(ByVal ax As Long, ByVal at As Double) As Boolean
+
+    Dim bodies As Variant, faces As Variant
+    Dim surf As SldWorks.Surface
+    Dim p As Variant
+    Dim b As Long, i As Long
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Exit Function
+    For b = 0 To UBound(bodies)
+        faces = bodies(b).GetFaces
+        For i = 0 To UBound(faces)
+            Set surf = faces(i).GetSurface
+            If surf.IsPlane Then
+                p = surf.PlaneParams
+                If Abs(Abs(p(ax)) - 1#) < DIR_TOL And Abs(p(3 + ax) - at) < 0.0001 Then
+                    HasPlaneFace = True
+                    Exit Function
+                End If
+            End If
+        Next i
+    Next b
 
 End Function
 
@@ -1568,8 +2330,8 @@ Private Sub TagBoundaryFaces()
     Dim surf As SldWorks.Surface
     Dim p As Variant
     Dim i As Long
-    Dim nDust As Long, nGas As Long, nInlet As Long
-    Dim aDust As Double, aGas As Double, aInlet As Double
+    Dim nDust As Long, nGas As Long, nInlet As Long, nFeed As Long, nDuctEnd As Long
+    Dim aDust As Double, aGas As Double, aInlet As Double, aFeed As Double
     Dim e0 As Double, e1 As Double, e2 As Double, pz As Double
 
     Set body = TheBody("final")
@@ -1586,18 +2348,28 @@ Private Sub TagBoundaryFaces()
                 If Abs(pz) < 0.0001 Then
                     Paint face, 0.85, 0.55, 0.15          ' dust_outlet
                     nDust = nDust + 1: aDust = aDust + face.GetArea
+                ElseIf Abs(pz - zGasOut) < 0.0001 And FaceXMin(face) > R Then
+                    Paint face, 0.2, 0.45, 0.85           ' gas_outlet, the drop's end
+                    nGas = nGas + 1: aGas = aGas + face.GetArea
+                ElseIf RISER_ON And Abs(pz - zRiserBot) < 0.0001 Then
+                    ' The gas enters here now, so it takes the colour
+                    ' the inlet face had and Fluent Meshing's naming
+                    ' carries over unchanged.
+                    Paint face, 0.2, 0.7, 0.35            ' gas inlet, riser bottom
+                    nInlet = nInlet + 1: aInlet = aInlet + face.GetArea
                 Else
                     Paint face, 0.72, 0.72, 0.72          ' roof, vortex finder rim
                 End If
-            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xGasOut) < 0.0001 Then
-                ' The tongue is an x-normal plane too, but at x = -xTrim;
-                ' only the end of the run is here. Checked before the
-                ' inlet, whose normal is only 5 deg off x.
-                Paint face, 0.2, 0.45, 0.85               ' gas_outlet
-                nGas = nGas + 1: aGas = aGas + face.GetArea
+            ElseIf RISER_ON And Abs(e1) < DIR_TOL And Abs(Abs(e0 * fx + e2 * fz) - 1#) < DIR_TOL And _
+                   Abs((p(3) - xFeedEnd) * fx + (pz - zFeedEnd) * fz) < 0.0001 Then
+                Paint face, 0.6, 0.3, 0.7                 ' meal_feed: gas wall, DPM injection
+                nFeed = nFeed + 1: aFeed = aFeed + face.GetArea
             ElseIf Abs(e1) < DIR_TOL And Abs(Abs(e0 * dx + e2 * dz) - 1#) < DIR_TOL Then
+                ' With the riser on, this face is where the riser bend
+                ' meets the duct and must have merged away.
                 Paint face, 0.2, 0.7, 0.35                ' meal_inlet
                 nInlet = nInlet + 1: aInlet = aInlet + face.GetArea
+                nDuctEnd = nDuctEnd + 1
             Else
                 Paint face, 0.72, 0.72, 0.72              ' meal_inlet_wall
             End If
@@ -1611,21 +2383,44 @@ Private Sub TagBoundaryFaces()
     ' the opening; none would mean it overshot.
     If nDust <> 1 Then Fail "found " & nDust & " dust outlet faces, expected 1."
     If nGas <> 1 Then Fail "found " & nGas & " gas outlet faces, expected 1."
-    If nInlet <> 1 Then
+    If RISER_ON Then
+        If nDuctEnd <> 0 Then
+            Fail "found " & nDuctEnd & " faces normal to the duct axis; the riser bend did not " & _
+                 "merge across the duct's end and a wall still closes it."
+        End If
+        If nInlet <> 1 Then Fail "found " & nInlet & " riser inlet faces, expected 1."
+        If nFeed <> 1 Then Fail "found " & nFeed & " feed chute end faces, expected 1."
+        CheckArea "meal_feed", aFeed, FEED_W * FEED_H
+    ElseIf nInlet <> 1 Then
         Fail "found " & nInlet & " faces normal to the duct axis, expected 1 (the inlet). " & _
              "Two means the duct's end cap survived the merge and blocks the opening."
     End If
 
     CheckArea "dust_outlet", aDust, PI * rDust * rDust
     CheckArea "gas_outlet", aGas, PI * rVortex * rVortex
-    CheckArea "meal_inlet", aInlet, wDuct * H_INLET
+    If RISER_ON Then
+        CheckArea "gas inlet", aInlet, PI * rRiser * rRiser
+    Else
+        CheckArea "gas inlet", aInlet, wDuct * H_INLET
+    End If
 
-    Note "meal_inlet " & Fmt(aInlet) & " m2 (green), gas_outlet " & Fmt(aGas) & _
+    Note "gas inlet " & Fmt(aInlet) & " m2 (green), gas_outlet " & Fmt(aGas) & _
          " m2 (blue), dust_outlet " & Fmt(aDust) & " m2 (orange)"
+    If RISER_ON Then Note "meal_feed " & Fmt(aFeed) & " m2 (purple) -- a wall for the gas"
 
     swModel.ClearSelection2 True
 
 End Sub
+
+
+' The least x a face reaches. The gas outlet shares the roof's plane
+' when the gooseneck's legs are equal; it is the one out past the
+' barrel.
+Private Function FaceXMin(face As SldWorks.Face2) As Double
+    Dim b As Variant
+    b = face.GetBox
+    FaceXMin = b(0)
+End Function
 
 
 Private Sub CheckArea(ByVal what As String, ByVal got As Double, ByVal expected As Double)
@@ -1783,9 +2578,9 @@ Private Sub ExportFiles()
     swApp.SetUserPreferenceDoubleValue swSTLDeviation, 0.001        ' metres
     swApp.SetUserPreferenceDoubleValue swSTLAngleTolerance, 0.1     ' radians
 
-    SaveOne outDir & CYCLONE_NAME & ".SLDPRT"
-    SaveOne outDir & CYCLONE_NAME & ".step"
-    SaveOne outDir & CYCLONE_NAME & ".stl"
+    SaveOne outDir & outName & ".SLDPRT"
+    SaveOne outDir & outName & ".step"
+    SaveOne outDir & outName & ".stl"
 
 End Sub
 

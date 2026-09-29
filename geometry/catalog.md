@@ -94,3 +94,7 @@ yazılır ve bu tablo değişmez. Şu anki sapmalar:
   C5 bilerek dışarıda: çapı yayınlanmış (6.50 m) ve en sıcak, en büyük hacimli gazı taşıdığı
   için büyük; 6.30'a indirmek giriş hızını ~%6.5, ΔP'yi ~%13 artırırdı. Oranları ara kademeyle
   %1–2 içinde aynı olduğundan ΔP'si ara kademe CFD'sinin Euler sayısıyla ölçeklenir.
+- [riser_R1.md](preheater/riser_R1.md) — CFD'de C1'in önüne eklenen riser yuvarlak **Ø2.171 m**:
+  yayınlanmış Ø3.07 m ikiz C1'leri birlikte beslediği için C1 başına alanının yarısı. 1.5 m'lik
+  bir geçişle C1 giriş kanalına (0.86 × 2.16) bağlanır (kullanıcı kararı, 29 Eylül 2026).
+  Riser'ın boyları yayınlanmamış, CFD için türetilmiştir; tablo değişmez.

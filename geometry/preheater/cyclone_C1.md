@@ -72,6 +72,8 @@ Vorteks bulucu duvarı: z = 9.280 → 11.440 m, 0.08 m kalınlığında (oyulmu�
 
 Yatay çıkış kanalı: x = −3.60 → −8.40 m, ekseni z = 21.04, Φ2.40; en yüksek nokta z = 22.24
 
+**Çıkış kaz boynu (29 Eylül 2026, riser'lı domen ve bundan sonraki bütün domenler):** C1 en üst siklon; tesiste gaz çatıdan çıkıp ters U biçiminde aşağı döner ve fana giden kanala bağlanır (kullanıcı kararı). Makro artık 90° dirsek + yatay kanal yerine **180°'lik dirsek** (aynı R 3.60 m) ve **aşağı inen, yükselişle eşit boyda düz boru** kurar (bacakları eşit bir U; 4.8 m'lik ilk hali fazla sarkıyordu). Çatı üstündeki düz yükseliş de kaz boynu tesisteki gibi çatıya yakın dursun diye yarıya indirildi: 6.00 → **3.00 m** (1.25 D), dirsek z = 14.44'te başlar, ekseni (+3.60, 0, 14.44). Dönüş **+x** yönüne, riser'ın ters tarafına; −x'te aşağı inen bacak riser dirseğine yaklaşırdı. İnen borunun ekseni x = 7.20; `gas_outlet` z = 11.44'te (çatı düzlemi, ama x = 6.0–8.4'te gövdenin dışında) aşağı bakan Φ2.40 disk. Hacim: çatı üstü boru 13.57 m³ (27.14 yerine), dirsek A·π·3.60 = 51.16 m³, inen boru 13.57 m³ (yerine geçtikleri dirsek 25.58 + yatay kanal 21.71). Yukarıdaki 90° dirsek ve yatay kanal, doğrulanmış gaz-yalnız domenin (`C1.step`, 200.94 m³) geometrisi; aşağıdaki URANS, mesh ve RSM sonuçları ona aittir. Makroda `RISER_ON = False` artık o domeni değil, kaz boyunlu gaz-yalnız domeni (≈204.8 m³) kurar; eski makro commit 1249eb9'da.
+
 Giriş kanalı: y = 1.300 → 2.160 (dış duvar gövdeye teğet); ekseni (cos5°, 0, −sin5°); teğet düzlemine varmadan **x = −0.462'de** biter (dil, aşağıya bakın); gövdenin teğet düzleminde (x = 0) izdüşümü z = 9.071 → 11.239 m; gövdedeki açıklığın en yukarı ulaştığı nokta x = −1.725, z = 11.390 m
 
 Giriş yüzü: merkezi (−2.989, 1.730, 10.416), x = −3.083 → −2.895, z = 9.341 → 11.492 m
@@ -619,6 +621,35 @@ MM'nin f'ye duyarlılığı ters yönde: pürüzlü duvar girdabı zayıflattı�
 
 - C5'in Euler sayısı C4'ünkinden %0.4 farklı. MM, C5'in ara kademe CFD'sinden Euler sayısıyla ölçeklenmesini destekliyor.
 - Uyarı: C4 ve C5'in girişi (9.44 m) gövdeden (3.46 m) uzun ve koniye iniyor. MM'nin varsayımı girişin gövde içinde kalması. Bu geometride MM'nin mutlak değeri C1'dekinden daha az güvenilir; asıl sayıyı ara kademe CFD'si verecek.
+
+## Farin Yüklemesi (T2, 28 Eylül 2026) — ilk deneme ve riser kararı
+
+**Kurulum:** Seviye 0 mesh (150,578 hücre), URANS SST-CC, Δt 0.02 s, gaz-yalnız çözümden (t = 13.085 s) başlangıç. Farin `inlet_gas` yüzünden:
+- 13.89 kg/s (c0 0.78), 542 K, gaz 638 K. Bu, 80/20 riser/siklon ısı paylaşımı varsayımıyla (farin 300 K, gaz 776 K, denge 603 K) seçilmişti.
+- Rosin–Rammler 2–300 µm, d̄ 40.9 µm, n 0.904 (90 µm elekte %13, 200 µm elekte %1.5 kalıntı; d50 ≈ 27 µm), 2700 kg/m³, cp 850.
+- DRW dağılımı; `wall_dust` escape, diğer duvarlar reflect.
+
+**Sonuç: iki yönlü bağlantı her denemede ıraksadı.**
+- Düz DPM: tam debide ve %25 debide, linearize kaynaklar ve 0.5 gevşetmeyle bile. Patlama çatı–giriş köşesinde (z 11.16–11.43, ince prizma hücreleri); konsantrasyon 5–9 kg/m³.
+- DDPM: 3.47 kg/s'de 6. adımda (t 13.905 s). "Temperature limited to 1 K" bütün hücrelerde, AMG ıraksaması, kayan nokta hatası.
+
+**Tek yönlü DPM testi (15 adım, 0.3 s):** İzleme temiz — 29,610 parsel, **0 aborted**, 0 escaped. *Degenerate subtet* uyarıları zararsız. Yani çöküş izlemeden değil, iki yönlü bağlantıdan. Farinin dağılımı:
+- Kütlenin %55'i duvarda kayıyor; tamamı gövdenin üst kısmında (z 8.5–11.5 m, r ≈ 2.15 m) duvar şeridinde.
+- Yerel yük oranı (farin/gaz kütlesi) medyanda 0.64, hacmi 1–5·10⁻⁵ m³ olan duvar prizmalarında **20–107** (10–60 kg/m³). En kötüleri çatı köşesi ve giriş hizasındaki duvar.
+
+Bu şerit fiziksel (Muschelknautz'un şerit modeli de bunu varsayıyor). Sayısal sorun, gaz kütlesinin 100 katı farinin, her adımda bir kez hesaplanan açık kaynaklarla çok küçük prizma hücrelerine yüklenmesi.
+
+**DTU tezinden (Mirzaei 2023, Ek A ve D):**
+- Fluent DDPM'in varsayılan gaz–partikül enerji bağlantısı ("Eulerian yaklaşım") **100 µm'den ince partiküllerde enerji dengesini bozuyor** (±%100). Çözüm, 2022R2'de eklenen `/define/models/dpm/interaction/ddpm-energy-coupling-via-source-term? yes`. Bizim d50 27 µm; DDPM çöküşündeki bütün hücrelerde birden 1 K'ye inen sıcaklık bu hatanın izi olabilir.
+- Kararlılık: node-based averaging, implicit tracking, Wen–Yu drag, parsel hacmi en küçük hücrenin yarısından küçük, duvar geri sekme 0.8, URF basınç 0.7 / momentum 0.3. Zaman adımı Courant 200–300 (bizim 0.02 s bunun altında).
+- Domen **riser + siklon**; farin riser'a bir besleme borusundan verilir, gaz–farin ısı alışverişi büyük ölçüde riser'da olur.
+
+**Karar (kullanıcı):** C1 riser bağlantısıyla birlikte kurulur ([riser_R1.md](riser_R1.md)).
+- Riser ve dirsek yuvarlak, Ø2.171 m (yayınlanmış R1 alanının C1 başına yarısı, ~8.7 m/s), dirsek yarıçapı 1.0 D; 1.5 m'lik yuvarlak→dikdörtgen geçişle mevcut 0.86 × 2.16 m kanala bağlanır. Kanal ve siklon doğrulanmış domenle aynı. Kare giriş elendi (1.36 m'lik kenar vorteks bulucuya çarpar).
+- Farin riser duvarından giren, yatayla 60° eğimli bir oluktan ("distribution box") ham farin sıcaklığında (300 K) verilir; gaz riser tabanından 776 K'de girer.
+- CAD incelemesi (29 Eylül 2026, analizden önce): yatay stub 60° eğimli oluğa döndü (farin duvar şeridi olarak değil, gaz akımına düşerek girsin). Besleme altındaki riser 2.5 → 4.5 m (~2 D) uzadı. Domen ≈ 250.2 m³ oldu ve mesh yeniden kurulacak. Kaz boynu çıkışındaki %26–30 geri akış için CAD değişmedi. Yüklü koşuda geri akış sıcaklığı t_out'a eşitlenir ve enerji dengesi geri akış terimiyle birlikte raporlanır.
+- Riser/siklon ısı paylaşımı artık varsayım değil, sonuç. C1'in gaz-yalnız ΔP'si kanal–gövde düzlemi ile çıkış arasında yeniden ölçülür ve 504–510 Pa ile karşılaştırılır.
+- Önce DTU ayarlarıyla mevcut C1'de kısa bir DDPM denemesi, çöküşün sebebini riser'dan ayırmak için.
 
 ## Derived Properties
 
