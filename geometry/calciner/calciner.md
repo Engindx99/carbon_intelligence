@@ -14,9 +14,10 @@ Kaynak: önısıtıcı ve kalsinatör HFC2500 tasarımı (2005); efektif çaplar
 | Alt koni yüksekliği | 3.524 m | (R − r_boğaz) · tan 65° |
 | Silindir boyu | 25.936 m | 29.46 − koni |
 | Boğaz çapı | 2.213 m | Literatür akışı / literatür hızı, aşağıda |
-| Tersiyer hava kanalı | 1.725 m, tek, teğetsel | Literatür akışı / literatür hızı, aşağıda (3. adımda kurulur) |
+| Tersiyer hava kanalı | 1.725 m, tek, teğetsel | Literatür akışı / literatür hızı, aşağıda (6. adımda kurulur) |
 | Kaz boynu çapı | 3.50 m | yayınlanmış ([gooseneck.md](../preheater/gooseneck.md)) |
 | Çift kaz boynu, kol başına | 2.475 m | 3.50 × √0.5: toplam kesit korunur (kullanıcı kararı, 29 Eylül 2026) |
+| Farin besleme boruları | 2 × Ø0.6 m, yatayla 60° | Fidaros ve diğ. 2007 |
 
 **Boğaz ve tersiyer kanal türetmesi.** Bunlar için yayınlanmış bir ölçü ya da oran bulunamadı: FLS kalsinatörü düz bir silindir olarak verir (arXiv 2504.02886 Tablo 8, koni 0), bakılan CFD makaleleri de bu ölçüleri yazmaz. Bu yüzden her biri, literatürdeki bir akışın literatürdeki bir hıza bölünmesiyle bulunur. İdeal gaz ve 1 atm varsayılır. **İkizin akışları kullanılmaz**: ikiz henüz hazır değil; örneğin tersiyer havayı 575 K veriyor, tesislerde bu değer ~1100 K (kullanıcı kararı, 29 Eylül 2026).
 
@@ -31,11 +32,11 @@ Kaynak: önısıtıcı ve kalsinatör HFC2500 tasarımı (2005); efektif çaplar
 | Tasarım hızı | 29 m/s (CPFD 2025, boğaz ortalaması 28–30 m/s) | 35.87 m/s (Chanamai & Rodkwan 2019) |
 | **Çap** | **2.213 m** | **1.725 m** |
 
-Farin borusu ve yakıt portu için Fidaros ve diğ. 2007 şunları verir: farin borusu Ø0.6 m, yatayla 60°; kömür borusu Ø0.2 m, 30°. Bunlar 4. adımda kurulur.
+Fidaros ve diğ. 2007 farini **iki** Ø0.6 m borudan, yatayla 60° eğimle verir; kömürü iki Ø0.2 m borudan, 30° eğimle. Farin boruları 5. adımda kuruldu, yakıt portu 7. adımda kurulacak.
 
 ## CFD Geometry
 
-Makro: [`geometry/macros/calciner.bas`](../macros/calciner.bas). Yapım adım adım ilerler. **Şu an kurulu olanlar**: gövde (1. adım) ve çift kaz boynu (2–4. adımlar). Henüz dışa aktarım yapılmaz.
+Makro: [`geometry/macros/calciner.bas`](../macros/calciner.bas). Yapım adım adım ilerler. **Şu an kurulu olanlar**: gövde (1. adım), çift kaz boynu (2–4. adımlar) ve iki farin besleme borusu (5. adım). Henüz dışa aktarım yapılmaz.
 
 Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0**.
 
@@ -46,7 +47,10 @@ silindir   Ø5.50, z = 5.737 .. 31.673   (düz tavan)
 kaz boynu  2 × Ø2.475, x–z düzleminde ayna simetrik:
            yükseliş x = ±1.329, z = 31.673 .. 34.767
            180° dirsek, R = 3.712, tepe z = 39.717
-           iniş x = ±8.754, z = 34.767 .. 31.673 → gas_outlet_1 (+x), gas_outlet_2 (−x)
+           iniş x = ±8.754, z = 34.767 .. 16.943 (gövdenin yarı yüksekliği) → gas_outlet_1 (+x), gas_outlet_2 (−x)
+farin      2 × Ø0.6, 60°, ±x'te (y = 0 düzleminde, her inişin altında), eksen gövdeden dışarı doğru yükselir:
+           eksenler duvarı z = 14.943'te keser (çıkış yüzlerinin 2.0 m altı)
+           uç yüzleri (±3.250, 0, 15.809) → meal_feed_1 (+x), meal_feed_2 (−x)
 ```
 
 Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü koninin ağzına değil, düz bir parçanın üstüne koymak için seçilmiş bir modelleme parametresidir.
@@ -54,25 +58,34 @@ Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü 
 **Çift kaz boynu** (kullanıcı kararı, 29 Eylül 2026). Tavandan iki kol çıkar ve her biri dışarı doğru döner.
 - **Çap.** Yayınlanmış Ø3.50'lik iki boru Ø5.50'lik tavana yan yana sığmaz (7.0 > 5.5 m). Bu yüzden her kol alanın yarısını taşır: Ø2.475. Toplam kesit ve hız korunur.
 - **Boru eksenleri türetilir:** x = (R + r)/3. Bu konumda iki boru arasındaki boşluk, her boru ile gövde duvarı arasındaki boşluğa eşittir: 0.183 m. Böylece tavanda kalan en ince şerit olabileceği en kalın hâlini alır.
-- **Boylar modelleme parametresidir**, C1 makrosundan alınmıştır: yükseliş 1.25 D, dirsek yarıçapı 1.5 D, iniş yükselişe eşit. Bu kurguda çıkış yüzü dirsekten sonra durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
+- **Boylar modelleme parametresidir.** Yükseliş (1.25 D) ve dirsek yarıçapı (1.5 D) C1 makrosundan alınmıştır. İnişler gövdenin yanında, **gövdenin yarı yüksekliğine** kadar sarkar: z = 2.213 + 29.46/2 = 16.943, iniş boyu 17.824 m (7.2 D) (kullanıcı kararı, 29 Eylül 2026). Böylece çıkış yüzü dirsekten uzakta, düzelmiş bir akışın üstünde durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
 - **Yön ölçülür, varsayılmaz.** Bir extrude yanlış yöne giderse ya gövde sayısı ya da hacim bunu söyler; bir dirsek yanlış dönerse hacim ve kutunun tepesi söyler. Bu durumda feature silinir ve diğer yön denenir.
+
+**Farin besleme boruları** (kullanıcı kararı, 29 Eylül 2026). Gövdenin iki yanında, kaz boynuyla aynı x–z düzleminde ±x'te, her inen borunun altında dururlar. İlk kurulumda ±y'deydiler; kullanıcının isteğiyle yanlara alındılar. Boru uçları (|x| ≤ 3.51) inen boruların iç duvarından (|x| = 7.52) uzaktadır; bunu bir ön kontrol zorlar.
+- **Ölçüler ve yön.** Çap ve eğim Fidaros 2007'den alınmıştır. Her boru gövde eksenine bakar ve duvardan uzaklaştıkça yükselir, böylece farin ortaya doğru düşer.
+- **Yükseklik.** Boru eksenleri duvarı, kaz boynu çıkış yüzlerinin ("saçaklar") `FEED_BELOW_GN_OUT = 2.0 m` altında keser: z = 14.943. Borunun tamamı çıkış yüzlerinin altında kalır; en üst noktası z = 15.959'dur.
+- **Boy.** Boru gövde ekseninden başlar; başlangıç diski gövdenin içinde kalır ve birleşimde erir. Duvardan eksen boyunca `FEED_DEPTH = 1.0 m` dışarı çıkar (C1 oluğu gibi). Uç yüzün tamamen dışarıda kalması için bu değer r·tan 60° = 0.52 m'yi aşmalıdır.
+- **Nasıl kurulur.** x = 0 düzlemindeki yarım kesit dikdörtgeni, kendi eksen kenarı etrafında tam tur döndürülür. Tam turun yanlış gidebileceği bir yönü yoktur; hangi tarafa düştüğünü ±x'te bulunan uç yüzü söyler.
+- **Hacim.** Gövde dışında kalan kısım boru başına πr²L − (1/cos θ)·2∫√(r²−a²)√(R²−a²) da = **0.28506 m³**. İntegral eliptiktir; makro a = r sin φ dönüşümüyle Simpson kuralıyla hesaplar ve bağımsız bir Monte Carlo sağlaması 0.2852 verdi. Bu hacim 982 m³'lük domenin ‰1'inin (0.98 m³) altında, yani toplam hacim kontrolü boruyu göremez. Bu yüzden her boru için ayrıca şunlar kontrol edilir: eklenen hacim %1 toleransla, uç yüzü beklenen tarafta bulunmalı ve alanı 0.2827 m² olmalı.
 
 Planlanan adımlar:
 1. gövde (revolve)
 2. \+ iki yükseliş borusu
 3. \+ iki 180° dirsek (3a: +x, 3b: −x)
 4. \+ iki iniş borusu
-5. \+ tersiyer kanal (Ø1.725, teğetsel, dil ile)
-6. \+ farin borusu ve yakıt portu
-7. sınır yüzü etiketleme ve export → `geometry/output/2500/calciner.*`
+5. \+ iki farin besleme borusu (5a: +x, 5b: −x)
+6. \+ tersiyer kanal (Ø1.725, teğetsel, dil ile)
+7. \+ yakıt portu
+8. sınır yüzü etiketleme ve export → `geometry/output/2500/calciner.*`
 
 ## Boundary Faces
 
 | Sınır | Durum |
 |---|---|
 | `kiln_gas_inlet` | z = 0 diski, 3.847 m² (1. adımdan beri var, henüz boyanmıyor) |
-| `gas_outlet_1`, `gas_outlet_2` | +x ve −x'teki inişlerin aşağı bakan diskleri, z = 31.673, her biri 4.811 m². Ayrı renkler, 7. adımda boyanır. Tavanla aynı düzlemde durur; \|x\| > R olmasıyla ayırt edilir |
-| `tertiary_air_inlet`, `meal_feed`, `fuel_inlet` | 5–7. adımlar |
+| `gas_outlet_1`, `gas_outlet_2` | +x ve −x'teki inişlerin aşağı bakan diskleri, z = 16.943, her biri 4.811 m². Ayrı renkler, 8. adımda boyanır; x'in işaretiyle ayırt edilir. Her biri ikiz C5'lerden birini besler ([cyclone_C5.md](../preheater/cyclone_C5.md)); bağ bu yüzler üzerinden kurulur, C5 bu domene katılmaz |
+| `meal_feed_1`, `meal_feed_2` | +x ve −x'teki boruların eğik uç yüzleri, her biri 0.2827 m². Gaz için duvar, DPM için enjeksiyon yüzeyi (C1'deki gibi) |
+| `tertiary_air_inlet`, `fuel_inlet` | 6–8. adımlar |
 
 ## Derived Properties
 
@@ -87,10 +100,12 @@ gövde        659.851 m³   (koni + silindir)
 2  + yükseliş  698.131 m³   (iki boru, toplam 29.764)
 3a + dirsek    754.234 m³   (Pappus, her biri 56.103)
 3b + dirsek    810.338 m³
-4  + iniş      840.102 m³
+4  + iniş      981.821 m³   (2 · 85.742)
+5a + farin +x  982.106 m³   (boru başına 0.28506; ayrıca %1 ile kontrol edilir)
+5b + farin −x  982.391 m³
 ```
 
-Kutu: x ±9.991, y ±2.75, z 0 … 39.717.
+Kutu: x ±9.991, y ±2.75, z 0 … 39.717 (farin boruları kutuyu değiştirmez).
 
 Ekipman hacmi: **659.85 m³**. Önceki 700.0 m³ değeri, Ø5.50 × 29.46 boyutlarında düz bir silindirin hacmiydi. Koni aynı toplam boyun içine alındığı için hacim %5.7 düştü (kullanıcı kararı, 29 Eylül 2026). İkizin `calciner.length` değeri bu hacimden okunmaz ve değişmez.
 

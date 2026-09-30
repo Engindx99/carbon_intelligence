@@ -7,7 +7,8 @@ akışkan hacmini kuran, kendini doğrulayan ve dışa aktaran makrolar.
 | Dosya | Ne yapar |
 |---|---|
 | `cyclone.bas` | Tek bir siklonun CFD akışkan hacmi → STEP (AP214) + STL + SLDPRT |
-| `calciner.bas` | ILC kalsinatörün CFD akışkan hacmi; şu an boğaz + koni + gövde ve çift kaz boynu, export yok. Ölçüler ve kaynakları: [`calciner.md`](../calciner/calciner.md) |
+| `calciner.bas` | ILC kalsinatörün CFD akışkan hacmi; şu an boğaz + koni + gövde, çift kaz boynu ve iki farin borusu; export yok. Ölçüler ve kaynakları: [`calciner.md`](../calciner/calciner.md) |
+| `plant_topology.bas` | **CFD için değil**: bütün tesisin şematik topoloji modeli, tek SLDPRT'de her ekipman ayrı gövde. Şu an 1–4. adımlar (ekipman gövdeleri; gaz, farin ve hava yolu). Bkz. [`plant_topology.md`](../plant_topology.md) |
 
 `calciner.bas` aynı yoldan çalıştırılır (makro adı ör. `calciner.swp`) ve `cyclone.bas`'ın doğrulanmış
 yardımcılarını kendi içinde kopya olarak taşır; iki makro birbirinden bağımsızdır.

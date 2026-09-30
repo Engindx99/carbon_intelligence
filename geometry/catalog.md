@@ -101,3 +101,6 @@ yazılır ve bu tablo değişmez. Şu anki sapmalar:
 - [gooseneck.md](preheater/gooseneck.md) — kalsinatörün kaz boynu CFD'de **çift kol, her biri Ø2.475 m**:
   yayınlanmış Ø3.50'nin alanının yarısı. İki Ø3.50 boru Ø5.50'lik tavana sığmaz; toplam kesit korunur
   (kullanıcı kararı, 29 Eylül 2026).
+- [cyclone_C5.md](preheater/cyclone_C5.md) — C5 **ikiz**, her biri tablodaki C5'in 1/√2 ile benzer
+  ölçeklenmiş hâli (D 4.596 m). Her C5 bir kaz boynu kolundan beslenir; giriş hızı ve oranlar korunur.
+  Tek bir C5 çözülür, ikincisi onun kopyasıdır (kullanıcı kararı, 29 Eylül 2026).

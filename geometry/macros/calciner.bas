@@ -9,8 +9,8 @@ Attribute VB_Name = "calciner"
 ' gooseneck down towards C5. Nothing structural is modelled -- no
 ' shell, no refractory (CLAUDE.md rule 8).
 '
-' BUILD STATUS: throat + cone + vessel and the twin gooseneck. The
-' tertiary air duct, the meal pipe and fuel port, and the face
+' BUILD STATUS: throat + cone + vessel, the twin gooseneck and the two
+' meal feed pipes. The tertiary air duct, the fuel port, and the face
 ' tagging with export follow; until then the macro builds and
 ' verifies, and exports nothing.
 '
@@ -85,17 +85,42 @@ Const D_GOOSENECK_SRC      As Double = 3.5   ' published [m]
 Const GOOSENECK_AREA_SHARE As Double = 0.5   ' two legs share it
 
 ' Modelling parameters -- NOT plant dimensions. No source gives the
-' gooseneck's lengths; these are C1's (cyclone.bas), where the outlet
-' face had to move past a bend before the backflow on it went away.
-Const GN_RISE_OVER_D   As Double = 1.25              ' straight rise above the roof, x leg D
-Const GN_BEND_R_OVER_D As Double = 1.5               ' bend centreline radius, x leg D
-Const GN_DROP_OVER_D   As Double = GN_RISE_OVER_D    ' straight drop to the outlet face, x leg D
+' gooseneck's lengths. The rise and the bend are C1's (cyclone.bas),
+' where the outlet face had to move past a bend before the backflow on
+' it went away. The drops hang down beside the vessel to half its
+' height (user decision, 29 Sep 2026): the outlet faces sit at this
+' fraction of the vessel (cone + cylinder) above its bottom, z =
+' zThroatTop, far enough past the bend for the flow to straighten.
+Const GN_RISE_OVER_D        As Double = 1.25   ' straight rise above the roof, x leg D
+Const GN_BEND_R_OVER_D      As Double = 1.5    ' bend centreline radius, x leg D
+Const GN_OUTLET_AT_VESSEL_H As Double = 0.5    ' outlet faces' height, fraction of H_VESSEL
+
+' Meal feed. Fidaros et al. 2007 feed the raw meal through two round
+' 0.6 m pipes at 60 deg to the horizontal; here one on each side of
+' the vessel, at +x and -x, in the gooseneck's x-z plane below each
+' drop (user decision, 29 Sep 2026). Each pipe points at the vessel
+' axis and rises away from the wall, so the meal falls in towards the
+' middle.
+Const D_FEED         As Double = 0.6    ' [m], Fidaros 2007
+Const FEED_SLOPE_DEG As Double = 60#    ' below the horizontal, Fidaros 2007
+
+' Modelling parameters -- NOT plant dimensions. Where the pipe axis
+' meets the wall, this far below the gooseneck outlet faces, so the
+' pipes sit a little below where the drops hang down to (user
+' decision, 29 Sep 2026); and how far each pipe runs out along its
+' axis past the wall, as C1's feed chute does.
+Const FEED_BELOW_GN_OUT As Double = 2#  ' [m]
+Const FEED_DEPTH        As Double = 1#  ' [m]
 
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
 ' Verification tolerances
 Const VOL_TOL  As Double = 0.001   ' relative, on every closed-form stage volume
+' A feed pipe adds 0.29 m3 to a 982 m3 body, a third of VOL_TOL on the
+' whole, so its stage is also checked on the volume it ADDS, to this.
+Const FEED_VOL_TOL As Double = 0.01
+Const AREA_TOL As Double = 0.002   ' relative, on face areas
 Const BOX_TOL  As Double = 0.005   ' absolute [m]; GetBodyBox may overstate curved faces
 Const DIR_TOL  As Double = 0.000001
 Const PLANE_TOL As Double = 0.000001
@@ -133,10 +158,18 @@ Dim xGnLeg As Double                        ' the drops' axes, x = +-this
 Dim zGnOut As Double                        ' the two gas outlet faces, z = this, facing down
 Dim zGnApex As Double                       ' highest point of the bends
 Dim xBoxMax As Double                       ' the domain's |x| extreme, the drops' outer walls
+Dim rFeed As Double                         ' feed pipe radius
+Dim fc As Double, fs As Double              ' cos, sin of the feed slope; axis e = (+-fc, 0, fs)
+Dim zFeed As Double                         ' where each feed pipe's axis meets the wall
+Dim zFeedStart As Double                    ' the pipes start on the vessel axis, here
+Dim lFeed As Double                         ' pipe length from its start
+Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the end face, the meal_feed, at x = +-xFeedEnd
+Dim xFeedMax As Double                      ' |x| of the end faces' outer edges
 
 ' Sketch axis directions, measured at run time by CalibrateSketchAxes.
 Dim uSign As Double, vSign As Double
 Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve profiles
+Dim uSignY As Double, vSignY As Double      ' the y = 0 plane, for the feed pipes
 Dim uSignZ As Double, vSignZ As Double      ' z = zGnTop, where the gooseneck is drawn
 
 ' The off-plane component of the first point drawn in the sketch
@@ -147,7 +180,9 @@ Dim wRefSet As Boolean
 ' expected volumes, all closed form
 Dim vThroat As Double, vCone As Double, vCyl As Double, vVessel As Double
 Dim vGnPipes As Double, vGnBend As Double, vGnLegs As Double
+Dim vFeed As Double                         ' one feed pipe, the part outside the vessel
 Dim vStage1 As Double, vStage2 As Double, vStage3a As Double, vStage3b As Double
+Dim vStage4 As Double, vStage5a As Double
 Dim vFinal As Double
 
 Dim buildLog As String
@@ -238,7 +273,7 @@ Private Sub Derive()
     zGnTop = zRoof + GN_RISE_OVER_D * 2# * rGn
     rGnBend = GN_BEND_R_OVER_D * 2# * rGn
     xGnLeg = xGn + 2# * rGnBend
-    zGnOut = zGnTop - GN_DROP_OVER_D * 2# * rGn
+    zGnOut = zThroatTop + GN_OUTLET_AT_VESSEL_H * H_VESSEL
     zGnApex = zGnTop + rGnBend + rGn
     xBoxMax = xGnLeg + rGn
 
@@ -252,8 +287,35 @@ Private Sub Derive()
     vStage1 = vThroat + vVessel            ' throat + cone + cylinder
     vStage2 = vStage1 + vGnPipes           ' + two pipes rising from the roof
     vStage3a = vStage2 + vGnBend           ' + the +x bend
+    ' Meal feed pipes. Checked here, not in PreChecks: at 90 deg the
+    ' lines below divide by zero before PreChecks runs.
+    If FEED_SLOPE_DEG <= 0# Or FEED_SLOPE_DEG >= 90# Then
+        Fail "FEED_SLOPE_DEG is " & Fmt(FEED_SLOPE_DEG) & "; the feed pipes have to slope " & _
+             "between the horizontal and the vertical."
+    End If
+    rFeed = 0.5 * D_FEED
+    fc = Cos(FEED_SLOPE_DEG * PI / 180#)
+    fs = Sin(FEED_SLOPE_DEG * PI / 180#)
+    zFeed = zGnOut - FEED_BELOW_GN_OUT
+    zFeedStart = zFeed - R * (fs / fc)
+    lFeed = R / fc + FEED_DEPTH
+    xFeedEnd = R + FEED_DEPTH * fc
+    zFeedEnd = zFeed + FEED_DEPTH * fs
+    xFeedMax = xFeedEnd + rFeed * fs
+
+    ' A line of the pipe at (a, b) in its section -- a across, along x,
+    ' b along the section's "up" -- leaves the vessel where its
+    ' horizontal reach s fc - b fs equals sqrt(R^2 - a^2). The b part
+    ' is odd across the section and cancels, as it does for C1's
+    ' chute, so what the merge keeps is the full pipe less the vessel
+    ' chord integrated over the disc and stretched by 1 / fc. That
+    ' integral is elliptic; FeedChordIntegral evaluates it.
+    vFeed = PI * rFeed * rFeed * lFeed - FeedChordIntegral() / fc
+
     vStage3b = vStage3a + vGnBend          ' + the -x bend
-    vFinal = vStage3b + vGnLegs            ' + two drops to the outlet faces
+    vStage4 = vStage3b + vGnLegs           ' + two drops to the outlet faces
+    vStage5a = vStage4 + vFeed             ' + the +x meal feed pipe
+    vFinal = vStage5a + vFeed              ' + the -x meal feed pipe
 
 End Sub
 
@@ -308,14 +370,47 @@ Private Sub PreChecks()
         Fail "GN_RISE_OVER_D is " & Fmt(GN_RISE_OVER_D) & ". The bends have to start above " & _
              "the roof, not on it."
     End If
-    If GN_DROP_OVER_D <= 0# Then
-        Fail "GN_DROP_OVER_D is " & Fmt(GN_DROP_OVER_D) & ". The outlet faces would sit on " & _
-             "the ends of the bends, where the flow is still turning."
+    If zGnOut >= zGnTop Then
+        Fail "the gooseneck outlet faces at z = " & Fmt(zGnOut) & " m are not below the ends " & _
+             "of the bends at z = " & Fmt(zGnTop) & " m; they would sit where the flow is " & _
+             "still turning. Lower GN_OUTLET_AT_VESSEL_H."
     End If
     If xGnLeg - rGn <= R Then
         Fail "the gooseneck drops' inner walls at |x| = " & Fmt(xGnLeg - rGn) & " m are not " & _
              "clear of the vessel (" & Fmt(R) & " m). Raise GN_BEND_R_OVER_D."
     End If
+    ' 8. the feed pipes. The end face has to lie wholly outside the
+    '    vessel, or part of the meal_feed face merges away: its edge
+    '    nearest the wall reaches in by rFeed * sin.
+    If FEED_DEPTH * fc <= rFeed * fs Then
+        Fail "the feed pipes' end faces reach back into the vessel; FEED_DEPTH must exceed " & _
+             Fmt(rFeed * fs / fc) & " m at " & Fmt(FEED_SLOPE_DEG) & " deg."
+    End If
+    ' The hole in the wall reaches rFeed / cos above and below zFeed on
+    ' the pipe's mid-plane, and the lower edge drops a little more
+    ' towards the sides, where the wall curves back.
+    If zFeed - rFeed / fc - (R - Sqr(R * R - rFeed * rFeed)) * (fs / fc) <= zConeTop Then
+        Fail "the feed pipes' holes in the wall reach down past the top of the cone at z = " & _
+             Fmt(zConeTop) & " m. Lower FEED_BELOW_GN_OUT."
+    End If
+    ' The start disc sits on the vessel axis; it has to be clear of
+    ' the cone, or the closed-form volume counts a piece that is not
+    ' there.
+    If zFeedStart - rFeed * fc <= zConeTop Then
+        Fail "the feed pipes start at z = " & Fmt(zFeedStart - rFeed * fc) & " m on the axis, " & _
+             "inside the cone (top at z = " & Fmt(zConeTop) & " m)."
+    End If
+    ' "A little below where the drops hang down to": the whole pipe.
+    If zFeedEnd + rFeed * fc >= zGnOut Then
+        Fail "the feed pipes reach up to z = " & Fmt(zFeedEnd + rFeed * fc) & " m, not below " & _
+             "the gooseneck outlet faces at z = " & Fmt(zGnOut) & " m."
+    End If
+    ' Same plane as the drops, so clear of them in x as well.
+    If xFeedMax >= xGnLeg - rGn Then
+        Fail "the feed pipes reach out to |x| = " & Fmt(xFeedMax) & " m, into the gooseneck " & _
+             "drops whose inner walls are at |x| = " & Fmt(xGnLeg - rGn) & " m."
+    End If
+
     If zGnOut <= zConeTop Then
         Fail "the gooseneck drops come down to z = " & Fmt(zGnOut) & " m, below the top of " & _
              "the cone at z = " & Fmt(zConeTop) & " m."
@@ -331,6 +426,9 @@ Private Sub PreChecks()
     Note "gooseneck: 2 legs D " & Fmt(2# * rGn) & " m at x = +-" & Fmt(xGn) & " m, rise to z = " & _
          Fmt(zGnTop) & " m, bend R " & Fmt(rGnBend) & " m over 180 deg, drop at x = +-" & _
          Fmt(xGnLeg) & " m to the outlet faces at z = " & Fmt(zGnOut) & " m"
+    Note "meal feed: 2 pipes D " & Fmt(D_FEED) & " m at " & Fmt(FEED_SLOPE_DEG) & _
+         " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (+-" & _
+         Fmt(xFeedEnd) & ", 0, " & Fmt(zFeedEnd) & "), " & Fmt(vFeed) & " m3 each outside the vessel"
     Note "vessel volume (cone + cylinder)   " & Fmt(vVessel) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
 End Sub
@@ -342,6 +440,7 @@ End Sub
 Private Sub Build()
 
     Dim planeX0 As SldWorks.Feature       ' the x = 0 plane
+    Dim planeY0 As SldWorks.Feature       ' the y = 0 plane
     Dim planeZ0 As SldWorks.Feature       ' the z = 0 plane
     Dim planeGn As SldWorks.Feature       ' z = zGnTop: the whole gooseneck is drawn here
     Dim f As SldWorks.Feature
@@ -367,6 +466,8 @@ Private Sub Build()
 
     Set planeX0 = FindPlaneWithNormal(1#, 0#, 0#)
     If planeX0 Is Nothing Then Fail "could not find the default plane whose normal is X."
+    Set planeY0 = FindPlaneWithNormal(0#, 1#, 0#)
+    If planeY0 Is Nothing Then Fail "could not find the default plane whose normal is Y."
     Set planeZ0 = FindPlaneWithNormal(0#, 0#, 1#)
     If planeZ0 Is Nothing Then Fail "could not find the default plane whose normal is Z."
 
@@ -376,6 +477,7 @@ Private Sub Build()
     ' measure the merged body instead of itself.
     Set planeGn = OffsetPlane(planeZ0, 0#, 0#, zGnTop, uSignZ, vSignZ)
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
+    CalibrateSketchAxes planeY0, 0#, 0#, 0#, uSignY, vSignY
 
     '--- 1. throat + cone + cylinder --------------------------------
     Set f = RevolveProfile(planeX0, Array( _
@@ -401,8 +503,18 @@ Private Sub Build()
     CheckStage "3b + gooseneck bend, -x", vStage3b, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
 
     '--- 4. the two drops to the gas outlet faces ---------------------
-    Set f = ExtrudeCircles(planeGn, xGnLeg, zGnTop - zGnOut, vFinal, "4  + gooseneck drops")
-    CheckStage "4  + gooseneck drops", vFinal, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    Set f = ExtrudeCircles(planeGn, xGnLeg, zGnTop - zGnOut, vStage4, "4  + gooseneck drops")
+    CheckStage "4  + gooseneck drops", vStage4, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+
+    '--- 5. the two meal feed pipes, at +x and -x ---------------------
+    ' Each is a rectangle in the y = 0 plane revolved about its own
+    ' axis edge. A full turn has no direction to get wrong; the end
+    ' face, found at +x or -x, says which side each landed on. The
+    ' drops reach further out in x, so the box does not move.
+    AddFeedPipe planeY0, 1#, "5a + meal feed, +x"
+    CheckStage "5a + meal feed, +x", vStage5a, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    AddFeedPipe planeY0, -1#, "5b + meal feed, -x"
+    CheckStage "5b + meal feed, -x", vFinal, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -704,6 +816,153 @@ Private Function RevolveGnBend(planeGn As SldWorks.Feature, ByVal side As Double
          "Expected " & Fmt(expected) & " m3, top at z = " & Fmt(zGnApex) & " m."
 
 End Function
+
+
+' One meal feed pipe, on side = +1 (+x) or -1 (-x).
+'
+' The pipe's half-section -- a rectangle in the plane y = 0 from its
+' axis out to rFeed along the section's "up" w = (-side fs, 0, fc) --
+' revolved a full turn about the axis edge. It starts on the vessel
+' axis, so its start disc is inside the vessel and dissolves in the
+' merge, and runs out through the wall to its end face.
+'
+' The volume it adds is 0.29 m3 of 982, under VOL_TOL on the whole
+' body, so it is checked on its own: the volume ADDED, the end face
+' found where it has to be with the pipe's area.
+Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal stage As String)
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim axisSeg As SldWorks.SketchSegment
+    Dim selData As SldWorks.SelectData
+    Dim px(3) As Double, pz(3) As Double
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim f As SldWorks.Feature
+    Dim seg As SldWorks.SketchSegment
+    Dim before As Double, added As Double
+    Dim face As SldWorks.Face2
+    Dim i As Long, j As Long
+
+    uSign = uSignY: vSign = vSignY
+    before = BodiesVolume()
+
+    px(0) = 0#:                              pz(0) = zFeedStart                  ' start, on the axis
+    px(1) = side * lFeed * fc:               pz(1) = zFeedStart + lFeed * fs     ' end, on the axis
+    px(2) = px(1) - side * rFeed * fs:       pz(2) = pz(1) + rFeed * fc          ' end, rFeed up
+    px(3) = px(0) - side * rFeed * fs:       pz(3) = pz(0) + rFeed * fc          ' start, rFeed up
+
+    swModel.ClearSelection2 True
+    planeY0.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
+    wRefSet = False
+
+    For i = 0 To 3
+        j = (i + 1) Mod 4
+        G2S sk, px(i), 0#, pz(i), u0, v0
+        G2S sk, px(j), 0#, pz(j), u1, v1
+        Set seg = swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#)
+        If seg Is Nothing Then Fail "CreateLine failed at stage " & stage & "."
+        If i = 0 Then Set axisSeg = seg          ' start -> end, the pipe's axis
+    Next i
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    swModel.ClearSelection2 True
+    Set selData = swModel.SelectionManager.CreateSelectData
+    selData.Mark = 16
+    axisSeg.Select4 False, selData
+    skFeat.Select2 True, 0
+
+    Set f = swFeat.FeatureRevolve2( _
+        True, True, False, False, False, False, _
+        0, 0, 2# * PI, 0#, _
+        False, False, 0.01, 0.01, _
+        0, 0#, 0#, _
+        True, True, True)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "FeatureRevolve2 failed at stage " & stage & "."
+
+    added = BodiesVolume() - before
+    Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(vFeed) & ")"
+    If Abs(added - vFeed) > FEED_VOL_TOL * vFeed Then
+        Fail "stage " & stage & " added " & Fmt(added) & " m3 but should add " & Fmt(vFeed) & _
+             " m3 (" & Fmt(100# * (added - vFeed) / vFeed) & " %)."
+    End If
+
+    Set face = FeedEndFace(side)
+    If face Is Nothing Then
+        Fail "stage " & stage & ": no end face normal to the pipe at (" & _
+             Fmt(side * xFeedEnd) & ", 0, " & Fmt(zFeedEnd) & ")."
+    End If
+    CheckArea "meal_feed end", face.GetArea, PI * rFeed * rFeed
+
+End Sub
+
+
+' The feed pipe's end face on the given side: the plane face normal
+' to the pipe axis (side fc, 0, fs) through its end centre. Nothing
+' else in the part is normal to that axis there.
+Private Function FeedEndFace(ByVal side As Double) As SldWorks.Face2
+
+    Dim faces As Variant
+    Dim surf As SldWorks.Surface
+    Dim p As Variant
+    Dim i As Long
+
+    faces = TheBody("feed end face").GetFaces
+    For i = 0 To UBound(faces)
+        Set surf = faces(i).GetSurface
+        If surf.IsPlane Then
+            p = surf.PlaneParams
+            If Abs(p(1)) < DIR_TOL And Abs(Abs(p(0) * side * fc + p(2) * fs) - 1#) < DIR_TOL Then
+                If Abs((p(3) - side * xFeedEnd) * side * fc + (p(5) - zFeedEnd) * fs) < 0.0001 Then
+                    Set FeedEndFace = faces(i)
+                    Exit Function
+                End If
+            End If
+        End If
+    Next i
+
+End Function
+
+
+' Integral over the feed pipe's section of the vessel's half chord
+' sqrt(R^2 - a^2), a across the section:
+'   2 int_{-r}^{r} sqrt(r^2 - a^2) sqrt(R^2 - a^2) da.
+' Elliptic, so evaluated: with a = r sin(phi) the integrand is smooth
+' and periodic and Simpson's rule on 400 panels is exact to rounding.
+Private Function FeedChordIntegral() As Double
+
+    Const n As Long = 400
+    Dim h As Double, phi As Double, g As Double, w As Double, sum As Double
+    Dim k As Long
+
+    h = PI / n
+    For k = 0 To n
+        phi = -0.5 * PI + k * h
+        g = 2# * rFeed * rFeed * Cos(phi) ^ 2 * Sqr(R * R - (rFeed * Sin(phi)) ^ 2)
+        If k = 0 Or k = n Then
+            w = 1#
+        ElseIf (k Mod 2) = 1 Then
+            w = 4#
+        Else
+            w = 2#
+        End If
+        sum = sum + w * g
+    Next k
+    FeedChordIntegral = sum * h / 3#
+
+End Function
+
+
+Private Sub CheckArea(ByVal what As String, ByVal got As Double, ByVal expected As Double)
+    If Abs(got - expected) > AREA_TOL * expected Then
+        Fail "the " & what & " face is " & Fmt(got) & " m2 but should be " & Fmt(expected) & " m2."
+    End If
+End Sub
 
 
 Private Function BodyCount() As Long
