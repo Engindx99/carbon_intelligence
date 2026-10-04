@@ -218,6 +218,40 @@ def thermal_step(
 
     m_dot_s_in = m_dot_s - vapor_upstream_of_solid
 
+    # ======================================================
+    # C1 DUST RETURN
+    #
+    # Stage 5 (index N-1) is the plant's top cyclone C1. It
+    # sends eta of the solid it receives down to Stage 4 and
+    # lets the rest out with the exhaust gas; the filter catches
+    # that dust and it comes back with the feed. At steady state
+    # the underflow to Stage 4 is the fresh feed less its
+    # moisture, exactly as without separation, so
+    #
+    #   D = (1 - eta) / eta * m_dot_s_in[N-2]
+    #
+    # recirculates through Stage 5 on top of the fresh feed.
+    # Everything below C1 (mass, species, the calciner) is
+    # unchanged. The dust is dry (its free moisture left in C1),
+    # leaves at the Stage 5 solid outlet temperature and returns
+    # at the feed temperature: it costs heat, not mass.
+    # eta = 1 gives D = 0 and the model without separation.
+    # ======================================================
+
+    eta = preheater.c1_separation_efficiency
+
+    m_dot_underflow = (
+        m_dot_s_in[-2]
+        if preheater.N > 1
+        else m_dot_s - vapor[-1]
+    )
+
+    m_dot_dust = (1.0 - eta) / eta * m_dot_underflow
+
+    m_dot_s_in[-1] += m_dot_dust
+
+    preheater.m_dot_dust_return = float(m_dot_dust)
+
     # Outlet flows handed to the next units: exhaust gas from
     # stage 5, solid to the calciner from stage 1.
     preheater.m_dot_g_out = float(m_dot_g + np.sum(vapor))
@@ -413,6 +447,22 @@ def thermal_step(
     preheater.gas_handoff_residuals = []
     preheater.solid_handoff_residuals = []
 
+    # The dust leaves Stage 5 with the exhaust at the Stage 5
+    # solid outlet temperature (H_dust_out) and is fed back at
+    # the feed temperature (H_dust_in). Stage 5's solid outlet
+    # enthalpy carries it; Stage 4 receives the rest.
+    H_dust_out = (
+        m_dot_dust
+        * preheater.Cp_s
+        * (Ts_new[-1] - preheater.T_ref)
+    )
+
+    H_dust_in = (
+        m_dot_dust
+        * preheater.Cp_s
+        * (Ts_feed - preheater.T_ref)
+    )
+
     for i, stage in enumerate(preheater.stages):
 
         if i == 0:
@@ -427,6 +477,12 @@ def thermal_step(
                 m_dot_s
                 * preheater.Cp_s
                 * (Ts_feed - preheater.T_ref)
+                + H_dust_in
+            )
+        elif i == preheater.N - 2:
+            Hsolid_expected = (
+                preheater.stages[i + 1].solid_outlet_enthalpy
+                - H_dust_out
             )
         else:
             Hsolid_expected = (
@@ -501,13 +557,19 @@ def thermal_step(
     preheater.energy_in = (
         Hgas_in
         + Hsolid_in
+        + H_dust_in
     )
 
     preheater.energy_out = (
         Hgas_out
         + Hsolid_out
         + Q_wall_loss_total
+        + H_dust_out
     )
+
+    # Net heat the returned dust takes out of the plant: the
+    # zone and global balances book it next to the wall loss.
+    state.Q_dust_loss_preheater = float(H_dust_out - H_dust_in)
 
     preheater.energy_residual = (
         preheater.energy_in

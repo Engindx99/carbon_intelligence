@@ -41,7 +41,25 @@ class Preheater:
         self.nodes_per_stage = int(nodes_per_stage)
 
         self.zone = "preheater"
-        
+
+        # Separation efficiency of the top cyclone C1 (Stage 5).
+        # The dust it lets through is returned with the feed; see
+        # heat_transfer.thermal_step. 1.0 = no separation model.
+        preheater_cfg = (cfg or {}).get("preheater", {})
+
+        self.c1_separation_efficiency = float(
+            preheater_cfg.get("c1_separation_efficiency", 1.0)
+        )
+
+        if not 0.0 < self.c1_separation_efficiency <= 1.0:
+            raise ValueError(
+                "c1_separation_efficiency must be in (0, 1], got "
+                f"{self.c1_separation_efficiency}"
+            )
+
+        # Returned dust flow [kg/s], set by every thermal step.
+        self.m_dot_dust_return = 0.0
+
         self.stages = [
             Stage1(),
             Stage2(),
@@ -385,6 +403,7 @@ class Preheater:
             - state.Hgas_preheater_out
             - state.Hsolid_preheater_out
             - state.Wall_loss_preheater
+            - state.Q_dust_loss_preheater
         )
 
         return state

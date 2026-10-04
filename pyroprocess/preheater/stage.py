@@ -19,8 +19,12 @@ class PreheaterStage:
         energy balance
 
     NOTE:
-        This class intentionally does not model cyclone separation
-        or raw-meal transport explicitly yet.
+        This class does not model cyclone separation. The only
+        separation in the preheater is the top cyclone C1 (Stage 5),
+        whose escaping dust is returned with the feed; it is applied
+        to Stage 5's solid flow in heat_transfer.thermal_step. The
+        other stages separate completely until their own cyclone
+        analysis exists.
     """
 
     stage_id: int

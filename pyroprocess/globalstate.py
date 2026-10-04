@@ -195,6 +195,12 @@ class GlobalState:
     Wall_loss_preheater: float = 0.0
     Wall_loss_cooler: float = 0.0
 
+    # C1 dust that leaves with the exhaust at the C1 solid outlet
+    # temperature and comes back with the feed at the feed
+    # temperature (pyroprocess/preheater/heat_transfer.py). Its
+    # mass recirculates; this is the heat it takes out (W).
+    Q_dust_loss_preheater: float = 0.0
+
     Total_wall_loss: float = 0.0
     
     # ================= WALL LOSS DEBUG =================

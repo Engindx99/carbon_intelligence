@@ -128,6 +128,12 @@ calciner:
 preheater:
   length: 25.0   # m, equivalent solid path length (stage volume sizing)
   nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
+  # Separation efficiency of the top cyclone C1 (Stage 5, index N-1).
+  # Loaded Muschelknautz lower bound, geometry/preheater/cyclone_C1.md
+  # "Yüklü Durum" (user decision 4 Oct 2026: 0.96, not the 0.95 literature
+  # figure). The escaping dust is caught by the filter and returned with
+  # the feed, so it only costs heat. 1.0 = no separation model.
+  c1_separation_efficiency: 0.96
 
 cooler:
   length: 25.0   # m

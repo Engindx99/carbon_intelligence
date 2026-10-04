@@ -1146,6 +1146,10 @@ def plant_thermal_ledger(twin):
         for z in SOLID_ZONE_ORDER
     )
 
+    # C1 dust leaves hot with the exhaust and returns cold with
+    # the feed; its mass recirculates, this is the heat it takes.
+    dust = g("Q_dust_loss_preheater")
+
     # The disjoint set -- see the note above.
     reactions = (
         g("Preheater_Q_sink")
@@ -1178,6 +1182,7 @@ def plant_thermal_ledger(twin):
         + vent
         + wall
         + reactions
+        + dust
     )
 
     items = [
@@ -1187,6 +1192,7 @@ def plant_thermal_ledger(twin):
         ("reactions (net)", reactions, "out", "reactions"),
         ("exhaust gas", exhaust, "out", "exhaust"),
         ("wall losses", wall, "out", "wall"),
+        ("C1 dust (returned)", dust, "out", None),
         ("cooler vent air", vent, "out", None),
         ("clinker sensible", clinker_sensible, "out", None),
     ]

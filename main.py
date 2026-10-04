@@ -372,12 +372,18 @@ class Twin:
         print(f"Q_reaction_total         = {Q_reaction_total:.12e} W")
         print("==========================================")
 
+        # C1 dust: its mass recirculates through the filter and
+        # back into the feed, so only the heat it carries out
+        # crosses the plant boundary.
+        Q_dust = state.Q_dust_loss_preheater
+
         global_energy_out = (
             H_exhaust_out
             + H_clinker_out
             + H_vent_out
             + Q_wall_total
             + Q_reaction_total
+            + Q_dust
         )
 
         # ======================================================
@@ -463,6 +469,10 @@ class Twin:
         print(
             f"    Reaction sinks    = "
             f"{Q_reaction_total:.6e} W"
+        )
+        print(
+            f"    C1 dust (returned)= "
+            f"{Q_dust:.6e} W"
         )
         print(
             f"    Energy out        = "

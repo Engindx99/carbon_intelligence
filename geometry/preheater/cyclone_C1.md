@@ -723,10 +723,16 @@ Taşınan toz da 602.5 K'de çıkar; ayırma enerji dengesini değiştirmez. Var
 **Twin'e giden değerler** (17.9 kg/s gaz, 13.89 kg/s farin):
 - çıkış sıcaklığı 602.5 K;
 - toplam ΔP 439 Pa (siklon 249 + riser 190);
-- η %96 (MM alt sınırı; literatür bandının üst ucuna yakın);
+- η %96 (MM alt sınırı; literatür bandının üst ucuna yakın; kullanıcı kararı, 4 Ekim 2026: twin bu değeri kullanır, literatürün %95'i değil);
 - toz kaybı ~0.54 kg/s.
 
-Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Twin'de henüz siklon modeli yok (`pyroprocess/preheater/stage.py`).
+Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir.
+
+**Twin entegrasyonu (4 Ekim 2026):**
+- η, `configs/twin_cfg.yaml` → `preheater.c1_separation_efficiency: 0.96` ile Stage 5'e (twin'de C1, index N−1) uygulanır.
+- Kaçan toz filtreden beslemeye döner (kullanıcı kararı). C1'den geçen katıya D = (1−η)/η × alt akış eklenir. C2'ye ve kalsinere giden kütle değişmez; twin'e etkisi yalnız ısıl: tozun C1 katı çıkışı ile besleme sıcaklığı arasındaki entalpisi (`state.Q_dust_loss_preheater`), defterde "C1 dust (returned)" satırı.
+- İlk koşu (27.78 kg/s besleme): D 1.10 kg/s (iki C1 için; burada C1 başına 0.54), kayıp 0.52 MW ≈ 31 kJ/kg klinker. Bu kaybı twin'in C1 katı çıkış sıcaklığı (855 K) belirliyor; o sıcaklık bu dokümandaki 602.5 K'nin çok üstünde, çünkü twin'in ön ısıtıcı egzozu hâlâ çok sıcak (1264 K). Egzoz düzeldikçe bu kayıp da küçülür.
+- ΔP twin'e girmedi: twin'de basınç/fan ağı yok.
 
 ### Tek yönlü DPM kontrolü (4 Ekim 2026)
 
