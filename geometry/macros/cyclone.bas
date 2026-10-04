@@ -7,8 +7,11 @@ Attribute VB_Name = "cyclone"
 ' pipe above the roof, which rises, turns over through a 180 deg
 ' gooseneck and drops to the outlet face; with RISER_ON, also the
 ' round riser, its bend and the transition into the inlet duct, and
-' the meal feed chute. Nothing structural is modelled -- no shell,
-' no refractory, no volute (CLAUDE.md rule 8).
+' the meal feed chute. With VOLUTE_ON the inlet is a simple volute
+' outside the barrel instead of a slot through the shell, and with
+' OUTLET_TURN_DEG 90 the outlet turns into a horizontal run instead
+' (C4). Nothing structural is modelled -- no shell, no refractory
+' (CLAUDE.md rule 8).
 '
 ' Coordinates: cyclone axis = z, dust outlet at z = 0. Gas enters
 ' along +x at y in [R - inlet_w, R], so the swirl runs CLOCKWISE
@@ -28,42 +31,31 @@ Option Explicit
 
 '------------------------------------------------------------------
 ' (a) PARAMETERS -- the only numbers in this file.
-'     Swap the eight catalogue dimensions to build another cyclone;
-'     the table for every stage of every line is in
+'     Pick the cyclone with CYCLONE_NAME; its dimensions and its
+'     per-cyclone modelling choices are set in SelectCyclone below.
+'     The table for every stage of every line is in
 '     geometry/catalog.md.
 '------------------------------------------------------------------
 
-Const CYCLONE_NAME As String = "C1"
+Const CYCLONE_NAME As String = "C1"      ' "C1" or "C4"
 Const LINE_KEY As String = "2500"
 
-' Catalogue dimensions [m] -- geometry/preheater/cyclone_C1.md
-Const D_BARREL       As Double = 4.32    ' effective inner diameter
-Const H_BARREL       As Double = 6.79    ' cylindrical body height
-Const H_CONE         As Double = 4.65    ' cone height
-Const L_VORTEX       As Double = 2.16    ' vortex finder immersion
-Const D_VORTEX       As Double = 2.4     ' vortex finder diameter
-Const D_DUST         As Double = 0.4     ' dust outlet diameter
-Const W_INLET        As Double = 0.86    ' inlet width  (normal to the duct axis)
-
-' Inlet height, normal to the duct axis. NOT the catalogue value.
-'
-' The FLS ratio gives 4.97 m, i.e. a/D = 1.15. That is genuine for a
-' low pressure drop preheater cyclone -- but only because the real
-' machine feeds it through a 270 deg wrap-around volute, which this
-' model deliberately does not build. With the volute replaced by a
-' straight tangential duct, a 4.97 m inlet lost its reason to exist:
-' it put 61 % of the opening below the vortex finder's rim, a
-' short-circuit path, and dropped the inlet velocity to about
-' 7 m/s where preheater cyclones run at 15-20.
-'
-' 2.16 m is a/D = 0.50 and a/b = 2.51, which is Stairmand's classical
-' proportion, puts only 10 % of the opening below the rim and brings
-' the inlet velocity back to about 16 m/s. The inlet width was
-' already classical: b/D = 0.86 / 4.32 = 0.199.
-'
-' Equipment volume is untouched, so the twin's residence time and
-' hold-up are unaffected. See geometry/preheater/cyclone_C1.md.
-Const H_INLET        As Double = 2.16
+' Per-cyclone values, assigned in SelectCyclone. Catalogue
+' dimensions [m] first, then the modelling choices that differ
+' between the cyclones.
+Dim D_BARREL As Double                   ' effective inner diameter
+Dim H_BARREL As Double                   ' cylindrical body height
+Dim H_CONE As Double                     ' cone height
+Dim L_VORTEX As Double                   ' vortex finder immersion
+Dim D_VORTEX As Double                   ' vortex finder diameter
+Dim D_DUST As Double                     ' dust outlet diameter
+Dim W_INLET As Double                    ' inlet width  (normal to the duct axis)
+Dim H_INLET As Double                    ' inlet height (normal to the duct axis)
+Dim INLET_SLOPE_DEG As Double            ' duct inclined this far DOWNWARD toward the cyclone
+Dim VOLUTE_ON As Boolean                 ' inlet through a volute instead of a slot in the shell
+Dim OUTLET_TURN_DEG As Double            ' outlet bend: 180 (gooseneck + drop) or 90 (elbow + run)
+Dim RISER_ON As Boolean                  ' riser, its bend and the feed chute in front of the duct
+Dim BOI_RADIUS As Double                 ' mesh sizing cylinder about the cyclone axis [m]
 
 ' Modelling parameters -- NOT plant dimensions. No source gives
 ' them; they say where the CFD boundary faces sit.
@@ -114,13 +106,16 @@ Const OUTLET_EXT_OVER_VORTEX_D As Double = 1.25   ' straight rise above roof, x 
 ' stands: turned to -x the drop would come down beside the riser
 ' bend. It clears everything by construction: the bend starts above
 ' the roof and the drop lands outside the barrel.
-Const ELBOW_R_OVER_VORTEX_D   As Double = 1.5    ' bend centreline radius, x vortex D
+' C1: 1.5. Per cyclone, set in SelectCyclone.
+Dim ELBOW_R_OVER_VORTEX_D As Double    ' bend centreline radius, x vortex D
 ' The drop is as long as the rise, so the gooseneck is a plain U
 ' with equal legs (user decision, 29 Sep 2026; 2.0 D hung too far
 ' down). The outlet face then lies in the roof's own plane, well
 ' clear of it in x; TagBoundaryFaces tells the two apart by where
 ' the face sits in x.
-Const OUTLET_DOWN_OVER_VORTEX_D As Double = OUTLET_EXT_OVER_VORTEX_D   ' straight drop, x vortex D
+' C1: = OUTLET_EXT_OVER_VORTEX_D. Per cyclone, set in SelectCyclone;
+' with the 90 deg elbow it is the length of the horizontal run.
+Dim OUTLET_DOWN_OVER_VORTEX_D As Double   ' straight drop or run, x vortex D
 ' Vortex finder wall thickness [m]. What this carves out of the
 ' fluid is a slot 2.16 m deep and this wide, running the finder's
 ' whole 7.6 m circumference, and its lower rim is an annular face of
@@ -164,7 +159,6 @@ Const OUTLET_DOWN_OVER_VORTEX_D As Double = OUTLET_EXT_OVER_VORTEX_D   ' straigh
 ' started at was the least physical value of the three.
 Const VORTEX_WALL              As Double = 0.08
 Const L_INLET                  As Double = 3#     ' duct length from the barrel tangent plane [m]
-Const INLET_SLOPE_DEG          As Double = 5#     ' duct inclined this far DOWNWARD toward the cyclone
 
 ' How far the duct's highest point stays below the roof plate [m].
 ' The duct slopes down towards the cyclone, so it is highest at the
@@ -241,7 +235,7 @@ Const INLET_TANGENT_RELIEF As Double = 0#
 ' pick the cylinder in Add Local Sizing -> Body of Influence.
 Const EXPORT_BOI      As Boolean = True
 
-Const BOI_RADIUS      As Double = 0.8    ' about the cyclone axis [m]
+' BOI_RADIUS is per cyclone, set in SelectCyclone.
 Const BOI_CLEARANCE   As Double = 0.3    ' least distance to any real surface [m]
 
 ' Where the sizing cylinder stops, above the roof. Everything above
@@ -299,6 +293,36 @@ Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
 ' 0.02 m face size and 4 at 0.0125 m.
 Const INLET_TONGUE As Double = 0.05
 
+' The volute (VOLUTE_ON), for cyclones whose published inlet is too
+' wide to pass between the barrel and the vortex finder -- C4's is
+' 1.27 m against 0.84 m of annulus. The plant feeds such a cyclone
+' through a wrap-around scroll, so the CFD model does too, in the
+' simplest form that keeps the published barrel and finder.
+'
+' Seen from above it is one closed outline, extruded down from the
+' roof by the inlet height:
+'   - a straight duct L_INLET long whose inner wall runs
+'     INLET_TONGUE outside the barrel's tangent line (y = R + t) and
+'     whose outer wall is W_INLET further out;
+'   - from x = 0 the outer wall winds in as the Archimedean spiral
+'     r = R + t + W (1 - phi / pi), phi measured clockwise from +y,
+'     the way the gas turns, until it has closed onto r = R + t at
+'     phi = pi;
+'   - the inner side of the scroll is an arc VOLUTE_OVERLAP inside
+'     the barrel, so the merge eats it and the scroll opens onto the
+'     barrel all the way round, with no coincident faces;
+'   - both ends close radially, which leaves the same blunt
+'     INLET_TONGUE-thick cut-water at each end that the slot inlet
+'     has, for the same reason: no zero-angle edge.
+' The duct is horizontal and flush with the roof.
+'
+' The spiral is a spline through VOLUTE_SPLINE_PTS points of it. Its
+' fluid area outside the barrel is closed form (the integral of
+' (r^2 - R^2) / 2 over phi), and a spline through that many points of
+' a smooth spiral is far inside VOL_TOL of it.
+Const VOLUTE_OVERLAP    As Double = 0.1     ' scroll's inner arc inside the barrel [m]
+Const VOLUTE_SPLINE_PTS As Long = 25        ' points along the half turn
+
 ' The riser in front of the inlet duct: the gas comes up a vertical
 ' riser, turns through a bend into the duct, and the raw meal is fed
 ' into the riser down a sloping chute through its wall -- the plant's
@@ -347,9 +371,9 @@ Const INLET_TONGUE As Double = 0.05
 ' the angle or the section (user decision, 29 Sep 2026).
 '
 ' Off, the macro builds the validated gas-only domain exactly as
-' before and writes it under the old name.
-Const RISER_ON              As Boolean = True
-Const D_RISER_SRC           As Double = 3.07  ' published R1 inner diameter [m], geometry/catalog.md
+' before and writes it under the old name. RISER_ON is per cyclone,
+' set in SelectCyclone; the lengths below are C1's.
+Const D_RISER_SRC          As Double = 3.07  ' published R1 inner diameter [m], geometry/catalog.md
 Const RISER_AREA_SHARE      As Double = 0.5   ' the twin C1s share R1
 Const RISER_TRANS_LEN       As Double = 1.5   ' round-to-duct loft, along the duct axis [m]
 Const RISER_BEND_R_OVER_D   As Double = 1#    ' bend centreline radius, x riser diameter
@@ -423,6 +447,14 @@ Dim zFeedStart As Double, lFeed As Double   ' chute start on the riser axis, its
 Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the chute's end face, the meal_feed
 Dim zRiserBendTop As Double                 ' highest point of the riser bend
 Dim outName As String                       ' file name the solid is written under
+Dim rTongue As Double                       ' volute: duct inner wall / spiral end radius, R + t
+Dim rScroll0 As Double                      ' volute: spiral start radius, R + t + W
+Dim aScroll As Double                       ' volute: spiral fluid area outside the barrel [m2]
+Dim xScrollMax As Double, yScrollMin As Double   ' volute: the spiral's extremes
+Dim zLegAxis As Double                      ' 90 deg outlet: axis height of the horizontal run
+Dim xGasOut As Double                       ' 90 deg outlet: the gas outlet face, x = this
+' The domain's box after the inlet stage, before the outlet is on.
+Dim xLo2 As Double, yLo2 As Double, xHi2 As Double, yHi2 As Double
 
 ' Sketch axis directions, measured at run time by CalibrateSketchAxes.
 ' uSign/vSign are the pair in force for the sketch being drawn now;
@@ -433,6 +465,8 @@ Dim uSignD As Double, vSignD As Double      ' the duct's own plane, for its side
 Dim uSignZ As Double, vSignZ As Double      ' z = zOutletTop, where the bend starts
 Dim uSignQ As Double, vSignQ As Double      ' z = zRiserTop, where the riser meets its bend
 Dim uSignF As Double, vSignF As Double      ' y = yMid - FEED_W / 2, the feed chute's side, for its side view
+Dim uSignR As Double, vSignR As Double      ' z = zRoof, the volute's outline
+Dim uSignL As Double, vSignL As Double      ' x = rBend, where the 90 deg elbow ends
 
 ' The off-plane component of the first point drawn in the sketch
 ' now open. Every later point in the same sketch has to match it;
@@ -508,11 +542,128 @@ End Sub
 
 
 '==================================================================
+' (a') The cyclone being built. Catalogue dimensions come from the
+'      component document named in each case; everything else is a
+'      modelling choice explained where it is set.
+'==================================================================
+Private Sub SelectCyclone()
+
+    Select Case CYCLONE_NAME
+
+    Case "C1"
+        ' geometry/preheater/cyclone_C1.md
+        D_BARREL = 4.32
+        H_BARREL = 6.79
+        H_CONE = 4.65
+        L_VORTEX = 2.16
+        D_VORTEX = 2.4
+        D_DUST = 0.4
+        W_INLET = 0.86
+
+        ' Inlet height, normal to the duct axis. NOT the catalogue value.
+        '
+        ' The FLS ratio gives 4.97 m, i.e. a/D = 1.15. That is genuine for a
+        ' low pressure drop preheater cyclone -- but only because the real
+        ' machine feeds it through a 270 deg wrap-around volute, which this
+        ' model deliberately does not build. With the volute replaced by a
+        ' straight tangential duct, a 4.97 m inlet lost its reason to exist:
+        ' it put 61 % of the opening below the vortex finder's rim, a
+        ' short-circuit path, and dropped the inlet velocity to about
+        ' 7 m/s where preheater cyclones run at 15-20.
+        '
+        ' 2.16 m is a/D = 0.50 and a/b = 2.51, which is Stairmand's classical
+        ' proportion, puts only 10 % of the opening below the rim and brings
+        ' the inlet velocity back to about 16 m/s. The inlet width was
+        ' already classical: b/D = 0.86 / 4.32 = 0.199.
+        '
+        ' Equipment volume is untouched, so the twin's residence time and
+        ' hold-up are unaffected. See geometry/preheater/cyclone_C1.md.
+        H_INLET = 2.16
+
+        INLET_SLOPE_DEG = 5#
+        VOLUTE_ON = False
+        OUTLET_TURN_DEG = 180#
+        ELBOW_R_OVER_VORTEX_D = 1.5
+        OUTLET_DOWN_OVER_VORTEX_D = OUTLET_EXT_OVER_VORTEX_D
+        RISER_ON = True
+        BOI_RADIUS = 0.8
+
+    Case "C4"
+        ' geometry/preheater/cyclone_C4.md -- also C2 and C3, which
+        ' are identical to it (user decision, 27 Sep 2026).
+        D_BARREL = 6.3
+
+        ' Barrel height, NOT the catalogue value. The FLS ratio gives
+        ' 3.46 m, h/D 0.55, which with the 3.17 m immersion put the
+        ' vortex finder's mouth only 0.29 m above the start of the
+        ' cone. h = D (1.0, usual for preheater cyclones) lifts it to
+        ' 3.13 m above; the immersion, the cone, the finder and the
+        ' dust outlet stay as catalogued (user decision, 4 Oct 2026).
+        H_BARREL = 6.3
+        H_CONE = 7.3
+        L_VORTEX = 3.17
+        D_VORTEX = 4.63
+        D_DUST = 0.81
+
+        ' Inlet, NOT the catalogue 1.27 x 9.44 m. That inlet is wider
+        ' than the 0.84 m annulus between barrel and finder and taller
+        ' than the catalogue's 3.46 m barrel, running down the cone to
+        ' r = 0.9 m, with 66 % of it below the finder's rim. The plant
+        ' feeds it through a volute; so does this model (VOLUTE_ON),
+        ' with the area the published inlet has at the plant's flow
+        ' (user decision, 4 Oct 2026): 9.90 m2, 16.0 m/s at 56 kg/s and
+        ' 1033 K.
+        '
+        ' 3.40 m tall: chosen when the barrel was still 3.46 m, so the
+        ' volute's floor would clear the barrel-to-cone edge. It stays
+        ' with the longer barrel because the height is what sets how
+        ' much of the opening lies below the finder's rim -- 7 % at
+        ' 3.40 against the 3.17 m immersion; taller, the short circuit
+        ' grows. The width keeps the area: 9.90 / 3.40 = 2.912 m.
+        H_INLET = 3.4
+        W_INLET = 2.912
+
+        INLET_SLOPE_DEG = 0#
+        VOLUTE_ON = True
+
+        ' C4's gas goes on to the R3 riser, not down to a fan, so its
+        ' outlet turns through 90 deg into a horizontal run. Either
+        ' bend breaks the swirl, which is what the bend is for.
+        OUTLET_TURN_DEG = 90#
+
+        ' C1's 1.5 D bend and 1.25 D drop, scaled to this 4.63 m
+        ' finder, made the outlet more than half the domain (378 of
+        ' 666 m3). A 1.0 D bend -- the ratio C1's riser bend uses --
+        ' still breaks the swirl, and a 1.0 D run keeps the outlet
+        ' face a diameter clear of it (user decision, 4 Oct 2026).
+        ' The rise above the roof stays at 1.25 D: that is C1's
+        ' backflow measurement.
+        ELBOW_R_OVER_VORTEX_D = 1#
+        OUTLET_DOWN_OVER_VORTEX_D = 1#
+        RISER_ON = False
+
+        ' C1's measured core radius scaled with the finder diameter:
+        ' 0.8 x 4.63 / 2.40 = 1.54 m, rounded down to stay inside
+        ' the bore with the clearance PreChecks asks for.
+        BOI_RADIUS = 1.5
+
+    Case Else
+        Fail "CYCLONE_NAME is " & CYCLONE_NAME & "; this macro knows C1 and C4."
+
+    End Select
+
+End Sub
+
+
+'==================================================================
 ' (b) Derived coordinates
 '==================================================================
 Private Sub Derive()
 
     Dim th As Double, thF As Double
+    Dim k As Long, ph As Double, rr As Double, legLen As Double
+
+    SelectCyclone
 
     R = 0.5 * D_BARREL
     rDust = 0.5 * D_DUST
@@ -526,6 +677,15 @@ Private Sub Derive()
     xLeg = 2# * rBend
     zGasOut = zOutletTop - OUTLET_DOWN_OVER_VORTEX_D * D_VORTEX
     xBoxMax = xLeg + rVortex
+
+    ' The 90 deg elbow ends facing +x, its section centred rBend up
+    ' and rBend out from where it started; the straight run carries
+    ' it on to the outlet face, as long as the 180 deg drop would be.
+    legLen = OUTLET_DOWN_OVER_VORTEX_D * D_VORTEX
+    zLegAxis = zOutletTop + rBend
+    xGasOut = rBend + legLen
+    If OUTLET_TURN_DEG = 90# Then xBoxMax = xGasOut
+
     zBoiTop = zRoof + BOI_ROOF_MARGIN
 
     ' Where the cone has opened to BOI_RADIUS + BOI_CLEARANCE.
@@ -567,6 +727,44 @@ Private Sub Derive()
     xInletNear = ceX + 0.5 * H_INLET * nx      ' inlet face edge nearest the cyclone
     zDuctTop = ceZ + 0.5 * H_INLET * nz        ' highest point of the duct
 
+    ' The volute: a horizontal duct outside the barrel, flush with the
+    ' roof, and the spiral it winds into. See VOLUTE_OVERLAP.
+    rTongue = R + INLET_TONGUE
+    rScroll0 = rTongue + W_INLET
+    If VOLUTE_ON Then
+        yMid = rTongue + 0.5 * W_INLET
+        ceY = yMid
+        ceZ = zRoof - 0.5 * H_INLET
+        zDuctTop = zRoof
+
+        ' Fluid area between r = R and the spiral over the half turn:
+        ' with r linear in phi, the integral of r^2 is closed form.
+        aScroll = 0.5 * (PI * (rScroll0 ^ 3 - rTongue ^ 3) / (3# * W_INLET) - PI * R * R)
+
+        ' The spiral's extremes in x and y, sampled finely enough that
+        ' the step is far below BOX_TOL.
+        xScrollMax = 0#: yScrollMin = 0#
+        For k = 0 To 3600
+            ph = PI * k / 3600#
+            rr = rScroll0 - W_INLET * ph / PI
+            If rr * Sin(ph) > xScrollMax Then xScrollMax = rr * Sin(ph)
+            If rr * Cos(ph) < yScrollMin Then yScrollMin = rr * Cos(ph)
+        Next k
+
+        ' The duct runs L_INLET back from the tangent plane x = 0, but
+        ' on a wide barrel the barrel itself reaches further (C4:
+        ' R = 3.15 against L = 3.0).
+        xLo2 = -MaxD(L_INLET, R)
+        yLo2 = yScrollMin
+        xHi2 = xScrollMax
+        yHi2 = rScroll0
+    Else
+        xLo2 = ceX - 0.5 * H_INLET * nx
+        yLo2 = -R
+        xHi2 = R
+        yHi2 = R
+    End If
+
     ' ---- closed-form volumes, one per build stage ----
     vEquip = PI * R * R * H_BARREL _
            + (PI / 3#) * H_CONE * (R * R + R * rDust + rDust * rDust)
@@ -584,14 +782,23 @@ Private Sub Derive()
     vDuctFree = vDuctFree - (H_INLET / nz) * _
                 (xTrim * INLET_TONGUE - Segment(R, yOuter - INLET_TONGUE, yOuter))
 
+    ' The volute lies wholly outside the barrel but for its inner arc,
+    ' which the merge eats: duct plus spiral, one inlet height deep.
+    If VOLUTE_ON Then vDuctFree = H_INLET * (L_INLET * W_INLET + aScroll)
+
     vPipe = PI * rVortex * rVortex * (zOutletTop - zRoof)
     vWall = PI * ((rVortex + VORTEX_WALL) ^ 2 - rVortex * rVortex) * L_VORTEX
 
     ' Pappus: a section swept about an axis it does not cross sweeps
-    ' its area times the path of its centroid, here a quarter circle
-    ' of radius rBend. Exact, not an approximation, while rBend > rVortex.
-    vElbow = PI * rVortex * rVortex * (PI * rBend)
-    vLeg = PI * rVortex * rVortex * (zOutletTop - zGasOut)
+    ' its area times the path of its centroid, here an arc of radius
+    ' rBend through the bend angle. Exact, not an approximation, while
+    ' rBend > rVortex.
+    vElbow = PI * rVortex * rVortex * (OUTLET_TURN_DEG * PI / 180# * rBend)
+    If OUTLET_TURN_DEG = 90# Then
+        vLeg = PI * rVortex * rVortex * legLen
+    Else
+        vLeg = PI * rVortex * rVortex * (zOutletTop - zGasOut)
+    End If
 
     ' The transition runs RISER_TRANS_LEN back along the duct axis
     ' from the inlet face; its round end, centred at G, is where the
@@ -655,8 +862,8 @@ Private Sub Derive()
     vStage2 = vStage1 + vDuctFree          ' + inlet duct
     vStage3 = vStage2 - vWall              ' - vortex finder wall
     vStage4 = vStage3 + vPipe              ' + outlet pipe above the roof
-    vStage5 = vStage4 + vElbow             ' + 180 deg gooseneck
-    vStage6 = vStage5 + vLeg               ' + drop to the outlet face
+    vStage5 = vStage4 + vElbow             ' + 180 deg gooseneck, or 90 deg elbow
+    vStage6 = vStage5 + vLeg               ' + drop, or run, to the outlet face
     vStage7 = vStage6 + vRiserBend         ' + riser bend, a second body for now
     vStage8 = vStage7 + vRiser             ' + straight riser, same second body
     vStage9 = vStage8 + vTransMid          ' + loft joining the two; measured once built
@@ -708,6 +915,17 @@ End Function
 '     make it buildable.
 '==================================================================
 Private Sub PreChecks()
+
+    ' The checks common to both inlets, then the slot's or the
+    ' volute's own.
+    If OUTLET_TURN_DEG <> 180# And OUTLET_TURN_DEG <> 90# Then
+        Fail "OUTLET_TURN_DEG is " & Fmt(OUTLET_TURN_DEG) & "; the outlet bend is built for " & _
+             "180 (gooseneck and drop) or 90 (elbow and horizontal run)."
+    End If
+    If VOLUTE_ON Then
+        VolutePreChecks
+        Exit Sub
+    End If
 
     ' 1. the inlet face must lie outside the barrel. The slope tilts
     '    the face, so it is the face's edge NEAREST the cyclone that
@@ -762,29 +980,10 @@ Private Sub PreChecks()
 
     ' The sizing cylinder's wall is a refinement front, not a
     ' surface, and a front that coincides with real geometry makes
-    ' slivers there. Keep it in open fluid on both sides.
-    If EXPORT_BOI Then
-    ' The cylinder may sit inside the vortex finder's bore or outside
-    ' its shell. What it must not do is land on either surface, or in
-    ' the annulus between them.
-    If BOI_RADIUS > rVortex - BOI_CLEARANCE And _
-       BOI_RADIUS < rVortex + VORTEX_WALL + BOI_CLEARANCE Then
-        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m is too close to the " & _
-             "vortex finder, whose bore is r = " & Fmt(rVortex) & " m and whose outer radius " & _
-             "is " & Fmt(rVortex + VORTEX_WALL) & " m. With " & Fmt(BOI_CLEARANCE) & " m of " & _
-             "clearance it has to stay under " & Fmt(rVortex - BOI_CLEARANCE) & " m or over " & _
-             Fmt(rVortex + VORTEX_WALL + BOI_CLEARANCE) & " m."
-    End If
-    If R - BOI_RADIUS < BOI_CLEARANCE Then
-        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
-             Fmt(R - BOI_RADIUS) & " m of the barrel wall at r = " & Fmt(R) & " m; it needs " & _
-             Fmt(BOI_CLEARANCE) & " m."
-    End If
-    If zBoiBot >= zBoiTop Then
-        Fail "the mesh sizing cylinder has no height left: its floor is at z = " & _
-             Fmt(zBoiBot) & " m and its roof at z = " & Fmt(zBoiTop) & " m."
-    End If
-    End If
+    ' slivers there. Keep it in open fluid on both sides: inside the
+    ' vortex finder's bore or outside its shell, never on either
+    ' surface or in the annulus between them.
+    BoiPreChecks
 
     ' 8. the tongue
     If INLET_TONGUE <= 0# Then
@@ -803,7 +1002,141 @@ Private Sub PreChecks()
              "break into the shell. Reduce INLET_TONGUE."
     End If
 
-    ' 9. the outlet bend. At rBend <= rVortex the inner wall of the
+    OutletPreChecks
+    RiserPreChecks
+
+    Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
+    Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
+    Note "duct top / bottom at x = 0        " & Fmt(zTopAt0) & " / " & Fmt(zBotAt0) & " m"
+    Note "vortex finder clearance           " & Fmt(yInner - rVortex - VORTEX_WALL) & " m"
+    Note "built duct width                  " & Fmt(wDuct) & " m (catalogue " & _
+         Fmt(W_INLET) & " less " & Fmt(INLET_TANGENT_RELIEF) & " tangency relief)"
+    Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
+         Fmt(-xTrim) & " m"
+    OutletNote
+    If RISER_ON Then
+        Note "riser: D " & Fmt(2# * rRiser) & " m at x = " & Fmt(xRiser) & ", z " & Fmt(zRiserBot) & _
+             " .. " & Fmt(zRiserTop) & " m, bend R " & Fmt(rRiserBend) & " m to z " & _
+             Fmt(zRiserBendTop) & " m"
+        Note "feed chute: " & Fmt(FEED_SLOPE_DEG) & " deg, meets the riser wall at z " & Fmt(zFeed) & _
+             " m, end face centred (" & Fmt(xFeedEnd) & ", " & Fmt(yMid) & ", " & Fmt(zFeedEnd) & ")"
+        Note "transition: " & Fmt(RISER_TRANS_LEN) & " m from (" & Fmt(gX) & ", " & Fmt(gZ) & _
+             "), loft volume expected " & Fmt(vTransLo) & " .. " & Fmt(vTransHi) & " m3"
+    End If
+End Sub
+
+
+' The volute's own checks (VOLUTE_ON). The slot's checks 1, 2, 5, 6
+' and the tongue's are about a duct that breaks into the shell; this
+' one stays outside it.
+Private Sub VolutePreChecks()
+
+    If RISER_ON Then
+        Fail "RISER_ON with VOLUTE_ON: the riser's transition is built onto the slot duct's " & _
+             "section, and joining it to the volute has not been worked out."
+    End If
+    If INLET_SLOPE_DEG <> 0# Then
+        Fail "INLET_SLOPE_DEG is " & Fmt(INLET_SLOPE_DEG) & " with VOLUTE_ON; the volute is " & _
+             "built as a horizontal outline extruded from the roof."
+    End If
+    If W_INLET <= 0# Or H_INLET <= 0# Then
+        Fail "the inlet is " & Fmt(W_INLET) & " x " & Fmt(H_INLET) & " m."
+    End If
+    If INLET_TONGUE <= 0# Then
+        Fail "INLET_TONGUE is " & Fmt(INLET_TONGUE) & " m. At zero the volute's walls run onto " & _
+             "the barrel's tangent and close to a zero-angle edge."
+    End If
+
+    ' The floor must stay above the barrel-to-cone edge, or the two
+    ' edges coincide in the merge.
+    If zRoof - H_INLET <= H_CONE Then
+        Fail "the volute reaches down to z = " & Fmt(zRoof - H_INLET) & " m, at or below the " & _
+             "barrel's bottom edge at z = " & Fmt(H_CONE) & " m. Keep H_INLET under H_BARREL."
+    End If
+
+    ' The overlap arc must stay in open barrel, clear of the finder.
+    If VOLUTE_OVERLAP <= 0# Then
+        Fail "VOLUTE_OVERLAP is " & Fmt(VOLUTE_OVERLAP) & " m; the scroll's inner arc has to lie " & _
+             "inside the barrel or its face coincides with the barrel's."
+    End If
+    If R - VOLUTE_OVERLAP <= rVortex + VORTEX_WALL Then
+        Fail "the volute's inner arc at r = " & Fmt(R - VOLUTE_OVERLAP) & " m reaches the vortex " & _
+             "finder (outer radius " & Fmt(rVortex + VORTEX_WALL) & " m)."
+    End If
+    If VOLUTE_SPLINE_PTS < 9 Then
+        Fail "VOLUTE_SPLINE_PTS is " & VOLUTE_SPLINE_PTS & "; a half turn needs more points."
+    End If
+
+    ' The 3 vortex finder checks that hold for any inlet.
+    If rVortex + VORTEX_WALL >= R Then
+        Fail "a vortex finder wall of " & Fmt(VORTEX_WALL) & " m does not fit between the " & _
+             "finder (D " & Fmt(D_VORTEX) & " m) and the barrel (D " & Fmt(D_BARREL) & " m)."
+    End If
+    If L_VORTEX >= zRoof Then
+        Fail "the vortex finder (" & Fmt(L_VORTEX) & " m) reaches below the dust outlet."
+    End If
+
+    BoiPreChecks
+    OutletPreChecks
+
+    Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
+    Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
+    Note "volute: duct " & Fmt(W_INLET) & " x " & Fmt(H_INLET) & " m, " & Fmt(L_INLET) & _
+         " m long, inner wall y = " & Fmt(rTongue) & " m; spiral r " & Fmt(rScroll0) & " -> " & _
+         Fmt(rTongue) & " m over 180 deg, " & Fmt(aScroll) & " m2 outside the barrel"
+    Note "volute floor at z = " & Fmt(zRoof - H_INLET) & " m; " & _
+         Fmt(100# * MaxD(0#, H_INLET - L_VORTEX) / H_INLET) & " % of the opening below the " & _
+         "finder's rim"
+    OutletNote
+
+End Sub
+
+
+Private Function MaxD(ByVal a As Double, ByVal b As Double) As Double
+    If a > b Then MaxD = a Else MaxD = b
+End Function
+
+
+' The sizing cylinder's checks, the same for both inlets.
+Private Sub BoiPreChecks()
+    If EXPORT_BOI Then
+    If BOI_RADIUS > rVortex - BOI_CLEARANCE And _
+       BOI_RADIUS < rVortex + VORTEX_WALL + BOI_CLEARANCE Then
+        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m is too close to the " & _
+             "vortex finder, whose bore is r = " & Fmt(rVortex) & " m and whose outer radius " & _
+             "is " & Fmt(rVortex + VORTEX_WALL) & " m. With " & Fmt(BOI_CLEARANCE) & " m of " & _
+             "clearance it has to stay under " & Fmt(rVortex - BOI_CLEARANCE) & " m or over " & _
+             Fmt(rVortex + VORTEX_WALL + BOI_CLEARANCE) & " m."
+    End If
+    If R - BOI_RADIUS < BOI_CLEARANCE Then
+        Fail "the mesh sizing cylinder at r = " & Fmt(BOI_RADIUS) & " m comes within " & _
+             Fmt(R - BOI_RADIUS) & " m of the barrel wall at r = " & Fmt(R) & " m; it needs " & _
+             Fmt(BOI_CLEARANCE) & " m."
+    End If
+    If zBoiBot >= zBoiTop Then
+        Fail "the mesh sizing cylinder has no height left: its floor is at z = " & _
+             Fmt(zBoiBot) & " m and its roof at z = " & Fmt(zBoiTop) & " m."
+    End If
+    End If
+End Sub
+
+
+Private Sub OutletNote()
+    If OUTLET_TURN_DEG = 90# Then
+        Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, elbow R " & Fmt(rBend) & _
+             " m over 90 deg, run along +x at z = " & Fmt(zLegAxis) & " m to the outlet face at x = " & _
+             Fmt(xGasOut) & " m"
+    Else
+        Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, bend R " & Fmt(rBend) & _
+             " m over 180 deg, drop at x = " & Fmt(xLeg) & " m to the outlet face at z = " & Fmt(zGasOut) & " m"
+    End If
+End Sub
+
+
+' 9. the outlet bend, either way round.
+Private Sub OutletPreChecks()
+
+    ' At rBend <= rVortex the inner wall of the
     '    bend passes through the axis it is swept about and the solid
     '    folds through itself; Pappus stops being the volume, too.
     If rBend <= rVortex Then
@@ -815,6 +1148,11 @@ Private Sub PreChecks()
         Fail "OUTLET_DOWN_OVER_VORTEX_D is " & Fmt(OUTLET_DOWN_OVER_VORTEX_D) & ". The outlet face " & _
              "would sit on the end of the bend, where the flow is still turning."
     End If
+    If OUTLET_EXT_OVER_VORTEX_D <= 0# Then
+        Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & ". The bend has to " & _
+             "start above the roof, not on it."
+    End If
+    If OUTLET_TURN_DEG = 180# Then
     If xLeg - rVortex <= R Then
         Fail "the outlet drop's inner wall at x = " & Fmt(xLeg - rVortex) & " m is not clear of " & _
              "the barrel (x = " & Fmt(R) & " m). Raise ELBOW_R_OVER_VORTEX_D."
@@ -825,13 +1163,27 @@ Private Sub PreChecks()
         Fail "the outlet drop comes down to z = " & Fmt(zGasOut) & " m, at or below the dust " & _
              "outlet."
     End If
-    If OUTLET_EXT_OVER_VORTEX_D <= 0# Then
-        Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & ". The bend has to " & _
-             "start above the roof, not on it."
+    If VOLUTE_ON And xLeg - rVortex <= xScrollMax Then
+        Fail "the outlet drop's inner wall at x = " & Fmt(xLeg - rVortex) & " m comes down onto " & _
+             "the volute, which reaches x = " & Fmt(xScrollMax) & " m."
+    End If
+    Else
+    ' The 90 deg elbow and its run stay above the rise's top, so
+    ' they clear the roof, and the volute under it, by construction;
+    ' what is checked is that the run's underside really is up there.
+    If zLegAxis - rVortex <= zRoof Then
+        Fail "the outlet run's underside at z = " & Fmt(zLegAxis - rVortex) & " m is not above " & _
+             "the roof at z = " & Fmt(zRoof) & " m."
+    End If
     End If
 
-    ' 10. the riser. Built outside everything else by construction;
-    '     these say so with the numbers.
+End Sub
+
+
+' 10. the riser. Built outside everything else by construction;
+'     these say so with the numbers.
+Private Sub RiserPreChecks()
+
     If RISER_ON Then
     If RISER_BEND_R_OVER_D <= 0.5 Then
         Fail "RISER_BEND_R_OVER_D is " & Fmt(RISER_BEND_R_OVER_D) & ". At 0.5 or under the " & _
@@ -895,25 +1247,6 @@ Private Sub PreChecks()
     End If
     End If
 
-    Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
-    Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
-    Note "duct top / bottom at x = 0        " & Fmt(zTopAt0) & " / " & Fmt(zBotAt0) & " m"
-    Note "vortex finder clearance           " & Fmt(yInner - rVortex - VORTEX_WALL) & " m"
-    Note "built duct width                  " & Fmt(wDuct) & " m (catalogue " & _
-         Fmt(W_INLET) & " less " & Fmt(INLET_TANGENT_RELIEF) & " tangency relief)"
-    Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
-         Fmt(-xTrim) & " m"
-    Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, bend R " & Fmt(rBend) & _
-         " m over 180 deg, drop at x = " & Fmt(xLeg) & " m to the outlet face at z = " & Fmt(zGasOut) & " m"
-    If RISER_ON Then
-        Note "riser: D " & Fmt(2# * rRiser) & " m at x = " & Fmt(xRiser) & ", z " & Fmt(zRiserBot) & _
-             " .. " & Fmt(zRiserTop) & " m, bend R " & Fmt(rRiserBend) & " m to z " & _
-             Fmt(zRiserBendTop) & " m"
-        Note "feed chute: " & Fmt(FEED_SLOPE_DEG) & " deg, meets the riser wall at z " & Fmt(zFeed) & _
-             " m, end face centred (" & Fmt(xFeedEnd) & ", " & Fmt(yMid) & ", " & Fmt(zFeedEnd) & ")"
-        Note "transition: " & Fmt(RISER_TRANS_LEN) & " m from (" & Fmt(gX) & ", " & Fmt(gZ) & _
-             "), loft volume expected " & Fmt(vTransLo) & " .. " & Fmt(vTransHi) & " m3"
-    End If
 End Sub
 
 
@@ -933,6 +1266,8 @@ Private Sub Build()
     Dim planeBend As SldWorks.Feature     ' z = zOutletTop: the gooseneck starts and ends here
     Dim planeRiser As SldWorks.Feature    ' z = zRiserTop, where the riser meets its bend
     Dim planeFeed As SldWorks.Feature     ' y = yMid - FEED_W / 2, the feed chute's side wall
+    Dim planeRoof As SldWorks.Feature     ' z = zRoof, the volute's outline
+    Dim planeLeg As SldWorks.Feature      ' x = rBend, where the 90 deg elbow ends
     Dim xMin5 As Double
     Dim f As SldWorks.Feature
 
@@ -966,8 +1301,15 @@ Private Sub Build()
     ' All probes run while the part is still empty. Once the barrel
     ' is there a probe would land inside it, merge with it, and then
     ' measure the merged body instead of itself.
-    Set planeDuct = OffsetPlane(planeY0, 0#, yInner, 0#, uSignD, vSignD)
+    If VOLUTE_ON Then
+        Set planeRoof = OffsetPlane(planeZ0, 0#, 0#, zRoof, uSignR, vSignR)
+    Else
+        Set planeDuct = OffsetPlane(planeY0, 0#, yInner, 0#, uSignD, vSignD)
+    End If
     Set planeBend = OffsetPlane(planeZ0, 0#, 0#, zOutletTop, uSignZ, vSignZ)
+    If OUTLET_TURN_DEG = 90# Then
+        Set planeLeg = OffsetPlane(planeX0, rBend, 0#, 0#, uSignL, vSignL)
+    End If
     If RISER_ON Then
         Set planeRiser = OffsetPlane(planeZ0, 0#, 0#, zRiserTop, uSignQ, vSignQ)
         Set planeFeed = OffsetPlane(planeY0, 0#, yMid - 0.5 * FEED_W, 0#, uSignF, vSignF)
@@ -984,11 +1326,15 @@ Private Sub Build()
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the barrel + cone profile."
     CheckStage "1  barrel + cone", vStage1, -R, -R, 0#, R, R, zRoof
 
-    '--- 2. inlet duct ----------------------------------------------
-    Set f = ExtrudeInlet(planeDuct)
+    '--- 2. inlet duct, or volute -----------------------------------
+    If VOLUTE_ON Then
+        Set f = ExtrudeVolute(planeRoof)
+    Else
+        Set f = ExtrudeInlet(planeDuct)
+    End If
     If f Is Nothing Then Fail "FeatureExtrusion3 failed on the inlet duct."
     CheckStage "2  + inlet duct", vStage2, _
-               ceX - 0.5 * H_INLET * nx, -R, 0#, R, R, zDuctTop
+               xLo2, yLo2, 0#, xHi2, yHi2, zDuctTop
 
     '--- 3. carve out the vortex finder wall ------------------------
     ' The tool runs past the roof into empty space on purpose: a cut
@@ -1001,7 +1347,7 @@ Private Sub Build()
         rVortex, zRoof + 0.5), True)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the vortex finder wall."
     CheckStage "3  - vortex finder wall", vStage3, _
-               ceX - 0.5 * H_INLET * nx, -R, 0#, R, R, zDuctTop
+               xLo2, yLo2, 0#, xHi2, yHi2, zDuctTop
 
     '--- 4. outlet pipe above the roof ------------------------------
     Set f = RevolveProfile(planeX0, Array( _
@@ -1011,21 +1357,34 @@ Private Sub Build()
         0#, zOutletTop), False)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the outlet pipe."
     CheckStage "4  + outlet pipe", vStage4, _
-               ceX - 0.5 * H_INLET * nx, -R, 0#, R, R, zOutletTop
+               xLo2, yLo2, 0#, xHi2, yHi2, zOutletTop
 
     '--- 5. 180 deg gooseneck ---------------------------------------
     ' It goes over to +x and ends back in the plane z = zOutletTop,
     ' so it takes the box to the far wall of the drop; in -x the inlet
     ' face is still the extreme.
-    xMin5 = ceX - 0.5 * H_INLET * nx
-    Set f = RevolveElbow(planeBend)
-    CheckStage "5  + outlet gooseneck", vStage5, _
-               xMin5, -R, 0#, xBoxMax, R, zElbowTop
+    xMin5 = xLo2
+    If OUTLET_TURN_DEG = 90# Then
+        ' The 90 deg elbow ends at x = rBend, facing +x; the run
+        ' takes the box on to the outlet face.
+        Set f = RevolveElbow(planeBend, 0.5 * PI)
+        CheckStage "5  + outlet elbow", vStage5, _
+                   xMin5, yLo2, 0#, MaxD(xHi2, rBend), yHi2, zElbowTop
 
-    '--- 6. drop to the outlet face ---------------------------------
-    Set f = ExtrudeLeg(planeBend)
-    CheckStage "6  + outlet drop", vStage6, _
-               xMin5, -R, 0#, xBoxMax, R, zElbowTop
+        '--- 6. horizontal run to the outlet face --------------------
+        Set f = ExtrudeRun(planeLeg)
+        CheckStage "6  + outlet run", vStage6, _
+                   xMin5, yLo2, 0#, xBoxMax, yHi2, zElbowTop
+    Else
+        Set f = RevolveElbow(planeBend, PI)
+        CheckStage "5  + outlet gooseneck", vStage5, _
+                   xMin5, yLo2, 0#, xBoxMax, yHi2, zElbowTop
+
+        '--- 6. drop to the outlet face -----------------------------
+        Set f = ExtrudeLeg(planeBend)
+        CheckStage "6  + outlet drop", vStage6, _
+                   xMin5, yLo2, 0#, xBoxMax, yHi2, zElbowTop
+    End If
 
     ' The riser and its bend are built apart from the cyclone as a
     ' second body -- the transition that joins them is a loft between
@@ -1297,7 +1656,226 @@ Private Function ExtrudeInlet(planeDuct As SldWorks.Feature) As SldWorks.Feature
 End Function
 
 
-' The outlet gooseneck.
+' The volute (VOLUTE_ON): its outline in the roof plane, extruded
+' down by the inlet height. The outline, going round it:
+'
+'   A (-L, rT)   inlet face, inner corner       rT = R + INLET_TONGUE
+'   B (-L, rS)   inlet face, outer corner       rS = rT + W_INLET
+'   C ( 0, rS)   end of the duct's outer wall, start of the spiral
+'   spline       r = rS - W phi / pi, clockwise from +y over the
+'                +x side, to
+'   E ( 0, -rT)  end of the spiral
+'   F ( 0, -rI)  radially in to the overlap arc  rI = R - VOLUTE_OVERLAP
+'   arc          through (rI, 0) to
+'   G ( 0, rI)
+'   H ( 0, rT)   radially out: the tongue's face
+'   back to A    the duct's inner wall
+'
+' The arc and the inner ends of the two radial lines lie inside the
+' barrel and dissolve in the merge; what is left at x = 0 on either
+' side is a blunt face INLET_TONGUE wide, the cut-water.
+'
+' Which way the extrusion goes is measured as everywhere else: up it
+' would only touch the barrel along the roof's edge and leave a second
+' body, so the body count, the volume and the box top all say.
+Private Function ExtrudeVolute(planeRoof As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim f As SldWorks.Feature
+    Dim rT As Double, rS As Double, rI As Double
+    Dim gx(6) As Double, gy(6) As Double
+    Dim pd() As Double
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double, u2 As Double, v2 As Double
+    Dim ph As Double, rr As Double
+    Dim i As Long, k As Long, n As Long
+    Dim bodies As Variant, mp As Variant, box As Variant
+    Dim ok As Boolean
+
+    uSign = uSignR: vSign = vSignR
+
+    rT = rTongue
+    rS = rScroll0
+    rI = R - VOLUTE_OVERLAP
+
+    swModel.ClearSelection2 True
+    planeRoof.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the volute sketch."
+    wRefSet = False
+
+    ' The straight sides: H -> A -> B -> C, then E -> F and G -> H.
+    gx(0) = 0#: gy(0) = rT              ' H
+    gx(1) = -L_INLET: gy(1) = rT        ' A
+    gx(2) = -L_INLET: gy(2) = rS        ' B
+    gx(3) = 0#: gy(3) = rS              ' C
+    For i = 0 To 2
+        G2S sk, gx(i), gy(i), zRoof, u0, v0
+        G2S sk, gx(i + 1), gy(i + 1), zRoof, u1, v1
+        If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+            Fail "CreateLine failed on the volute's duct."
+        End If
+    Next i
+
+    ' The spiral, C to E. Its two ends are set exactly rather than
+    ' through Sin / Cos, so they meet the lines on either side to the
+    ' last bit and the outline closes.
+    n = VOLUTE_SPLINE_PTS
+    ReDim pd(3 * n - 1)
+    For k = 0 To n - 1
+        ph = PI * k / (n - 1)
+        rr = rS - W_INLET * k / (n - 1)
+        If k = 0 Then
+            G2S sk, 0#, rS, zRoof, u0, v0
+        ElseIf k = n - 1 Then
+            G2S sk, 0#, -rT, zRoof, u0, v0
+        Else
+            G2S sk, rr * Sin(ph), rr * Cos(ph), zRoof, u0, v0
+        End If
+        pd(3 * k) = u0: pd(3 * k + 1) = v0: pd(3 * k + 2) = 0#
+    Next k
+    If swSkMgr.CreateSpline2((pd), False) Is Nothing Then
+        Fail "CreateSpline2 failed on the volute's spiral."
+    End If
+
+    ' E -> F, radially in at the spiral's end.
+    G2S sk, 0#, -rT, zRoof, u0, v0
+    G2S sk, 0#, -rI, zRoof, u1, v1
+    If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+        Fail "CreateLine failed on the volute's far tongue."
+    End If
+
+    ' F -> G, the overlap arc through (rI, 0).
+    G2S sk, 0#, -rI, zRoof, u0, v0
+    G2S sk, 0#, rI, zRoof, u1, v1
+    G2S sk, rI, 0#, zRoof, u2, v2
+    If swSkMgr.Create3PointArc(u0, v0, 0#, u1, v1, 0#, u2, v2, 0#) Is Nothing Then
+        Fail "Create3PointArc failed on the volute's inner arc."
+    End If
+
+    ' G -> H, radially out to the duct's inner wall.
+    G2S sk, 0#, rI, zRoof, u0, v0
+    G2S sk, 0#, rT, zRoof, u1, v1
+    If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
+        Fail "CreateLine failed on the volute's near tongue."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            H_INLET, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            bodies = swPart.GetBodies2(swSolidBody, True)
+            ok = False
+            If Not IsEmpty(bodies) Then
+                If UBound(bodies) = 0 Then
+                    mp = bodies(0).GetMassProperties(1000#)
+                    box = bodies(0).GetBodyBox
+                    ok = Abs(mp(3) - vStage2) <= VOL_TOL * vStage2 And _
+                         Abs(box(5) - zRoof) <= BOX_TOL
+                End If
+            End If
+            If ok Then
+                Set ExtrudeVolute = f
+                Exit Function
+            End If
+            Note "volute extruded the wrong way; reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the volute could not be extruded down from the roof to the right volume in either " & _
+         "direction. Expected one body of " & Fmt(vStage2) & " m3 after the merge."
+
+End Function
+
+
+' The horizontal run after the 90 deg elbow: the elbow's end section,
+' a disc in the plane x = rBend centred at (rBend, 0, zLegAxis),
+' extruded along +x to the gas outlet face. Extruded the other way it
+' runs back through the elbow and the volume comes out short.
+Private Function ExtrudeRun(planeLeg As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim u0 As Double, v0 As Double
+    Dim f As SldWorks.Feature
+    Dim body As SldWorks.Body2
+    Dim mp As Variant
+    Dim k As Long
+
+    uSign = uSignL: vSign = vSignL
+
+    swModel.ClearSelection2 True
+    planeLeg.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the outlet run sketch."
+    wRefSet = False
+
+    G2S sk, rBend, 0#, zLegAxis, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the outlet run section."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            xGasOut - rBend, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            Set body = TheBody("6  + outlet run")
+            mp = body.GetMassProperties(1000#)
+            If Abs(mp(3) - vStage6) <= VOL_TOL * vStage6 And HasPlaneFace(0, xGasOut) Then
+                Set ExtrudeRun = f
+                Exit Function
+            End If
+            Note "outlet run extruded the wrong way (volume " & Fmt(mp(3)) & " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the outlet run could not be extruded out to x = " & Fmt(xGasOut) & " m in either " & _
+         "direction. Expected " & Fmt(vStage6) & " m3 after the merge."
+
+End Function
+
+
+' The outlet gooseneck (OUTLET_TURN_DEG 180), or the 90 deg elbow.
 '
 ' The pipe's section at the top of the rise -- a disc in the plane
 ' z = zOutletTop -- revolved 180 deg about the line through
@@ -1312,7 +1890,7 @@ End Function
 ' through the pipe and the roof; the volume then comes out short and
 ' the top of the box stays at the rise. Either says so, and the
 ' other way is tried.
-Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
+Private Function RevolveElbow(planeBend As SldWorks.Feature, ByVal ang As Double) As SldWorks.Feature
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
@@ -1366,7 +1944,7 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature) As SldWorks.Feature
 
         Set f = swFeat.FeatureRevolve2( _
             True, True, False, False, (k = 1), False, _
-            0, 0, PI, 0#, _
+            0, 0, ang, 0#, _
             False, False, 0.01, 0.01, _
             0, 0#, 0#, _
             True, True, True)
@@ -2246,6 +2824,11 @@ Private Sub CheckStage(ByVal stage As String, ByVal expected As Double, _
     End If
 
     box = body.GetBodyBox
+    ' GetBodyBox bounds a spline face by its control polygon, which
+    ' lies outside the curve: on the volute's spiral it overstated the
+    ' box by 21 mm. The body's true extreme points are exact, so the
+    ' volute is held to those.
+    If VOLUTE_ON Then box = ExactBox(body)
     CheckExtent stage, "x min", box(0), x0
     CheckExtent stage, "y min", box(1), y0
     CheckExtent stage, "z min", box(2), z0
@@ -2254,6 +2837,35 @@ Private Sub CheckStage(ByVal stage As String, ByVal expected As Double, _
     CheckExtent stage, "z max", box(5), z1
 
 End Sub
+
+
+' The body's bounding box from its extreme points along the six axis
+' directions, in GetBodyBox's order: xmin ymin zmin xmax ymax zmax.
+Private Function ExactBox(body As SldWorks.Body2) As Variant
+
+    Dim b(5) As Double
+    Dim px As Double, py As Double, pz As Double
+    Dim a As Long, sd As Long
+    Dim d(2) As Double
+
+    For a = 0 To 2
+        For sd = -1 To 1 Step 2
+            d(0) = 0#: d(1) = 0#: d(2) = 0#
+            d(a) = sd
+            If Not body.GetExtremePoint(d(0), d(1), d(2), px, py, pz) Then
+                Fail "GetExtremePoint failed along axis " & a & "."
+            End If
+            If sd < 0 Then
+                b(a) = Choose(a + 1, px, py, pz)
+            Else
+                b(a + 3) = Choose(a + 1, px, py, pz)
+            End If
+        Next sd
+    Next a
+
+    ExactBox = b
+
+End Function
 
 
 Private Function TheBody(ByVal stage As String) As SldWorks.Body2
@@ -2348,7 +2960,7 @@ Private Sub TagBoundaryFaces()
                 If Abs(pz) < 0.0001 Then
                     Paint face, 0.85, 0.55, 0.15          ' dust_outlet
                     nDust = nDust + 1: aDust = aDust + face.GetArea
-                ElseIf Abs(pz - zGasOut) < 0.0001 And FaceXMin(face) > R Then
+                ElseIf OUTLET_TURN_DEG = 180# And Abs(pz - zGasOut) < 0.0001 And FaceXMin(face) > R Then
                     Paint face, 0.2, 0.45, 0.85           ' gas_outlet, the drop's end
                     nGas = nGas + 1: aGas = aGas + face.GetArea
                 ElseIf RISER_ON And Abs(pz - zRiserBot) < 0.0001 Then
@@ -2364,6 +2976,15 @@ Private Sub TagBoundaryFaces()
                    Abs((p(3) - xFeedEnd) * fx + (pz - zFeedEnd) * fz) < 0.0001 Then
                 Paint face, 0.6, 0.3, 0.7                 ' meal_feed: gas wall, DPM injection
                 nFeed = nFeed + 1: aFeed = aFeed + face.GetArea
+            ElseIf OUTLET_TURN_DEG = 90# And Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And _
+                   Abs(p(3) - xGasOut) < 0.0001 Then
+                Paint face, 0.2, 0.45, 0.85               ' gas_outlet, the run's end
+                nGas = nGas + 1: aGas = aGas + face.GetArea
+            ElseIf VOLUTE_ON And Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And _
+                   Abs(p(3) - xGasOut) >= 0.0001 And Abs(p(3) + L_INLET) >= 0.0001 Then
+                ' The volute's two tongue faces at x = 0 are normal to
+                ' the duct axis too; they are wall.
+                Paint face, 0.72, 0.72, 0.72              ' volute tongues
             ElseIf Abs(e1) < DIR_TOL And Abs(Abs(e0 * dx + e2 * dz) - 1#) < DIR_TOL Then
                 ' With the riser on, this face is where the riser bend
                 ' meets the duct and must have merged away.

@@ -8,7 +8,7 @@ Farin borusu: [meal_pipe_C3.md](meal_pipe_C3.md)
 **Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2, C3 ve C4 özdeş siklonlar; ölçüler C4'ünkiler. Bu kademenin katalog değerleri (D 6.30, gövde 3.22, koni 7.26, vorteks bulucu 4.62 / 3.15, toz çıkışı 0.84, giriş 1.26 × 9.46 m) [catalog.md](../catalog.md)'de duruyor; sapmanın gerekçesi orada.
 
 Efektif iç çap, D: 6.30 m — C4 ile özdeş (ara kademe standardı; C4'ün yayınlanmış HFC2500 değeri)
-Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 6.30 m ve volütlü giriş ([cyclone_C4.md](cyclone_C4.md))
 Koni yüksekliği: 7.30 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Vorteks bulucu çapı: 4.63 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş)

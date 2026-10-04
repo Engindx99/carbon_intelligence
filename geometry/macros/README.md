@@ -30,14 +30,22 @@ Yeni bir parça açmaya gerek yok; makro kendi parçasını oluşturur.
 
 ## Başka bir siklon üretmek
 
-Dosyanın başındaki parametre bloğundaki sekiz katalog ölçüsünü ve `CYCLONE_NAME`'i değiştir.
-Başka hiçbir yerde çıplak sayı yok — geri kalan her koordinat bunlardan hesaplanır.
-Bütün hatların bütün kademeleri [`geometry/catalog.md`](../catalog.md) içinde:
+Dosyanın başında `CYCLONE_NAME`'i seç: `"C1"` ya da `"C4"`. Her siklonun ölçüleri ve kendine
+özgü modelleme seçimleri `SelectCyclone` yordamında, gerekçeleriyle birlikte duruyor; geri kalan
+her koordinat bunlardan hesaplanır. Bütün hatların bütün kademeleri
+[`geometry/catalog.md`](../catalog.md) içinde:
 `D, barrel_h, cone_h, vortex_len, vortex_D, dust_D, inlet_w, inlet_h`.
 
-C2–C5'te yayınlanmış giriş yüksekliği gövdeden uzundur ve kanal bilerek koni bölgesine iner.
-Bu bir hata değildir, makro düzeltmez — katalog ne diyorsa o kurulur.
-Eğimi olmayan bir siklon için `INLET_SLOPE_DEG = 0` yeterlidir.
+- **C1:** gövdeden geçen teğetsel yarık giriş (2.16 m yükseklik, katalogdan sapma), 5° eğim,
+  riser ve 180° kaz boynu çıkış.
+- **C4 (C2 ve C3 de aynı):** katalog girişi 1.27 m genişliğiyle gövde ile vorteks bulucu arasına
+  sığmıyor, bu yüzden giriş basit bir **volütle** kuruluyor (`VOLUTE_ON`). Volüt, çatıdan aşağı
+  ekstrüde edilen düz bir kanal ve 180°'lik bir Arşimet sarmalı. Giriş 3.40 × 2.912 m: gövde
+  katalog girişinin tesis debisindeki alanıyla. Gövde h = D = 6.30 m (katalog 3.46). Çıkış 90°
+  dirsek (R 1.0 D_x) ve 1.0 D_x yatay bacak (`OUTLET_TURN_DEG = 90`), riser yok (kullanıcı
+  kararları, 4 Ekim 2026).
+
+Yeni bir siklon eklemek için `SelectCyclone`'a bir `Case` ekle.
 
 ## Koordinat sistemi
 
