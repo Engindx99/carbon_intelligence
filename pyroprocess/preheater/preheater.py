@@ -63,13 +63,20 @@ class Preheater:
         # ======================================================
         # These are operating reference bounds only.
         # They are NOT hard temperature constraints.
+        #
+        # Index i is Stage i+1, numbered along the GAS path as the
+        # solver marches it (heat_transfer.thermal_step): Stage 1
+        # (index 0) takes the calciner gas and is the plant's hot
+        # bottom cyclone C5; Stage 5 (index N-1) takes the fresh
+        # feed and is the plant's top cyclone C1, whose gas leaves
+        # as exhaust. geometry/ uses the plant C1..C5 names.
 
         gas_T_bounds_K = [
-            (573.15, 583.15),    # Stage 1
-            (763.15, 773.15),    # Stage 2
-            (903.15, 923.15),    # Stage 3
-            (1023.15, 1043.15),  # Stage 4
-            (1113.15, 1143.15),  # Stage 5
+            (1113.15, 1143.15),  # Stage 1 (C5)
+            (1023.15, 1043.15),  # Stage 2 (C4)
+            (903.15, 923.15),    # Stage 3 (C3)
+            (763.15, 773.15),    # Stage 4 (C2)
+            (573.15, 583.15),    # Stage 5 (C1)
         ]
 
         for stage, (T_min, T_max) in zip(
