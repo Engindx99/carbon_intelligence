@@ -761,6 +761,26 @@ Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Twin'de henüz siklon modeli yok
 - **Kalma süresi:** kaçan taneler medyan 4.4 s (%10–90: 3.7–6.5 s), toz çıkışına varanlar medyan 10.1 s (8.2–12.5 s). Gaz-yalnız çözümde gazın siklondaki ortalama kalma süresi 6.6 s.
 - **Riser:** bütün boyutlar taşınıyor, riser tabanından geri düşen farin yok (temiz gazda). Farinin aldığı ısı 3.577 MW; analitik değer 3.5715 MW.
 
+**Çatı halkasının sebebi (görselleştirme koşuları, 4 Ekim 2026):**
+- **Koşu:** gaz alanı dondurulmuş, parçacıklar zamanda ilerletildi (unsteady izleme, Δt 0.02 s; 0.2 s'lik farin darbesi, 10 s). Video `c1_riser\anim2.mp4`.
+- **İri taneler duvarda kalıyor.** 53–172 µm'lik taneler siklona girdikten sonra duvarda (r ≈ 2.15 m), z 8.9–10.3 arasında bir halkada kalıyor; koniye neredeyse hiç inmiyorlar.
+- **Sebep gaz alanı.** Gaz-yalnız çözümde, giriş açıklığının altında duvar dibindeki (r 1.95–2.16 m) düşey hız:
+
+  | z | Gaz düşey hızı |
+  |---|---|
+  | 5.0–7.5 m | −1.2 … −0.5 m/s |
+  | 8.0 m | ~0 |
+  | 8.5–10.0 m | **+1.3 … +3.7 m/s** |
+  | 10.5–11.0 m | −1.9 … −2.1 m/s |
+
+  Duvar boyunca yukarı akan bu tabaka, üstten inen akışla z ≈ 10.2'de karşılaşıyor. İri tanelerin düşme hızı yukarı akıştan küçük (94 µm ~0.4 m/s, 172 µm ~1.4 m/s); gaz onları bu çizgide tutuyor.
+- **Sürtünme vekili denendi:** siklon duvarında e_t 0.8 → 0.3, ayrı duvar zonu `…zyon16.1`, 5.7 s.
+  - Toz çıkışına inen tane 76'dan 188'e çıktı, ama inenler 15.7 ve 30 µm'liklerdi.
+  - Koşu sonunda iri tanelerin %97'si hâlâ halkadaydı.
+  - Teğetsel sürtünme dönmeyi keser ama aşağı yönlü bir kuvvet uygulamaz. Bu yüzden halkayı çözmüyor.
+- **Gerçek tesiste** 13.89 kg/s farin bu bölgede yoğun bir şerit oluşturur (yerel yük 30+ kg/kg) ve gazın bu zayıf yukarı akışını bastırır. Bu, iki yönlü bir etkidir; tek yönlü modelde temsil edilemez.
+- **Sayılara etkisi yok:** halkadaki taneler duvarda, yani ayrılmış sayılıyor. η, ΔP ve sıcaklıklar bu davranıştan bağımsız.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
