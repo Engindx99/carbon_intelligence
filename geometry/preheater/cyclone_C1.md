@@ -781,6 +781,30 @@ Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Twin'de henüz siklon modeli yok
 - **Gerçek tesiste** 13.89 kg/s farin bu bölgede yoğun bir şerit oluşturur (yerel yük 30+ kg/kg) ve gazın bu zayıf yukarı akışını bastırır. Bu, iki yönlü bir etkidir; tek yönlü modelde temsil edilemez.
 - **Sayılara etkisi yok:** halkadaki taneler duvarda, yani ayrılmış sayılıyor. η, ΔP ve sıcaklıklar bu davranıştan bağımsız.
 
+**Karar (kullanıcı, 4 Ekim 2026):** temiz gaz CFD'si ve tek yönlü DPM yalnız referans ve kalibrasyon olarak kalır. Gerçek 13.89 kg/s farin davranışı yüklü MM'den gelir ("Yüklü Durum"). İki yönlü DPM ya da DDPM yapılmaz (CLAUDE.md madde 9). DPM'in kalan işi, birkaç çapın yörüngesiyle ayırma mekanizmasını belgelemek.
+
+**Tek çaplı yörüngeler (4 Ekim 2026):**
+- **Koşu:** `c1_riser\c1r_traj.cas.h5`, yukarıdaki sabit izleme kurulumu (donmuş gaz alanı, reflect 0.8, `dust_outlet` trap). 8 çap (5, 10, 15, 20, 30, 50, 100, 170 µm); her çap için oluk ağzındaki aynı 24 noktadan birer iz, DRW 1 deneme, max 20,000 adım. Fluent batch modunda çalıştırıldı. İzler `plot-write-xy-plot` ile dosyaya yazıldı ve dışarıda çizildi. Resim: `c1_riser\traj\trajectories.png` (çap başına `dp005.png` … `dp170.png`).
+- **Sonuç (24 izden):**
+
+  | Çap | Egzoz | Toz çıkışı | Bitmeyen | Bitmeyenler nerede |
+  |---|---|---|---|---|
+  | 5 µm | 17 | 0 | 7 | gövde altı / koni üstü, duvara yakın (z 3–6 m) |
+  | 10 µm | 15 | 0 | 9 | koni dibinde dönüyor (z ~1.4 m, r ~0.7 m) |
+  | 15 µm | 13 | 2 | 9 | koni dibinde dönüyor |
+  | 20 µm | 8 | 6 | 10 | koni dibinde dönüyor |
+  | 30 µm | 1 | 10 | 13 | çoğu koni dibinde |
+  | 50 µm | 0 | 0 | 24 | çoğu çatı halkasında; birkaçı sarmalla koniye iniyor |
+  | 100 µm | 0 | 0 | 24 | çatı halkası (z 9–10.2 m, r 2.15 m) |
+  | 170 µm | 0 | 0 | 24 | çatı halkası |
+
+- **Mekanizma:**
+  - ≤ 15 µm: taneler duvara tam çıkamıyor. İç girdabın yukarı akışına kapılıp çoğu vorteks bulucudan kaçıyor; kaçış süresi ~3–6 s.
+  - 15–30 µm: kesme çapı bölgesi (MM temiz gaz x₅₀ 12.8 µm; yüklü 24.4 µm). Duvara çıkanlar sarmal çizerek koniye iniyor. Koni dibinde girdabın ucunda uzun süre dönüyorlar; bir kısmı toz çıkışına düşüyor, bir kısmı adım sınırına takılıyor. Kaçış ile ayrılma arasındaki seçim burada yapılıyor.
+  - ≥ 50 µm: merkezkaç kuvveti taneleri girer girmez duvara atıyor. Duvar dibindeki +1.3…+3.7 m/s'lik yukarı akış bunların düşme hızından büyük, o yüzden çatı halkasında kalıyorlar (bkz. "Çatı halkasının sebebi"). 50 µm sınırda: birkaçı halkadan kopup koniye iniyor.
+- **Riser:** her çap riser'da taşınıyor, riser tabanına düşen yok.
+- **Yüklü durumla farkı:** bu izler temiz gazın güçlü girdabında (v_θCS 28 m/s) elde edildi. Yükte girdap yarıya iner (14.7 m/s), kesme çapı 12.8 → 24.4 µm'ye büyür. Farinin ~%96'sı ise sınır yükleme mekanizmasıyla girişte duvara çöker ve şerit hâlinde koniye kayar. Bu izler o şeridi göstermez; yalnız tek tek tanelerin girdaptaki yolunu gösterir.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
