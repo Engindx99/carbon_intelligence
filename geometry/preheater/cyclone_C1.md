@@ -651,6 +651,116 @@ Bu şerit fiziksel (Muschelknautz'un şerit modeli de bunu varsayıyor). Sayısa
 - Riser/siklon ısı paylaşımı artık varsayım değil, sonuç. C1'in gaz-yalnız ΔP'si kanal–gövde düzlemi ile çıkış arasında yeniden ölçülür ve 504–510 Pa ile karşılaştırılır.
 - Önce DTU ayarlarıyla mevcut C1'de kısa bir DDPM denemesi, çöküşün sebebini riser'dan ayırmak için.
 
+**Riser domeninde DDPM (30 Eylül 2026) — sonuç: terk edildi.** Riser domeninde (191,208 poly hücre) gaz-yalnız referans: C1 statik ΔP **500.8 Pa** (doğrulanmış 503.8'e göre −%0.6); riser'daki düşüş 64.3 Pa, bunun ~59 Pa'sı hızlanma. DDPM'de öğrenilenler:
+- İlk iterasyondaki ıraksamanın sebebi Granular ve Packing Limit "Enhanced Numerics" seçenekleriydi (DTU kurulumunda yoklar). İkisi kapatılınca kararlı.
+- Oluğun uç yüzünden verilen farinin %99'u **oluğun kapalı ucundaki durgun gazda asılı kaldı**. İnce taneler ~2.5 cm'de duruyor, mm/s ile çöküyor. DDPM oluktaki yoğun granüler kaymayı temsil edemiyor.
+- Oluk ağzından riser'a verilen farin yoğun bir **perde** oluşturdu: yerel yük 30–60 kg/kg, etkin yoğunluk ~10 kg/m³. Perde duvar boyunca düşüp gazı aşağı çekti (w +8 → −2 m/s). 6.95 kg/s'de ~1 s sonra kenarlarından ısınarak dönmeye başladı; 13.89 kg/s'de soğuk perde olarak kaldı. Tesiste bunu saçma plakası önler.
+- **Fluent'in Rosin–Rammler'i [d_min, d_max] aralığını doğrusal böler:** 2–300 µm ve 10 çapla kütlenin %39'u 2 µm sınıfında toplanıyor. Kütle dilimli bir dosya enjeksiyonu gerekir.
+- Rejime varmak 400–500 adım ister, yani 5–8 saat. Tam yükte basınç alanı sorunlu kaldı (dpt testere dişi, p_in 650 → ~150 Pa).
+
+**Karar (kullanıcı, CLAUDE.md madde 9):** yüklü durum CFD ile değil, aşağıdaki gibi analitik olarak hesaplanır. Tek yönlü DPM de gereksiz: yüksek yüklemede sınır yükleme baskın ve iç girdabın kademeli verimi toplam η'yi ancak birkaç puan değiştiriyor.
+
+## Yüklü Durum (Ekim 2026)
+
+**Yöntem:**
+- Sıcaklıklar ve enerji dengesi riser'da ısıl denge varsayımından. Farinin ısıl zaman sabiti 0.01–0.08 s, beslemeden siklona varış ~1 s. DDPM'de perdeden kopan taneler de hemen 750+ K'e çıkıyordu.
+- ΔP ve η Muschelknautz yöntemiyle (MM), yüklemeyle birlikte. Hoffmann & Stein (2007) Böl. 6'daki denklemler, Svensen ve diğ. 2025'te (arXiv 2504.02886, denk. 77–82) yazıldığı biçimde:
+  - giriş daralması α(c₀);
+  - yüklü sürtünme f = 0.005·(1 + 3√c₀);
+  - v_θ(r);
+  - sınır yükleme c₀L = 0.025·(x₅₀/x_med)·(10c₀)^k, c₀ ≥ 0.1 için k = 0.15;
+  - kesme çapı x₅₀.
+- ΔP terimleri (gövde sürtünmesi + vorteks bulucu) E adımındaki gibi. Yüklü siklon ΔP'si CFD'ye kalibre edilir: ΔP = 504 Pa × MM_yüklü / MM_temiz.
+- İç girdabın kademeli verimi 1/(1 + (x₅₀/x)^β), β = 5. Girişte ayrılmayan farinin besleme dağılımına sahip olduğu varsayılıyor; bu bir üst sınır, alt sınır 0.
+- Kontrol: aynı betik temiz gaz durumunda E adımını yeniden üretiyor (α 0.622, v_θCS 27.97 m/s, 642.1 Pa).
+
+**Girdiler:**
+- Gaz 17.9 kg/s, riser tabanında 776 K. Farin 13.89 kg/s, 300 K; c₀ = 0.776.
+- 603 K'de ρ 0.5855 kg/m³, μ 3.03·10⁻⁵ Pa·s. Q = 30.57 m³/s, v_in 16.46 m/s, v_x 6.76 m/s.
+- RR d̄ 40.9 µm, n 0.904; x_med 27.3 µm. ρ_p 2700 kg/m³.
+- H_CS = 6.91 m: vorteks bulucu ağzından koni yarıçapının R_x'e indiği yere kadar.
+
+| Büyüklük | Temiz gaz (MM) | Yüklü (MM) |
+|---|---|---|
+| α | 0.622 | 0.795 |
+| f | 0.0050 | 0.0182 |
+| v_θ duvar / v_θCS | 21.2 / 28.0 m/s | 16.6 / 14.7 m/s |
+| Δp gövde + vorteks bulucu | 120 + 522 = 642 Pa | 115 + 202 = 317 Pa |
+| x₅₀ | 12.8 µm | 24.4 µm |
+| c₀L | – | 0.030 kg/kg |
+
+Yükleme girdabı yarıya indiriyor: duvar sürtünmesi 3.6 kat, girişteki daralma da azalıyor. Bu yüzden ΔP düşüyor ve kesme çapı büyüyor. Yüklü siklonlardaki bu ΔP düşüşü literatürde bilinen bir olgu.
+
+**Sonuç (C1 başına):**
+
+| Büyüklük | Değer |
+|---|---|
+| Gaz ve farin çıkış sıcaklığı | **602.5 K** (denge) |
+| Isı alışverişi | 3.5715 MW (gaz = farin, residual 3·10⁻¹⁶) |
+| Siklon statik ΔP | **249 Pa** (gaz-yalnız 504 × 0.494) |
+| Riser ΔP | **190 Pa**: gaz 64.3 + farini riser hızına çıkarma 42.4 + kanal hızına çıkarma 61.3 + askıdaki farinin ağırlığı 22.4 (0.454 kg/m³, 5.0 m yükseliş) |
+| Toplam, riser tabanı → C1 çıkışı | **439 Pa** (gaz-yalnız 568) |
+| η | **%96.1–98.3** (alt: yalnız sınır yükleme; üst: + iç girdap) |
+| Egzozla taşınan toz | 0.24–0.55 kg/s |
+
+Taşınan toz da 602.5 K'de çıkar; ayırma enerji dengesini değiştirmez. Varsayımlar: adyabatik duvar, sabit cp, C1'de reaksiyon ve nem yok.
+
+**Duyarlılık:**
+
+| Durum | Siklon ΔP | x₅₀ | η |
+|---|---|---|---|
+| Temel | 249 Pa | 24.4 µm | %96.1–98.3 |
+| f_air 0.0065 | 241 Pa | 28.1 µm | %95.5–97.8 |
+| H_CS = 9.28 m (Svensen'in h_i tanımı) | 249 Pa | 21.1 µm | %96.6–98.7 |
+| β = 3 | 249 Pa | 24.4 µm | %96.1–98.3 |
+| c₀ −%20 | 264 Pa | 23.2 µm | %95.5–98.1 |
+| c₀ +%20 | 237 Pa | 25.5 µm | %96.5–98.4 |
+
+**Literatürle karşılaştırma:**
+- **η:** üst kademe siklonları için %91–95 tercih edilen aralık (US 10,598,434 B2). Svensen ve diğ.'nin ayarlanmış tesis modeli C1 için %95.1 veriyor. MM'nin alt sınırı (%96.1) bu bandın 1 puan üstünde. Fark beklenen yönde: sınır yükleme bağıntısı yüksek c₀'da iyimser; Svensen de c₀L'ye bir ayar katsayısı f_c koyuyor.
+- **ΔP:** üst kademe için tipik 5–20 mbar (500–2000 Pa), aynı patent. Bizim 439 Pa, bandın hemen altında. Sebebi düşük gaz debisi: 17.9 kg/s, 2500 t/d hattında C1 başına ~28 kg/s'ye karşılık geliyor. ΔP ∝ ṁ² olduğundan o debide ≈ 1.07 kPa olur.
+
+**Twin'e giden değerler** (17.9 kg/s gaz, 13.89 kg/s farin):
+- çıkış sıcaklığı 602.5 K;
+- toplam ΔP 439 Pa (siklon 249 + riser 190);
+- η %96 (MM alt sınırı; literatür bandının üst ucuna yakın);
+- toz kaybı ~0.54 kg/s.
+
+Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Twin'de henüz siklon modeli yok (`pyroprocess/preheater/stage.py`).
+
+### Tek yönlü DPM kontrolü (4 Ekim 2026)
+
+**Amaç:** MM'nin iç girdap hesabını CFD ile kontrol etmek. Kullanıcı isteğiyle eklendi; iki yönlü bağlaşım kullanılmadı.
+
+**Kurulum:**
+- Doğrulanmış gaz-yalnız alan donduruldu (`c1_riser\c1r_dpm1w.cas.h5`, 603 K). Sabit izleme yapıldı; gaz alanı değişmiyor.
+- Enjeksiyon dosyası `feed_1389.inj`: 7 boyut sınıfı, oluk ağzında 24 nokta, 13.89 kg/s, 300 K.
+- DRW, 10 deneme → 1680 yörünge. Max 20,000 adım, step length factor 5.
+- Duvar sınır koşulu: reflect, e_n = e_t = 0.8 (DTU). `dust_outlet` trap, gaz çıkışı ve riser tabanı escape.
+- **Mesh'ten sızma:** ilk denemede taneler giriş açıklığının çatı altındaki köşesinde, mesh'in en kötü hücrelerinde, "degenerate subtet" uyarılarıyla domen dışına kaçtı (düz çizgiler). Fluent'in önerdiği iki ayar sorunu giderdi: `high-resolution-tracking/check-subtet-validity? yes` ve `use-quad-face-centroid? yes`.
+
+**Sonuç (temiz gaz, yükleme etkisi yok):**
+
+| Sınıf | Gaz çıkışından kaçan | Toz çıkışı | Takip bitmedi | MM temiz gaz, kaçan (x₅₀ 12.8 µm, β 5) |
+|---|---|---|---|---|
+| 3.8 µm | %60 | %0 | %40 | %99.8 |
+| 7.9 µm | %75 | %0 | %25 | %92 |
+| 15.7 µm | %46 | %18 | %36 | %27 |
+| 30 µm | %11 | %21 | %68 | %1.4 |
+| 53–172 µm | %0 | %0 | %100 | ~%0 |
+| Toplam | **%25.0** (3.48 kg/s) | %7.8 | %67.2 | %24.5 |
+
+- **53 µm ve üstü taneler gövdenin üstünde, giriş hizasında, çatının altında dönen bir toz halkasında kalıyor.** Bu, literatürde bilinen çatı altı halkası. Tek yönlü modelde bu taneleri aşağı indiren şey (halkadaki farinin ağırlığı, kayan şerit) yok. Bu taneler duvarda, yani ayrılmış bölgede; "takip bitmedi" kütlesinin büyük kısmı ayrılmış sayılır.
+- **İnce tanelerin bir kısmı adım sınırına takıldı:** 3.8 µm'de %40. 100,000 adımlı ilk koşuda (sızıntı vardı) bu oran %9'du ve %91'i kaçmıştı. Yani bu tanelerin çoğu sonunda kaçıyor.
+- **Temiz gaz η:**
+  - takip edilemeyen bütün taneler ayrılmış sayılırsa %75;
+  - takip edilemeyen ince taneler (≤ 15.7 µm) kaçmış sayılırsa %61;
+  - en iyi tahmin %71–75.
+  - MM'nin temiz gaz tahmini %75.5. Toplamda uyuşuyor.
+- **Kademeli verim eğrisi CFD'de MM'ninkinden daha yayvan.** 15.7 µm'de kaçan pay %46 (MM %27), 30 µm'de %11 (MM %1.4). Bu, türbülanslı dağılımın ve vorteks bulucuya kısa devre yapan akışın etkisi. Yüklü η'ye etkisi küçük: iç girdaba giren pay ~%4 ve bant %96–98'de kalıyor.
+- **Kalma süresi:** kaçan taneler medyan 4.4 s (%10–90: 3.7–6.5 s), toz çıkışına varanlar medyan 10.1 s (8.2–12.5 s). Gaz-yalnız çözümde gazın siklondaki ortalama kalma süresi 6.6 s.
+- **Riser:** bütün boyutlar taşınıyor, riser tabanından geri düşen farin yok (temiz gazda). Farinin aldığı ısı 3.577 MW; analitik değer 3.5715 MW.
+
 ## Derived Properties
 
 Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır

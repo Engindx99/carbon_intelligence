@@ -58,18 +58,22 @@ riser'da yalnız 1.15 D ediyordu.
 Riser gerçekte C2'nin çıkışından başlar ve çok daha uzundur; bu domen onun yalnız üst ucunu,
 beslemeden C1'e kadarını temsil eder. Gaz tabanda düzgün profille girer.
 
-Mesh (29 Eylül 2026, **eski geometri**: yatay stub, besleme altı 2.5 m; oluk ve uzun riser
-geldiği için yeniden kurulacak): C1 seviye-0 tarifi (Ansys
-Meshing tet 0.15 m, 5 prizma katmanı, ilk 5 mm, büyüme 1.2) → 481,212 tet/prizma → Fluent poly
-+ `improve-quality` → **184,519 poly hücre**, min orthogonal quality **0.209** (doğrulanmış C1
-seviye-0: 0.22), max aspect ratio 25, hücre hacmi toplamı 242.13 m³ (geometri 242.65). En kötü
-hücre, riser değil, gövdedeki giriş açıklığının çatı altındaki ucu.
+Mesh (29 Eylül 2026, bu geometri): C1 seviye-0 tarifi. Ansys Meshing tet 0.15 m, 5 prizma
+katmanı, ilk 5 mm, büyüme 1.2 → Fluent poly + `improve-quality` → **191,208 poly hücre**, min
+orthogonal quality **0.313**, hücre hacmi toplamı 249.68 m³ (geometri 250.23).
+(Eski geometride — yatay stub, besleme altı 2.5 m — 184,519 hücre ve min OQ 0.209'du.)
+
+Gaz-yalnız sonuç (URANS SST-CC, 603 K): C1 statik ΔP **500.8 Pa**, doğrulanmış 503.8'e göre
+−%0.6. Riser'daki düşüş 64.3 Pa; bunun ~59 Pa'sı 8.3 → 16.5 m/s hızlanma. Farinli durum CFD ile
+değil analitik olarak hesaplandı (DDPM terk edildi; bkz. [cyclone_C1.md](cyclone_C1.md), "Yüklü
+Durum"). Riser'ın yüklü ΔP'si 190 Pa.
 
 ## Boundary Faces
 
 - Riser tabanı (z = 0.885, daire 3.70 m², yeşil): gaz girişi — Fluent'te `inlet_gas`, mass-flow-inlet.
 - Oluk ucu (merkez (−8.428, 1.73, 6.251), normali oluk ekseni boyunca, 0.36 m², mor): `meal_feed` —
-  gaz için duvar, DPM için enjeksiyon yüzeyi.
+  gaz için duvar. DPM enjeksiyon yüzeyi olarak kullanılmadı: farin oluğun kapalı ucundaki durgun
+  gazda asılı kalıyor. Oluk geometride beslemenin yerini ve yüksekliğini belirliyor.
 - Diğer yüzler duvar.
 
 ## Derived Properties
