@@ -8,7 +8,7 @@
 6. Prefer physical models and conservation laws over arbitrary clamps, heuristics, or empirical fixes.
 7. Validate mass and energy conservation, handoffs, units, bounds, and numerical stability after changes.
 8. Geometry exists to parametrically define physically meaningful, continuous fluid volumes for CFD, not to perform structural or manufacturing CAD design. Prefer simple, clean, and CFD-oriented geometry over detailed or production-oriented geometry. Keep geometry calculations/solvers only when necessary to construct, validate, or derive relevant hydraulic/geometric properties of the fluid volume; avoid unnecessary geometric detail and computational complexity.
-   Exception: `geometry/macros/plant_topology.bas` is a schematic solid model written to show the plant topology (equipment, and the gas, meal and air paths between them); it is not a CFD input.
+   Exception: `geometry/macros/plant_topology_2d.bas` draws a schematic, real-scale 2D drawing (SLDDRW) of the plant topology (equipment, and the gas, meal and air paths between them); it is not a CFD input.
    
 9. For CFD, review the literature, but use the simplest and fastest sufficient solution; do not add academic-level complexity.
 
