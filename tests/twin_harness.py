@@ -51,6 +51,8 @@ STATE_SCALARS = (
     "m_dot_H2O_generated_dehydroxylation",
     "m_dot_CO2_generated_calciner",
     "m_dot_CO2_generated_transition",
+    "residence_time_calciner",
+    "Q_dust_loss_preheater",
 )
 
 
