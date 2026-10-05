@@ -91,13 +91,71 @@ CFD domeni ≈ 673.6 m³: siklon 283.2, volüt 96.3, çıkış 297.8, eksi vorte
 - **CFD/MM = 1.146.** C1'in 0.785'i taşınmıyor; C1 dokümanında öngörüldüğü gibi C2, C3 ve C5 bu CFD'nin Euler sayısıyla ölçeklenir.
 - **Sapma girdap tahmininde.** CFD'nin v_θCS değeriyle MM'nin vorteks bulucu terimi 446 Pa; gövdeyle toplam 476 Pa, CFD ile aynı. C1'de aynı kontrol %20 fazla vermişti. Sapma, volüt için bilinmeyen α'dan geliyor; CFD'nin girdabına karşılık gelen α ≈ 0.92.
 
-**Twin'e giden değer (gaz-yalnız):** Eu 10.5, 56 kg/s ve 1033 K'de 477 Pa. Farklı debi ve yoğunlukta ΔP = Eu·½ρv_in². Yüklü durum ayrıca hesaplanacak.
+**Twin'e giden değer (gaz-yalnız):** Eu 10.5, 56 kg/s ve 1033 K'de 477 Pa. Farklı debi ve yoğunlukta ΔP = Eu·½ρv_in². Yüklü durum aşağıda.
 
 Dosyalar (repo dışında, `C:\Users\engin\c4`):
 - `c4_urans.cas.h5` / `.dat.h5`
 - `c4_steady.*`
 - `c4u-2-00350…00700.dat.h5` (ortalama kayıtları; `c4u-2.cas.h5` ile ve her biri için case yeniden okunarak açılmalı)
 - `c4_urans_1_1.out` (adım bazında rapor)
+
+## Yüklü Durum (5 Ekim 2026)
+
+**Yöntem:** C1'deki gibi analitik (bkz. [cyclone_C1.md](cyclone_C1.md), "Yüklü Durum"). Yüklü Muschelknautz, Hoffmann & Stein Böl. 6 ve Svensen ve diğ. 2025 denk. 77–82:
+- α(c₀);
+- f = 0.005·(1 + 3√c₀);
+- c₀L = 0.025·(x₅₀/x_med)·(10c₀)^0.15;
+- x₅₀;
+- iç girdap için β = 5.
+
+Betik C1'in yüklü sonuçlarını birebir veriyor: α 0.795, v_θCS 14.7 m/s, 249 Pa, c₀L 0.030, η %96.1.
+- **ΔP kalibrasyonu:** CFD'ye kalibre edilir, ΔP = 477 Pa × MM_yüklü / MM_temiz.
+- **Volüt için α:** bağıntısı yok; temiz gaz α'sı CFD'nin v_θCS'sine (31.7 m/s) kalibre edildi, **α = 0.898**. Yüklemenin α'yı nasıl değiştirdiği de bilinmiyor. İki uç hesaplandı:
+  - α sabit: yükleme yalnız sürtünmeyle etki eder;
+  - α yarık bağıntısının oranıyla ölçeklenir: 0.99'a çıkar.
+- H_CS 5.35 m: vorteks bulucu ağzından koni yarıçapının R_x'e indiği yere (z 5.08 m) kadar. Sürtünme alanı 272.6 m².
+
+**Girdiler (literatür tabanı, iki hattın toplamı):**
+- Gaz 56 kg/s, 1033 K (twin'in C4 bandı 1023–1043 K'nin ortası). ρ 0.353 kg/m³, μ 4.2·10⁻⁵ Pa·s.
+- Farin beslemesi 1.55 kg/kg klinker × 28.94 kg/s = 44.9 kg/s. RR d̄ 40.9 µm, n 0.904, ρ_p 2700 kg/m³ (C1 ile aynı).
+- **C4'e giren katı, kütle dengesiyle:** C3'ün alt akışı artı C5'ten gazla kaçan toz.
+  - C1'den kaçan toz beslemeye döner (twin kararı).
+  - C2–C4 aynı η'yi taşır.
+  - C5'e kalsinatörün ürünü gelir. Kütle oranı 1 − 0.35·0.90 = 0.685 (LOI %35, kalsinasyon %90).
+  - C5'in η'si yayınlanmamış: %80–90 tarandı.
+- Sonuç: **C4'e ~53 kg/s katı** (C3'ten 48, C5 tozu 3–7), **c₀ ≈ 0.95**.
+- İki hatlı tesiste her hat gazın da farinin de yarısını taşır; c₀ ve aşağıdaki sonuçlar siklon başına aynıdır.
+
+| Büyüklük | Gaz-yalnız | Yüklü (η_C5 %85) |
+|---|---|---|
+| α | 0.898 | 0.898 / 0.993 |
+| f | 0.005 | 0.020 |
+| v_θ duvar / CS | 26.4 / 31.7 m/s | 26.4–23.9 / 23.6–22.1 m/s |
+| Siklon ΔP | 477 Pa | **337–385 Pa** |
+| x₅₀ | 34 µm | 46–49 µm |
+| c₀L | – | 0.059–0.064 kg/kg |
+| η | – | **%93.4–95.8** (alt: yalnız sınır yükleme; üst: + iç girdap) |
+
+- **C5 η'sine duyarlılık küçük:** %80 → %90 arasında c₀ 0.99 → 0.92, η ±0.2 puan, ΔP ±2 Pa.
+- **x₅₀ C1'den büyük** (C1 yüklü: 24 µm). Sıcak gazın viskozitesi daha yüksek, kontrol yüzeyi kısa.
+- **Literatür uyumu:** η alt kademe siklonlarının literatür aralığında. Yüklemeyle ΔP'nin düşmesi C1'deki gibi.
+
+**Riser R4'te farinin ek basınç kaybı** (hat başına; gaz 28 kg/s, farin 26.7 kg/s, Ø2.546 m, v 15.6 m/s):
+- farini riser hızına çıkarma 81 Pa;
+- askıdaki farinin ağırlığı 40 Pa (0.34 kg/m³; [plant_topology.md](../plant_topology.md)'deki şematik ~12 m'lik yükseliş);
+- kanal hızına çıkarma 3 Pa;
+- **toplam ≈ 124 Pa**.
+
+Gazın riser'daki kendi kaybı (dirsekler, sürtünme) CFD domeninde yok ve hesaplanmadı.
+
+**Twin'e giden değerler** (C1'deki gibi η'nin alt ucu):
+- η **%93.5**;
+- siklon ΔP **~360 Pa** (337–385);
+- R4'te farin kaynaklı ek kayıp ~124 Pa.
+
+Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Varsayımlar: sıcaklık literatürden sabit, adyabatik duvar, C4'te reaksiyon yok.
+
+Betikler repo dışında: `C:\Users\engin\c4\mm\` (`mm_loaded.py`, `c4_loaded.py`).
 
 ## Boundary Faces
 
