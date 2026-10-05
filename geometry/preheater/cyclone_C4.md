@@ -46,9 +46,69 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 
 CFD domeni ≈ 673.6 m³: siklon 283.2, volüt 96.3, çıkış 297.8, eksi vorteks bulucu duvarı 3.8 (makro log'u kesin değeri verir).
 
+## Gaz-yalnız CFD (4–5 Ekim 2026)
+
+**Mesh:**
+- Ansys Meshing tet; Fluent'te poly'ye çevrildi ve `improve-quality` uygulandı.
+- 906 bin tet → **320 692 poly hücre**, min orthogonal quality 0.20 (volüt dili).
+- 1 025 202 düğüm: Student lisansının ~1.05M sınırının hemen altında, daha fazla inceltilemez.
+- Fluent'te ölçülen hacim 673.0 m³.
+
+**Kurulum:**
+- Gaz: 56 kg/s, 1033 K (literatür). ρ 0.353 kg/m³ ve μ 4.2·10⁻⁵ Pa·s sabit.
+- Model: SST + eğrilik düzeltmesi.
+- Giriş: kütle debisi, yüze dik, %5 türbülans, D_h 3.14 m (4A/P).
+- Çıkış: 0 Pa, geri akış yönü "From Neighboring Cell". Toz çıkışı duvar.
+- Çözüm C1'deki gibi: PRESTO!, ikinci derece. Steady (Coupled, 350 iterasyon) başlangıç, ardından URANS (SIMPLE, BSOI, Δt 0.03 s, adım başına 20 iterasyon).
+- Girdap ~7 s akış süresinde oturdu. Ortalama 7.0–21.2 s penceresinden, 34 periyot.
+
+| Büyüklük | Değer |
+|---|---|
+| Statik ΔP (giriş − çıkış) | **477.1 Pa** (SE 0.3; yarılar 476.3 / 477.9) |
+| Toplam basınç düşümü | 475.9 Pa |
+| Euler sayısı ΔP / (½ρv_in²) | **10.53** (v_in 16.02 m/s, ½ρv_in² 45.3 Pa) |
+| Steady çözüm | 435.2 Pa (URANS'ın %9.6 altında; C1'de fark %2.8) |
+| Girdap salınımı | 2.39 Hz (0.42 s) |
+| v_θ: duvar / CS / tepe | 24–25 / **31.7** / 38–41 m/s (tepe r ≈ 1.5 m'de) |
+| Çıkışta geri akış | alanın ~%25'i |
+
+- v_θ değerleri 7–21 s'deki 9 kaydın ortalaması.
+- CS değeri vorteks bulucu yarıçapında, ağız ile koninin R_x'e indiği yer (z 5.1–10.2 m) arasında. z'ye neredeyse bağlı değil: 30.3–32.8 m/s.
+- Gövde duvarının hemen yanında +5–6 m/s'lik yukarı akış var (z = 9 m). C1'deki çatı halkasını oluşturan katmanın benzeri.
+
+**Muschelknautz ile karşılaştırma** (C1 dokümanındaki E adımının betiği; C1 sayılarını birebir veriyor):
+- Volütte gaz gövdeye girmeden döner. Bu yüzden R_in, giriş kanalının merkez çizgisi yarıçapı alındı (R + dil + b/2 = 4.656 m) ve daralma α = 1.
+  - Yarık bağıntısının α'sı (0.775) bu R_in ile girdabı abartıyor: 36 m/s, 604 Pa.
+- Sürtünme alanı 272.6 m², f 0.005. Volüt duvarları dahil değil.
+
+| | MM | CFD |
+|---|---|---|
+| v_θ duvar | 23.7 m/s | 24–25 m/s |
+| v_θCS | 28.8 m/s | 31.7 m/s |
+| ΔP | 416 Pa (gövde 30 + vorteks bulucu 386) | 477 Pa |
+| Euler | 9.19 | 10.53 |
+
+- **CFD/MM = 1.146.** C1'in 0.785'i taşınmıyor; C1 dokümanında öngörüldüğü gibi C2, C3 ve C5 bu CFD'nin Euler sayısıyla ölçeklenir.
+- **Sapma girdap tahmininde.** CFD'nin v_θCS değeriyle MM'nin vorteks bulucu terimi 446 Pa; gövdeyle toplam 476 Pa, CFD ile aynı. C1'de aynı kontrol %20 fazla vermişti. Sapma, volüt için bilinmeyen α'dan geliyor; CFD'nin girdabına karşılık gelen α ≈ 0.92.
+
+**Twin'e giden değer (gaz-yalnız):** Eu 10.5, 56 kg/s ve 1033 K'de 477 Pa. Farklı debi ve yoğunlukta ΔP = Eu·½ρv_in². Yüklü durum ayrıca hesaplanacak.
+
+Dosyalar (repo dışında, `C:\Users\engin\c4`):
+- `c4_urans.cas.h5` / `.dat.h5`
+- `c4_steady.*`
+- `c4u-2-00350…00700.dat.h5` (ortalama kayıtları; `c4u-2.cas.h5` ile ve her biri için case yeniden okunarak açılmalı)
+- `c4_urans_1_1.out` (adım bazında rapor)
+
 ## Boundary Faces
 
-TBD (CFD_VIEW.pdf'te C4 için verilmemiş).
+| Ad | Tip | Alan |
+|---|---|---|
+| `inlet_gas` | mass-flow-inlet | 9.90 m² (3.40 × 2.912) |
+| `gas_outlet` | pressure-outlet | 16.82 m² (Φ4.63, x = 9.26 m) |
+| `dust_outlet` | wall | 0.507 m² (Φ0.81) |
+| `wall` | wall | geri kalan |
+
+Mesh'teki named selection'lar C1'in adlarıyla gelmişti (`meal_feed` = giriş, `wall_dust` = toz çıkışı); Fluent'te yeniden adlandırıldı.
 
 ## Derived Properties
 
