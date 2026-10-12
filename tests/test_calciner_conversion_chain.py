@@ -1,4 +1,4 @@
-"""Why the calciner calcines 1 % once its transit is correct.
+"""Why the calciner calcines almost nothing once its transit is correct.
 
 Fixing the calciner from a rotary cylinder to a vertical riser took
 its solids transit from 574.38 s to 3.48 s -- into the 2-5 s an ILC
@@ -17,19 +17,23 @@ LINK 1, the particle's temperature history: NOT fragile, OVER-coupled.
 (physics/variable_flow_rows.py:303-343) -- it advects on
 `m_dot_s * Cp_s`, not on `rho*u_s*A`. The transit reaches this zone
 ONLY through the chemistry march. The solid is driven onto the gas
-whatever the transit: NTU = V_total*K_gs/(m_dot_s*Cp_s) = 5.02. In
-the riser state the solid runs HOTTER than the gas in 19 of 20
-cells (half of them in the rotary state), because the wall feeds it. A 25 um particle's thermal time
-constant at the Nu = 2 conduction limit is 1.4 ms against a 3483 ms
+whatever the transit: NTU = V_total*K_gs/(m_dot_s*Cp_s) = 2.99 at
+5000 t/d (5.02 at the old feed). The solid runs HOTTER than the gas
+in the downstream 10 of 20 cells, because the wall feeds it; in the
+first cells the gas still leads by up to ~500 K, which is the
+too-small area of LINK 2 showing. A 25 um particle's thermal time
+constant at the Nu = 2 conduction limit is 1.4 ms against a 2816 ms
 transit.
 
 LINK 2, the gas/solid area: genuinely wrong, and still not the cause.
 The calciner calls `interfacial_areas` without `d_particle`
-(pyroprocess/precalciner/precalciner.py:64-72), so the 4.2 m VESSEL
+(pyroprocess/precalciner/precalciner.py:64-72), so the 6.74 m VESSEL
 diameter is substituted for the particle diameter -- the same
 dimensional substitution bbc1045 fixed for the cooler and Faz 5
-fixed for the kiln. It is 14.78x too small. It changes nothing,
-because 5.02 and 70.5 both drive the solid onto the gas. RECORDED
+fixed for the kiln. It is ~34x too small. It now costs the inlet
+cells a gas lead of ~500 K, but it is still not the conversion
+collapse: at a real calciner temperature the kinetics convert
+nothing in any transit the riser has (LINK 4). RECORDED
 HERE, DELIBERATELY NOT FIXED: fixing it belongs in its own commit
 and would move the plant for a reason that has nothing to do with
 this collapse.
@@ -47,10 +51,11 @@ conversion at 1123 K. A real ILC precalciner does it in about 3.4
 seconds. To meet that at the same activation energy the prefactor
 would have to be 6.4e6 -- short by a factor of 1.5e5.
 
-    The model reaches even 1 % only because the calciner SELF-HEATS
-    until Arrhenius catches up: Ts_calciner runs 1519 K mean /
-    1735 K max in the rotary state and 1791 K / 2082 K in the riser
-    state, against a real calciner's 1150-1200 K.
+    The model reaches any conversion only because the calciner
+    SELF-HEATS until Arrhenius catches up: Ts_calciner ran 1519 K
+    mean / 1735 K max in the rotary state, 1791 K / 2082 K in the
+    2500-era riser, and runs 1622 K / 1749 K (0.22 %) in the 5000 t/d
+    riser, against a real calciner's 1150-1200 K.
 
 So the 574 s hold-up and that self-heating were a compensating pair
 masking a rate five orders of magnitude too slow. Correcting the
@@ -76,8 +81,10 @@ WHICH STATE IS WHICH. The diagnosis began on the rotary state; the
 riser was then committed (a3be7ec), so the fixture is now the RISER
 state and the rotary one can no longer be rebuilt. Its numbers are
 kept as recorded constants (ROTARY below); everything read from the
-fixture is the committed riser. The fixture also carries the C1 dust
-return (eta 0.96), which moves the calciner by a few kelvin.
+fixture is the committed riser. The fixture also carries the dust
+circulation (C1 eta 0.97, C2-C4 0.93, C5 0.90), and since the move
+to 5000 t/d (meal 89.70 kg/s, calciner 6.74 x 30 m) the riser
+values below are that plant's.
 """
 
 import json
@@ -176,27 +183,32 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
             / (self.m_dot_s * c.Cp_s)
         )
 
-        self.assertAlmostEqual(ntu, 5.018, delta=0.002)
-        self.assertGreater(ntu, 3.0)
+        # 5.018 at the 2500-era feed: the meal grew 3.23x, V*a_gs
+        # only 1.93x. Still past 1, so the bed approaches the gas
+        # to within e^-3 ~ 5 % over the zone, no longer e^-5.
+        self.assertAlmostEqual(ntu, 2.993, delta=0.002)
+        self.assertGreater(ntu, 1.0)
 
-    def test_the_solid_is_hotter_than_the_gas_in_most_cells(self):
-        """Which settles it: a bed that OVERSHOOTS the gas is not a
-        bed starved of heat. The wall is feeding it. (The rotary
-        state did it in half the cells; the riser in all but two.)"""
+    def test_the_solid_overshoots_the_gas_downstream(self):
+        """A bed that OVERSHOOTS the gas is not a bed starved of
+        heat; the wall is feeding it. (The rotary state did it in
+        half the cells; the 2500-era riser in all but two; the
+        5000 t/d riser in the downstream half.)"""
 
         Tg = np.asarray(self.snapshot["Tg_calciner"], dtype=float)
         Ts = np.asarray(self.snapshot["Ts_calciner"], dtype=float)
 
         hotter = int(np.sum(Ts > Tg))
 
-        self.assertEqual(hotter, 18)
-        self.assertGreater(hotter, ROTARY["solid_hotter_cells"])
+        self.assertEqual(hotter, 10)
+        self.assertTrue(np.all(Ts[10:] > Tg[10:]))
         self.assertEqual(Ts.size, 20)
 
-        # The gas leads by ~17 K at most; the solid overshoots it by
-        # up to ~320 K.
-        self.assertLess(float(np.max(Tg - Ts)), 20.0)
-        self.assertGreater(float(np.min(Tg - Ts)), -325.0)
+        # At the inlet the gas leads by ~502 K (the 2500-era riser:
+        # ~17 K at most) -- the too-small a_gs of Link 2 at 3.2x the
+        # meal. Downstream the solid overshoots by up to ~373 K.
+        self.assertAlmostEqual(float(np.max(Tg - Ts)), 501.77, delta=0.02)
+        self.assertAlmostEqual(float(np.min(Tg - Ts)), -372.59, delta=0.02)
 
     def test_the_particle_cannot_lag_the_gas(self):
         """A 25 um particle at the Nu = 2 conduction limit. Its
@@ -221,19 +233,26 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
     """Recorded, not fixed. Fixing it belongs in its own commit and
     would move the plant for reasons unrelated to this collapse."""
 
-    # Measured on the converged calciner stream.
-    SOLIDS_VOLUME_FRACTION = 5.72e-5
     PARTICLE_DIAMETER = 25.0e-6
 
     def setUp(self):
+        snapshot = _snapshot()
         self.calciner = _calciner()
-        self.m_dot_s = float(
-            _snapshot()["mass_flow_m_dot_s_calciner_in"]
+        self.m_dot_s = float(snapshot["mass_flow_m_dot_s_calciner_in"])
+
+        # The suspension's solids volume fraction, m_s/(rho_p u_s A),
+        # on the converged stream. (The 2500-era file held a recorded
+        # 5.72e-5 whose basis could not be rebuilt.)
+        c = self.calciner
+        u_s = c.L / _riser_transit(snapshot)
+        A = math.pi * c.D ** 2 / 4.0
+        self.SOLIDS_VOLUME_FRACTION = self.m_dot_s / (
+            c.particle_density * u_s * A
         )
 
     def test_a_gs_is_the_vessel_diameter_substitution(self):
         """`interfacial_areas` is called without `d_particle`, so
-        the packed-bed specific surface 6(1-eps)/d_p gets the 4.2 m
+        the packed-bed specific surface 6(1-eps)/d_p gets the 6.74 m
         BORE where a particle diameter belongs."""
 
         c = self.calciner
@@ -243,9 +262,9 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
             6.0 * (1.0 - c.epsilon_bed) / c.D,
             places=12,
         )
-        self.assertAlmostEqual(c.a_gs, 0.9285714286, places=9)
+        self.assertAlmostEqual(c.a_gs, 0.5786350148, places=9)
 
-    def test_the_true_suspension_area_is_fifteen_times_larger(self):
+    def test_the_true_suspension_area_is_far_larger(self):
 
         suspension = (
             6.0
@@ -253,14 +272,14 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
             / self.PARTICLE_DIAMETER
         )
 
-        self.assertAlmostEqual(suspension, 13.728, places=3)
-        self.assertAlmostEqual(
-            suspension / self.calciner.a_gs, 14.784, delta=0.002
-        )
+        self.assertAlmostEqual(self.SOLIDS_VOLUME_FRACTION, 8.30e-5, delta=0.01e-5)
+        self.assertGreater(suspension / self.calciner.a_gs, 30.0)
 
     def test_both_areas_drive_the_solid_onto_the_gas(self):
-        """The reason this defect is not the cause. NTU is already
-        past the point where more area changes the outcome."""
+        """Both are past 1. At 5000 t/d the vessel-bore area leaves
+        the inlet cells lagging the gas (Link 1); the true area
+        would not. Neither changes the conversion, which the rate
+        sets (Link 4)."""
 
         c = self.calciner
         suspension = (
@@ -270,11 +289,10 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         def ntu(a_gs):
             return c.V_total * c.hv_gs * a_gs / (self.m_dot_s * c.Cp_s)
 
-        self.assertAlmostEqual(ntu(c.a_gs), 5.018, delta=0.002)
-        self.assertAlmostEqual(ntu(suspension), 74.19, delta=0.02)
+        self.assertAlmostEqual(ntu(c.a_gs), 2.993, delta=0.002)
 
-        self.assertGreater(ntu(c.a_gs), 3.0)
-        self.assertGreater(ntu(suspension), 3.0)
+        self.assertGreater(ntu(c.a_gs), 1.0)
+        self.assertGreater(ntu(suspension), 30.0)
 
     def test_the_wall_areas_still_double_count(self):
         """A second defect on the same line, also recorded and not
@@ -285,8 +303,8 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         c = self.calciner
 
         self.assertGreater(c.a_ws + c.a_gw, 4.0 / c.D)
-        self.assertAlmostEqual(c.a_ws + c.a_gw, 1.5095, delta=0.001)
-        self.assertAlmostEqual(4.0 / c.D, 0.95238, places=5)
+        self.assertAlmostEqual(c.a_ws + c.a_gw, 0.9407, delta=0.001)
+        self.assertAlmostEqual(4.0 / c.D, 0.59347, places=5)
 
 
 class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
@@ -344,20 +362,20 @@ class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
         """So the zone inlet is not array[0]. Reading it that way
         understates the conversion -- and did, at 21.10 % against
         the true 23.98 % in the rotary state; 0.99 % against 1.11 %
-        in the riser."""
+        in the 2500-era riser; 0.216 % against 0.217 % now."""
 
         stored = np.asarray(
             self.snapshot["flow_calciner_solid_CaCO3"], dtype=float
         )
 
-        self.assertAlmostEqual(self.inlet, 20.279400, places=5)
+        self.assertAlmostEqual(self.inlet, 65.481000, places=5)
         self.assertGreater(self.inlet, stored[0])
 
         naive = 1.0 - stored[-1] / stored[0]
         true = 1.0 - stored[-1] / self.inlet
 
-        self.assertAlmostEqual(naive, 0.009842, places=5)
-        self.assertAlmostEqual(true, 0.011105, places=5)
+        self.assertAlmostEqual(naive, 0.002161, places=5)
+        self.assertAlmostEqual(true, 0.002174, places=5)
 
     def test_the_march_reproduces_the_model_to_machine_precision(self):
         """The decisive one. Same formula, same Ts profile, same
@@ -410,9 +428,9 @@ class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
             1.0,
         )
 
-        # Fully open in 19 of 20 cells (17 in the rotary state); only
-        # the coldest cell is gated at all.
-        self.assertEqual(int(np.sum(window >= 1.0)), 19)
+        # Fully open in all 20 cells (19 in the 2500-era riser, 17
+        # in the rotary state).
+        self.assertEqual(int(np.sum(window >= 1.0)), 20)
         self.assertGreater(float(self.Ts.mean()), model.T_end)
 
     def test_the_configured_target_is_not_enforced(self):
@@ -482,12 +500,12 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
 
         Ts = np.asarray(self.snapshot["Ts_calciner"], dtype=float)
 
-        self.assertAlmostEqual(float(Ts.mean()), 1791.48, delta=0.02)
-        self.assertAlmostEqual(float(Ts.max()), 2081.85, delta=0.02)
+        # 1791.48 / 2081.85 in the 2500-era riser.
+        self.assertAlmostEqual(float(Ts.mean()), 1621.87, delta=0.02)
+        self.assertAlmostEqual(float(Ts.max()), 1749.24, delta=0.02)
 
-        # About 600 K above the top of a real calciner's band.
-        self.assertGreater(float(Ts.mean()) - REAL_CALCINER_T[1], 500.0)
-        self.assertGreater(float(Ts.max()), 2000.0)
+        # About 420 K above the top of a real calciner's band.
+        self.assertGreater(float(Ts.mean()) - REAL_CALCINER_T[1], 400.0)
 
         # The rotary state, with more calcination to absorb the
         # calciner's fuel, ran cooler -- still 300 K over the band.
@@ -498,7 +516,7 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
         """The whole argument in one assertion. At a REAL calciner
         temperature the committed kinetics convert essentially
         nothing in a real calciner's transit -- so the 1 % the model
-        does reach is bought entirely with 600 K of excess
+        does reach is bought entirely with ~420 K of excess
         temperature, not with residence time."""
 
         model = self.model
@@ -510,14 +528,14 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
             conversion = 1.0 - math.exp(-k * transit)
             self.assertLess(conversion, 1.0e-4)
 
-        # What it actually managed, at 1791 K mean.
+        # What it actually managed, at 1622 K mean.
         stored = np.asarray(
             self.snapshot["flow_calciner_solid_CaCO3"], dtype=float
         )
         achieved = 1.0 - stored[-1] / _zone_inlet_CaCO3(
             self.snapshot, model
         )
-        self.assertAlmostEqual(achieved, 0.0111, places=4)
+        self.assertAlmostEqual(achieved, 0.00217, places=5)
 
 
 if __name__ == "__main__":

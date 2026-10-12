@@ -31,9 +31,10 @@ class Calciner:
 
     def __init__(self, N=5, L=25.0, cfg=None):
 
-        # cfg is read for the Faz 6 wall stack only; None falls
-        # back to physics.shell.DEFAULT_WALL_STACKS, so a caller
-        # that builds this zone on its own still works.
+        # cfg is read for the Faz 6 wall stack and the vessel's
+        # diameter; None falls back to physics.shell.DEFAULT_WALL_STACKS
+        # and the old 4.2 m, so a caller that builds this zone on its
+        # own still works.
         self.cfg = cfg
 
         self.N = N
@@ -53,7 +54,12 @@ class Calciner:
         self.eps = 1e-9
 
         # ================= GEOMETRY =================
-        self.D = 4.2
+        # The vessel's own diameter, read the way the kiln reads its
+        # bore (burning.py): `calciner.diameter`, the 5000 t/d plant's
+        # PF5000 calciner (geometry/calciner/calciner.md). It used to
+        # be a literal 4.2 shared by accident with the preheater and
+        # cooler placeholders.
+        self.D = float((cfg or {}).get("calciner", {}).get("diameter", 4.2))
 
         self.A_cross, self.V_total, self.V_cell = kiln_geometry(
             D=self.D,

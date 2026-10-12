@@ -23,12 +23,21 @@ plant below 14:1. It says nothing about the precalciner vessel.
   tube  bore   L/D    what it is
   85.0   4.2  20.24   long-dry/wet territory -- wrong kiln type
   60.0   4.2  14.29   misses the < 14:1 criterion
-  60.0   4.5  13.33   committed
-  60.0   4.0  15.00   past even a conventional preheater kiln
+  60.0   4.5  13.33   the 2500-era twin
+  74.0   4.8  15.42   committed: the 5000 t/d plant's PF5000 kiln
 
-The length is the user's, fixed at 60 m. The bore is therefore
-what has to satisfy L/D, and it is the only free geometric
-quantity left.
+THE 5000 t/d PLANT (user decision, 12 Oct 2026). Two identical
+2500 t/d strings share one kiln, the published PF5000 one, taken by
+the 2500 line's rule (geometry/kiln/kiln.md): shell 4.8 m as the
+bore, 74 m, 3 %. Its L/D of 15.42 is past the < 14:1 criterion the
+4.5 x 60 m tube was chosen against, and inside the patent's 15:1-17:1
+for a conventional preheater kiln. The published line is what it
+is; the criterion is a design preference this plant does not meet,
+and the tests below say so rather than hide it. The transition
+keeps the old 25/60 share of the tube: 30.83 m.
+
+WhatItMovedTest and TheClinkerGotWorseTest are records of the
+2500-era tube and are kept as history.
 """
 
 import math
@@ -47,8 +56,8 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         kiln = self.cfg["kiln"]["length"]
         transition = self.cfg["transition"]["length"]
 
-        self.assertAlmostEqual(kiln, 60.0)
-        self.assertAlmostEqual(transition, 25.0)
+        self.assertAlmostEqual(kiln, 74.0)
+        self.assertAlmostEqual(transition, 30.83)
 
         burning = main.Burning(
             N=self.cfg["plant"]["N"],
@@ -57,7 +66,7 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         )
 
         self.assertAlmostEqual(burning.L, kiln - transition)
-        self.assertAlmostEqual(burning.L, 35.0)
+        self.assertAlmostEqual(burning.L, 43.17)
 
     def test_moving_the_split_does_not_lengthen_the_tube(self):
         """The regression. Before this, transition.length was
@@ -83,10 +92,10 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
     def test_a_split_that_leaves_no_kiln_is_rejected(self):
 
         cfg = main.load_cfg("configs/twin_cfg.yaml")
-        cfg["transition"]["length"] = 60.0
+        cfg["transition"]["length"] = cfg["kiln"]["length"]
 
         with self.assertRaises(ValueError) as caught:
-            main.Burning(N=20, L=60.0, cfg=cfg)
+            main.Burning(N=20, L=cfg["kiln"]["length"], cfg=cfg)
 
         self.assertIn("must be positive", str(caught.exception))
 
@@ -99,8 +108,8 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
 
 
 class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
-    """The point the user raised: 60 m and L/D 13.33 size the
-    ROTARY KILN. No static equipment may follow them."""
+    """The point the user raised: the kiln's length and L/D size
+    the ROTARY KILN. No static equipment may follow them."""
 
     def setUp(self):
         self.cfg = main.load_cfg("configs/twin_cfg.yaml")
@@ -117,7 +126,7 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
         """They are one tube, so one bore."""
 
         D = self.cfg["kiln"]["diameter"]
-        self.assertAlmostEqual(D, 4.5)
+        self.assertAlmostEqual(D, 4.8)
 
         burning = main.Burning(
             N=self.N, L=self.cfg["kiln"]["length"], cfg=self.cfg
@@ -129,15 +138,17 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
 
     def test_the_static_equipment_does_not_follow_the_kiln(self):
         """A vertical riser, a cyclone string and a grate. Moving
-        the kiln's bore must not resize any of them."""
+        the kiln's bore must not resize any of them. The calciner
+        reads its own PF5000 bore; the preheater and cooler are
+        still 4.2 m placeholders (Faz 6 item 2)."""
 
-        for cls, key in (
-            (main.Calciner, "calciner"),
-            (main.Preheater, "preheater"),
-            (main.Cooler, "cooler"),
+        for cls, key, D in (
+            (main.Calciner, "calciner", 6.74),
+            (main.Preheater, "preheater", 4.2),
+            (main.Cooler, "cooler", 4.2),
         ):
             self.assertAlmostEqual(
-                self._zone(cls, key).D, 4.2, msg=cls.__name__
+                self._zone(cls, key).D, D, msg=cls.__name__
             )
 
     def test_changing_the_kiln_bore_moves_only_the_kiln(self):
@@ -157,7 +168,7 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
 
         self.assertAlmostEqual(burning.D, 4.0)
         self.assertAlmostEqual(transition.D, 4.0)
-        self.assertAlmostEqual(calciner.D, 4.2)
+        self.assertAlmostEqual(calciner.D, 6.74)
 
     def test_the_cross_section_follows_the_configured_bore(self):
         """Not just the attribute -- the geometry built from it."""
@@ -187,26 +198,26 @@ class TheRatioIsAPrecalcinerPlantsKilnTest(unittest.TestCase):
 
         self.assertLess(self.cfg["fuel"]["kiln_fraction"], 0.5)
 
-    def test_the_ratio_is_inside_the_band(self):
+    def test_the_kiln_is_the_published_5000_t_d_one(self):
 
-        self.assertAlmostEqual(self.L / self.D, 13.33, delta=0.01)
+        self.assertAlmostEqual(self.L, 74.0)
+        self.assertAlmostEqual(self.D, 4.8)
+        self.assertAlmostEqual(self.L / self.D, 15.42, delta=0.01)
 
-        # US4425092: below 14:1 for the rotary kiln of a
-        # precalciner plant.
-        self.assertLess(self.L / self.D, 14.0)
+    def test_it_misses_the_short_kiln_criterion_and_says_so(self):
+        """US4425092: below 14:1 for the rotary kiln of a
+        precalciner plant, 15:1-17:1 for a conventional preheater
+        kiln. The published 5000 t/d line sits in the second band."""
 
-    def test_the_committed_bore_is_what_puts_it_there(self):
-        """At 60 m the length cannot move, so the bore is the only
-        thing that can satisfy the criterion -- and the previously
-        committed 4.2 m would not."""
+        self.assertGreater(self.L / self.D, 14.0)
+        self.assertLess(self.L / self.D, 17.0)
 
-        self.assertGreater(self.L / 4.2, 14.0)
-        self.assertLess(self.L / 4.5, 14.0)
+    def test_the_2500_era_tube_met_it(self):
+        """Recorded: 4.5 x 60 m was chosen against the criterion,
+        which the 4.2 m bore at 60 m would have missed."""
 
-        # Both are inside the stated 4.0-4.5 m range, so this is a
-        # choice the range itself contains.
-        self.assertGreaterEqual(self.D, 4.0)
-        self.assertLessEqual(self.D, 4.5)
+        self.assertLess(60.0 / 4.5, 14.0)
+        self.assertGreater(60.0 / 4.2, 14.0)
 
     def test_the_old_tube_was_the_wrong_kiln_type(self):
 

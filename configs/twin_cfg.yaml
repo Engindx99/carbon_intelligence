@@ -13,79 +13,43 @@ plant:
 # the burning zone is whatever is left, so the two cannot drift
 # apart. Named `kiln` rather than sitting under `plant`, which
 # means the whole pyroprocess -- preheater through cooler.
+# `diameter` is read by the burning and transition zones ONLY,
+# because they are the one rotary tube; the calciner, preheater
+# and cooler keep their own.
 #
-# This used to be `plant.length: 60.0  # burning zone length`,
-# consumed by the burning zone ALONE, with transition's 25 m on
-# top. That made the tube 85 m at D = 4.2 m, i.e. L/D = 20.2.
+# THE 5000 t/d PLANT'S KILN (user decision, 12 Oct 2026). The
+# plant is two identical 2500 t/d strings on one kiln, and the
+# kiln is the published PF5000 one, taken by the same rule as the
+# 2500 line's (geometry/kiln/kiln.md): the published shell 4.8 m
+# as the bore, 74 m long, laid at 3 %.
 #
-# L/D is what says whether a kiln is the right kiln, and BOTH
-# numbers belong to the ROTATING TUBE ALONE -- the burning zone
-# plus the transition zone. Nothing here sizes the precalciner,
-# the preheater or the cooler, which are static equipment and
-# keep their own diameters. "Precalciner kiln" below is the
-# industry's name for the ROTARY KILN OF A PLANT THAT HAS a
-# precalciner, not for the precalciner vessel: moving 60% of the
-# fuel into a separate static calciner is exactly what lets the
-# rotary tube be short, because the tube no longer has to do the
-# calcining.
+# L/D is 15.4. That is past the "below 14:1" US4425092 gives an
+# in-line calciner kiln (7:1-11:1 preferred, 15:1-17:1 for a
+# conventional preheater kiln), the criterion the previous
+# 4.5 x 60 m tube (L/D 13.33) was chosen against. The published
+# 5000 t/d precalciner line is what it is; the patent is a
+# design preference, and this plant does not meet it.
 #
-# With fuel.kiln_fraction = 0.40 this plant burns 60% of its fuel
-# in the calciner, so it is an in-line calciner (ILC) plant, and
-# the rotary kiln of such a plant is SHORT: US4425092 puts it
-# below 14:1 and preferably at 7:1-11:1, against 15:1-17:1 for a
-# conventional cyclone-preheater kiln with no precalciner. 20.2
-# was not merely long, it was the wrong kiln type -- long-dry/wet
-# territory.
+# The transition zone keeps the old 25/60 share of the tube:
+# 30.83 m, the burning zone 43.17 m (user decision, 12 Oct 2026).
 #
-# THE LENGTH IS GIVEN, NOT DERIVED. 60 m is the user's figure
-# for this plant and is held fixed; the bore is then what has to
-# satisfy L/D, and 4.5 m gives 13.33 -- inside the "below 14:1"
-# criterion. The bore matters a second time: `diameter` is read
-# by the burning and transition zones ONLY, because they are the
-# one rotary tube. The calciner, preheater and cooler keep their
-# own 4.2 m; a riser, a cyclone string and a grate are not this
-# tube and must not follow it when it moves.
-#
-# 60 m at the previously committed 4.2 m bore would be L/D 14.29
-# and would MISS that criterion, which is why the bore moved at
-# all. The alternative inside the stated 4.0-4.5 m range, 4.0 m,
-# is L/D 15.00 -- past even the conventional preheater-kiln
-# range -- and was rejected for that despite scoring slightly
-# better on the liquidus.
-#
-# MEASURED at the committed operating point (nodes_per_stage=1),
-# with the transit held at the residence band's slow end and the
-# bore the only thing moving:
-#
-#    D     L/D    Ts_burning max   liquidus margin   secondary air
-#   4.0   15.00      1757.88 K         15.12 K          1060.06 K
-#   4.2   14.29      1758.47 K         14.53 K          1057.71 K
-#   4.5   13.33      1758.78 K         14.22 K          1054.33 K
-#
-# The bore is worth ~1 K across its whole stated range, so this
-# choice is being made on kiln TYPE, which is the thing L/D
-# actually states, and not on the temperatures -- they cannot
-# tell these three apart.
-#
-# RESIDENCE TIME IS NOW MET, and it is the constraint that set
-# the motion below: 25-35 min for a modern precalciner system.
-# See the `motion` block for why the band's LOWER half is closed.
-#
-# Superseded: the tube was 46.2 m at L/D 11.00, chosen against
-# `bed_motion_from_continuity`, which mis-stated Sullivan's
-# transit correlation (see physics.rotary_bed_motion). That kiln
-# read 51.85 min of residence and could not reach the band at
-# any length -- a conclusion that was an artifact of the
-# correlation, not a fact about the plant.
+# Superseded: 4.5 x 60 m with a 25 m transition (L/D 13.33, the
+# 2500-era twin, at 27.78 kg/s of meal); before that 46.2 m at
+# L/D 11.00, chosen against a mis-stated Sullivan transit (see
+# physics.rotary_bed_motion), and before that an 85 m tube.
 kiln:
-  length: 60.0     # m, transition + burning
-  diameter: 4.5    # m, inside bore; L/D = 13.33
+  length: 74.0     # m, transition + burning (PF5000)
+  diameter: 4.8    # m, inside bore; L/D = 15.42
 
 transition:
-  length: 25.0   # m, the kiln's back end; burning gets the rest
+  length: 30.83  # m, the kiln's back end (25/60 of the tube); burning gets the rest
 
 calciner:
-  length: 25.0   # m
+  # The 5000 t/d plant's ILC, PF5000 (geometry/calciner/calciner.md):
+  # 7.2 m shell -> 6.74 m effective (FLS ratio), 30.0 m cone +
+  # cylinder. Was 25 m long with a literal 4.2 m bore in the code.
+  length: 30.0     # m
+  diameter: 6.74   # m
 
   # ======================================================
   # THE CALCINER IS A VERTICAL RISER. IT DOES NOT ROTATE.
@@ -213,7 +177,10 @@ simulation:
 
 
 fuel:
-  Fuel_rate_total: 2.5
+  # Scaled with the feed for the 5000 t/d plant (user decision 12 Oct
+  # 2026: keep today's fuel per kg of meal; bringing the specific heat
+  # consumption into its band is separate work): 2.5 x 3.229 kg/s.
+  Fuel_rate_total: 8.07
   O2: 3.5              # dry STACK O2 [%], sizing the plant's total combustion air
 
   # Share of the total fuel burned at the kiln burner; the rest fires
@@ -255,36 +222,27 @@ cooler_air:
 # rotational Reynolds number in nusselt_gas_bed (about -13 K on
 # the bed from 3.0 to 4.0 rpm at fixed tau).
 #
-# 3.5 rpm and 2.2 % give tau = 33.84 min over the 60 m tube.
+# 3.5 rpm and 3 % give tau = 28.70 min over the 74 m, 4.8 m tube
+# (PF5000; geometry/kiln/kiln.md). The PF5000 drive turns it at
+# 0.6-4.0 rpm, so the band's 25-35 min is 2.87-4.0 rpm.
 #
-# WHY THE SLOW END OF THE BAND. MEASURED across the transit at
-# the committed geometry (nodes_per_stage=1):
-#
-#   tau      fill    Ts_burning max   secondary air   discharge
-#   25 min   3.09%      1818.39 K        1084.47 K     1530.27 K
-#   28 min   3.46%      1800.27 K        1075.62 K     1516.84 K
-#   30 min   3.70%      1789.35 K        1070.31 K     1508.77 K
-#   32 min   3.95%      1779.24 K        1065.40 K     1501.29 K
-#   35 min   4.31%      1765.27 K        1058.66 K     1491.00 K
-#
-# BOUNDS["Ts_any_zone_max"] = 1773 K is the clinker liquidus, so
-# everything faster than about 33 min breaks it. The band's
-# lower half is closed by a physical bound, not by preference --
-# and it is closed only because this plant is over-fuelled: it
-# burns 4440 kJ/kg clinker against SHC_BAND = (2900, 3300). Fix
-# the fuel and the whole band reopens. That is a separate
-# question and it is NOT settled here.
+# Superseded: the 2500-era 4.5 x 60 m tube at 3.5 rpm and 2.2 %
+# gave 33.84 min, and the band's faster half broke the 1773 K
+# clinker liquidus there because that plant burnt 4440 kJ/kg
+# clinker against SHC_BAND = (2900, 3300). The fuel is still
+# scaled from that plant (user decision, 12 Oct 2026), so the
+# question is not settled here either.
 #
 # The slope is a PERCENT, which is how a kiln is built and
 # quoted. It used to read `inclination_deg: 3.0` -- 5.24 %,
 # outside the 2-4 % a cement kiln is laid on, and the unit
 # confusion is exactly the one Sullivan's correlation invites,
-# since it takes the inclination in DEGREES (1.26 deg here).
+# since it takes the inclination in DEGREES (1.72 deg here).
 motion:
   rpm_default: 3.5
-  rpm_min: 2.0
-  rpm_max: 5.0
-  inclination_pct: 2.2     # = 1.26030 deg; tau = 33.84 min
+  rpm_min: 0.6             # PF5000 drive (geometry/kiln/kiln.md)
+  rpm_max: 4.0
+  inclination_pct: 3.0     # = 1.71836 deg (kiln.md); tau = 28.70 min
 
   # Dynamic angle of repose of the kiln bed [degrees]. A MATERIAL
   # property, read only by physics.rotary_bed_motion, where it is
@@ -301,7 +259,13 @@ motion:
 
 
 feed:
-  Feed_rate_kg_s: 27.78   # 100000 kg/h clinker feed (SOLID INPUT)
+  # Raw meal [kg/s] (SOLID INPUT). The plant is 5000 t/d of clinker:
+  # two identical 2500 t/d strings (geometry/catalog.md, user decision
+  # 12 Oct 2026). Meal = 1.55 x clinker, the literature basis the
+  # geometry was sized on (geometry/preheater/cyclone_C4.md), not the
+  # twin's own meal/clinker ratio, which under-calcination inflates.
+  # Was 27.78 (100 t/h of meal; the old comment called it clinker).
+  Feed_rate_kg_s: 89.70
   inventory_kg: 100000
 
 

@@ -271,8 +271,9 @@ class TheConfiguredKilnTest(unittest.TestCase):
 
         motion = self.cfg["motion"]
 
-        self.assertEqual(motion["rpm_min"], 2.0)
-        self.assertEqual(motion["rpm_max"], 5.0)
+        # The PF5000 drive (geometry/kiln/kiln.md).
+        self.assertEqual(motion["rpm_min"], 0.6)
+        self.assertEqual(motion["rpm_max"], 4.0)
         self.assertGreaterEqual(motion["rpm_default"], motion["rpm_min"])
         self.assertLessEqual(motion["rpm_default"], motion["rpm_max"])
 
@@ -286,23 +287,27 @@ class TheConfiguredKilnTest(unittest.TestCase):
         _, u_s, fill = rotary_bed_motion(
             L=b.L, D=b.D, slope_deg=b.slope_deg, rpm=b.rpm_default,
             repose_deg=b.repose_deg,
-            # The clinker, which is what state.m_dot_s carries.
-            m_dot_s=18.02, rho_bulk=b.rho_s, A_cross=b.A_cross,
+            # The clinker, which is what state.m_dot_s carries: the
+            # 5000 t/d plant's, from tests/data/twin_state_reference.json.
+            m_dot_s=69.50, rho_bulk=b.rho_s, A_cross=b.A_cross,
             eps=b.eps,
         )
 
         transit_min = self.cfg["kiln"]["length"] / u_s / 60.0
 
-        self.assertAlmostEqual(transit_min, 33.84, delta=0.02)
+        # The PF5000 tube, 74 m x 4.8 m at 3 % and 3.5 rpm. The
+        # 2500-era 60 m x 4.5 m tube at 2.2 % read 33.84 min.
+        self.assertAlmostEqual(transit_min, 28.70, delta=0.02)
         self.assertGreaterEqual(transit_min, 25.0)
         self.assertLessEqual(transit_min, 35.0)
 
-        # And the bed it implies is a thin one -- recorded, not
-        # smoothed over. A cement kiln usually runs 5-17 %; this
-        # plant makes 18 kg/s of clinker in a bore sized for
-        # two to three times that.
-        self.assertAlmostEqual(100.0 * fill, 3.49, delta=0.02)
-        self.assertLess(100.0 * fill, 5.0)
+        # And the bed it implies. A cement kiln usually runs 5-17 %.
+        # The 2500-era tube carried 18 kg/s of clinker at 3.49 %, a
+        # bore sized for two to three times that; the 5000 t/d plant
+        # fills the PF5000 tube into the band.
+        self.assertAlmostEqual(100.0 * fill, 8.12, delta=0.02)
+        self.assertGreater(100.0 * fill, 5.0)
+        self.assertLess(100.0 * fill, 17.0)
 
     def test_the_old_tube_was_half_an_hour_slower(self):
         """46.2 m at 4.2 m, 5.24 % and 1.5 rpm read 51.85 min and
