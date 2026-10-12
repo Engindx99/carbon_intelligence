@@ -223,6 +223,144 @@ class ChemistryModel:
     # dz [m] and u_s [m/s] are the Burning zone's own cell
     # length and solid axial velocity.
     # ------------------------------------------------------
+    # ======================================================
+    # BURNING-ZONE REACTIONS OVER ONE STRETCH OF TIME
+    #
+    # Shared by the steady flow march (apply_burning, one cell's
+    # residence time tau at a time) and the dynamic parcel train
+    # (chemistry/parcels.py, a parcel's time in a cell within one
+    # step). Both apply it to species amounts: a flow [kg/s] or a
+    # parcel [kg]. Every reaction here is first order in an
+    # amount (or the min of amounts), so the result scales with
+    # the amount and the two uses are the same operation.
+    # ======================================================
+    def burning_rates(self, T):
+        """Rate [1/s] of each clinkering reaction at T, and of
+        calcination."""
+
+        rate = {
+            model: float(model.reaction_rate(T))
+            for model in (
+                self.belite,
+                self.alite,
+                self.c3a,
+                self.c4af,
+            )
+        }
+
+        return rate, float(self.calcination.reaction_rate(T))
+
+    def react_burning(
+        self,
+        flow,
+        T,
+        length,
+        rate,
+        rate_calcination,
+        heat,
+    ):
+        """Advance `flow` (mutated) by `length` [s] at T.
+
+        Adds each clinkering heat to heat[model] and returns
+        (total heat, calcination heat, CO2 released), in the
+        units of `flow` times seconds over seconds -- W and kg/s
+        for a flow, J and kg for a parcel."""
+
+        half_sequence = (
+            self.belite,
+            self.alite,
+            self.c3a,
+        )
+
+        # Substep count is set by the CLINKERING rates only.
+        #
+        # _MAX_RATE_SUBSTEP bounds the STRANG SPLITTING error,
+        # and that error is a property of the four reactions
+        # that compete for one CaO pool -- splitting them means
+        # each is advanced while the others are frozen, which
+        # is only accurate while k*h is small.
+        #
+        # Calcination is not in that sequence (see apply_burning)
+        # and is not split against anything: it is a first-order
+        # decay of CaCO3 integrated EXACTLY by
+        # ReactionBase.reacted_mass as available*(1-exp(-k*h)),
+        # which is unconditionally accurate for any h. Including
+        # its rate here therefore bought no accuracy and instead
+        # made the substep count scale with a reaction that does
+        # not need substepping at all.
+        #
+        # That was harmless only while the calcination rate was
+        # orders of magnitude below the clinkering rates. At the
+        # literature rate the kiln reaches k ~ 76-300 1/s, and
+        # with tau ~ 190 s per cell the old criterion demanded
+        # ~1e5-1e6 substeps per cell, so a single plant sweep
+        # never completed.
+        n_sub = max(
+            1,
+            math.ceil(
+                max(rate.values())
+                * length
+                / self._MAX_RATE_SUBSTEP
+            ),
+        )
+
+        h = length / n_sub
+
+        Q_total = 0.0
+
+        Q_calcination = 0.0
+
+        dm_CO2_total = 0.0
+
+        def calcine(length):
+            nonlocal Q_total, Q_calcination, dm_CO2_total
+
+            q_calc, dm_CO2 = self.calcination.react_flow(
+                flow,
+                T,
+                length,
+                rate_calcination,
+            )
+
+            Q_calcination += q_calc
+            dm_CO2_total += dm_CO2
+            Q_total += q_calc
+
+        for _ in range(n_sub):
+
+            # Calcination in two halves around the clinkering
+            # sequence, so the whole substep is a symmetric (Strang)
+            # split. It competes with nothing for CaCO3, but it FEEDS
+            # the CaO pool the four below draw on, and through the
+            # burning zone belite is CaO-limited (CaO/required
+            # 3.4-7.9 kg/s against 9.8-11.6 of SiO2). Released whole
+            # at the start of each substep, as it was, it handed them
+            # a substep's CaO early: a first-order split error that
+            # put the clinker 3.3 % high in C3S and 2.2 % in C2S
+            # against the converged ODE (substep -> 0). Halved, the
+            # error is second order: 5e-4 in C3S at the same substep
+            # count. Its total over the substep is unchanged --
+            # exp(-k h/2)^2 = exp(-k h).
+            calcine(0.5 * h)
+
+            for model in half_sequence:
+                q = model.react_flow(flow, T, 0.5 * h, rate[model])
+                heat[model] += q
+                Q_total += q
+
+            q = self.c4af.react_flow(flow, T, h, rate[self.c4af])
+            heat[self.c4af] += q
+            Q_total += q
+
+            for model in reversed(half_sequence):
+                q = model.react_flow(flow, T, 0.5 * h, rate[model])
+                heat[model] += q
+                Q_total += q
+
+            calcine(0.5 * h)
+
+        return Q_total, Q_calcination, dm_CO2_total
+
     def apply_burning(self, state, dz, u_s):
 
         dz = float(dz)
@@ -249,12 +387,6 @@ class ChemistryModel:
             N_transition - 1,
         )
 
-        half_sequence = (
-            self.belite,
-            self.alite,
-            self.c3a,
-        )
-
         heat = {
             self.belite: 0.0,
             self.alite: 0.0,
@@ -267,10 +399,10 @@ class ChemistryModel:
         # Residual calcination in the kiln. The meal arrives still
         # carbonated, and until now nothing here consumed it: CaCO3
         # crossed the burning zone with in == out and left as
-        # "clinker". It is kept OUT of the Strang sequence above --
-        # that sequence splits reactions competing for the same CaO
-        # pool, while calcination only produces CaO -- and run once
-        # per substep at full step length.
+        # "clinker". It is not counted in the substep criterion --
+        # its decay is integrated exactly for any length -- but it
+        # is split symmetrically around the clinkering sequence,
+        # because it feeds their CaO pool (react_burning).
         #
         # Its CO2 leaves the solid stream, so it is accumulated
         # separately and handed to the zone as a per-cell mass
@@ -309,86 +441,20 @@ class ChemistryModel:
             # substep loop consumes it.
             CaCO3_in_cell = float(flow["CaCO3"])
 
-            rate = {
-                model: float(model.reaction_rate(T_i))
-                for model in heat
-            }
+            rate, rate_calcination = self.burning_rates(T_i)
 
-            rate_calcination = float(
-                self.calcination.reaction_rate(T_i)
+            (
+                Q_cell,
+                Q_calcination_cell,
+                dm_CO2_cell,
+            ) = self.react_burning(
+                flow,
+                T_i,
+                tau,
+                rate,
+                rate_calcination,
+                heat,
             )
-
-            # Substep count is set by the CLINKERING rates only.
-            #
-            # _MAX_RATE_SUBSTEP bounds the STRANG SPLITTING error,
-            # and that error is a property of the four reactions
-            # that compete for one CaO pool -- splitting them means
-            # each is advanced while the others are frozen, which
-            # is only accurate while k*h is small.
-            #
-            # Calcination is not in that sequence (see the comment
-            # above) and is not split against anything: it is a
-            # first-order decay of CaCO3 integrated EXACTLY by
-            # ReactionBase.reacted_mass as available*(1-exp(-k*h)),
-            # which is unconditionally accurate for any h. Including
-            # its rate here therefore bought no accuracy and instead
-            # made the substep count scale with a reaction that does
-            # not need substepping at all.
-            #
-            # That was harmless only while the calcination rate was
-            # orders of magnitude below the clinkering rates. At the
-            # literature rate the kiln reaches k ~ 76-300 1/s, and
-            # with tau ~ 190 s per cell the old criterion demanded
-            # ~1e5-1e6 substeps per cell, so a single plant sweep
-            # never completed.
-            n_sub = max(
-                1,
-                math.ceil(
-                    max(rate.values())
-                    * tau
-                    / self._MAX_RATE_SUBSTEP
-                ),
-            )
-
-            h = tau / n_sub
-
-            Q_cell = 0.0
-
-            Q_calcination_cell = 0.0
-
-            dm_CO2_cell = 0.0
-
-            for _ in range(n_sub):
-
-                # Calcination first: it only ADDS to the CaO pool
-                # the four below compete for, so releasing it
-                # before they draw on it is the ordering that
-                # matches the physics of a still-carbonated meal
-                # entering the kiln.
-                q_calc, dm_CO2 = self.calcination.react_flow(
-                    flow,
-                    T_i,
-                    h,
-                    rate_calcination,
-                )
-
-                Q_calcination_cell += q_calc
-                dm_CO2_cell += dm_CO2
-                Q_cell += q_calc
-
-                for model in half_sequence:
-                    q = model.react_flow(flow, T_i, 0.5 * h, rate[model])
-                    heat[model] += q
-                    Q_cell += q
-
-                q = self.c4af.react_flow(flow, T_i, h, rate[self.c4af])
-                heat[self.c4af] += q
-                Q_cell += q
-
-                for model in reversed(half_sequence):
-                    q = model.react_flow(flow, T_i, 0.5 * h, rate[model])
-                    heat[model] += q
-                    Q_cell += q
 
             Q_cells[i] = Q_cell
 
