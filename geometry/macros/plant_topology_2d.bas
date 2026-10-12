@@ -7,13 +7,14 @@ Attribute VB_Name = "plant_topology_2d"
 ' where it stands, and the gas, meal and air paths between it. It is
 ' NOT a CFD input -- the one exception to CLAUDE.md rule 8.
 '
-' The plant drawn is a TWO-STRING preheater, 12 cyclones (each
-' string C5, C4, C3, C2 and a twin C1), one ILC calciner whose twin
-' gooseneck feeds both C5s, one kiln, a grate cooler and the kiln
-' hood with its tertiary air duct. Each string carries half the gas,
-' so its cyclones and risers are the catalogue 2500 sizes scaled by
-' 1/sqrt 2, as the twin C5 already is. This is the topology only: the
-' cyclone CFD documents and cyclone.bas stay single-string.
+' The plant drawn is TWO IDENTICAL 2500 t/d STRINGS, 5000 t/d in all
+' (user decision, 12 Oct 2026): 12 cyclones (each string C5, C4, C3,
+' C2 and a twin C1), one ILC calciner whose twin gooseneck feeds the
+' two strings' C5s, one kiln, a grate cooler and the kiln hood with
+' its tertiary air duct. Each string is the 2500 line itself, so its
+' cyclones are the CFD sizes and its risers the published ones. The
+' calciner (Y gooseneck), tertiary air duct, kiln and cooler are the
+' 5000 t/d line's (PF5000).
 '
 ' It is drawn on an A1 sheet at 1:250, on layers that carry the
 ' colours: equipment outlines black, gas red, meal yellow, air
@@ -41,9 +42,9 @@ Option Explicit
 Const LINE_KEY As String = "2500"
 
 ' Cyclones [m]: D, barrel, cone, vortex finder D, dust outlet D --
-' geometry/catalog.md, C2 = C3 = C4 (catalog.md deviation). Each is
-' drawn at the string scale, 1/sqrt 2: two strings share the gas, as
-' the twin C5s do (cyclone_C5.md).
+' the CFD sizes, which every string uses as they are: C1 (cyclone_C1.md),
+' C2 = C3 = C4 (cyclone_C4.md, catalog.md deviation), C5 the CFD C4
+' x 6.50 / 6.30 (cyclone_C5.md).
 Const C1_D  As Double = 4.32
 Const C1_HB As Double = 6.79
 Const C1_HC As Double = 4.65
@@ -57,45 +58,49 @@ Const C4_HC As Double = 7.3
 Const C4_VD As Double = 4.63
 Const C4_DD As Double = 0.81
 Const C5_D  As Double = 6.5
-Const C5_HB As Double = 3.53
-Const C5_HC As Double = 7.43
-Const C5_VD As Double = 4.74
-Const C5_DD As Double = 0.83
+Const C5_HB As Double = 6.5
+Const C5_HC As Double = 7.5317
+Const C5_VD As Double = 4.777
+Const C5_DD As Double = 0.8357
+Const C5_HIN As Double = 3.5079     ' its volute inlet's height; a gooseneck leg runs into it
 
 ' Risers [m] -- HFC2500 (published), catalog.md; R_k carries the gas
-' from C(k+1) up to C(k). Drawn per string at the string scale; R1
-' splits into the twin C1, each branch half its area.
+' from C(k+1) up to C(k). Each string has its own; R1 splits into
+' the twin C1, each branch half its area.
 Const R1_D As Double = 3.07
 Const R2_D As Double = 3.35
 Const R3_D As Double = 3.45
 Const R4_D As Double = 3.6
 
-' Calciner [m] -- calciner.bas / calciner.md
-Const CALC_D        As Double = 5.5
-Const CALC_H        As Double = 29.46      ' cone + cylinder
-Const CALC_THROAT_D As Double = 2.213299
+' Calciner [m] -- calciner.bas / calciner.md, the 5000 t/d plant's (PF5000)
+Const CALC_D        As Double = 6.7404
+Const CALC_H        As Double = 30#        ' cone + cylinder
+Const CALC_THROAT_D As Double = 3.130088
 Const CALC_CONE_DEG As Double = 65#
-Const GN_D_SRC      As Double = 3.5        ' published gooseneck, two legs share its area
+Const GN_D_SRC      As Double = 3.5        ' a Y gooseneck leg, one 2500 t/d string's published neck; the neck has both legs' area
 Const GN_OUT_AT_H   As Double = 0.5        ' legs end at this fraction of CALC_H
 Const FEED_BELOW_GN_OUT As Double = 2#     ' meal feed through the wall this far below the legs' ends
-Const TA_D          As Double = 1.725      ' tertiary air duct, derived in calciner.md
+Const TA_D          As Double = 2.4393     ' tertiary air duct, derived in calciner.md
 
 ' Meal pipes end at the slope of the calciner feed pipes, Fidaros 2007
 ' (calciner.md): a chute at 60 deg meets an upright riser wall at
 ' 30 deg, sliding in along it.
 Const MEAL_SLOPE_DEG As Double = 60#
 
-' Kiln [m] -- kiln.md (published); cooler -- cooler.md, grate area [m2]
-Const KILN_D      As Double = 4#
-Const KILN_L      As Double = 60#
+' Kiln [m] -- kiln.md (PF5000); cooler -- cooler.md, grate area [m2] (PF5000)
+Const KILN_D      As Double = 4.8
+Const KILN_L      As Double = 74#
 Const KILN_SLOPE  As Double = 0.03
-Const COOLER_AREA As Double = 65#
+Const COOLER_AREA As Double = 119.6
 
 ' SCHEMATIC -- no source; they only lay the plant out.
-Const STUB_OVER_VD   As Double = 1#       ' cyclone gas outlet stub above the roof, x vortex finder D
-Const STAGE_GAP      As Double = 3#       ' a cyclone's dust outlet above the top of the stage below [m]
-Const ZIG_DX         As Double = 8#       ' a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]
-Const C1_TWIN_GAP    As Double = 3#       ' between the twin C1 barrels; R1 rises in it [m]
+Const STUB_OVER_VD   As Double = 0.5      ' cyclone gas outlet stub above the roof, x vortex finder D. Was 1.0; halved
+                                          ' (user decision, 12 Oct 2026): the tower came out 128 m, the risers
+                                          ' (~19.5 m) already match FLS Table 7's 19.4-21.4 m, so the stub was the slack
+Const STAGE_GAP      As Double = 4#       ' a cyclone's dust outlet above the top of the stage below [m]
+Const ZIG_DX         As Double = 11#      ' a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]
+Const C1_TWIN_GAP    As Double = 4#       ' between the twin C1 barrels; R1 rises in it [m]
+Const C5_OVER_TA     As Double = 1.75     ' the C5 dust outlets at least this far over the tertiary air duct [m]
 Const GN_TO_C5_GAP   As Double = 1#       ' a gooseneck drop to its C5 barrel; its inlet run spans it [m]
 Const EXHAUST_L      As Double = 10#      ' C1 exhaust drawn this far past the string, towards the ID fan [m]
 Const RAW_L          As Double = 6#       ' raw meal line drawn from this far outboard [m]
@@ -103,7 +108,7 @@ Const MEAL_JOIN_DEG  As Double = 50#      ' the outer C1's meal pipe falls at th
 Const MEAL_ENTRY_UP  As Double = 1.5      ' meal enters a riser's upright this far over the top of its run [m]
 Const KILN_AXIS_Z    As Double = 10#      ' kiln inlet axis elevation [m]
 Const CHAMBER_MARGIN As Double = 1#       ' kiln inlet chamber and hood: a square this far round the kiln [m]
-Const COOLER_W       As Double = 3#       ' grate width [m]; the length follows from the area
+Const COOLER_W       As Double = 4#       ' grate width [m], the FLS reference cooler's; the length follows from the area
 Const COOLER_H       As Double = 4#       ' cooler casing height [m]
 Const COOLER_DROP    As Double = 1#       ' cooler top below the kiln shell at discharge [m]
 Const MEAL_INTO_CHAMBER As Double = 1#    ' C5 meal lands this far in from the chamber's side [m]
@@ -121,15 +126,15 @@ Const MEAL_BEND      As Double = 1#       ' a bend piece this long after a C4 / 
 Const C1_MEAL_DROP   As Double = 1#       ' the outer C1's meal falls straight this far before its bend [m]
 Const C5_MEAL_DROP   As Double = 0.5      ' C5 meal falls straight this far, ending over the tertiary air duct. Its
                                           ' straight run on to the chamber roof is flatter than meal flows (~35 deg):
-                                          ' a 2D projection -- the twin C5s stand beside the chamber across the kiln
+                                          ' a 2D projection -- the two strings' C5s stand beside the chamber across the kiln
                                           ' axis, not along it, so the real pipe is shorter and steeper [m]
 Const FEED_LOWER     As Double = 3#       ' C4 meal drawn into the calciner this far below calciner.bas's feed [m]
 Const KILN_FLOW_OFF  As Double = 1#       ' kiln gas and material lines this far either side of the kiln axis [m]
 Const PRIMARY_AIR_L  As Double = 2#       ' primary air: a short arrow this long into the hood's front wall [m]
 Const SEC_AIR_DX     As Double = 1.5      ' secondary air rises from the cooler this far in from the kiln's end [m]
 
-' Sheet [m on paper]: A1 landscape at 1:250
-Const SHEET_SCALE As Double = 250#
+' Sheet [m on paper]: A1 landscape at 1:300
+Const SHEET_SCALE As Double = 300#
 Const PAPER_W     As Double = 0.841
 Const PAPER_H     As Double = 0.594
 Const X0          As Double = 0.2         ' where model x = 0 falls on the sheet
@@ -142,7 +147,7 @@ Const CAP_H       As Double = 0.002       ' caption text height in the title blo
 Const FR_X0 As Double = 0.02, FR_X1 As Double = 0.831, FR_Y0 As Double = 0.01, FR_Y1 As Double = 0.584
 ' The right-hand column: legend, notes, equipment list, revisions, title block
 Const COL_X0 As Double = 0.651
-Const LEVEL_X As Double = 28#             ' model x of the elevation marks, right of the right string [m]
+Const LEVEL_X As Double = 33#             ' model x of the elevation marks, right of the right string [m]
 
 ' Layers: name, colour (RGB), line weight
 Const L_EQUIP As String = "EKIPMAN"
@@ -172,12 +177,12 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 
 ' (b) derived layout -- every one computed, none typed in
-Dim sScale As Double                      ' string scale, 1/sqrt 2
+Dim kBranch As Double                     ' R1's branch to one twin C1, half its area: 1/sqrt 2 of its D
 Dim aCh As Double, zCh0 As Double         ' chamber: |x| <= aCh, z from zCh0, 2 aCh tall; the hood the same square
 Dim rampTan As Double                     ' slope of the chamber's floor, a ramp from the kiln's lower lip to its far top corner
 Dim rCalc As Double, rThroat As Double, hCone As Double
 Dim zThroat As Double, zConeTop As Double, zCalcRoof As Double
-Dim rGn As Double, xRise As Double, rGnBend As Double
+Dim rGn As Double, rNeck As Double, xGnStart As Double, rGnBend As Double
 Dim xLeg As Double, zGnTop As Double, zLeg As Double
 Dim zFeed As Double                       ' C4 meal reaches the calciner wall here
 Dim kAlpha As Double
@@ -185,8 +190,7 @@ Dim kAx As Double, kAz As Double, kBx As Double, kBz As Double
 Dim coolL As Double, zCool0 As Double, zHood0 As Double
 Dim rTA As Double, zTA As Double
 Dim zDust(1 To 5) As Double, zRoof(1 To 5) As Double, zTop(1 To 5) As Double
-Dim zIn(1 To 5) As Double                 ' gas inlet centre: at the roof for C1-C4, mid-barrel for C5
-Dim zC5Bar As Double                      ' the C5 barrels' bottom; a leg's inlet run fits above it
+Dim zIn(1 To 5) As Double                 ' gas inlet centre, its top at the roof
 Dim xInner As Double                      ' |x| of a string's inner column (C5, C3)
 ' Outlines a meal pipe passes behind, so it can be broken there: every
 ' duct's edges, closed by unseen edges across its open ends, and C5's
@@ -231,7 +235,7 @@ Sub main()
 
     Restore
     WriteLog
-    MsgBox "Plant topology 2D built and verified: two strings, 12 cyclones, A1 at 1:" & Fmt(SHEET_SCALE) & _
+    MsgBox "Plant topology 2D built and verified: two 2500 t/d strings, 12 cyclones, A1 at 1:" & Fmt(SHEET_SCALE) & _
            "." & vbLf & LayerSummary() & vbLf & vbLf & "Full log: " & LogPath(), vbInformation, "Plant topology 2D"
     Exit Sub
 
@@ -255,7 +259,7 @@ Private Sub Derive()
     Dim d As Double, hb As Double, hc As Double, vd As Double, dd As Double
     Dim s As Long
 
-    sScale = Sqr(0.5)
+    kBranch = Sqr(0.5)
 
     ' Kiln inlet chamber round the kiln's inlet end: a square, the kiln
     ' plus a margin (schematic, kiln_inlet_chamber.md has no size)
@@ -271,23 +275,34 @@ Private Sub Derive()
     zConeTop = zThroat + CALC_THROAT_D + hCone
     zCalcRoof = zThroat + CALC_THROAT_D + CALC_H
 
-    ' Its twin gooseneck exactly as calciner.bas builds it: legs of
-    ' half the published area rising at (R + r) / 3 off the axis,
-    ' 1.25 D up, over a 1.5 D bend, and down beside the C5s.
-    rGn = Sqr(0.5 * 0.25 * GN_D_SRC * GN_D_SRC)
-    xRise = (rCalc + rGn) / 3#
+    ' Its Y gooseneck exactly as calciner.bas builds it: one neck of
+    ' both legs' area on the axis, 1.25 neck D up; at its top each
+    ' leg's disc inside it, touching its rim on its own side, then a
+    ' 1.5 leg D bend outward and down beside the C5s.
+    rGn = 0.5 * GN_D_SRC
+    rNeck = rGn * Sqr(2#)
+    xGnStart = rNeck - rGn
     rGnBend = 1.5 * 2# * rGn
-    xLeg = xRise + 2# * rGnBend
-    zGnTop = zCalcRoof + 1.25 * 2# * rGn
+    xLeg = xGnStart + 2# * rGnBend
+    zGnTop = zCalcRoof + 1.25 * 2# * rNeck
     zLeg = zThroat + CALC_THROAT_D + GN_OUT_AT_H * CALC_H
     zFeed = zLeg - FEED_BELOW_GN_OUT - FEED_LOWER
 
+    ' The tertiary air duct from the hood to the calciner, its lower
+    ' edge on the top of the cone (schematic -- calciner.bas step 6
+    ' will set its own).
+    rTA = 0.5 * TA_D
+    zTA = zConeTop + rTA
+
     ' Each string: C5 GN_TO_C5_GAP outboard of its leg, its roof where
-    ' the leg ends; the leg turns into the C5 barrel at its inlet. Each
-    ' stage's dust outlet STAGE_GAP over the top of the stage below.
+    ' the leg ends -- unless that hangs it into the tertiary air duct:
+    ' the full-size C5 is 14 m tall, so it then stands C5_OVER_TA over
+    ' the duct and the leg ends higher. The leg turns into the C5 at
+    ' its inlet. Each stage's dust outlet STAGE_GAP over the top of the
+    ' stage below.
     CycDims 5, d, hb, hc, vd, dd
     xInner = xLeg + rGn + GN_TO_C5_GAP + 0.5 * d
-    zDust(5) = zLeg - (hb + hc)
+    zDust(5) = Max2(zLeg - (hb + hc), zTA + rTA + C5_OVER_TA)
 
     ' The kiln runs out of the chamber's +x side, falling KILN_SLOPE
     ' towards the cooler. The chamber has no flat floor for meal to lie
@@ -298,7 +313,7 @@ Private Sub Derive()
     kBx = kAx + KILN_L * Cos(kAlpha)
     kBz = kAz - KILN_L * Sin(kAlpha)
 
-    top = zLeg + STUB_OVER_VD * vd
+    top = zDust(5) + CycHeight(5)
     For s = 4 To 1 Step -1
         zDust(s) = top + STAGE_GAP
         top = zDust(s) + CycHeight(s)
@@ -307,37 +322,29 @@ Private Sub Derive()
         CycDims s, d, hb, hc, vd, dd
         zRoof(s) = zDust(s) + hc + hb
         zTop(s) = zDust(s) + CycHeight(s)
-        ' C1 to C4 take their gas at the roof, as their CFD solids do
-        ' (C1's slot and C4's volute run down from the roof): the
-        ' riser's top wall flush with it. C5's catalogue inlet is
-        ' taller than its barrel; it stays at mid-barrel.
+        ' Every cyclone takes its gas at the roof, as its CFD solid does
+        ' (C1's slot, the C2-C5 volute run down from the roof): the
+        ' riser's or gooseneck leg's top wall flush with it.
         If s = 5 Then
-            zIn(s) = zRoof(s) - 0.5 * hb
+            zIn(s) = zRoof(s) - rGn
         ElseIf s = 1 Then
-            zIn(s) = zRoof(s) - sScale * 0.5 * RiserD(1)
+            zIn(s) = zRoof(s) - kBranch * 0.5 * RiserD(1)
         Else
             zIn(s) = zRoof(s) - 0.5 * RiserD(s)
         End If
     Next s
-    CycDims 5, d, hb, hc, vd, dd
-    zC5Bar = zRoof(5) - hb
 
     ' Cooler under the kiln's discharge, running on in +x; the hood,
-    ' a mirror of the chamber, on it round the kiln's end; the
-    ' tertiary air duct from the hood to the calciner, its lower edge
-    ' on the top of the cone (schematic -- calciner.bas step 6 will
-    ' set its own).
+    ' a mirror of the chamber, on it round the kiln's end.
     coolL = COOLER_AREA / COOLER_W
     zCool0 = kBz - 0.5 * KILN_D - COOLER_DROP - COOLER_H
     zHood0 = kBz - aCh
-    rTA = 0.5 * TA_D
-    zTA = zConeTop + rTA
 
 End Sub
 
 
-' Cyclone dimensions by stage, per string (C2 and C3 are C4; C5 is
-' the twin's own size).
+' Cyclone dimensions by stage, the same in both strings (C2 and C3
+' are C4).
 Private Sub CycDims(ByVal s As Long, ByRef d As Double, ByRef hb As Double, ByRef hc As Double, _
                     ByRef vd As Double, ByRef dd As Double)
     Select Case s
@@ -348,7 +355,6 @@ Private Sub CycDims(ByVal s As Long, ByRef d As Double, ByRef hb As Double, ByRe
         Case 5
             d = C5_D: hb = C5_HB: hc = C5_HC: vd = C5_VD: dd = C5_DD
     End Select
-    d = d * sScale: hb = hb * sScale: hc = hc * sScale: vd = vd * sScale: dd = dd * sScale
 End Sub
 
 
@@ -374,7 +380,7 @@ Private Function StubR(ByVal s As Long) As Double
 End Function
 
 
-' Riser diameter per string.
+' Riser diameter, the same in both strings.
 Private Function RiserD(ByVal k As Long) As Double
     Select Case k
         Case 1: RiserD = R1_D
@@ -382,7 +388,6 @@ Private Function RiserD(ByVal k As Long) As Double
         Case 3: RiserD = R3_D
         Case 4: RiserD = R4_D
     End Select
-    RiserD = RiserD * sScale
 End Function
 
 
@@ -419,10 +424,10 @@ Private Sub PreChecks()
     Next k
     ' The C5s clear of the calciner; the gooseneck rises clear of each other
     If xInner - r5 <= rCalc Then Fail "the C5s run into the calciner."
-    If xRise - rGn <= 0# Then Fail "the two gooseneck rises overlap."
-    ' Each leg's inlet run fits the C5 barrel's height
-    If 2# * rGn >= zRoof(5) - zC5Bar Then Fail "the gooseneck legs (D " & Fmt(2# * rGn) & _
-        ") are taller than the C5 barrel they enter."
+    If rNeck >= rCalc Then Fail "the gooseneck neck is wider than the calciner roof."
+    ' Each leg's run fits the C5 inlet it enters
+    If 2# * rGn > C5_HIN Then Fail "the gooseneck legs (D " & Fmt(2# * rGn) & _
+        ") are taller than the C5 inlet (" & Fmt(C5_HIN) & ") they enter."
     ' The C4 meal reaches the calciner's cylinder, over the cone
     If zFeed <= zConeTop Then Fail "the C4 meal would reach the calciner below its cylinder. Lower FEED_LOWER."
     ' The tertiary air duct runs under the C5s and over the chamber and kiln
@@ -449,7 +454,7 @@ Private Sub PreChecks()
     End If
 
     Note "kiln inlet chamber: |x| <= " & Fmt(aCh) & " m, z " & Fmt(zCh0) & " .. " & Fmt(zCh0 + 2# * aCh)
-    Note "calciner: z " & Fmt(zThroat) & " .. " & Fmt(zCalcRoof) & "; gooseneck rises at x +-" & Fmt(xRise) & _
+    Note "calciner: z " & Fmt(zThroat) & " .. " & Fmt(zCalcRoof) & "; gooseneck neck D " & Fmt(2# * rNeck) & ", legs from x +-" & Fmt(xGnStart) & _
          ", legs at x +-" & Fmt(xLeg) & " down to the C5 inlet at z " & Fmt(zIn(5))
     Note "strings: inner column x +-" & Fmt(xInner) & " (C5, C3), outer x +-" & Fmt(xInner + ZIG_DX) & _
          " (C4, C2), risers at x +-" & Fmt(xm) & ", twin C1 at x +-" & Fmt(xm - r1 - 0.5 * C1_TWIN_GAP) & _
@@ -618,9 +623,8 @@ Private Sub DrawPlant()
     ' wall over the cone, the two gooseneck rises in its roof
     PolyM Array(rThroat, zThroat, rThroat, zThroat + CALC_THROAT_D, rCalc, zConeTop)
     Seg rCalc, zConeTop + TA_D, rCalc, zCalcRoof
-    Seg rCalc, zCalcRoof, xRise + rGn, zCalcRoof
-    Seg xRise - rGn, zCalcRoof, -(xRise - rGn), zCalcRoof
-    Seg -(xRise + rGn), zCalcRoof, -rCalc, zCalcRoof
+    Seg rCalc, zCalcRoof, rNeck, zCalcRoof
+    Seg -rNeck, zCalcRoof, -rCalc, zCalcRoof
     PolyM Array(-rCalc, zCalcRoof, -rCalc, zConeTop, -rThroat, zThroat + CALC_THROAT_D, -rThroat, zThroat)
     ' kiln: its shell only, both ends open
     LineM kAx, kAz + kSh, kBx, kBz + kSh
@@ -650,8 +654,8 @@ Private Sub DrawPlant()
         For s = 4 To 2 Step -1
             Cyclone s, col(s), Sgn(xm - col(s)), 0.5 * RiserD(s)
         Next s
-        Cyclone 1, xm - sd * dc1, sd, sScale * 0.5 * RiserD(1)
-        Cyclone 1, xm + sd * dc1, -sd, sScale * 0.5 * RiserD(1)
+        Cyclone 1, xm - sd * dc1, sd, kBranch * 0.5 * RiserD(1)
+        Cyclone 1, xm + sd * dc1, -sd, kBranch * 0.5 * RiserD(1)
     Next k
 
     '=== gas ==============================================================
@@ -681,13 +685,13 @@ Private Sub DrawPlant()
         col(5) = xi: col(4) = xo: col(3) = xi: col(2) = xo
         c1in = xm - sd * dc1: c1out = xm + sd * dc1
 
-        '--- the gooseneck leg, as calciner.bas: rise, bend, drop, then
-        '    across into the C5 barrel at its inlet (the tangential inlet
-        '    seen from the side) --------------------------------------
-        ductJoinEnd = True                            ' the rise runs into its bend
-        Duct "gas: calciner -> gooseneck rise " & side, Array(sd * xRise, zCalcRoof, sd * xRise, zGnTop), _
-             2# * rGn, False
-        DuctBend sd * (xRise + rGnBend), zGnTop, rGnBend, rGn
+        '--- the Y gooseneck, as calciner.bas: the neck (once), then each
+        '    leg's bend, drop, and across into the C5 at its inlet ------
+        If k = 0 Then
+            ductJoinEnd = True                        ' the neck runs into the bends
+            Duct "gas: calciner -> gooseneck neck", Array(0#, zCalcRoof, 0#, zGnTop), 2# * rNeck, False
+        End If
+        YBend sd
         ductJoinStart = True                          ' the drop runs on from the bend
         Duct "gas: gooseneck drop " & side & " -> C5 inlet", Array(sd * xLeg, zGnTop, sd * xLeg, zIn(5), _
              xi - sd * CycR(5), zIn(5)), 2# * rGn, False
@@ -707,7 +711,7 @@ Private Sub DrawPlant()
 
         '--- R1: along the C2 stub, across, up between the twin C1, split -
         r = 0.5 * RiserD(1)
-        rb = sScale * r
+        rb = kBranch * r
         zh = zTop(2) + r
         RunOverStub 2, xo, xm, r, xn
         ductJoinEnd = True                            ' R1 runs up into its split
@@ -797,8 +801,8 @@ Private Sub DrawPlant()
     DrawRuler
     LabelM -aCh, zCh0 - 1#, "KIC kiln inlet chamber", 0#
     LabelM -3.5, zGnTop + rGnBend + rGn + 3#, "CAL ILC calciner", 0#
-    LabelM -(xRise + rGnBend) - 0.5, zGnTop + rGnBend + rGn + 1.2, "GN", 0#
-    LabelM xRise + rGnBend - 0.5, zGnTop + rGnBend + rGn + 1.2, "GN", 0#
+    LabelM -(xGnStart + rGnBend) - 0.5, zGnTop + rGnBend + rGn + 1.2, "GN", 0#
+    LabelM xGnStart + rGnBend - 0.5, zGnTop + rGnBend + rGn + 1.2, "GN", 0#
     LabelM 20#, kAz + 3.5, "KLN rotary kiln D" & Num(KILN_D, 3) & " x " & Num(KILN_L, 0) & " m", 0#
     LabelM kBx + 0.3 * coolL, zCool0 + 0.75 * COOLER_H, "CLR grate cooler", 0#
     LabelM kBx + coolL - VENT_IN - 0.3 * TEXT_H * 14 * SHEET_SCALE, zCool0 + COOLER_H + VENT_UP + 1.1, _
@@ -809,7 +813,8 @@ Private Sub DrawPlant()
     ' inside the kiln, between its gas and its clinker: the kiln gas
     ' there is the secondary air the burner has fired
     LabelM kBx - 8#, kBz + 0.75, "secondary air", 0#
-    LabelM 42#, zTA + rTA + 2#, "TAD tertiary air D" & Num(TA_D, 3), 0#
+    ' under the duct: over it, it ran into the C5 dust outlet's elevation mark
+    LabelM 42#, zTA - rTA - 0.8, "TAD tertiary air D" & Num(TA_D, 3), 0#
     For k = 0 To 1
         sd = 1# - 2# * k
         If sd > 0# Then side = "R" Else side = "L"
@@ -922,14 +927,16 @@ End Sub
 
 
 ' The ground line and, at the sheet's left edge, an elevation ruler
-' 0 .. 100 m with a tick and its elevation every 10 m.
+' from 0 to the first 10 m over the tower top, with a tick and its
+' elevation every 10 m.
 Private Sub DrawRuler()
-    Dim k As Long
+    Dim k As Long, nk As Long
     Dim xr As Double, y As Double
     xr = (RULER_X - X0) * SHEET_SCALE
+    nk = Int(zTop(1) / 10#) + 1
     LineM xr, 0#, kBx + coolL + 1.4, 0#
-    LineM xr, 0#, xr, 100#
-    For k = 0 To 10
+    LineM xr, 0#, xr, 10# * nk
+    For k = 0 To nk
         y = Y0 + 10# * k / SHEET_SCALE
         LineP RULER_X, y, RULER_X + 0.003, y
         If k = 0 Then
@@ -1185,24 +1192,35 @@ Private Sub Duct(ByVal what As String, pts As Variant, ByVal w As Double, ByVal 
 End Sub
 
 
-' A gooseneck bend at its true width: two half circles about (cx, cz),
-' radii R + h and R - h, over the top.
-Private Sub DuctBend(ByVal cx As Double, ByVal cz As Double, ByVal R As Double, ByVal h As Double)
-    Dim k As Long
-    Dim rr As Double, a As Double, b As Double, c As Double, d As Double, m As Double, q As Double
+' One leg's bend of the Y gooseneck on side sd, at its true width,
+' about (sd (xGnStart + rGnBend), zGnTop): its inner wall a half circle
+' from the neck's wall over to the drop; its outer wall from where it
+' crosses the other leg's, on the axis -- the Y's crotch -- over to
+' the drop.
+Private Sub YBend(ByVal sd As Double)
+    Dim cx As Double, ro As Double, zc As Double
+    Dim a As Double, b As Double, c As Double, d As Double, m As Double, q As Double
     Dim i As Long
-    For k = 0 To 1
-        rr = R + h * (1 - 2 * k)
-        P cx - rr, cz, a, b
-        P cx + rr, cz, c, d
-        P cx, cz + rr, m, q
-        If swSkMgr.Create3PointArc(a, b, 0#, c, d, 0#, m, q, 0#) Is Nothing Then
-            Fail "Create3PointArc failed on the gooseneck bend."
-        End If
-        i = LayerIndex(curLayer)
-        nArc(i) = nArc(i) + 1
-        Track a, b: Track c, d: Track m, q
-    Next k
+    cx = sd * (xGnStart + rGnBend)
+    ro = rGnBend + rGn
+    zc = zGnTop + Sqr(ro * ro - cx * cx)
+    i = LayerIndex(curLayer)
+    P cx - rGnBend + rGn, zGnTop, a, b
+    P cx + rGnBend - rGn, zGnTop, c, d
+    P cx, zGnTop + rGnBend - rGn, m, q
+    If swSkMgr.Create3PointArc(a, b, 0#, c, d, 0#, m, q, 0#) Is Nothing Then
+        Fail "Create3PointArc failed on the gooseneck bend's inner wall."
+    End If
+    nArc(i) = nArc(i) + 1
+    Track a, b: Track c, d: Track m, q
+    P 0#, zc, a, b
+    P cx + sd * ro, zGnTop, c, d
+    P cx, zGnTop + ro, m, q
+    If swSkMgr.Create3PointArc(a, b, 0#, c, d, 0#, m, q, 0#) Is Nothing Then
+        Fail "Create3PointArc failed on the gooseneck bend's outer wall."
+    End If
+    nArc(i) = nArc(i) + 1
+    Track a, b: Track c, d: Track m, q
 End Sub
 
 
@@ -1321,11 +1339,11 @@ Private Sub DrawLegend()
     y = y - 0.02
     LabelP x, y, "NOTES"
     LabelP x, y - 0.006, "1. Elevations above ground, m; diameters internal, m."
-    LabelP x, y - 0.012, "2. Per string sizes are the 2500 t/d catalogue x 1/sqrt 2 (two"
-    LabelP x, y - 0.018, "   strings share the gas); see the equipment list."
+    LabelP x, y - 0.012, "2. 5000 t/d: two identical 2500 t/d strings on one calciner and"
+    LabelP x, y - 0.018, "   kiln; cyclones at the CFD sizes; see the equipment list."
     LabelP x, y - 0.024, "3. Schematic: kiln inlet chamber size has no source; meal pipes"
     LabelP x, y - 0.030, "   in 2D projection - C4, C5 pipes and the ramp are steeper in 3D."
-    LabelP x, y - 0.036, "4. Not a CFD input; the CFD domains are single-string."
+    LabelP x, y - 0.036, "4. Not a CFD input; one string is solved, the other is its copy."
 
     ' 10 m scale bar
     y = y - 0.057
@@ -1366,7 +1384,7 @@ Private Sub DrawTitle()
     Cell 0.771, 0.046, "Document status", "draft, schematic"
     LabelPH bx0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelP bx0 + 0.0015, 0.0335, "PYROPROCESS TOPOLOGY"
-    LabelPH bx0 + 0.0015, 0.0283, LINE_KEY & " t/d reference line; two-string 5-stage preheater,", 0.0025
+    LabelPH bx0 + 0.0015, 0.0283, "5000 t/d: two identical " & LINE_KEY & " t/d 5-stage preheater strings,", 0.0025
     LabelPH bx0 + 0.0015, 0.0248, "ILC calciner, rotary kiln, grate cooler - elevation", 0.0025
     Cell 0.771, 0.037, "Identification number", ""
     CellS 0.771, 0.028, "Rev.", ""
@@ -1421,22 +1439,22 @@ Private Sub DrawEquipmentList()
 
     tg = Array("Tag", "C1", "C2-C4", "C5", "R1", "R2", "R3", "R4", "CAL", "GN", "TAD", "KIC", "KLN", "HD", "CLR")
     eq = Array("Equipment", "twin top cyclone", "cyclone", "cyclone", "riser", "riser", "riser", "riser", _
-               "ILC calciner", "gooseneck leg", "tertiary air duct", "kiln inlet chamber", "rotary kiln", _
+               "ILC calciner", "Y gooseneck", "tertiary air duct", "kiln inlet chamber", "rotary kiln", _
                "kiln hood", "grate cooler")
-    qt = Array("Qty", "4", "6", "2", "2", "2", "2", "2", "1", "2", "1", "1", "1", "1", "1")
+    qt = Array("Qty", "4", "6", "2", "2", "2", "2", "2", "1", "1", "1", "1", "1", "1", "1")
     sz = Array("Size [m]", "D" & Num(2# * CycR(1), 3), "D" & Num(2# * CycR(4), 3) & ", barrel h = D", _
                "D" & Num(2# * CycR(5), 3), "D" & Num(RiserD(1), 3), "D" & Num(RiserD(2), 3), _
                "D" & Num(RiserD(3), 3), "D" & Num(RiserD(4), 3), _
-               "D" & Num(CALC_D, 3) & ", H " & Num(CALC_H, 2), "D" & Num(2# * rGn, 3), "D" & Num(TA_D, 3), _
+               "D" & Num(CALC_D, 3) & ", H " & Num(CALC_H, 2), "neck D" & Num(2# * rNeck, 2) & ", legs D" & Num(2# * rGn, 2), "D" & Num(TA_D, 3), _
                Num(2# * aCh, 1) & " x " & Num(2# * aCh, 1) & ", ramp", _
                "D" & Num(KILN_D, 1) & " x " & Num(KILN_L, 0) & ", " & Num(100# * KILN_SLOPE, 0) & " %", _
                Num(2# * aCh, 1) & " x " & Num(2# * aCh, 1), _
                Num(COOLER_AREA, 0) & " m2, " & Num(COOLER_W, 1) & " x " & Num(coolL, 1))
-    bs = Array("Basis", "catalogue C1 x 1/sqrt 2", "CFD barrel x 1/sqrt 2", _
-               "catalogue C5 x 1/sqrt 2", "published x 1/sqrt 2", "published x 1/sqrt 2", _
-               "published x 1/sqrt 2", "published x 1/sqrt 2", "calciner.bas", _
-               "published D3.5, area split", "derived, calciner.md", "schematic (no source)", "kiln.md", _
-               "schematic (no source)", "cooler.md")
+    bs = Array("Basis", "CFD C1", "CFD C4", _
+               "CFD C4 x 6.50/6.30", "published", "published", _
+               "published", "published", "PF5000, calciner.bas", _
+               "D3.5 per leg, calciner.bas", "derived, calciner.md", "schematic (no source)", "PF5000, kiln.md", _
+               "schematic (no source)", "PF5000, cooler.md")
     n = UBound(tg) + 1
 
     yT = 0.27
@@ -1528,22 +1546,30 @@ Private Sub DrawLevels()
     For s = 5 To 1 Step -1
         LevelMark LEVEL_X, zDust(s), "+" & Num(zDust(s), 2) & " C" & s & " dust outlet"
     Next s
-    LevelMark LEVEL_X, zCalcRoof, "+" & Num(zCalcRoof, 2) & " calciner roof"
+    ' Its text under the line when the C4 dust outlet's mark sits just
+    ' over it, where the two texts would run into each other
+    LevelMark LEVEL_X, zCalcRoof, "+" & Num(zCalcRoof, 2) & " calciner roof", _
+              (zDust(4) >= zCalcRoof And zDust(4) - zCalcRoof < 2.5)
     LevelMark LEVEL_X, zTop(1), "+" & Num(zTop(1), 2) & " tower top"
     LevelMark -13#, kAz, "+" & Num(kAz, 2) & " kiln axis"
 End Sub
 
 
 ' An elevation mark at (x, z): a short level line, a triangle with its
-' tip on it, its text over.
-Private Sub LevelMark(ByVal x As Double, ByVal z As Double, ByVal txt As String)
+' tip on it, its text over (or, below, under the line).
+Private Sub LevelMark(ByVal x As Double, ByVal z As Double, ByVal txt As String, _
+                      Optional ByVal below As Boolean = False)
     Dim px As Double, py As Double
     P x, z, px, py
     LineP px, py, px + 0.008, py
     LineP px + 0.0025, py, px + 0.001, py + 0.0026
     LineP px + 0.0025, py, px + 0.004, py + 0.0026
     LineP px + 0.001, py + 0.0026, px + 0.004, py + 0.0026
-    LabelP px + 0.0055, py + 0.0045, txt
+    If below Then
+        LabelP px + 0.0055, py - 0.001, txt
+    Else
+        LabelP px + 0.0055, py + 0.0045, txt
+    End If
 End Sub
 
 

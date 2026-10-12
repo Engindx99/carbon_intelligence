@@ -100,14 +100,27 @@ yazılır ve bu tablo değişmez. Şu anki sapmalar:
   Euler sayısı üzerinden taşınır. Birçok tesiste ara kademeler aynı gövde ölçüsüyle yapılır.
   C5 bilerek dışarıda: çapı yayınlanmış (6.50 m) ve en sıcak, en büyük hacimli gazı taşıdığı
   için büyük; 6.30'a indirmek giriş hızını ~%6.5, ΔP'yi ~%13 artırırdı. Oranları ara kademeyle
-  %1–2 içinde aynı olduğundan ΔP'si ara kademe CFD'sinin Euler sayısıyla ölçeklenir.
+  %1–2 içinde aynı olduğundan ΔP'si ara kademe CFD'sinin Euler sayısıyla ölçeklenir. Bunun
+  birebir geçerli olması için C5, CFD'deki C4'ün benzer ölçeklenmiş hâli olarak kurulur
+  (aşağıda).
 - [riser_R1.md](preheater/riser_R1.md) — CFD'de C1'in önüne eklenen riser yuvarlak **Ø2.171 m**:
   yayınlanmış Ø3.07 m ikiz C1'leri birlikte beslediği için C1 başına alanının yarısı. 1.5 m'lik
   bir geçişle C1 giriş kanalına (0.86 × 2.16) bağlanır (kullanıcı kararı, 29 Eylül 2026).
   Riser'ın boyları yayınlanmamış, CFD için türetilmiştir; tablo değişmez.
-- [gooseneck.md](preheater/gooseneck.md) — kalsinatörün kaz boynu CFD'de **çift kol, her biri Ø2.475 m**:
-  yayınlanmış Ø3.50'nin alanının yarısı. İki Ø3.50 boru Ø5.50'lik tavana sığmaz; toplam kesit korunur
-  (kullanıcı kararı, 29 Eylül 2026).
-- [cyclone_C5.md](preheater/cyclone_C5.md) — C5 **ikiz**, her biri tablodaki C5'in 1/√2 ile benzer
-  ölçeklenmiş hâli (D 4.596 m). Her C5 bir kaz boynu kolundan beslenir; giriş hızı ve oranlar korunur.
-  Tek bir C5 çözülür, ikincisi onun kopyasıdır (kullanıcı kararı, 29 Eylül 2026).
+- [calciner.md](calciner/calciner.md) — tesisin kalsinatörü **5000 t/d**: PF5000 gövdesi Ø7.2 → efektif
+  Ø6.74 (FLS oranı), 30.0 m (yayınlanmış). Boğaz ve tersiyer kanal 2500 sınıfının literatür akışlarının
+  iki katından türetilir (kullanıcı kararı, 12 Ekim 2026).
+- [gooseneck.md](preheater/gooseneck.md) — kaz boynu CFD'de bir **Y**: tavandan Ø4.95 tek boyun, tepesinde
+  iki Ø3.50 kol. Her kol bir hattın gazını taşır, yani yayınlanmış 2500 boynunun çapındadır; iki Ø3.50
+  boru Ø6.74'lük tavana sığmadığı için boyun ortaktır (kullanıcı kararı, 12 Ekim 2026). Önceki 2500
+  kalsinatöründe iki ayrı Ø2.475 kol vardı (29 Eylül 2026).
+- [cyclone_C5.md](preheater/cyclone_C5.md) — **hat başına bir C5**, D yayınlanmış 6.50 m. Diğer
+  ölçüler tablodan değil, **CFD'deki C4'ün ölçüleri × 6.50 / 6.30**: C4'ün sapmalarını (volüt, h = D,
+  S/a 1.15) taşır, onunla tam geometrik benzerdir. Euler sayısı ve volüt α'sı ölçeklemesiz geçer
+  (kullanıcı kararı, 12 Ekim 2026). Önceki ikiz C5 düzeni (29 Eylül 2026, her biri × 1/√2) kalktı.
+
+**Tesis: iki özdeş 2500 t/d hattı** (kullanıcı kararı, 12 Ekim 2026). Toplam kapasite 5000 t/d. Her
+hat bu tablonun 2500 satırı ve yukarıdaki sapmalarla kurulur; her hatta ikiz C1, C2, C3, C4 ve C5,
+toplam 12 siklon. Siklonlar CFD'si çözülen ölçülerdedir; ikinci hat birinin kopyasıdır. Kalsinatör,
+kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir (PF5000, [plant_topology.md](plant_topology.md)). Fırın
+2500'deki kuralla: yayınlanmış gövde çapı efektif çap, eğim %3 (kullanıcı kararı, 12 Ekim 2026).

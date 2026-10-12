@@ -3,13 +3,15 @@ Attribute VB_Name = "calciner"
 ' ILC calciner CFD fluid volume  ->  STEP (AP214) + STL + SLDPRT
 '
 ' Builds ONE closed solid: the gas volume inside the in-line
-' calciner of the 2500 t/d line -- the kiln riser throat, the bottom
+' calciner of the 5000 t/d plant -- two identical 2500 t/d preheater
+' strings on one calciner and kiln (user decision, 12 Oct 2026),
+' sized from the PF5000 line, itself double-string -- the kiln riser throat, the bottom
 ' cone and the vertical vessel -- and, as the build grows, its
 ' tangential tertiary air duct, the C4 meal pipe, a fuel port and the
 ' gooseneck down towards C5. Nothing structural is modelled -- no
 ' shell, no refractory (CLAUDE.md rule 8).
 '
-' BUILD STATUS: throat + cone + vessel, the twin gooseneck and the two
+' BUILD STATUS: throat + cone + vessel, the Y gooseneck and the two
 ' meal feed pipes. The tertiary air duct, the fuel port, and the face
 ' tagging with export follow; until then the macro builds and
 ' verifies, and exports nothing.
@@ -38,8 +40,12 @@ Const CALCINER_NAME As String = "calciner"
 Const LINE_KEY As String = "2500"
 
 ' Vessel [m] -- geometry/calciner/calciner.md, geometry/catalog.md
-Const D_VESSEL    As Double = 5.5     ' effective inner diameter, HFC2500 (published)
-Const H_VESSEL    As Double = 29.46   ' cone + cylinder, FLS calciner_H/D = 33.00 / 6.16
+' PF5000 publishes a 7.2 m shell and a 30.0 m vessel; the effective
+' diameter is the shell x FLS calciner_eff_over_shell = 3.08 / 3.29,
+' the rule geometry/catalog.md uses for every vendor shell. (The
+' 2500 t/d line's calciner was 5.50 x 29.46 m, HFC2500.)
+Const D_VESSEL    As Double = 6.7404  ' effective inner diameter, PF5000 shell 7.2 x 3.08 / 3.29
+Const H_VESSEL    As Double = 30#     ' cone + cylinder, PF5000 (published)
 
 ' Bottom cone wall angle above the horizontal. Holcim StDC 2022 asks
 ' at least 65 deg of a cyclone cone so meal slides off it rather than
@@ -51,8 +57,9 @@ Const CONE_DEG    As Double = 65#
 ' a literature flow at a literature velocity -- never from the twin,
 ' which is not ready (user decision, 29 Sep 2026):
 '
-'   kiln gas   110 600 kg/h         Mikulcic et al. 2012, a calciner
-'                                   of the same 5.5 m diameter
+'   kiln gas   2 x 110 600 kg/h     Mikulcic et al. 2012, a 5.5 m
+'                                   calciner of a 2500 t/d class line;
+'                                   the 5000 t/d kiln makes twice it
 '   at         1050 C               Kahawalage et al. 2017
 '   of         74.4 N2, 7.6 O2,     Kahawalage et al. 2017, mol %
 '              5.0 H2O, 13.0 CO2
@@ -60,7 +67,7 @@ Const CONE_DEG    As Double = 65#
 '                                   throat mean 28-30 m/s
 '
 ' Ideal gas at one atmosphere; the throat diameter follows in Derive.
-Const M_KILN_GAS  As Double = 30.72222222   ' 110 600 kg/h [kg/s]
+Const M_KILN_GAS  As Double = 61.44444444   ' 2 x 110 600 kg/h [kg/s]
 Const T_KILN_GAS  As Double = 1323.15       ' [K]
 Const X_N2        As Double = 0.744
 Const X_O2        As Double = 0.076
@@ -73,16 +80,17 @@ Const U_THROAT    As Double = 29#           ' [m/s]
 ' inlet face sits on a straight run rather than on the cone's lip.
 Const THROAT_LEN_OVER_D As Double = 1#
 
-' Twin gooseneck. Two round pipes rise from the flat roof in the x-z
-' plane, each turns outward over a 180 deg bend and drops to its own
-' gas outlet face. The published gooseneck is 3.50 m
-' (geometry/preheater/gooseneck.md); two of those do not fit side by
-' side on a 5.50 m roof, so each leg carries half its area -- total
-' section and velocity kept, the same rule the C1 riser uses (user
-' decision, 29 Sep 2026). The pipe axes are derived, not chosen: see
-' Derive.
-Const D_GOOSENECK_SRC      As Double = 3.5   ' published [m]
-Const GOOSENECK_AREA_SHARE As Double = 0.5   ' two legs share it
+' Y gooseneck (user decision, 12 Oct 2026). Each leg takes one
+' string's gas to its C5: a 2500 t/d line's whole gas, so each leg is
+' the published 3.50 m gooseneck of that line
+' (geometry/preheater/gooseneck.md). Two 3.50 m legs do not fit side
+' by side on the 6.74 m roof, so ONE neck rises from the roof's centre
+' with the two legs' area, 3.50 x sqrt 2 = 4.95 m, velocity kept. At
+' its top the two legs start, each disc inside the neck's and touching
+' its rim on its own side, turn outward over a 180 deg bend and drop
+' to their gas outlet faces. Where the legs' discs do not cover the
+' neck's, its top is a flat ceiling.
+Const D_GOOSENECK_SRC      As Double = 3.5   ' published, one 2500 t/d line [m]: each leg
 
 ' Modelling parameters -- NOT plant dimensions. No source gives the
 ' gooseneck's lengths. The rise and the bend are C1's (cyclone.bas),
@@ -91,17 +99,19 @@ Const GOOSENECK_AREA_SHARE As Double = 0.5   ' two legs share it
 ' height (user decision, 29 Sep 2026): the outlet faces sit at this
 ' fraction of the vessel (cone + cylinder) above its bottom, z =
 ' zThroatTop, far enough past the bend for the flow to straighten.
-Const GN_RISE_OVER_D        As Double = 1.25   ' straight rise above the roof, x leg D
+Const GN_RISE_OVER_D        As Double = 1.25   ' the neck's straight rise above the roof, x neck D
 Const GN_BEND_R_OVER_D      As Double = 1.5    ' bend centreline radius, x leg D
 Const GN_OUTLET_AT_VESSEL_H As Double = 0.5    ' outlet faces' height, fraction of H_VESSEL
 
 ' Meal feed. Fidaros et al. 2007 feed the raw meal through two round
 ' 0.6 m pipes at 60 deg to the horizontal; here one on each side of
 ' the vessel, at +x and -x, in the gooseneck's x-z plane below each
-' drop (user decision, 29 Sep 2026). Each pipe points at the vessel
-' axis and rises away from the wall, so the meal falls in towards the
-' middle.
-Const D_FEED         As Double = 0.6    ' [m], Fidaros 2007
+' drop (user decision, 29 Sep 2026): each takes one string's C4 meal.
+' That is twice the meal of Fidaros's calciner per pipe, so the area
+' doubles at the same meal velocity: 0.6 x sqrt 2 = 0.8485 m. Each
+' pipe points at the vessel axis and rises away from the wall, so the
+' meal falls in towards the middle.
+Const D_FEED         As Double = 0.8485 ' [m], Fidaros 2007 x sqrt 2
 Const FEED_SLOPE_DEG As Double = 60#    ' below the horizontal, Fidaros 2007
 
 ' Modelling parameters -- NOT plant dimensions. Where the pipe axis
@@ -115,10 +125,14 @@ Const FEED_DEPTH        As Double = 1#  ' [m]
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
+' Grid points per axis for the volume the two gooseneck bends share
+' (GnBendOverlap); its error is well under VOL_TOL on the body.
+Const OVERLAP_N As Long = 80
+
 ' Verification tolerances
 Const VOL_TOL  As Double = 0.001   ' relative, on every closed-form stage volume
-' A feed pipe adds 0.29 m3 to a 982 m3 body, a third of VOL_TOL on the
-' whole, so its stage is also checked on the volume it ADDS, to this.
+' A feed pipe adds well under a cubic metre to a ~1870 m3 body, under
+' VOL_TOL on the whole, so its stage is also checked on the volume it ADDS, to this.
 Const FEED_VOL_TOL As Double = 0.01
 Const AREA_TOL As Double = 0.002   ' relative, on face areas
 Const BOX_TOL  As Double = 0.005   ' absolute [m]; GetBodyBox may overstate curved faces
@@ -151,8 +165,9 @@ Dim hCone As Double                         ' cone height
 Dim zConeTop As Double                      ' where the cone meets the cylinder
 Dim zRoof As Double                         ' the vessel's flat roof
 Dim rGn As Double                           ' gooseneck leg radius
-Dim xGn As Double                           ' the rising pipes' axes, x = +-this, y = 0
-Dim zGnTop As Double                        ' top of the rise, where both bends start and end
+Dim rNeck As Double                         ' the neck's radius, two legs' area
+Dim xGn As Double                           ' the legs' start discs, x = +-this, y = 0, inside the neck's
+Dim zGnTop As Double                        ' top of the neck, where both bends start and end
 Dim rGnBend As Double                       ' bend centreline radius
 Dim xGnLeg As Double                        ' the drops' axes, x = +-this
 Dim zGnOut As Double                        ' the two gas outlet faces, z = this, facing down
@@ -180,6 +195,7 @@ Dim wRefSet As Boolean
 ' expected volumes, all closed form
 Dim vThroat As Double, vCone As Double, vCyl As Double, vVessel As Double
 Dim vGnPipes As Double, vGnBend As Double, vGnLegs As Double
+Dim vGnOverlap As Double                    ' what the two bends share, over the neck
 Dim vFeed As Double                         ' one feed pipe, the part outside the vessel
 Dim vStage1 As Double, vStage2 As Double, vStage3a As Double, vStage3b As Double
 Dim vStage4 As Double, vStage5a As Double
@@ -263,21 +279,19 @@ Private Sub Derive()
     vCyl = PI * R * R * (H_VESSEL - hCone)
     vVessel = vCone + vCyl
 
-    ' Gooseneck. The pipe axes sit where the gap between the two pipes
-    ' equals the gap between each pipe and the vessel wall:
-    ' 2 (x - r) = R - x - r  ->  x = (R + r) / 3. The roof strips on
-    ' either side are then equally thin, and the thinnest is as thick
-    ' as it can be.
-    rGn = Sqr(GOOSENECK_AREA_SHARE * 0.25 * D_GOOSENECK_SRC * D_GOOSENECK_SRC)
-    xGn = (R + rGn) / 3#
-    zGnTop = zRoof + GN_RISE_OVER_D * 2# * rGn
+    ' Gooseneck. One neck of both legs' area on the axis; each leg's
+    ' start disc inside it, touching its rim on its own side.
+    rGn = 0.5 * D_GOOSENECK_SRC
+    rNeck = rGn * Sqr(2#)
+    xGn = rNeck - rGn
+    zGnTop = zRoof + GN_RISE_OVER_D * 2# * rNeck
     rGnBend = GN_BEND_R_OVER_D * 2# * rGn
     xGnLeg = xGn + 2# * rGnBend
     zGnOut = zThroatTop + GN_OUTLET_AT_VESSEL_H * H_VESSEL
     zGnApex = zGnTop + rGnBend + rGn
     xBoxMax = xGnLeg + rGn
 
-    vGnPipes = 2# * PI * rGn * rGn * (zGnTop - zRoof)
+    vGnPipes = PI * rNeck * rNeck * (zGnTop - zRoof)
     ' Pappus: a disc swept about an axis it does not cross sweeps its
     ' area times the path of its centroid, here half a circle of
     ' radius rGnBend. Exact while rGnBend > rGn. One bend.
@@ -285,7 +299,11 @@ Private Sub Derive()
     vGnLegs = 2# * PI * rGn * rGn * (zGnTop - zGnOut)
 
     vStage1 = vThroat + vVessel            ' throat + cone + cylinder
-    vStage2 = vStage1 + vGnPipes           ' + two pipes rising from the roof
+    vStage2 = vStage1 + vGnPipes           ' + the neck rising from the roof
+    ' The two bends start from overlapping discs, so near the neck
+    ' they share a volume no closed form gives; GnBendOverlap
+    ' integrates it.
+    vGnOverlap = GnBendOverlap()
     vStage3a = vStage2 + vGnBend           ' + the +x bend
     ' Meal feed pipes. Checked here, not in PreChecks: at 90 deg the
     ' lines below divide by zero before PreChecks runs.
@@ -312,7 +330,7 @@ Private Sub Derive()
     ' integral is elliptic; FeedChordIntegral evaluates it.
     vFeed = PI * rFeed * rFeed * lFeed - FeedChordIntegral() / fc
 
-    vStage3b = vStage3a + vGnBend          ' + the -x bend
+    vStage3b = vStage3a + vGnBend - vGnOverlap   ' + the -x bend, less what it shares with the +x one
     vStage4 = vStage3b + vGnLegs           ' + two drops to the outlet faces
     vStage5a = vStage4 + vFeed             ' + the +x meal feed pipe
     vFinal = vStage5a + vFeed              ' + the -x meal feed pipe
@@ -351,10 +369,10 @@ Private Sub PreChecks()
              "would sit on the cone's lip."
     End If
 
-    ' 5. both pipes on the roof, clear of each other and of the wall
-    If xGn - rGn <= 0# Or R - xGn - rGn <= 0# Then
-        Fail "two gooseneck legs of D " & Fmt(2# * rGn) & " m do not fit side by side on " & _
-             "the D " & Fmt(D_VESSEL) & " m roof. GOOSENECK_AREA_SHARE is too large."
+    ' 5. the neck on the roof, clear of the wall
+    If rNeck >= R Then
+        Fail "the gooseneck neck (D " & Fmt(2# * rNeck) & " m) does not fit on the D " & _
+             Fmt(D_VESSEL) & " m roof."
     End If
 
     ' 6. the bends. At rGnBend <= rGn the inner wall of a bend passes
@@ -423,8 +441,9 @@ Private Sub PreChecks()
     Note "cone " & Fmt(CONE_DEG) & " deg, " & Fmt(hCone) & " m tall, z " & Fmt(zThroatTop) & _
          " .. " & Fmt(zConeTop) & " m"
     Note "cylinder D " & Fmt(D_VESSEL) & " m, z " & Fmt(zConeTop) & " .. " & Fmt(zRoof) & " m"
-    Note "gooseneck: 2 legs D " & Fmt(2# * rGn) & " m at x = +-" & Fmt(xGn) & " m, rise to z = " & _
-         Fmt(zGnTop) & " m, bend R " & Fmt(rGnBend) & " m over 180 deg, drop at x = +-" & _
+    Note "gooseneck: neck D " & Fmt(2# * rNeck) & " m rising to z = " & Fmt(zGnTop) & _
+         " m; 2 legs D " & Fmt(2# * rGn) & " m from x = +-" & Fmt(xGn) & " m, bend R " & _
+         Fmt(rGnBend) & " m over 180 deg (sharing " & Fmt(vGnOverlap) & " m3), drop at x = +-" & _
          Fmt(xGnLeg) & " m to the outlet faces at z = " & Fmt(zGnOut) & " m"
     Note "meal feed: 2 pipes D " & Fmt(D_FEED) & " m at " & Fmt(FEED_SLOPE_DEG) & _
          " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (+-" & _
@@ -490,10 +509,10 @@ Private Sub Build()
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the throat + cone + cylinder profile."
     CheckStage "1  throat + cone + cylinder", vStage1, -R, -R, 0#, R, R, zRoof
 
-    '--- 2. two pipes rising from the roof ---------------------------
+    '--- 2. the neck rising from the roof ----------------------------
     ' Drawn at the top of the rise and extruded down onto the roof.
-    Set f = ExtrudeCircles(planeGn, xGn, zGnTop - zRoof, vStage2, "2  + gooseneck rise")
-    CheckStage "2  + gooseneck rise", vStage2, -R, -R, 0#, R, R, zGnTop
+    Set f = ExtrudeCircles(planeGn, 0#, rNeck, zGnTop - zRoof, vStage2, "2  + gooseneck neck")
+    CheckStage "2  + gooseneck neck", vStage2, -R, -R, 0#, R, R, zGnTop
 
     '--- 3. the two 180 deg bends, each turning outward --------------
     ' One feature each: a revolve takes one axis.
@@ -503,7 +522,7 @@ Private Sub Build()
     CheckStage "3b + gooseneck bend, -x", vStage3b, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
 
     '--- 4. the two drops to the gas outlet faces ---------------------
-    Set f = ExtrudeCircles(planeGn, xGnLeg, zGnTop - zGnOut, vStage4, "4  + gooseneck drops")
+    Set f = ExtrudeCircles(planeGn, xGnLeg, rGn, zGnTop - zGnOut, vStage4, "4  + gooseneck drops")
     CheckStage "4  + gooseneck drops", vStage4, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
 
     '--- 5. the two meal feed pipes, at +x and -x ---------------------
@@ -643,15 +662,15 @@ Private Function OffsetPlane(base As SldWorks.Feature, _
 End Function
 
 
-' Two discs of the gooseneck's radius, at (+-xc, 0) in the plane
-' z = zGnTop, extruded straight DOWN by depth: the two rising pipes
+' Discs of radius rc at (+-xc, 0) in the plane z = zGnTop -- one disc
+' on the axis when xc = 0 -- extruded straight DOWN by depth: the neck
 ' (onto the roof) or the two drops (to the outlet faces).
 '
 ' Which way a blind extrusion goes is not ours to choose. Up from the
 ' plane, the pipes would float free of the vessel -- three bodies --
 ' and the drops would run back into the bends and come out short; the
 ' body count and the volume say which, and the other way is tried.
-Private Function ExtrudeCircles(planeGn As SldWorks.Feature, ByVal xc As Double, _
+Private Function ExtrudeCircles(planeGn As SldWorks.Feature, ByVal xc As Double, ByVal rc As Double, _
                                 ByVal depth As Double, ByVal expected As Double, _
                                 ByVal stage As String) As SldWorks.Feature
 
@@ -673,9 +692,10 @@ Private Function ExtrudeCircles(planeGn As SldWorks.Feature, ByVal xc As Double,
 
     For s = -1 To 1 Step 2
         G2S sk, s * xc, 0#, zGnTop, u0, v0
-        If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rGn) Is Nothing Then
+        If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rc) Is Nothing Then
             Fail "CreateCircleByRadius failed at stage " & stage & "."
         End If
+        If xc = 0# Then Exit For
     Next s
 
     swSkMgr.InsertSketch True
@@ -818,6 +838,42 @@ Private Function RevolveGnBend(planeGn As SldWorks.Feature, ByVal side As Double
 End Function
 
 
+' The volume the two gooseneck bends share. Each bend is a half torus
+' over the plane z = zGnTop, about the line through
+' (side * (xGn + rGnBend), ., zGnTop) parallel to y: a point is in it
+' when its distance rho from that line, measured in the x-z plane,
+' and its y satisfy (rho - rGnBend)^2 + y^2 <= rGn^2, z >= zGnTop.
+' The +x bend never reaches x < xGn - rGn, nor the -x bend past
+' -(xGn - rGn), and neither rises over rGnBend + rGn: the midpoint rule
+' on that box, OVERLAP_N points a side.
+Private Function GnBendOverlap() As Double
+    Dim i As Long, j As Long, k As Long
+    Dim hx As Double, hy As Double, hz As Double
+    Dim x As Double, y As Double, z As Double
+    Dim xa As Double, ra As Double, rb As Double
+    Dim hit As Long
+    xa = xGn + rGnBend
+    hx = 2# * (rGn - xGn) / OVERLAP_N
+    hy = 2# * rGn / OVERLAP_N
+    hz = (rGnBend + rGn) / OVERLAP_N
+    For i = 0 To OVERLAP_N - 1
+        x = -(rGn - xGn) + (i + 0.5) * hx
+        For k = 0 To OVERLAP_N - 1
+            z = (k + 0.5) * hz
+            ra = Sqr((x - xa) * (x - xa) + z * z) - rGnBend
+            rb = Sqr((x + xa) * (x + xa) + z * z) - rGnBend
+            For j = 0 To OVERLAP_N - 1
+                y = -rGn + (j + 0.5) * hy
+                If ra * ra + y * y <= rGn * rGn Then
+                    If rb * rb + y * y <= rGn * rGn Then hit = hit + 1
+                End If
+            Next j
+        Next k
+    Next i
+    GnBendOverlap = hit * hx * hy * hz
+End Function
+
+
 ' One meal feed pipe, on side = +1 (+x) or -1 (-x).
 '
 ' The pipe's half-section -- a rectangle in the plane y = 0 from its
@@ -826,7 +882,7 @@ End Function
 ' axis, so its start disc is inside the vessel and dissolves in the
 ' merge, and runs out through the wall to its end face.
 '
-' The volume it adds is 0.29 m3 of 982, under VOL_TOL on the whole
+' The volume it adds is under a cubic metre of ~1870, under VOL_TOL on the whole
 ' body, so it is checked on its own: the volume ADDED, the end face
 ' found where it has to be with the pipe's area.
 Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal stage As String)
