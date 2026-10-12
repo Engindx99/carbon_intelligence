@@ -16,7 +16,7 @@ Attribute VB_Name = "plant_topology_2d"
 ' cyclone CFD documents and cyclone.bas stay single-string.
 '
 ' It is drawn on an A1 sheet at 1:200, on layers that carry the
-' colours: equipment outlines black, gas orange, meal yellow, air
+' colours: equipment outlines black, gas red, meal yellow, air
 ' blue. Equipment is its true section; the main ducts (risers,
 ' gooseneck, tertiary air) are drawn at their true diameter as two
 ' lines; the other paths as one line along their axis. Arrows show
@@ -50,7 +50,9 @@ Const C1_HC As Double = 4.65
 Const C1_VD As Double = 2.4
 Const C1_DD As Double = 0.4
 Const C4_D  As Double = 6.3
-Const C4_HB As Double = 3.46
+' The CFD barrel, h = D, not the catalogue's 3.46 m (cyclone_C4.md,
+' catalog.md deviation, user decision 4 Oct 2026).
+Const C4_HB As Double = 6.3
 Const C4_HC As Double = 7.3
 Const C4_VD As Double = 4.63
 Const C4_DD As Double = 0.81
@@ -105,8 +107,17 @@ Const COOLER_W       As Double = 3#       ' grate width [m]; the length follows 
 Const COOLER_H       As Double = 4#       ' cooler casing height [m]
 Const COOLER_DROP    As Double = 1#       ' cooler top below the kiln shell at discharge [m]
 Const MEAL_INTO_CHAMBER As Double = 1#    ' C5 meal lands this far in from the chamber's side [m]
+Const MIN_SEG        As Double = 0.05     ' a wall piece beside an opening shorter than this is left out [m]
+Const CLINKER_OUT_Z  As Double = 3.5      ' clinker transport drawn this far below ground [m]
+Const VENT_IN        As Double = 3#       ' cooler vent this far in from the cooler's end [m]
+Const VENT_UP        As Double = 4#       ' vent arrow drawn this far over the cooler roof [m]
+Const CLINKER_ON_GRATE As Double = 1#     ' clinker line this far over the cooler floor [m]
+Const TA_ARROW_LONG  As Double = 1.15     ' tertiary air arrow this many times the rise from the cooler's mid-height to the hood roof; it runs on up into its duct [-]
+Const C4_MEAL_DROP   As Double = 3#       ' C4 meal falls straight this far before turning towards the calciner [m]
+Const C4_MEAL_OVER   As Double = 1.2      ' ... and ends this far over where it crosses the C5 stub; C4 stands as high as that needs [m]
+Const FEED_LOWER     As Double = 3#       ' C4 meal drawn into the calciner this far below calciner.bas's feed [m]
 Const KILN_FLOW_OFF  As Double = 1#       ' kiln gas and material lines this far either side of the kiln axis [m]
-Const PRIMARY_AIR_L  As Double = 4#       ' primary air drawn from this far outboard of the hood, along the kiln axis [m]
+Const PRIMARY_AIR_L  As Double = 2#       ' primary air: a short arrow this long into the hood's front wall [m]
 Const SEC_AIR_DX     As Double = 1.5      ' secondary air rises from the cooler this far in from the kiln's end [m]
 
 ' Sheet [m on paper]: A1 landscape at 1:200
@@ -155,7 +166,7 @@ Dim kAx As Double, kAz As Double, kBx As Double, kBz As Double
 Dim coolL As Double, zCool0 As Double, zHood0 As Double
 Dim rTA As Double, zTA As Double
 Dim zDust(1 To 5) As Double, zRoof(1 To 5) As Double, zTop(1 To 5) As Double
-Dim zIn(1 To 5) As Double                 ' gas enters each stage mid-barrel
+Dim zIn(1 To 5) As Double                 ' gas inlet centre: at the roof for C1-C4, mid-barrel for C5
 Dim zC5Bar As Double                      ' the C5 barrels' bottom; a leg's inlet run fits above it
 Dim xInner As Double                      ' |x| of a string's inner column (C5, C3)
 
@@ -246,7 +257,7 @@ Private Sub Derive()
     xLeg = xRise + 2# * rGnBend
     zGnTop = zCalcRoof + 1.25 * 2# * rGn
     zLeg = zThroat + CALC_THROAT_D + GN_OUT_AT_H * CALC_H
-    zFeed = zLeg - FEED_BELOW_GN_OUT
+    zFeed = zLeg - FEED_BELOW_GN_OUT - FEED_LOWER
 
     ' Each string: C5 GN_TO_C5_GAP outboard of its leg, its roof where
     ' the leg ends; the leg turns into the C5 barrel at its inlet. Each
@@ -257,13 +268,26 @@ Private Sub Derive()
     top = zLeg + STUB_OVER_VD * vd
     For s = 4 To 1 Step -1
         zDust(s) = top + STAGE_GAP
+        ' C4 high enough for its meal's straight drop to end over the
+        ' C5 stub, where the meal crosses it (zTop(5) + 0.3)
+        If s = 4 Then zDust(4) = Max2(zDust(4), top + 0.3 + C4_MEAL_OVER + C4_MEAL_DROP)
         top = zDust(s) + CycHeight(s)
     Next s
     For s = 1 To 5
         CycDims s, d, hb, hc, vd, dd
         zRoof(s) = zDust(s) + hc + hb
         zTop(s) = zDust(s) + CycHeight(s)
-        zIn(s) = zRoof(s) - 0.5 * hb
+        ' C1 to C4 take their gas at the roof, as their CFD solids do
+        ' (C1's slot and C4's volute run down from the roof): the
+        ' riser's top wall flush with it. C5's catalogue inlet is
+        ' taller than its barrel; it stays at mid-barrel.
+        If s = 5 Then
+            zIn(s) = zRoof(s) - 0.5 * hb
+        ElseIf s = 1 Then
+            zIn(s) = zRoof(s) - sScale * 0.5 * RiserD(1)
+        Else
+            zIn(s) = zRoof(s) - 0.5 * RiserD(s)
+        End If
     Next s
     CycDims 5, d, hb, hc, vd, dd
     zC5Bar = zRoof(5) - hb
@@ -370,7 +394,11 @@ Private Sub PreChecks()
     If 2# * rGn >= zRoof(5) - zC5Bar Then Fail "the gooseneck legs (D " & Fmt(2# * rGn) & _
         ") are taller than the C5 barrel they enter."
     ' The C4 meal passes over the C5 stub
-    If zDust(4) <= zTop(5) + 0.3 Then Fail "C4's dust outlet is not above the C5 stub; its meal could not pass over it."
+    If zDust(4) - C4_MEAL_DROP <= zTop(5) + 0.3 Then
+        Fail "C4's meal, after its straight drop, is not above the C5 stub; it could not pass over it."
+    End If
+    ' and on into the calciner's cylinder, over the cone
+    If zFeed <= zConeTop Then Fail "the C4 meal would reach the calciner below its cylinder. Lower FEED_LOWER."
     ' The tertiary air duct runs under the C5s and over the chamber and kiln
     If zTA + rTA >= zDust(5) Then Fail "the tertiary air duct runs into the C5s."
     If zTA - rTA <= zThroat Or zTA - rTA <= kAz + 0.5 * KILN_D Then
@@ -463,12 +491,12 @@ Private Sub MakeLayers()
 
     Set lm = swModel.GetLayerManager
     If lm Is Nothing Then Fail "the drawing has no layer manager."
-    AddOneLayer lm, L_EQUIP, "equipment outlines", RGB(0, 0, 0), swLW_THICK2
-    AddOneLayer lm, L_GAS, "gas path", RGB(230, 100, 0), swLW_THICK
-    AddOneLayer lm, L_MEAL, "meal path", RGB(200, 150, 0), swLW_THICK
-    AddOneLayer lm, L_AIR, "air path", RGB(30, 90, 220), swLW_THICK
+    AddOneLayer lm, L_EQUIP, "equipment outlines", RGB(0, 0, 0), swLW_NORMAL
+    AddOneLayer lm, L_GAS, "hot gas and air", RGB(210, 0, 0), swLW_THIN
+    AddOneLayer lm, L_MEAL, "meal path", RGB(200, 150, 0), swLW_THIN
+    AddOneLayer lm, L_AIR, "cold air", RGB(30, 90, 220), swLW_THIN
     AddOneLayer lm, L_TEXT, "labels, legend, title", RGB(0, 0, 0), swLW_THIN
-    Note "layers: " & L_EQUIP & " (black, thick), " & L_GAS & " (orange), " & L_MEAL & " (yellow), " & _
+    Note "layers: " & L_EQUIP & " (black, normal), " & L_GAS & " (red), " & L_MEAL & " (yellow), " & _
          L_AIR & " (blue), " & L_TEXT & " (black, thin)"
 
 End Sub
@@ -518,23 +546,51 @@ Private Sub DrawPlant()
     Dim r As Double, rb As Double, zh As Double, zx As Double, xe As Double
     Dim wl As Double, wr As Double, ls As Double
     Dim zJoin As Double, xc As Double, zc As Double, kOff As Double
+    Dim kSh As Double, zTopCh As Double, zTopHd As Double, xn As Double
     Dim zEnt(2 To 5) As Double                ' top edge of the run of the riser leaving stage s
     Dim col(2 To 5) As Double
     Dim side As String
 
     '=== equipment ======================================================
+    ' Every wall a flow passes through is left open: the kiln's ends,
+    ' the calciner throat, the gooseneck and tertiary air ports, the
+    ' hood over the cooler, each cyclone's inlet, gas outlet and dust
+    ' outlet. Single-line paths (meal, exhaust) end on a wall as drawn.
     phase = "drawing the equipment"
     UseLayer L_EQUIP
-    Outline Array(-aCh, zCh0, aCh, zCh0, aCh, zCh0 + 2# * aCh, -aCh, zCh0 + 2# * aCh)
-    Outline Array(rThroat, zThroat, rThroat, zThroat + CALC_THROAT_D, rCalc, zConeTop, _
-                  rCalc, zCalcRoof, -rCalc, zCalcRoof, -rCalc, zConeTop, _
-                  -rThroat, zThroat + CALC_THROAT_D, -rThroat, zThroat)
-    Outline Array(kAx + 0.5 * KILN_D * Sin(kAlpha), kAz - 0.5 * KILN_D * Cos(kAlpha), _
-                  kBx + 0.5 * KILN_D * Sin(kAlpha), kBz - 0.5 * KILN_D * Cos(kAlpha), _
-                  kBx - 0.5 * KILN_D * Sin(kAlpha), kBz + 0.5 * KILN_D * Cos(kAlpha), _
-                  kAx - 0.5 * KILN_D * Sin(kAlpha), kAz + 0.5 * KILN_D * Cos(kAlpha))
-    Outline Array(kBx, zCool0, kBx + coolL, zCool0, kBx + coolL, zCool0 + COOLER_H, kBx, zCool0 + COOLER_H)
-    Outline Array(kBx, zHood0, kBx + 2# * aCh, zHood0, kBx + 2# * aCh, zHood0 + 2# * aCh, kBx, zHood0 + 2# * aCh)
+    kSh = 0.5 * KILN_D / Cos(kAlpha)           ' kiln shell above / below its axis, on a vertical
+    zTopCh = zCh0 + 2# * aCh
+    zTopHd = zHood0 + 2# * aCh
+
+    ' kiln inlet chamber: open to the kiln on its +x wall, to the
+    ' calciner throat in its roof
+    LineM -aCh, zCh0, aCh, zCh0
+    Seg aCh, zCh0, aCh, kAz - kSh
+    Seg aCh, kAz + kSh, aCh, zTopCh
+    Seg aCh, zTopCh, rThroat, zTopCh
+    Seg -rThroat, zTopCh, -aCh, zTopCh
+    LineM -aCh, zTopCh, -aCh, zCh0
+    ' calciner: no floor (the throat), the tertiary air port in its +x
+    ' wall over the cone, the two gooseneck rises in its roof
+    PolyM Array(rThroat, zThroat, rThroat, zThroat + CALC_THROAT_D, rCalc, zConeTop)
+    Seg rCalc, zConeTop + TA_D, rCalc, zCalcRoof
+    Seg rCalc, zCalcRoof, xRise + rGn, zCalcRoof
+    Seg xRise - rGn, zCalcRoof, -(xRise - rGn), zCalcRoof
+    Seg -(xRise + rGn), zCalcRoof, -rCalc, zCalcRoof
+    PolyM Array(-rCalc, zCalcRoof, -rCalc, zConeTop, -rThroat, zThroat + CALC_THROAT_D, -rThroat, zThroat)
+    ' kiln: its shell only, both ends open
+    LineM kAx, kAz + kSh, kBx, kBz + kSh
+    LineM kAx, kAz - kSh, kBx, kBz - kSh
+    ' hood: open to the kiln on its -x wall, to the tertiary air duct
+    ' in its roof, and to the cooler under it
+    Seg kBx, zHood0, kBx, kBz - kSh
+    Seg kBx, kBz + kSh, kBx, zTopHd
+    Seg kBx, zTopHd, kBx + aCh - 0.5 * TA_D, zTopHd
+    Seg kBx + aCh + 0.5 * TA_D, zTopHd, kBx + 2# * aCh, zTopHd
+    LineM kBx + 2# * aCh, zTopHd, kBx + 2# * aCh, zHood0
+    ' cooler: its roof only past the hood
+    PolyM Array(kBx + 2# * aCh, zCool0 + COOLER_H, kBx + coolL, zCool0 + COOLER_H, kBx + coolL, zCool0, _
+                kBx, zCool0, kBx, zCool0 + COOLER_H)
 
     r1 = CycR(1)
     dc1 = r1 + 0.5 * C1_TWIN_GAP
@@ -543,11 +599,14 @@ Private Sub DrawPlant()
         If sd > 0# Then side = "R" Else side = "L"
         xi = sd * xInner: xo = xi + sd * ZIG_DX: xm = 0.5 * (xi + xo)
         col(5) = xi: col(4) = xo: col(3) = xi: col(2) = xo
-        For s = 5 To 2 Step -1
-            Cyclone s, col(s)
+        ' each open on the side its inlet comes from: C5 the gooseneck's
+        ' (towards the calciner), the others their riser's (towards xm)
+        Cyclone 5, col(5), -sd, rGn
+        For s = 4 To 2 Step -1
+            Cyclone s, col(s), Sgn(xm - col(s)), 0.5 * RiserD(s)
         Next s
-        Cyclone 1, xm - sd * dc1
-        Cyclone 1, xm + sd * dc1
+        Cyclone 1, xm - sd * dc1, sd, sScale * 0.5 * RiserD(1)
+        Cyclone 1, xm + sd * dc1, -sd, sScale * 0.5 * RiserD(1)
     Next k
 
     '=== gas ==============================================================
@@ -582,8 +641,9 @@ Private Sub DrawPlant()
             zh = zTop(s) + r
             xs0 = col(s) - Sgn(xm - col(s)) * StubR(s)
             xw = col(up) - Sgn(col(up) - xm) * CycR(up)
+            RunOverStub s, col(s), xm, r, xn
             Duct "gas: C" & s & " " & side & " -> R" & up & " -> C" & up, _
-                 Array(xs0, zh, xm, zh, xm, zIn(up), xw, zIn(up)), 2# * r, True
+                 Array(xn, zh, xm, zh, xm, zIn(up), xw, zIn(up)), 2# * r, False
             zEnt(s) = zTop(s) + 2# * r
         Next s
 
@@ -591,8 +651,8 @@ Private Sub DrawPlant()
         r = 0.5 * RiserD(1)
         rb = sScale * r
         zh = zTop(2) + r
-        xs0 = xo - Sgn(xm - xo) * StubR(2)
-        Duct "gas: C2 " & side & " -> R1", Array(xs0, zh, xm, zh, xm, zIn(1) - rb), 2# * r, True
+        RunOverStub 2, xo, xm, r, xn
+        Duct "gas: C2 " & side & " -> R1", Array(xn, zh, xm, zh, xm, zIn(1) - rb), 2# * r, False
         wl = Min2(c1in, c1out) + r1: wr = Max2(c1in, c1out) - r1
         LineM wl, zIn(1) + rb, wr, zIn(1) + rb
         LineM wl, zIn(1) - rb, xm - r, zIn(1) - rb
@@ -602,7 +662,7 @@ Private Sub DrawPlant()
         '--- both C1 out, joined, towards the ID fan ---------------------
         zx = zTop(1) + 2#
         xe = xm + sd * (0.5 * ZIG_DX + EXHAUST_L)
-        PathL "gas: C1 " & side & " -> exhaust -> ID fan", Array(c1in, zTop(1), c1in, zx, xe, zx)
+        PathOut "gas: C1 " & side & " -> exhaust -> ID fan", Array(c1in, zTop(1), c1in, zx, xe, zx)
         PathL "gas: C1 " & side & " (second) -> exhaust", Array(c1out, zTop(1), c1out, zx)
 
         '--- meal ---------------------------------------------------------
@@ -620,7 +680,7 @@ Private Sub DrawPlant()
         PathL "meal: C1 " & side & " (second) -> the first C1's meal pipe", Array(c1out, zDust(1), c1in, zJoin)
         MealIntoRiser "meal: C2 " & side & " -> R3", col(2), zDust(2), xm, zEnt(4), 3
         MealIntoRiser "meal: C3 " & side & " -> R4", col(3), zDust(3), xm, zEnt(5), 4
-        PathL "meal: C4 " & side & " -> calciner", Array(col(4), zDust(4), _
+        PathL "meal: C4 " & side & " -> calciner", Array(col(4), zDust(4), col(4), zDust(4) - C4_MEAL_DROP, _
               xi - sd * (StubR(5) + 0.3), zTop(5) + 0.3, sd * rCalc, zFeed)
         PathL "meal: C5 " & side & " -> kiln inlet chamber", Array(xi, zDust(5), _
               sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh)
@@ -633,25 +693,40 @@ Private Sub DrawPlant()
         UseLayer L_GAS
     Next k
 
-    ' The material from where the +x C5 meal lands, down through the
-    ' chamber's gas, through the kiln below its axis, down into the
-    ' cooler and along its grate (clinker)
+    ' The material from the inlet chamber through the kiln below its
+    ' axis, down into the cooler and along its grate (clinker)
     UseLayer L_MEAL
-    PathL "meal: inlet chamber -> kiln -> grate cooler (clinker)", Array(aCh - MEAL_INTO_CHAMBER, zCh0 + 2# * aCh, _
+    PathL "meal: inlet chamber -> kiln -> grate cooler (clinker)", Array( _
           aCh - MEAL_INTO_CHAMBER, kAz - kOff + (kAx - aCh + MEAL_INTO_CHAMBER) * Tan(kAlpha), _
-          kBx, kBz - kOff, kBx + 1#, zCool0 + 1#, kBx + coolL - 1#, zCool0 + 1#)
+          kBx, kBz - kOff, kBx + 1#, zCool0 + CLINKER_ON_GRATE, kBx + coolL - 1#, zCool0 + CLINKER_ON_GRATE)
+    ' and out of the cooler's end, down to the clinker transport below
+    ' ground
+    PathOut "meal: grate cooler -> clinker transport", Array(kBx + coolL - 1#, zCool0 + CLINKER_ON_GRATE, _
+            kBx + coolL - 1#, -CLINKER_OUT_Z)
 
     '=== air ==============================================================
     phase = "drawing the air path"
     UseLayer L_AIR
-    ' Primary air along the kiln axis through the hood's front wall to
-    ' the main burner; secondary air up from the cooler under the hood
-    ' into the kiln's end, under the burner and over the clinker
-    PathL "air: primary air -> main burner -> kiln", Array(kBx + 2# * aCh + PRIMARY_AIR_L, kBz, kBx, kBz)
-    PathL "air: cooler -> hood -> kiln (secondary air)", Array(kBx + SEC_AIR_DX, zCool0 + 0.5 * COOLER_H, _
-          kBx + SEC_AIR_DX, kBz - 0.5 * kOff, kBx, kBz - 0.5 * kOff)
-    Duct "air: hood -> tertiary air duct -> calciner", Array(kBx + aCh, zHood0 + 2# * aCh, _
+    ' Primary air only marked: a short arrow whose tip touches the hood's
+    ' front wall, level with where the kiln gas starts. The secondary
+    ' air rises from the cooler under the hood into the kiln on the gas
+    ' layer: it is the stream that runs on through the kiln as its gas.
+    PathOut "air: primary air -> main burner", Array(kBx + 2# * aCh + PRIMARY_AIR_L, kBz + kOff, _
+            kBx + 2# * aCh, kBz + kOff)
+    UseLayer L_GAS
+    PathL "gas: cooler -> hood (secondary air) -> kiln", Array(kBx + SEC_AIR_DX, zCool0 + 0.5 * COOLER_H, _
+          kBx + SEC_AIR_DX, kBz + kOff, kBx, kBz + kOff)
+    ' The tertiary air rises straight out of the cooler through the hood,
+    ' marked as the secondary air is, into its duct on the hood's top;
+    ' hot, so on the gas layer as the secondary air
+    zc = zCool0 + 0.5 * COOLER_H + TA_ARROW_LONG * (zHood0 + 2# * aCh - zCool0 - 0.5 * COOLER_H)
+    If zc >= zTA - rTA Then Fail "the tertiary air arrow runs up past its duct's turn. Lower TA_ARROW_LONG."
+    PathOut "gas: cooler -> hood (tertiary air)", Array(kBx + aCh, zCool0 + 0.5 * COOLER_H, kBx + aCh, zc)
+    Duct "gas: hood -> tertiary air duct -> calciner", Array(kBx + aCh, zHood0 + 2# * aCh, _
          kBx + aCh, zTA, rCalc, zTA), TA_D, False
+    ' The cooler's excess air, still hot, out of its roof near its end
+    PathOut "gas: grate cooler -> cooler vent", Array(kBx + coolL - VENT_IN, zCool0 + 0.5 * COOLER_H, _
+          kBx + coolL - VENT_IN, zCool0 + COOLER_H + VENT_UP)
 
     '=== ground and labels ==================================================
     phase = "labelling"
@@ -661,9 +736,14 @@ Private Sub DrawPlant()
     LabelM -3.5, zGnTop + rGnBend + rGn + 3#, "ILC calciner", 0#
     LabelM 20#, kAz + 3.5, "rotary kiln D" & Num(KILN_D, 3) & " x " & Num(KILN_L, 0) & " m", 0#
     LabelM kBx + 0.55 * coolL + 0.5, zCool0 + 0.75 * COOLER_H, "grate cooler", 0#
+    LabelM kBx + coolL - VENT_IN - 0.3 * TEXT_H * 14 * SHEET_SCALE, zCool0 + COOLER_H + VENT_UP + 1.1, _
+           "to cooler vent", 0#
+    LabelM kBx + coolL - 1.5 - 0.6 * TEXT_H * 20 * SHEET_SCALE, -CLINKER_OUT_Z + 2#, "to clinker transport", 0#
     LabelM kBx + 2# * aCh + 1#, zHood0 + 2# * aCh, "kiln hood", 0#
-    LabelM kBx + 2# * aCh + 0.5, kBz + 1.2, "primary air", 0#
-    LabelM kBx + SEC_AIR_DX + 0.5, zCool0 + COOLER_H - 0.3, "secondary air", 0#
+    LabelM kBx + 2# * aCh + 0.5, kBz + kOff - 0.3, "primary air", 0#
+    ' inside the kiln, between its gas and its clinker: the kiln gas
+    ' there is the secondary air the burner has fired
+    LabelM kBx - 8#, kBz + 0.85, "secondary air", 0#
     LabelM 30#, zTA + rTA + 2#, "tertiary air D" & Num(TA_D, 3), 0#
     For k = 0 To 1
         sd = 1# - 2# * k
@@ -688,16 +768,41 @@ Private Sub DrawPlant()
 End Sub
 
 
-' One cyclone's section: dust outlet, cone, barrel, roof, gas outlet
-' stub, about the vertical axis at xc.
-Private Sub Cyclone(ByVal s As Long, ByVal xc As Double)
+' One cyclone's section about the vertical axis at xc: cone, barrel,
+' roof, gas outlet stub. Open where the flows pass: the dust outlet at
+' the bottom, the stub's top, and the barrel wall on side inSide (+1 /
+' -1) over its inlet, hIn either side of the inlet's centre.
+Private Sub Cyclone(ByVal s As Long, ByVal xc As Double, ByVal inSide As Double, ByVal hIn As Double)
     Dim d As Double, hb As Double, hc As Double, vd As Double, dd As Double
+    Dim k As Long
+    Dim sg As Double, zb As Double, xb As Double
     CycDims s, d, hb, hc, vd, dd
-    Outline Array( _
-        xc + 0.5 * dd, zDust(s), xc + 0.5 * d, zDust(s) + hc, xc + 0.5 * d, zRoof(s), _
-        xc + 0.5 * vd, zRoof(s), xc + 0.5 * vd, zTop(s), _
-        xc - 0.5 * vd, zTop(s), xc - 0.5 * vd, zRoof(s), xc - 0.5 * d, zRoof(s), _
-        xc - 0.5 * d, zDust(s) + hc, xc - 0.5 * dd, zDust(s))
+    zb = zDust(s) + hc
+    For k = 0 To 1
+        sg = 1# - 2# * k
+        xb = xc + sg * 0.5 * d
+        LineM xc + sg * 0.5 * dd, zDust(s), xb, zb
+        If sg = inSide Then
+            Seg xb, zb, xb, Max2(zb, zIn(s) - hIn)
+            Seg xb, Min2(zRoof(s), zIn(s) + hIn), xb, zRoof(s)
+        Else
+            LineM xb, zb, xb, zRoof(s)
+        End If
+        PolyM Array(xb, zRoof(s), xc + sg * 0.5 * vd, zRoof(s), xc + sg * 0.5 * vd, zTop(s))
+    Next k
+End Sub
+
+
+' A riser's start over a gas outlet stub: its end cap over the stub's
+' far wall and its top wall over the open stub. Returns in xn the
+' stub's near wall, where the riser's duct carries on towards xm.
+Private Sub RunOverStub(ByVal s As Long, ByVal xc As Double, ByVal xm As Double, ByVal r As Double, _
+                        ByRef xn As Double)
+    Dim xf As Double
+    xf = xc - Sgn(xm - xc) * StubR(s)
+    xn = xc + Sgn(xm - xc) * StubR(s)
+    LineM xf, zTop(s), xf, zTop(s) + 2# * r
+    LineM xf, zTop(s) + 2# * r, xn, zTop(s) + 2# * r
 End Sub
 
 
@@ -776,14 +881,20 @@ Private Sub LineP(ByVal a As Double, ByVal b As Double, ByVal c As Double, ByVal
 End Sub
 
 
-' A closed polygon.
-Private Sub Outline(pts As Variant)
-    Dim n As Long, i As Long, j As Long
+' An open polyline.
+Private Sub PolyM(pts As Variant)
+    Dim n As Long, i As Long
     n = (UBound(pts) + 1) \ 2
-    For i = 0 To n - 1
-        j = (i + 1) Mod n
-        LineM pts(2 * i), pts(2 * i + 1), pts(2 * j), pts(2 * j + 1)
+    For i = 0 To n - 2
+        LineM pts(2 * i), pts(2 * i + 1), pts(2 * i + 2), pts(2 * i + 3)
     Next i
+End Sub
+
+
+' A wall piece left beside an opening: drawn only if longer than
+' MIN_SEG, so an opening that spans the wall leaves no sliver.
+Private Sub Seg(ByVal xa As Double, ByVal za As Double, ByVal xb As Double, ByVal zb As Double)
+    If Sqr((xb - xa) ^ 2 + (zb - za) ^ 2) >= MIN_SEG Then LineM xa, za, xb, zb
 End Sub
 
 
@@ -796,6 +907,24 @@ Private Sub PathL(ByVal what As String, pts As Variant)
         LineM pts(2 * i), pts(2 * i + 1), pts(2 * i + 2), pts(2 * i + 3)
     Next i
     ArrowOnLongest pts
+    Note "-- " & what
+End Sub
+
+
+' A path that leaves the drawing (or only marks a stream): one line,
+' with the arrow's tip at its end, so no line runs on past the arrow.
+Private Sub PathOut(ByVal what As String, pts As Variant)
+    Dim n As Long, i As Long
+    Dim L As Double, ax As Double, az As Double
+    n = (UBound(pts) + 1) \ 2
+    If n < 2 Then Fail what & " has fewer than two points."
+    For i = 0 To n - 2
+        LineM pts(2 * i), pts(2 * i + 1), pts(2 * i + 2), pts(2 * i + 3)
+    Next i
+    ax = pts(2 * n - 2) - pts(2 * n - 4): az = pts(2 * n - 1) - pts(2 * n - 3)
+    L = Sqr(ax * ax + az * az)
+    ax = ax / L: az = az / L
+    ArrowAt pts(2 * n - 2) - ax * 0.5 * ARROW_L * SHEET_SCALE, pts(2 * n - 1) - az * 0.5 * ARROW_L * SHEET_SCALE, ax, az
     Note "-- " & what
 End Sub
 
@@ -952,13 +1081,13 @@ Private Sub DrawLegend()
     LabelP x, y + 0.012, "LEGEND"
 
     UseLayer L_GAS:  LineP x, y, x + 0.02, y
-    UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "gas"
+    UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "hot gas and air (secondary, tertiary)"
     y = y - 0.012
     UseLayer L_MEAL: LineP x, y, x + 0.02, y
     UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "meal / clinker"
     y = y - 0.012
     UseLayer L_AIR:  LineP x, y, x + 0.02, y
-    UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "air"
+    UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "cold air (primary)"
     y = y - 0.012
     UseLayer L_GAS:  LineP x, y, x + 0.02, y
     Call ArrowAt((x + 0.01 - X0) * SHEET_SCALE, (y - Y0) * SHEET_SCALE, 1#, 0#)
