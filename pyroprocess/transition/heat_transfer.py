@@ -206,6 +206,12 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         Ts_old = np.asarray(state.Ts_transition_old, dtype=float)
         Tw_old = np.asarray(state.Tw_transition_old, dtype=float)
 
+    # Dynamic step with the parcel train (calcination.kiln_dynamic):
+    # the bed's hold-up, its flows and its calcination come from
+    # the train instead of the steady march.
+    dynamic = calcination.kiln_dynamic(state)
+    H_mass_stored = np.zeros(N)
+
     def solid_capacity_rate(m_s_in_cells, m_s_out_cells):
         if transient_dt is None:
             return np.zeros(N)
@@ -315,7 +321,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
         m_CaCO3_in_cell = m_dot_CaCO3_transition_in
 
-        for i in range(N):
+        for i in range(0 if dynamic else N):
 
             (
                 _k_reaction,
@@ -359,6 +365,17 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # rests on.
         # ==================================================
 
+        if dynamic:
+            step = calcination.transition_train_step(
+                transition, state, Ts_iter, u_s
+            )
+            dm_gas_cells = step.dm_CO2_cells
+            Q_calcination_cells = step.Q_calcination_cells
+            dQ_dTs_cells = step.Q_calcination_slope_cells
+            m_dot_CaCO3_out_cells[:] = [
+                face.get("CaCO3", 0.0) for face in step.face_species[1:]
+            ]
+
         if not np.all(np.isfinite(dQ_dTs_cells)):
 
             raise FloatingPointError(
@@ -396,6 +413,17 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         )
 
         C_s_dt = solid_capacity_rate(m_s_in_cells, m_s_out_cells)
+
+        if dynamic:
+            # The train's faces and hold-ups: in - out - CO2 is the
+            # cell's dM/dt now, and the stored enthalpy is
+            # d(M h)/dt (physics.variable_flow_rows).
+            m_s_in_cells = step.face_flow[:-1].copy()
+            m_s_out_cells = step.face_flow[1:].copy()
+            C_s_dt = step.holdup_cells * Cp_s / transient_dt
+            H_mass_stored = (
+                Cp_s * (Ts_old - T_ref) * step.stored_cells
+            )
 
         # Suffix sum: cell i's outgoing gas carries the CO2 of
         # every cell from i to N-1 inclusive.
@@ -547,6 +575,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 Ts_iter[i],
                 C_s_dt[i],
                 Ts_old[i],
+                H_mass_stored[i],
             )
 
             # ==================================================
@@ -713,7 +742,11 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         m_dot_CaCO3_out_transition,
         X_calcination_transition,
         cell_conversion,
-    ) = calcination.resolve_transition_calcination(
+    ) = (
+        calcination.resolve_transition_calcination_dynamic
+        if dynamic
+        else calcination.resolve_transition_calcination
+    )(
         transition,
         state,
         Ts_ss,
@@ -867,6 +900,21 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         - float(np.sum(dm_gas_final))
     )
 
+    if dynamic:
+        final_step = state.kiln_step_transition
+        m_s_out_face = float(final_step.face_flow[-1])
+        m_s_cells_final = final_step.face_flow[1:].copy()
+        C_s_dt = final_step.holdup_cells * Cp_s / transient_dt
+        H_mass_stored = (
+            Cp_s * (Ts_old - T_ref) * final_step.stored_cells
+        )
+        state.Transition_mass_stored = float(
+            np.sum(final_step.stored_cells)
+        )
+    else:
+        m_s_cells_final = m_dot_s_in - np.cumsum(dm_gas_final)
+        state.Transition_mass_stored = 0.0
+
     m_g_out_face = (
         m_dot_g_in
         + float(np.sum(dm_gas_final))
@@ -910,10 +958,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # Per-cell flows at the converged state, so anything
     # building an enthalpy array from the temperature profile
     # multiplies each cell by the flow that cell carries.
-    state.m_dot_s_transition_cells = (
-        m_dot_s_in
-        - np.cumsum(dm_gas_final)
-    )
+    state.m_dot_s_transition_cells = m_s_cells_final
 
     state.m_dot_g_transition_cells = (
         m_dot_g_in
@@ -943,7 +988,9 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # ENERGY BALANCE
     # ======================================================
     # Rate of change of the stored energy; zero in the steady solve.
-    Q_stored_solid = float(np.sum(C_s_dt * (Ts_ss - Ts_old)))
+    Q_stored_solid = float(
+        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+    )
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
 
     state.Transition_solid_stored = Q_stored_solid
@@ -1061,8 +1108,12 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         - m_dot_CaCO3_out_transition
     )
 
+    # Released in the zone; with a changing hold-up that is not
+    # what entered less what left.
     state.m_dot_CO2_generated_transition = float(
-        state.m_dot_CaCO3_reacted_transition
+        np.sum(dm_gas_final)
+        if dynamic
+        else state.m_dot_CaCO3_reacted_transition
         * transition.chemistry.CO2_ratio
     )
 

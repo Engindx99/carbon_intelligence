@@ -207,8 +207,8 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
         # At the inlet the gas leads by ~572 K (the 2500-era riser:
         # ~17 K at most) -- the too-small a_gs of Link 2 at 3.2x the
         # meal. Downstream the solid overshoots by up to ~364 K.
-        self.assertAlmostEqual(float(np.max(Tg - Ts)), 571.92, delta=0.02)
-        self.assertAlmostEqual(float(np.min(Tg - Ts)), -364.09, delta=0.02)
+        self.assertAlmostEqual(float(np.max(Tg - Ts)), 572.00, delta=0.02)
+        self.assertAlmostEqual(float(np.min(Tg - Ts)), -364.15, delta=0.02)
 
     def test_the_particle_cannot_lag_the_gas(self):
         """A 25 um particle at the Nu = 2 conduction limit. Its
@@ -501,8 +501,8 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
         Ts = np.asarray(self.snapshot["Ts_calciner"], dtype=float)
 
         # 1791.48 / 2081.85 in the 2500-era riser.
-        self.assertAlmostEqual(float(Ts.mean()), 1576.77, delta=0.02)
-        self.assertAlmostEqual(float(Ts.max()), 1712.96, delta=0.02)
+        self.assertAlmostEqual(float(Ts.mean()), 1576.92, delta=0.02)
+        self.assertAlmostEqual(float(Ts.max()), 1713.13, delta=0.02)
 
         # About 380 K above the top of a real calciner's band.
         self.assertGreater(float(Ts.mean()) - REAL_CALCINER_T[1], 350.0)

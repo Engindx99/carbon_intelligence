@@ -60,7 +60,8 @@ class Parcel:
 @dataclass
 class TrainStep:
     """One step of a zone's train. Rates are per second of the
-    step: W for heats, kg/s for masses."""
+    step: W for heats, kg/s for masses; the hold-ups are masses
+    [kg] at the start and the end of the step."""
 
     parcels: list
     leaving: list
@@ -69,7 +70,16 @@ class TrainStep:
     Q_calcination_slope_cells: np.ndarray
     dm_CO2_cells: np.ndarray
     face_flow: np.ndarray
+    face_species: list
+    holdup_old_cells: np.ndarray
+    holdup_cells: np.ndarray
     clinkering_heat: dict
+    dt: float
+
+    @property
+    def stored_cells(self):
+        """Rate of change of each cell's solid hold-up [kg/s]."""
+        return (self.holdup_cells - self.holdup_old_cells) / self.dt
 
 
 def _mass(species):
@@ -102,6 +112,12 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
     slope = np.zeros(N)
     dm_CO2 = np.zeros(N)
     face = np.zeros(N + 1)
+    face_species = [dict() for _ in range(N + 1)]
+
+    def cross(k, species):
+        face[k] += _mass(species)
+        for name, value in species.items():
+            face_species[k][name] = face_species[k].get(name, 0.0) + value
 
     inside = []
     leaving = []
@@ -138,7 +154,7 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
 
             if crosses:
                 x = i + 1.0
-                face[i + 1] += _mass(species)
+                cross(i + 1, species)
             else:
                 x += h * v
 
@@ -147,12 +163,20 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
         else:
             inside.append(Parcel(x, species))
 
+    holdup_old = np.zeros(N)
+
     for parcel in parcels:
+        holdup_old[int(parcel.x)] += _mass(parcel.species)
         travel(parcel.x, dict(parcel.species), float(dt))
 
     for species, remaining in entering:
-        face[0] += _mass(species)
+        cross(0, species)
         travel(0.0, dict(species), float(remaining))
+
+    holdup = np.zeros(N)
+
+    for parcel in inside:
+        holdup[int(parcel.x)] += _mass(parcel.species)
 
     heat = {}
 
@@ -169,7 +193,14 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
         Q_calcination_slope_cells=slope / dt,
         dm_CO2_cells=dm_CO2 / dt,
         face_flow=face / dt,
+        face_species=[
+            {name: value / dt for name, value in f.items()}
+            for f in face_species
+        ],
+        holdup_old_cells=holdup_old,
+        holdup_cells=holdup,
         clinkering_heat={model: value / dt for model, value in heat.items()},
+        dt=float(dt),
     )
 
 

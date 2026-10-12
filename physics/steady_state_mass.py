@@ -70,6 +70,17 @@ class SteadyStateMassFlow:
     m_dot_H2O_generated_calciner: float = 0.0
 
     # ======================================================
+    # KILN SOLID HOLD-UP RATES [kg/s]
+    #
+    # Dynamic step only (chemistry/parcels.py): the rate at which
+    # each kiln zone's bed gains mass. Zero at steady state, where
+    # every solid stream is its inflow minus what it releases.
+    # ======================================================
+
+    m_dot_stored_transition: float = 0.0
+    m_dot_stored_burning: float = 0.0
+
+    # ======================================================
     # GLOBAL BALANCE
     # ======================================================
 
@@ -119,6 +130,7 @@ class SteadyStateMassFlow:
         self.m_dot_s_cooler = (
             self.m_dot_s_burning
             - self.m_dot_CO2_generated_burning
+            - self.m_dot_stored_burning
         )
 
         return self.m_dot_s_cooler
@@ -231,10 +243,14 @@ class SteadyStateMassFlow:
             + self.m_dot_air_cooler
         )
 
+        # Mass going into the kiln's bed hold-up books as an
+        # outflow, as stored energy does; zero at steady state.
         self.mass_flow_out = (
             self.m_dot_clinker
             + self.m_dot_exhaust
             + self.m_dot_vent_air
+            + self.m_dot_stored_transition
+            + self.m_dot_stored_burning
         )
 
         self.steady_state_mass_residual = (

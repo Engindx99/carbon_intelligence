@@ -44,6 +44,8 @@ from pyroprocess.preheater import Preheater
 from pyroprocess.cooler import Cooler
 
 from physics.physics import gas_mass_balance
+from chemistry import parcels
+from pyroprocess.transition import calcination as transition_calcination
 from physics.steady_state_mass import SteadyStateMassFlow
 from physics.axial_coordinate import SOLID_FLOW_ZONE_ORDER, build_axial_layout
 
@@ -1069,9 +1071,19 @@ class Twin:
         # solid stream on top of the calciner's reduction.
         # ======================================================
 
+        # Kiln bed hold-up rates [kg/s], set by the kiln zones in a
+        # dynamic step (chemistry/parcels.py); zero at steady state.
+        self.mass_flow.m_dot_stored_transition = float(
+            getattr(self.state, "Transition_mass_stored", 0.0)
+        )
+        self.mass_flow.m_dot_stored_burning = float(
+            getattr(self.state, "Burning_mass_stored", 0.0)
+        )
+
         self.mass_flow.m_dot_s_transition = (
             m_dot_s_calciner_out
             - self.mass_flow.m_dot_CO2_generated_transition
+            - self.mass_flow.m_dot_stored_transition
         )
 
         self.mass_flow.m_dot_s_burning = (
@@ -1501,6 +1513,17 @@ class Twin:
             if transient
             else 0.0
         )
+
+        # A steady solve leaves the kiln's parcel trains describing
+        # a state it is about to replace; the next dynamic step
+        # rebuilds them from this solve's answer.
+        if not transient:
+            self.state.kiln_train_transition = None
+            self.state.kiln_train_burning = None
+            self.state.kiln_step_transition = None
+            self.state.kiln_step_burning = None
+            self.state.Transition_mass_stored = 0.0
+            self.state.Burning_mass_stored = 0.0
 
 
         print(
@@ -2150,6 +2173,11 @@ class Twin:
         for name, value in start.items():
             setattr(self.state, f"{name}_old", value.copy())
 
+        # From the start-of-step temperatures, before the predictor
+        # moves them.
+        if self.state.kiln_train_transition is None:
+            self._build_kiln_trains(dt)
+
         # ======================================================
         # PREDICTOR
         #
@@ -2185,9 +2213,73 @@ class Twin:
                 f"(dt = {dt} s) did not converge"
             )
 
+        # The step's parcels are the next step's start.
+        self.state.kiln_train_transition = (
+            self.state.kiln_step_transition.parcels
+        )
+        self.state.kiln_train_burning = (
+            self.state.kiln_step_burning.parcels
+        )
+
         self.state.t += dt
 
         return self.state
+
+    # ==========================================================
+    # KILN PARCEL TRAINS FROM THE STEADY STATE
+    #
+    # The trains' own steady state (chemistry/parcels.steady_train)
+    # at the current bed temperatures and the calciner's current
+    # discharge, the transition's outflow feeding the burning
+    # zone's. It reproduces the steady march the state was solved
+    # with: exactly for calcination, to ~5e-4 for the clinker
+    # species (two Strang splits of the same ODE).
+    # ==========================================================
+    def _build_kiln_trains(self, dt):
+
+        state = self.state
+
+        u_s = float(state.u_s)
+
+        entering = transition_calcination.calciner_discharge(state, dt)
+
+        Ts_transition = np.asarray(state.Ts_transition, dtype=float)
+
+        def transition_reactor(T):
+            return parcels.CalcinationReactor(
+                self.transition.chemistry, T
+            )
+
+        train_transition = parcels.steady_train(
+            entering,
+            Ts_transition,
+            u_s / self.transition.dz,
+            dt,
+            transition_reactor,
+        )
+
+        step_transition = parcels.advance_train(
+            train_transition,
+            entering,
+            Ts_transition,
+            u_s / self.transition.dz,
+            dt,
+            transition_reactor,
+        )
+
+        def burning_reactor(T):
+            return parcels.BurningReactor(self.burning.chemistry, T)
+
+        state.kiln_train_transition = train_transition
+        state.kiln_step_transition = step_transition
+
+        state.kiln_train_burning = parcels.steady_train(
+            step_transition.leaving,
+            np.asarray(state.Ts_burning, dtype=float),
+            u_s / self.burning.dz,
+            dt,
+            burning_reactor,
+        )
 
 
 if __name__ == "__main__":

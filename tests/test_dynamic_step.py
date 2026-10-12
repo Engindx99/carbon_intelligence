@@ -79,6 +79,14 @@ class DynamicStepTest(unittest.TestCase):
                     cls.steps.append(
                         {
                             "global": _global_energy(twin),
+                            "mass_residual": float(
+                                twin.mass_flow.calculate_global_balance()
+                            ),
+                            "mass_in": float(twin.mass_flow.mass_flow_in),
+                            "kiln_mass_stored": (
+                                twin.state.Transition_mass_stored
+                                + twin.state.Burning_mass_stored
+                            ),
                             "stored": sum(
                                 getattr(twin.state, name) for name in STORED
                             ),
@@ -102,9 +110,13 @@ class DynamicStepTest(unittest.TestCase):
             os.chdir(cwd)
 
     def test_unchanged_inputs_hold_the_steady_state(self):
-        # The steady solve stops at 1e-3 K, so a step from it may
-        # finish converging, but not drift.
-        self.assertLess(self.hold_drift, 1e-5)
+        # The kiln's parcel trains start from their own steady
+        # state, which differs from the steady march's by the two
+        # Strang splits (~5e-4 in the clinker species), so a hold
+        # relaxes the plant towards it: 4e-5 K after two steps,
+        # levelling off at ~3e-4 K after 30 min -- inside the
+        # steady solve's own 1e-3 K.
+        self.assertLess(self.hold_drift, 1e-4)
         self.assertEqual(self.hold_time, 20.0)
 
     def test_fuel_step_stores_energy(self):
@@ -119,6 +131,19 @@ class DynamicStepTest(unittest.TestCase):
 
             for zone in step["zones"]:
                 self.assertTrue(zone["converged"], zone)
+
+    def test_kiln_hold_up_moves_and_mass_is_conserved(self):
+        # The kiln bed's hold-up changes after the fuel step
+        # (chemistry/parcels.py), and the plant's mass balance
+        # closes with it booked as an outflow.
+        self.assertTrue(
+            any(abs(step["kiln_mass_stored"]) > 1e-6 for step in self.steps)
+        )
+
+        for step in self.steps:
+            self.assertLess(
+                abs(step["mass_residual"]), 1e-9 * step["mass_in"]
+            )
 
     def test_steady_mode_restored_after_a_step(self):
         self.assertIsNone(self.twin.state.transient_dt)

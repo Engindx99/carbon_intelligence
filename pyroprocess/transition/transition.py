@@ -6,10 +6,12 @@ from physics.shell import wall_stack
 
 from chemistry.phases import copy_solid_phases
 from chemistry.phases import get_cell_solid_flow
+from chemistry.phases import set_cell_solid_flow
 from chemistry.calcination import CalcinationModel
 
 from . import gas_phase
 from . import solid_phase
+from . import calcination
 from . import heat_transfer
 
 
@@ -361,15 +363,31 @@ class Transition:
 
         calciner_solid_flows = state.material_flows["calciner"].solids
 
-        self.chemistry.solid_flow_profile(
-            get_cell_solid_flow(
-                calciner_solid_flows,
-                calciner_solid_flows.CaCO3.size - 1,
-            ),
-            state.m_dot_CaCO3_out_transition_cells,
-            state.material_flows["transition"].solids,
-            state.material_flows["transition"].gases,
-        )
+        if calcination.kiln_dynamic(state):
+            # Dynamic step: what crossed each cell's outlet face
+            # during the step, and the CO2 each cell released.
+            step = state.kiln_step_transition
+
+            for i, face in enumerate(step.face_species[1:]):
+                set_cell_solid_flow(
+                    state.material_flows["transition"].solids,
+                    i,
+                    face,
+                )
+
+            state.material_flows["transition"].gases.CO2[:] = (
+                step.dm_CO2_cells
+            )
+        else:
+            self.chemistry.solid_flow_profile(
+                get_cell_solid_flow(
+                    calciner_solid_flows,
+                    calciner_solid_flows.CaCO3.size - 1,
+                ),
+                state.m_dot_CaCO3_out_transition_cells,
+                state.material_flows["transition"].solids,
+                state.material_flows["transition"].gases,
+            )
 
         # ======================================================
         # SOLID PHASE HANDOFF

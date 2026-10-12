@@ -296,12 +296,21 @@ def apply_solid_energy_balance(
     Ts_star_cell=0.0,
     C_dt_cell=0.0,
     Ts_old_cell=0.0,
+    H_mass_stored_cell=0.0,
 ):
     # C_dt_cell / Ts_old_cell -- STORED ENERGY (dynamic solve only).
     # Implicit Euler on the bed's sensible heat: C/dt (Ts - Ts_old)
     # joins the outflow side, so +C/dt goes on the diagonal and
     # +C/dt Ts_old into b. C is the cell's solid hold-up times
     # Cp_s. The defaults of 0.0 leave the steady row unchanged.
+    #
+    # H_mass_stored_cell [W] -- the other half of d(M h)/dt when the
+    # hold-up M itself changes over the step (the kiln's parcel
+    # train): (M_new h_new - M_old h_old)/dt = C_new/dt (Ts - Ts_old)
+    # + h(Ts_old) (M_new - M_old)/dt, with C_new = M_new Cp_s. The
+    # second term is a constant of the step, so it goes into b on
+    # the outflow side. With it the row closes on the bed's mass
+    # balance in - out - CO2 = dM/dt, which no longer vanishes.
 
     Tg_i = i
     Ts_i = N + i
@@ -337,6 +346,7 @@ def apply_solid_energy_balance(
         + Cs_in * D_in
         + (Cs_out - Cs_in) * T_ref
         + C_dt_cell * Ts_old_cell
+        - H_mass_stored_cell
     )
 
     if i == 0:

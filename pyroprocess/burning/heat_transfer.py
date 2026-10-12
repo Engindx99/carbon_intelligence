@@ -32,6 +32,17 @@ from . import solid_phase
 # balance stay here since heat_transfer.py owns the overall
 # gas-solid-wall heat transfer network.
 # ======================================================
+def kiln_dynamic(state):
+    """A dynamic step with the kiln's parcel trains built
+    (chemistry/parcels.py, Twin.advance)."""
+
+    return (
+        getattr(state, "transient_dt", None) is not None
+        and getattr(state, "kiln_train_burning", None) is not None
+        and getattr(state, "kiln_step_transition", None) is not None
+    )
+
+
 def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     # ======================================================
@@ -102,6 +113,16 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             m_s_out_cells[:-1],
         )
     )
+
+    # Dynamic step with the parcel train: the bed's flows are what
+    # crossed each face during the step, and in - out - CO2 is the
+    # cell's dM/dt rather than zero.
+    dynamic = kiln_dynamic(state)
+
+    if dynamic:
+        train_step = state.kiln_step_burning
+        m_s_in_cells = train_step.face_flow[:-1].copy()
+        m_s_out_cells = train_step.face_flow[1:].copy()
 
     # Suffix sum: cell i's outgoing gas carries the CO2 of every
     # cell from i to N-1 inclusive.
@@ -390,6 +411,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # ======================================================
     transient_dt = getattr(state, "transient_dt", None)
 
+    H_mass_stored = np.zeros(N)
+
     if transient_dt is None:
 
         C_s_dt = np.zeros(N)
@@ -410,6 +433,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         )
         Ts_old = np.asarray(state.Ts_burning_old, dtype=float)
         Tw_old = np.asarray(state.Tw_burning_old, dtype=float)
+
+        if dynamic:
+            # The train's own hold-up, and the enthalpy of the mass
+            # it gains: d(M h)/dt (physics.variable_flow_rows).
+            C_s_dt = train_step.holdup_cells * Cp_s / transient_dt
+            H_mass_stored = (
+                Cp_s * (Ts_old - T_ref) * train_step.stored_cells
+            )
 
     max_iter = 100
     tol = max(
@@ -607,6 +638,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 Ts_reaction[i],
                 C_s_dt[i],
                 Ts_old[i],
+                H_mass_stored[i],
             )
 
             # ==================================================
@@ -910,7 +942,9 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # The bed discharges what is left after every cell has
     # finished calcining.
     m_s_out_face = (
-        m_dot_s_in
+        float(m_s_out_cells[-1])
+        if dynamic
+        else m_dot_s_in
         - float(np.sum(dm_gas_cells))
     )
 
@@ -953,8 +987,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # Rate of change of the stored energy; zero in the steady
     # solve. Booked as an outflow so the zone balance still reads
     # in == out while the zone is heating or cooling.
-    Q_stored_solid = float(np.sum(C_s_dt * (Ts_ss - Ts_old)))
+    Q_stored_solid = float(
+        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+    )
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
+
+    state.Burning_mass_stored = (
+        float(np.sum(train_step.stored_cells)) if dynamic else 0.0
+    )
 
     state.Burning_solid_stored = Q_stored_solid
     state.Burning_wall_stored = Q_stored_wall

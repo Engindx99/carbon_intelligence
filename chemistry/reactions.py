@@ -5,6 +5,7 @@ import numpy as np
 from chemistry.drying import DryingModel
 from chemistry.dehydroxylation import DehydroxylationModel
 from chemistry.calcination import CalcinationModel
+from chemistry import parcels
 
 from chemistry.belite import BeliteModel
 from chemistry.alite import AliteModel
@@ -360,6 +361,71 @@ class ChemistryModel:
             calcine(0.5 * h)
 
         return Q_total, Q_calcination, dm_CO2_total
+
+    # ======================================================
+    # BURNING ZONE, DYNAMIC STEP (chemistry/parcels.py)
+    #
+    # apply_burning's outputs from the burning zone's parcel
+    # train: the parcels inside at the start of the step, plus
+    # what left the transition during it, stepped at the bed
+    # temperatures in state.Ts_burning. Re-steps the same
+    # start-of-step train on every call, so it stands in for the
+    # steady march at each Picard iterate. The step is left on
+    # state for the zone's rows and for Twin.advance to commit.
+    # ======================================================
+    def apply_burning_train(self, state, dz, u_s):
+
+        dt = float(state.transient_dt)
+
+        step = parcels.advance_train(
+            state.kiln_train_burning,
+            state.kiln_step_transition.leaving,
+            np.asarray(state.Ts_burning, dtype=float),
+            float(u_s) / float(dz),
+            dt,
+            lambda T: parcels.BurningReactor(self, T),
+        )
+
+        state.kiln_step_burning = step
+
+        for i, face in enumerate(step.face_species[1:]):
+            set_cell_solid_flow(
+                state.material_flows["burning"].solids,
+                i,
+                face,
+            )
+
+        heat = step.clinkering_heat
+
+        state.Belite_Q_sink = heat.get(self.belite, 0.0)
+        state.Alite_Q_sink = heat.get(self.alite, 0.0)
+        state.C3A_Q_sink = heat.get(self.c3a, 0.0)
+        state.C4AF_Q_sink = heat.get(self.c4af, 0.0)
+
+        state.Calcination_Q_burning = float(
+            np.sum(step.Q_calcination_cells)
+        )
+        state.Calcination_Q_burning_cells = step.Q_calcination_cells
+        state.Calcination_Q_burning_slope_cells = (
+            step.Q_calcination_slope_cells
+        )
+
+        state.m_dot_CO2_generated_burning_cells = step.dm_CO2_cells
+        state.m_dot_CO2_generated_burning = float(
+            np.sum(step.dm_CO2_cells)
+        )
+
+        state.Burning_Q_sink_cells = step.Q_cells
+
+        state.Burning_Q_sink = (
+            state.Belite_Q_sink
+            + state.Alite_Q_sink
+            + state.C3A_Q_sink
+            + state.C4AF_Q_sink
+            + state.Calcination_Q_burning
+        )
+
+        return state
 
     def apply_burning(self, state, dz, u_s):
 

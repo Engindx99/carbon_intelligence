@@ -31,8 +31,13 @@ class C3AModel(ReactionBase):
         self.deltaH = -6.699e4
 
         # ================= STOICHIOMETRY =================
+        # 3 CaO + Al2O3 -> C3A. The product is the sum of what
+        # reacts, so the reaction conserves mass exactly. It was
+        # 270.16 / 101.96 against 3 x 56.08 + 101.96 = 270.20,
+        # which destroyed 3.9e-4 of every kg of Al2O3 reacted
+        # (6.4e-5 kg/s in the burning zone).
         self.CaO_required = 168.24 / 101.96
-        self.C3A_produced = 270.16 / 101.96
+        self.C3A_produced = 1.0 + self.CaO_required
 
         # ================= TEMPERATURE =================
         self.T_start = 1373.0

@@ -428,11 +428,20 @@ class Burning:
             N_cells,
         )
 
-        state = self.chemistry.apply_burning(
-            state,
-            self.dz,
-            u_s,
-        )
+        # Dynamic step: the zone's parcel train (chemistry/parcels.py)
+        # instead of the steady march, with the same outputs.
+        if heat_transfer.kiln_dynamic(state):
+            state = self.chemistry.apply_burning_train(
+                state,
+                self.dz,
+                u_s,
+            )
+        else:
+            state = self.chemistry.apply_burning(
+                state,
+                self.dz,
+                u_s,
+            )
 
         # ======================================================
         # UNDER-RELAXED CALCINATION, PER CELL

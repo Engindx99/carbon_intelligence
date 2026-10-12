@@ -1,5 +1,8 @@
 import numpy as np
 
+from chemistry import parcels
+from chemistry.phases import get_cell_solid_flow
+
 
 # ======================================================
 # PER-CELL CALCINATION KINETICS
@@ -248,4 +251,106 @@ def update_solid_phase_composition(transition, state, cell_conversion):
     transition_gases.CO2[:] = (
         CaCO3_reacted_inventory
         * transition.chemistry.CO2_ratio
+    )
+
+
+# ======================================================
+# DYNAMIC STEP: THE PARCEL TRAIN (chemistry/parcels.py)
+#
+# In a dynamic step the transition's bed is the parcel train
+# that was inside the zone at the start of the step, plus the
+# solid the calciner discharged during it. Each call steps that
+# same start-of-step train at the given bed temperatures, so it
+# can stand in for the steady march at every Picard iterate. The
+# latest step is left on state: the burning zone takes its
+# inflow from it and Twin.advance commits it.
+# ======================================================
+def kiln_dynamic(state):
+    return (
+        getattr(state, "transient_dt", None) is not None
+        and getattr(state, "kiln_train_transition", None) is not None
+    )
+
+
+def calciner_discharge(state, dt):
+    """What the calciner discharged over the step, as the one
+    parcel that enters the transition at x = 0 [kg]."""
+
+    solids = state.material_flows["calciner"].solids
+
+    flow = get_cell_solid_flow(solids, solids.CaCO3.size - 1)
+
+    return [({name: value * dt for name, value in flow.items()}, dt)]
+
+
+def transition_train_step(transition, state, Ts, u_s):
+
+    dt = float(state.transient_dt)
+
+    step = parcels.advance_train(
+        state.kiln_train_transition,
+        calciner_discharge(state, dt),
+        np.asarray(Ts, dtype=float),
+        u_s / transition.dz,
+        dt,
+        lambda T: parcels.CalcinationReactor(transition.chemistry, T),
+    )
+
+    state.kiln_step_transition = step
+
+    return step
+
+
+def resolve_transition_calcination_dynamic(transition, state, Ts, u_s):
+    """resolve_transition_calcination's outputs, from the train.
+
+    The bed's CaCO3 no longer leaves each cell as what entered
+    less what reacted: the cell's hold-up changes over the step.
+    So 'in' and 'out' are the CaCO3 crossing the cell's faces and
+    'reacted' is what calcined inside it, which the CO2 is booked
+    from."""
+
+    step = transition_train_step(transition, state, Ts, u_s)
+
+    eps = transition.eps
+
+    CaCO3_face = np.array(
+        [face.get("CaCO3", 0.0) for face in step.face_species]
+    )
+
+    m_dot_CaCO3_in_cells = CaCO3_face[:-1].copy()
+    m_dot_CaCO3_out_cells = CaCO3_face[1:].copy()
+
+    m_dot_CaCO3_reacted_cells = (
+        step.dm_CO2_cells / transition.chemistry.CO2_ratio
+    )
+
+    reaction_heat_cells = step.Q_calcination_cells.copy()
+
+    reaction_rate_cells = np.array(
+        [float(transition.chemistry.reaction_rate(max(float(T), 1.0))) for T in Ts]
+    )
+
+    m_dot_CaCO3_transition_in = float(CaCO3_face[0])
+    m_dot_CaCO3_out_transition = float(CaCO3_face[-1])
+
+    X_calcination_transition = 1.0 - (
+        m_dot_CaCO3_out_transition / max(m_dot_CaCO3_transition_in, eps)
+    )
+
+    cell_conversion = m_dot_CaCO3_reacted_cells / np.maximum(
+        m_dot_CaCO3_in_cells, eps
+    )
+
+    return (
+        m_dot_CaCO3_transition_in,
+        m_dot_CaCO3_in_cells,
+        m_dot_CaCO3_reacted_cells,
+        m_dot_CaCO3_out_cells,
+        reaction_heat_cells,
+        reaction_rate_cells,
+        float(np.sum(reaction_heat_cells)),
+        m_dot_CaCO3_out_transition,
+        X_calcination_transition,
+        cell_conversion,
     )

@@ -183,6 +183,20 @@ class GlobalState:
     Cooler_solid_stored: float = 0.0
     Cooler_wall_stored: float = 0.0
     Cooler_stored_energy_change: float = 0.0
+
+    # ================= KILN BED HOLD-UP (dynamic only) =================
+    # chemistry/parcels.py. The trains are the parcels inside each
+    # kiln zone at the start of the step (None until the first
+    # dynamic step builds them from the steady state); the steps
+    # are each zone's latest step of this time step, which the
+    # next zone reads its inflow from and advance() commits.
+    # The mass rates [kg/s] are each bed's dM/dt over the step.
+    kiln_train_transition: list = None
+    kiln_train_burning: list = None
+    kiln_step_transition: object = None
+    kiln_step_burning: object = None
+    Transition_mass_stored: float = 0.0
+    Burning_mass_stored: float = 0.0
     
 
     # ======================================================
