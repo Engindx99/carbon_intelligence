@@ -163,6 +163,40 @@ Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir. Varsayımlar: sıcaklık literat
 
 Betikler repo dışında: `C:\Users\engin\c4\mm\` (`mm_loaded.py`, `c4_loaded.py`).
 
+## Gaz-yalnız CFD, S 3.90 geometrisi (12 Ekim 2026)
+
+**Mesh:** S 3.17 ile aynı tarif (Ansys Meshing tet, global 150 mm, başka ayar yok).
+- 925 bin tet → **328 119 poly hücre**.
+- Min orthogonal quality **0.29**.
+- 1 046 200 düğüm: Student sınırının hemen altında.
+- Fluent'te ölçülen hacim 672.16 m³ (S 3.17'den 0.86 m³ az; beklenen).
+
+**Kurulum:** S 3.17 case'inin ayarları (`/file/write-settings` → `/file/read-settings`); yüz alanları aynı (9.90 / 16.82 / 0.507 m²).
+- Steady Coupled 350 iterasyon: **484.1 Pa** (S 3.17: 435.2).
+- URANS: 20 adım Δt 0.01 s, ardından 0.03 s.
+- Girdap ~5 s'de oturdu. Ortalama 5.0–19.7 s penceresinden, 491 adım, 36 periyot.
+
+| Büyüklük | S 3.17 | **S 3.90** |
+|---|---|---|
+| Statik ΔP (giriş − çıkış) | 477.1 Pa | **515.5 Pa** (SE 0.5; yarılar 514.1 / 516.8) |
+| Toplam basınç düşümü | 475.9 Pa | 506.4 Pa |
+| Euler sayısı | 10.53 | **11.38** |
+| Girdap salınımı | 2.39 Hz | 2.44 Hz |
+| v_max | 60.8 m/s | 58.7 m/s |
+
+- ΔP %8 arttı. Uzayan vorteks bulucu girdabı ağzın altına indiriyor; vorteks bulucu kaybı büyüyor.
+- Ortalama alan analizi, zamana bağlı DPM ve MM henüz yapılmadı. Bakılacaklar:
+  - koniye inen gaz payı (S 3.17'de ~%10);
+  - z 8.5–9.5'te duvar yukarı akışı;
+  - v_θCS.
+
+Dosyalar (repo dışında, `C:\Users\engin\c4_s390`):
+- `c4.msh`
+- `c4s_steady.*`
+- `c4s_urans.cas.h5` / `.dat.h5`
+- `c4su-*.dat.h5` (otomatik kayıtlar; case `c4su-*.cas.h5` ile ve her biri için yeniden okunarak açılmalı)
+- `c4s_urans.out`
+
 ## Boundary Faces
 
 | Ad | Tip | Alan |
