@@ -597,11 +597,20 @@ Private Sub SelectCyclone()
         ' 3.46 m, h/D 0.55, which with the 3.17 m immersion put the
         ' vortex finder's mouth only 0.29 m above the start of the
         ' cone. h = D (1.0, usual for preheater cyclones) lifts it to
-        ' 3.13 m above; the immersion, the cone, the finder and the
-        ' dust outlet stay as catalogued (user decision, 4 Oct 2026).
+        ' 3.13 m above; the cone, the finder and the dust outlet stay
+        ' as catalogued (user decision, 4 Oct 2026).
         H_BARREL = 6.3
         H_CONE = 7.3
-        L_VORTEX = 3.17
+
+        ' Immersion, NOT the catalogue 3.17 m. Against the 3.40 m inlet
+        ' that is S/a 0.93: the finder's rim sat 0.23 m above the inlet
+        ' floor, and the CFD showed the inlet jet turning into the rim
+        ' -- 72 % of the gas went down past the mouth and back up within
+        ' 1-2 m, ~10 % reached the cone. The literature asks S/a >= 1.1
+        ' to 1.2 (Hoffmann & Stein). 3.90 m is S/a 1.15, the rim 0.5 m
+        ' below the inlet floor and 2.4 m above the cone (user
+        ' decision, 5 Oct 2026).
+        L_VORTEX = 3.9
         D_VORTEX = 4.63
         D_DUST = 0.81
 
@@ -616,10 +625,9 @@ Private Sub SelectCyclone()
         '
         ' 3.40 m tall: chosen when the barrel was still 3.46 m, so the
         ' volute's floor would clear the barrel-to-cone edge. It stays
-        ' with the longer barrel because the height is what sets how
-        ' much of the opening lies below the finder's rim -- 7 % at
-        ' 3.40 against the 3.17 m immersion; taller, the short circuit
-        ' grows. The width keeps the area: 9.90 / 3.40 = 2.912 m.
+        ' with the longer barrel; the immersion above is set against
+        ' it, so the whole opening lies above the finder's rim. The
+        ' width keeps the area: 9.90 / 3.40 = 2.912 m.
         H_INLET = 3.4
         W_INLET = 2.912
 

@@ -43,7 +43,8 @@ her koordinat bunlardan hesaplanır. Bütün hatların bütün kademeleri
   ekstrüde edilen düz bir kanal ve 180°'lik bir Arşimet sarmalı. Giriş 3.40 × 2.912 m: gövde
   katalog girişinin tesis debisindeki alanıyla. Gövde h = D = 6.30 m (katalog 3.46). Çıkış 90°
   dirsek (R 1.0 D_x) ve 1.0 D_x yatay bacak (`OUTLET_TURN_DEG = 90`), riser yok (kullanıcı
-  kararları, 4 Ekim 2026).
+  kararları, 4 Ekim 2026). Daldırma 3.90 m (katalog 3.17): S/a 1.15, vorteks bulucu ağzı giriş
+  tabanının 0.5 m altında (kullanıcı kararı, 5 Ekim 2026).
 
 Yeni bir siklon eklemek için `SelectCyclone`'a bir `Case` ekle.
 

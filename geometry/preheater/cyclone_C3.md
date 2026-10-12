@@ -11,7 +11,7 @@ Efektif iç çap, D: 6.30 m — C4 ile özdeş (ara kademe standardı; C4'ün ya
 Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 6.30 m ve volütlü giriş ([cyclone_C4.md](cyclone_C4.md))
 Koni yüksekliği: 7.30 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Vorteks bulucu çapı: 4.63 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş)
+Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 3.90 m ([cyclone_C4.md](cyclone_C4.md))
 Toz çıkışı çapı: 0.81 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Giriş genişliği: 1.27 m — C4 ile özdeş (FLS oranı, türetilmiş)
 Giriş yüksekliği: 9.44 m — C4 ile özdeş (FLS oranı, türetilmiş)

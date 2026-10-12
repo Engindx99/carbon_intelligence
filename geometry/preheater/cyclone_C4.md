@@ -11,7 +11,7 @@ Efektif iç çap, D: 6.30 m — HFC2500 (yayınlanmış)
 Silindirik gövde yüksekliği: 3.46 m — FLS oranı (türetilmiş); **CFD'de 6.30 m** (aşağıda, kullanıcı kararı)
 Koni yüksekliği: 7.30 m — FLS oranı (türetilmiş)
 Vorteks bulucu çapı: 4.63 m — FLS oranı (türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.17 m — FLS oranı (türetilmiş)
+Vorteks bulucu boyu (daldırma): 3.17 m — FLS oranı (türetilmiş); **CFD'de 3.90 m** (aşağıda, kullanıcı kararı)
 Toz çıkışı çapı: 0.81 m — FLS oranı (türetilmiş)
 Giriş genişliği: 1.27 m — FLS oranı (türetilmiş)
 Giriş yüksekliği: 9.44 m — FLS oranı (türetilmiş)
@@ -29,12 +29,12 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 - Tesis böyle bir girişi volütle besler. Model de basit bir volüt kurar:
   - çatıdan aşağı ekstrüde edilen düz bir kanal (3.0 m) ve 180°'de gövdeye inen bir Arşimet sarmalı;
   - iki uçta 5 cm'lik dil (C1'deki `INLET_TONGUE` ile aynı gerekçe).
-- **Giriş 3.40 × 2.912 m = 9.90 m².** Katalog girişinin tesis debisindeki alanı: 56 kg/s ve 1033 K'de 16.0 m/s. Yükseklik, gövde henüz 3.46 m iken volüt tabanı gövde/koni kenarına denk gelmesin diye seçildi; genişlik alanı koruyor. Gövde uzadıktan sonra da korundu, çünkü yükseklik açıklığın ne kadarının vorteks bulucu ağzının altında kaldığını belirliyor: 3.17 m'lik daldırmayla %6.8. Giriş uzarsa kısa devre büyür.
+- **Giriş 3.40 × 2.912 m = 9.90 m².** Katalog girişinin tesis debisindeki alanı: 56 kg/s ve 1033 K'de 16.0 m/s. Yükseklik, gövde henüz 3.46 m iken volüt tabanı gövde/koni kenarına denk gelmesin diye seçildi; genişlik alanı koruyor. Gövde uzadıktan sonra da korundu; daldırma bu yüksekliğe göre seçildi (aşağıda).
 
 **Gövde h = D = 6.30 m (kullanıcı kararı, 4 Ekim 2026; katalogdan sapma).**
 - FLS oranının 3.46 m'si (h/D 0.55) 3.17 m'lik daldırmayla vorteks bulucu ağzını koninin yalnız 0.29 m üstüne koyuyordu.
-- h/D 1.0 ile ağız koninin 3.13 m üstüne çıkıyor.
-- Daldırma, koni, vorteks bulucu ve toz çıkışı katalogdaki gibi.
+- h/D 1.0 ile ağız koninin 3.13 m üstüne çıkıyordu; daldırma 3.90 m'ye inince 2.40 m üstünde (aşağıda).
+- Koni, vorteks bulucu çapı ve toz çıkışı katalogdaki gibi.
 - CFD gövdesinin hacmi 283.2 m³; katalog ekipman hacmi 194.5 m³. Twin'in ön ısıtıcısı katalog hacmini kullanmıyor (yer tutucu geometri), bu yüzden twin etkilenmiyor.
 
 **Çıkış:**
@@ -44,9 +44,15 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 - C1'in oranları (1.5 D_x dirsek, 1.25 D_x bacak) Ø4.63 m'lik boruda çıkışı domenin yarısından fazlası yapıyordu (378 / 666 m³). 1.0 D_x, C1'in riser dirseğindeki oran (kullanıcı kararı, 4 Ekim 2026).
 - Riser (R4) domende yok, giriş kanalında gaz düzgün profille girer.
 
-CFD domeni ≈ 673.6 m³: siklon 283.2, volüt 96.3, çıkış 297.8, eksi vorteks bulucu duvarı 3.8 (makro log'u kesin değeri verir).
+**Daldırma S = 3.90 m (kullanıcı kararı, 5 Ekim 2026; katalogdan sapma).**
+- Katalogdaki 3.17 m, 3.40 m'lik girişe karşı S/a 0.93 veriyordu: vorteks bulucu ağzı giriş tabanının 0.23 m üstündeydi.
+- S 3.17 geometrisinin CFD'si (aşağıda) giriş jetinin ağza döndüğünü gösterdi: gazın %72'si ağzın altına iniyor ama 1–2 m içinde geri dönüyor; koniye ~%10'u ulaşıyor. Temiz gaz DPM'inde 40–70 µm'lik tanelerin %80–90'ı kaçtı.
+- Literatür S/a ≥ 1.1–1.2 ister (Hoffmann & Stein; US3207494). 3.90 m ile S/a 1.15: ağız giriş tabanının 0.5 m altında, koninin 2.4 m üstünde (z 9.70).
+- D_x/D 0.735 büyük ama katalog değeri; alt kademe siklonlarında verim yerine düşük ΔP için seçilir, değişmedi.
 
-## Gaz-yalnız CFD (4–5 Ekim 2026)
+CFD domeni (S 3.90) ≈ 672.7 m³: S 3.17'deki 673.6 m³ eksi uzayan vorteks bulucu duvarı 0.86 m³ (makro log'u kesin değeri verir).
+
+## Gaz-yalnız CFD (4–5 Ekim 2026, S 3.17 geometrisi)
 
 **Mesh:**
 - Ansys Meshing tet; Fluent'te poly'ye çevrildi ve `improve-quality` uygulandı.
@@ -99,7 +105,7 @@ Dosyalar (repo dışında, `C:\Users\engin\c4`):
 - `c4u-2-00350…00700.dat.h5` (ortalama kayıtları; `c4u-2.cas.h5` ile ve her biri için case yeniden okunarak açılmalı)
 - `c4_urans_1_1.out` (adım bazında rapor)
 
-## Yüklü Durum (5 Ekim 2026)
+## Yüklü Durum (5 Ekim 2026, S 3.17 geometrisi)
 
 **Yöntem:** C1'deki gibi analitik (bkz. [cyclone_C1.md](cyclone_C1.md), "Yüklü Durum"). Yüklü Muschelknautz, Hoffmann & Stein Böl. 6 ve Svensen ve diğ. 2025 denk. 77–82:
 - α(c₀);

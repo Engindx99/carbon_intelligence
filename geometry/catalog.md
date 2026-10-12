@@ -88,7 +88,9 @@ yazılır ve bu tablo değişmez. Şu anki sapmalar:
 - [cyclone_C4.md](preheater/cyclone_C4.md) — CFD'de giriş 1.27 × 9.44 yerine **volütlü 3.40 × 2.912 m**
   (aynı alan). Katalog girişi gövde ile vorteks bulucu arasına sığmıyor ve koninin dibine iniyor; tesis
   bunu volütle çözer, model de basit bir volüt kurar. Gövde **3.46 yerine 6.30 m** (h = D): FLS oranı
-  vorteks bulucu ağzını koninin 0.29 m üstüne koyuyordu (kullanıcı kararları, 4 Ekim 2026). C2 ve C3
+  vorteks bulucu ağzını koninin 0.29 m üstüne koyuyordu (kullanıcı kararları, 4 Ekim 2026). Daldırma
+  **3.17 yerine 3.90 m** (S/a 1.15): katalog daldırması 3.40 m'lik girişten kısaydı, ağız giriş tabanının
+  üstünde kalıyordu (kullanıcı kararı, 5 Ekim 2026). C2 ve C3
   C4 ile özdeş olduğu için aynı sapmaları taşır.
 - [cyclone_C2.md](preheater/cyclone_C2.md), [cyclone_C3.md](preheater/cyclone_C3.md) — ara kademeler
   **C4 ile özdeş** (kullanıcı kararı, 27 Eylül 2026). C1 (üst, ikiz) ve C5 (alt) kendi ölçülerini
