@@ -34,6 +34,7 @@ def thermal_step(
     q_fuel_cells=None,
     Q_calciner=0.0,
     dm_gas_cells=None,
+    tol=1e-6,
 ):
 
     # ======================================================
@@ -289,8 +290,10 @@ def thermal_step(
     # PICARD ITERATION
     # ======================================================
 
+    # tol is the caller's: the coupling loop in Calciner.apply
+    # loosens it while its own iterate is still far from the
+    # fixed point (see there). Default 1e-6 K, as before.
     max_iter = 100
-    tol = 1e-6
     relaxation = 0.5
 
     # Inlet face enthalpy of the incoming gas stream. It is a

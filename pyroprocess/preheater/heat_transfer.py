@@ -937,6 +937,13 @@ def solve_stage_node(
     # WALL TEMPERATURE SOLUTION
     # ==========================================================
 
+    # The shell skin the last residual solved, keyed by its hot
+    # face. The Newton slope is always taken at the Tw the
+    # residual was just evaluated at, and shell_closure is
+    # deterministic, so re-solving it there returned the same
+    # skin bit for bit -- a third of this zone's shell solves.
+    last_shell = {"Tw": None, "T_shell": None}
+
     def wall_residual_stage(Tw_trial):
 
         _, q_gw_trial, q_ws_trial = heat_transfer(
@@ -952,11 +959,14 @@ def solve_stage_node(
             zone=model.zone,
         )
 
-        R_total_trial, _, _ = shell_closure(
+        R_total_trial, T_shell_trial, _ = shell_closure(
             float(Tw_trial),
             node_shell,
             T_amb,
         )
+
+        last_shell["Tw"] = float(Tw_trial)
+        last_shell["T_shell"] = T_shell_trial
 
         Q_wall_loss_trial = (
             float(Tw_trial) - T_amb
@@ -1012,11 +1022,14 @@ def solve_stage_node(
 
     def wall_residual_slope_stage(Tw_trial):
 
-        _, T_shell_trial, _ = shell_closure(
-            float(Tw_trial),
-            node_shell,
-            T_amb,
-        )
+        if last_shell["Tw"] == float(Tw_trial):
+            T_shell_trial = last_shell["T_shell"]
+        else:
+            _, T_shell_trial, _ = shell_closure(
+                float(Tw_trial),
+                node_shell,
+                T_amb,
+            )
 
         wall_loss_slope = loss_conductance(
             T_shell_trial,

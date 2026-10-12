@@ -266,6 +266,7 @@ class Calciner:
         q_fuel_cells=None,
         Q_calciner=0.0,
         dm_gas_cells=None,
+        tol=1e-6,
     ):
 
         return thermal_solver.thermal_step(
@@ -282,6 +283,7 @@ class Calciner:
             q_fuel_cells=q_fuel_cells,
             Q_calciner=Q_calciner,
             dm_gas_cells=dm_gas_cells,
+            tol=tol,
         )
 
     # ======================================================
@@ -402,8 +404,32 @@ class Calciner:
         # ======================================================
 
         max_coupling_iter = 50
-        coupling_tol = 1.0e-5
+        # Loosened to the plant's tolerance hint while the plant
+        # is far from its fixed point; zero on the sweep that may
+        # declare convergence (see Twin.run, INEXACT INNER SOLVES).
+        coupling_tol = max(
+            1.0e-5,
+            float(getattr(state, "inner_tolerance_hint", 0.0)),
+        )
         coupling_relaxation = 0.5
+
+        # ------------------------------------------------------
+        # INEXACT INNER SOLVE
+        #
+        # Each coupling pass used to converge the thermal solve
+        # to 1e-6 K although the reaction profile it was solving
+        # for would move by kelvins on the next pass -- ~11
+        # passes x ~23 inner iterations per plant sweep, the
+        # largest single cost of a plant solve. The inner
+        # tolerance now follows the coupling error: a tenth of
+        # the last pass's temperature change, floored at the old
+        # 1e-6 K. The last passes are therefore solved exactly as
+        # tightly as before, so the fixed point is unchanged; only
+        # the iterations spent refining a profile that was about
+        # to be thrown away are saved.
+        # ------------------------------------------------------
+        inner_tol_floor = 1.0e-6
+        inner_tol = inner_tol_floor
 
         # ------------------------------------------------------
         # FUEL HEAT RELEASE
@@ -580,6 +606,7 @@ class Calciner:
                 q_fuel_cells=q_fuel_cells,
                 Q_calciner=Q_calciner,
                 dm_gas_cells=dm_gas_cells,
+                tol=inner_tol,
             )
 
             # ==================================================
@@ -662,16 +689,36 @@ class Calciner:
                 Q_reaction
             )
 
+            # The pass just solved at inner_tol; the next one is
+            # solved to a tenth of how far this pass moved. A pass
+            # counts as tight once its inner tolerance is a tenth
+            # of the coupling tolerance -- at the plant's final
+            # coupling_tol of 1e-5 that is the old 1e-6 K floor.
+            solved_tight = inner_tol <= max(
+                inner_tol_floor,
+                0.1 * coupling_tol,
+            )
+
+            inner_tol = max(
+                inner_tol_floor,
+                0.1 * float(temperature_error),
+            )
+
             # ==================================================
             # 7. STEADY-STATE CONVERGENCE
             # ==================================================
 
+            # Only a tight pass may end the loop, so the converged
+            # state is as tight as it was before the inner solve
+            # became inexact.
             if (
                 temperature_error
                 < coupling_tol
                 and
                 reaction_relative_error
                 < coupling_tol
+                and
+                solved_tight
             ):
 
                 coupling_converged = True

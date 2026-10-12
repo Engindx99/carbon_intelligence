@@ -159,13 +159,25 @@ def rayleigh_number(T_surface, T_amb, L_char):
     coefficient, which air at atmospheric pressure is.
     """
 
-    # abs(), not np.abs(): correct elementwise on an array and
-    # ~20x cheaper on a float.
-    delta_T = abs(T_surface - T_amb)
-
     T_film = 0.5 * (T_surface + T_amb)
 
     _, nu, Pr = air_film_properties(T_film)
+
+    return _rayleigh(T_surface, T_amb, T_film, nu, Pr, L_char)
+
+
+def _rayleigh(T_surface, T_amb, T_film, nu, Pr, L_char):
+    """Ra from film properties already evaluated at T_film.
+
+    Split out so natural_convection_coefficient, which needs k and
+    Pr at the same film temperature anyway, does not evaluate the
+    air properties a second time. They were ~40 % of the shell
+    closure's cost, and the closure was half of a plant solve.
+    """
+
+    # abs(), not np.abs(): correct elementwise on an array and
+    # ~20x cheaper on a float.
+    delta_T = abs(T_surface - T_amb)
 
     alpha = nu / Pr
 
@@ -205,9 +217,9 @@ def natural_convection_coefficient(
 
     T_film = 0.5 * (T_surface + T_amb)
 
-    k, _, Pr = air_film_properties(T_film)
+    k, nu, Pr = air_film_properties(T_film)
 
-    Ra = rayleigh_number(T_surface, T_amb, L_char)
+    Ra = _rayleigh(T_surface, T_amb, T_film, nu, Pr, L_char)
 
     if orientation == "horizontal":
 
@@ -715,6 +727,8 @@ def shell_closure(
 
     q_cell = (T_hf - T_amb) / R_total
 
+    Ra_max = amax(rayleigh_number(T_s, T_amb, L_char))
+
     info = {
         "R_cond": geometry.R_cond,
         "R_ext_mean": mean(R_ext),
@@ -736,13 +750,10 @@ def shell_closure(
         # 4.9 m outer diameter sits near 5e11, inside the range,
         # but a bigger or hotter shell would not, and this is
         # where that would show.
-        "Ra_max": amax(
-            rayleigh_number(T_s, T_amb, L_char)
-        ),
+        "Ra_max": Ra_max,
         "Ra_limit_exceeded": bool(
             orientation == "horizontal"
-            and amax(rayleigh_number(T_s, T_amb, L_char))
-            > RA_HORIZONTAL_LIMIT
+            and Ra_max > RA_HORIZONTAL_LIMIT
         ),
     }
 

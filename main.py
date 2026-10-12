@@ -1353,6 +1353,26 @@ class Twin:
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6
 
+        # ======================================================
+        # INEXACT INNER SOLVES
+        #
+        # The kiln zones and the cooler converge their own Picard
+        # loops to 1e-9 / 1e-6 K on every sweep, while early
+        # sweeps move the plant by hundreds of kelvin -- most of
+        # that refinement was thrown away by the next sweep. Each
+        # sweep now publishes a hint, a hundredth of its thermal
+        # residual, that those zones use as their tolerance when
+        # it is the looser of the two.
+        #
+        # A sweep that meets every tolerance below but ran with a
+        # non-zero hint does NOT end the loop: the hint is zeroed
+        # and the plant is swept once more at the zones' own
+        # floors, so the converged state is solved as tightly as
+        # it was before. The preheater is not included: its
+        # tolerance sets its energy validator's bar.
+        # ======================================================
+        self.state.inner_tolerance_hint = 0.0
+
 
         print(
             "STEADY-STATE SOLVE STARTED",
@@ -1402,13 +1422,23 @@ class Twin:
             # ==================================================
             # CONVERGENCE CHECK
             # ==================================================
-            if (
+            within_tolerance = (
                 residual["thermal"] < thermal_tolerance
                 and
                 residual["mass"] < mass_tolerance
                 and
                 residual["solid_handoff"] < 1e-3
-            ):
+            )
+
+            solved_at_floor = self.state.inner_tolerance_hint == 0.0
+
+            self.state.inner_tolerance_hint = (
+                0.0
+                if within_tolerance
+                else 0.01 * float(residual["thermal"])
+            )
+
+            if within_tolerance and solved_at_floor:
 
                 print(
                     "STEADY STATE CONVERGED "

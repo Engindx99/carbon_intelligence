@@ -98,8 +98,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # PICARD ITERATION
     # ======================================================
 
+    # Inexact while the plant is far from its fixed point: Twin.run
+    # publishes a tolerance hint (a hundredth of the last sweep's
+    # thermal residual) and refining this zone below it buys
+    # nothing the next sweep keeps. The hint is zero on the sweep
+    # that may declare convergence, so the converged state is
+    # solved to the floor below exactly as before.
     max_iter = 100
-    tol = 1e-6
+    tol = max(
+        1e-6,
+        float(getattr(state, "inner_tolerance_hint", 0.0)),
+    )
     relaxation = 0.5
 
     Tg_iter = np.asarray(
