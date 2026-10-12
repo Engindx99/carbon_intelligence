@@ -37,7 +37,7 @@ Option Explicit
 '     geometry/catalog.md.
 '------------------------------------------------------------------
 
-Const CYCLONE_NAME As String = "C1"      ' "C1" or "C4"
+Const CYCLONE_NAME As String = "C1"      ' "C1", "C4" or "C5"
 Const LINE_KEY As String = "2500"
 
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
@@ -655,8 +655,41 @@ Private Sub SelectCyclone()
         ' the bore with the clearance PreChecks asks for.
         BOI_RADIUS = 1.5
 
+    Case "C5"
+        ' geometry/preheater/cyclone_C5.md -- one C5 per string; the
+        ' plant has two identical 2500 t/d strings (user decision,
+        ' 12 Oct 2026), each fed by one gooseneck leg.
+        '
+        ' NOT the catalogue C5. Every length is the C4 case above
+        ' x 6.50 / 6.30 = 1.0317, so the C5 is geometrically similar to
+        ' the cyclone the CFD solved: C4's Euler number and its volute's
+        ' swirl carry over unchanged, and C5 needs no CFD of its own.
+        ' D is the published 6.50 m; the catalogue C5's ratios were
+        ' within 1-2 % of C4's, so this takes on C4's departures from
+        ' them (h = D, S/a 1.15, volute) and nothing else.
+        D_BARREL = 6.5
+        H_BARREL = 6.5
+        H_CONE = 7.5317
+        L_VORTEX = 4.0238
+        D_VORTEX = 4.777
+        D_DUST = 0.8357
+        H_INLET = 3.5079
+        W_INLET = 3.0044
+
+        INLET_SLOPE_DEG = 0#
+        VOLUTE_ON = True
+
+        ' C5's gas goes on to the R4 riser, as C4's goes to R3.
+        OUTLET_TURN_DEG = 90#
+        ELBOW_R_OVER_VORTEX_D = 1#
+        OUTLET_DOWN_OVER_VORTEX_D = 1#
+        RISER_ON = False
+
+        ' C4's 1.5 m x 1.0317.
+        BOI_RADIUS = 1.55
+
     Case Else
-        Fail "CYCLONE_NAME is " & CYCLONE_NAME & "; this macro knows C1 and C4."
+        Fail "CYCLONE_NAME is " & CYCLONE_NAME & "; this macro knows C1, C4 and C5."
 
     End Select
 

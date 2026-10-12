@@ -2,6 +2,7 @@
 
 Kaynak doküman: `geometry/CFD_VIEW.pdf` (§1, §6, Ek). Referans hat: 2500 t/d. Tekli siklon.
 Farin borusu: [meal_pipe_C4.md](meal_pipe_C4.md)
+Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ölçüsünde (kullanıcı kararı, 12 Ekim 2026; [plant_topology.md](../plant_topology.md)).
 
 ## Geometrik Ölçüler
 

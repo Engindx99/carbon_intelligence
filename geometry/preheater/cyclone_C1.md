@@ -6,6 +6,8 @@ Farin borusu: [meal_pipe_C1.md](meal_pipe_C1.md)
 
 C1 iki siklondan oluşur (×2); aşağıdaki değerler her biri içindir.
 
+Tesiste iki özdeş 2500 t/d hattı var; her hatta bir ikiz C1, toplam 4 C1, hepsi CFD ölçüsünde (kullanıcı kararı, 12 Ekim 2026; [plant_topology.md](../plant_topology.md)). Tesis debisindeki değerler aşağıda, "Tesis debisinde" bölümünde.
+
 C1, FLS'nin tek üst siklonundan çoklu C1'e aktarım varsayımını taşır; bu varsayım not edilerek kurulmalı.
 
 ## Geometrik Ölçüler
@@ -733,6 +735,21 @@ Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir.
 - Kaçan toz filtreden beslemeye döner (kullanıcı kararı). C1'den geçen katıya D = (1−η)/η × alt akış eklenir. C2'ye ve kalsinere giden kütle değişmez; twin'e etkisi yalnız ısıl: tozun C1 katı çıkışı ile besleme sıcaklığı arasındaki entalpisi (`state.Q_dust_loss_preheater`), defterde "C1 dust (returned)" satırı.
 - İlk koşu (27.78 kg/s besleme): D 1.10 kg/s (iki C1 için; burada C1 başına 0.54), kayıp 0.52 MW ≈ 31 kJ/kg klinker. Bu kaybı twin'in C1 katı çıkış sıcaklığı (855 K) belirliyor; o sıcaklık bu dokümandaki 602.5 K'nin çok üstünde, çünkü twin'in ön ısıtıcı egzozu hâlâ çok sıcak (1264 K). Egzoz düzeldikçe bu kayıp da küçülür.
 - ΔP twin'e girmedi: twin'de basınç/fan ağı yok.
+
+### Tesis debisinde (12 Ekim 2026)
+
+CFD 17.9 kg/s'de (sektör tipik değeri) çözüldü. Tesisin her hattı 2500 t/d'dir ve hattın gazını ikiz C1'ler paylaşır: **C1 başına ~28 kg/s**. Ölçüler aynı kalır; değerler o debiye taşınır. Betik: `C:\Users\engin\c4\mm\c1_plant.py` (repo dışı). Betik, CFD noktasında yukarıdaki sayıları birebir veriyor: 249 Pa, %96.1.
+- **Gaz-yalnız ΔP:** CFD'nin Euler sayısı (6.35) × giriş dinamik basıncı. Giriş hızı 25.7 m/s, ΔP **1.23 kPa**. Literatürün üst kademe bandı 0.5–2 kPa.
+- **Yüklü durum:** MM, yarık α'sı ile, cyclone_C1.md'deki gibi. Farin kule döngüsünden gelir (C2–C4 η 0.93, C5 η 0.90, kalsinatörde %90 kalsinasyon): hattın C1'lerine 49.9 kg/s, C1 başına c₀ 0.89.
+
+| C1 başına gaz | v_in | Gaz-yalnız ΔP | Yüklü ΔP | x₅₀ | η (alt – üst) |
+|---|---|---|---|---|---|
+| 24 kg/s | 22.1 m/s | 905 Pa | 412 Pa | 22.7 µm | %97.2–98.7 |
+| **28 kg/s** | **25.7 m/s** | **1232 Pa** | **586 Pa** | **20.2 µm** | **%97.1–98.8** |
+| 32 kg/s | 29.4 m/s | 1609 Pa | 793 Pa | 18.3 µm | %97.1–98.9 |
+
+- Yüksek hız girdabı güçlendirir, x₅₀ küçülür; c₀ düşse de η'nın alt ucu ~1 puan artar.
+- **Twin değeri:** **η %97**, yüklü MM'nin alt ucu; 4 Ekim 2026'daki seçim kuralının aynısı. `configs/twin_cfg.yaml` → `preheater.c1_separation_efficiency`. Hattın egzozuyla giden toz ~1.44 kg/s.
 
 ### Tek yönlü DPM kontrolü (4 Ekim 2026)
 

@@ -4,7 +4,7 @@ Cyclone separation and dust circulation (pyroprocess/preheater/heat_transfer.py)
 Each stage's cyclone sends eta of the solid leaving it down and lets the
 rest up with its gas. The top cyclone C1 (Stage 5, index N-1) lets its
 dust out with the exhaust; the filter catches it and it comes back with
-the feed. The mid cyclones C2-C4 (Stages 4-2) let theirs into the stage
+the feed. C2-C5 (Stages 4-1) let theirs into the stage
 above, where it joins that stage's solid: an internal loop. At steady
 state the solid sent to the calciner is the same as without separation,
 and the plant loses only the heat C1's dust carries out between the C1
@@ -89,6 +89,7 @@ class DustReturnTest(unittest.TestCase):
         ph = self.twin.preheater
         self.assertLess(ph.c1_separation_efficiency, 1.0)
         self.assertLess(ph.c2_c4_separation_efficiency, 1.0)
+        self.assertLess(ph.c5_separation_efficiency, 1.0)
 
     def test_balances_pass(self):
         assert_balances_pass(self, self.validations)
@@ -118,7 +119,7 @@ class DustReturnTest(unittest.TestCase):
             rtol=1e-12,
         )
         self.assertEqual(ph.m_dot_dust_return, ph.m_dot_dust_escape[-1])
-        self.assertTrue(np.all(ph.m_dot_dust_escape[1:] > 0.0))
+        self.assertTrue(np.all(ph.m_dot_dust_escape > 0.0))
 
     def test_solid_to_calciner_is_unchanged_by_separation(self):
         ph = self.twin.preheater

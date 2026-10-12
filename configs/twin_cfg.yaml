@@ -128,20 +128,26 @@ calciner:
 preheater:
   length: 25.0   # m, equivalent solid path length (stage volume sizing)
   nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
-  # Separation efficiency of the top cyclone C1 (Stage 5, index N-1).
-  # Loaded Muschelknautz lower bound, geometry/preheater/cyclone_C1.md
-  # "Yüklü Durum" (user decision 4 Oct 2026: 0.96, not the 0.95 literature
-  # figure). The escaping dust is caught by the filter and returned with
-  # the feed, so it only costs heat. 1.0 = no separation model.
-  c1_separation_efficiency: 0.96
-  # Separation efficiency of the mid cyclones C2-C4 (Stages 4-2, indices
-  # 3-1; identical cyclones). Loaded Muschelknautz lower bound for the
-  # S 3.90 geometry, geometry/preheater/cyclone_C4.md (user decision
-  # 12 Oct 2026: 0.93 from our solution; literature band 0.80-0.90 noted).
-  # The escaping dust rises with the gas into the stage above: an
-  # internal loop that moves heat, not plant mass. C5 (Stage 1) has no
-  # value yet: c5_separation_efficiency defaults to 1.0.
+  # Cyclone separation efficiencies, per cyclone at the CFD sizes. The
+  # plant is two identical 2500 t/d strings (geometry/catalog.md, user
+  # decision 12 Oct 2026); the twin solves the tower as one series string
+  # at the total flow, which identical parallel strings with the same
+  # eta reproduce exactly. Each value is the loaded Muschelknautz lower
+  # bound at the string's flow, the rule the user chose for C1 on 4 Oct
+  # 2026 (not the literature figures). 1.0 = no separation model.
+  #
+  # C1 (Stage 5, index N-1), twin C1s at ~28 kg/s gas each:
+  # geometry/preheater/cyclone_C1.md "Tesis debisinde". Its dust is
+  # caught by the filter and returned with the feed: it only costs heat.
+  c1_separation_efficiency: 0.97
+  # C2-C4 (Stages 4-2, indices 3-1), identical to the S 3.90 CFD C4 at
+  # its own 56 kg/s: geometry/preheater/cyclone_C4.md. Their dust rises
+  # with the gas into the stage above: an internal loop that moves heat,
+  # not plant mass.
   c2_c4_separation_efficiency: 0.93
+  # C5 (Stage 1, index 0), one per string, the CFD C4 x 6.50/6.30:
+  # geometry/preheater/cyclone_C5.md. Its dust rises into C4.
+  c5_separation_efficiency: 0.90
 
 cooler:
   length: 25.0   # m

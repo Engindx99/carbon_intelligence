@@ -30,7 +30,7 @@ Yeni bir parça açmaya gerek yok; makro kendi parçasını oluşturur.
 
 ## Başka bir siklon üretmek
 
-Dosyanın başında `CYCLONE_NAME`'i seç: `"C1"` ya da `"C4"`. Her siklonun ölçüleri ve kendine
+Dosyanın başında `CYCLONE_NAME`'i seç: `"C1"`, `"C4"` ya da `"C5"`. Her siklonun ölçüleri ve kendine
 özgü modelleme seçimleri `SelectCyclone` yordamında, gerekçeleriyle birlikte duruyor; geri kalan
 her koordinat bunlardan hesaplanır. Bütün hatların bütün kademeleri
 [`geometry/catalog.md`](../catalog.md) içinde:
@@ -45,6 +45,9 @@ her koordinat bunlardan hesaplanır. Bütün hatların bütün kademeleri
   dirsek (R 1.0 D_x) ve 1.0 D_x yatay bacak (`OUTLET_TURN_DEG = 90`), riser yok (kullanıcı
   kararları, 4 Ekim 2026). Daldırma 3.90 m (katalog 3.17): S/a 1.15, vorteks bulucu ağzı giriş
   tabanının 0.5 m altında (kullanıcı kararı, 5 Ekim 2026).
+- **C5 (hat başına bir tane):** C4'ün bütün ölçüleri × 6.50 / 6.30 = 1.0317. CFD'si çözülen
+  C4'le geometrik benzer; C4'ün Euler sayısı ve volüt girdabı ölçeklemesiz taşınır, C5'e ayrı
+  CFD gerekmez (kullanıcı kararı, 12 Ekim 2026). Çıkış C4'teki gibi 90° dirsek, R4'e gider.
 
 Yeni bir siklon eklemek için `SelectCyclone`'a bir `Case` ekle.
 
