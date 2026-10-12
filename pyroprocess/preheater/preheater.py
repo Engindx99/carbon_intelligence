@@ -42,23 +42,58 @@ class Preheater:
 
         self.zone = "preheater"
 
-        # Separation efficiency of the top cyclone C1 (Stage 5).
-        # The dust it lets through is returned with the feed; see
-        # heat_transfer.thermal_step. 1.0 = no separation model.
+        # Cyclone separation efficiencies. C1 (Stage 5) lets its
+        # dust out with the exhaust, the filter returns it with the
+        # feed; C2-C4 (identical cyclones) and C5 let theirs up with
+        # the gas into the stage above. See heat_transfer.thermal_step.
+        # 1.0 = no separation model.
         preheater_cfg = (cfg or {}).get("preheater", {})
 
         self.c1_separation_efficiency = float(
             preheater_cfg.get("c1_separation_efficiency", 1.0)
         )
+        self.c2_c4_separation_efficiency = float(
+            preheater_cfg.get("c2_c4_separation_efficiency", 1.0)
+        )
+        self.c5_separation_efficiency = float(
+            preheater_cfg.get("c5_separation_efficiency", 1.0)
+        )
 
-        if not 0.0 < self.c1_separation_efficiency <= 1.0:
-            raise ValueError(
-                "c1_separation_efficiency must be in (0, 1], got "
-                f"{self.c1_separation_efficiency}"
-            )
+        for key in (
+            "c1_separation_efficiency",
+            "c2_c4_separation_efficiency",
+            "c5_separation_efficiency",
+        ):
+            eta = getattr(self, key)
+            if not 0.0 < eta <= 1.0:
+                raise ValueError(
+                    f"{key} must be in (0, 1], got {eta}"
+                )
 
         # Returned dust flow [kg/s], set by every thermal step.
         self.m_dot_dust_return = 0.0
+
+        # The same in index order: Stage 1 (index 0) is the plant's
+        # C5, Stage 5 (index N-1) its C1 (gas_T_bounds_K below).
+        if N > 1:
+            self.separation_efficiency = np.array(
+                [self.c5_separation_efficiency]
+                + [self.c2_c4_separation_efficiency] * (N - 2)
+                + [self.c1_separation_efficiency]
+            )
+        else:
+            self.separation_efficiency = np.array(
+                [self.c1_separation_efficiency]
+            )
+
+        # Dust each stage lets up with its gas [kg/s], index order;
+        # the last entry is m_dot_dust_return. Set by every thermal
+        # step.
+        self.m_dot_dust_escape = np.zeros(N)
+
+        # Solid entering each stage, circulating dust included
+        # [kg/s]. Set by every thermal step.
+        self.m_dot_s_stage_in = np.zeros(N)
 
         self.stages = [
             Stage1(),

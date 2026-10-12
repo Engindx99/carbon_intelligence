@@ -241,6 +241,18 @@ Betikler repo dışında: `C:\Users\engin\c4\mm\` (`mm_loaded.py`, `c4_loaded.py
 - İki hatlı tesiste siklon başına aynı: c₀ ve giriş hızı korunur.
 - Bu değerler S 3.17'nin "Twin'e giden değerler"inin yerine geçer.
 
+**Twin entegrasyonu (12 Ekim 2026):**
+- **Ayar:** `configs/twin_cfg.yaml` → `preheater.c2_c4_separation_efficiency: 0.93`. C2, C3 ve C4 (twin Stage 4–2) için aynı değer. C5 `c5_separation_efficiency` ile ayrıca verilebilir, şimdilik 1.0.
+- **Kaçan toz:** E = (1 − η)·(kademeden çıkan katı). Gazla bir üst kademeye gider ve oradaki katıya kendi sıcaklığıyla karışır.
+  - Bu bir iç döngüdür: tesisten kütle çıkmaz, kalsinatöre giden katı değişmez (26.391 kg/s).
+  - Etkisi ısı tarafında: sıcak alt kademenin tozu üst kademenin katısını ısıtır, yani ısı yukarı taşınır.
+  - C1'in tozu eskisi gibi filtreyle beslemeye döner.
+- **Kütle çözümü:** kademe akışları doğrusal bir sistemle çözülür (`heat_transfer.circulating_solid_flows`). Bütün η = 1 olunca model eskisiyle bit bit aynıdır.
+- **Twin sonucu** (`run_twin`, nodes_per_stage 20):
+  - C4 / C3 / C2'nin gazla yukarı taşıdığı toz 1.99 / 2.14 / 2.15 kg/s.
+  - C1'in filtreye kaçırdığı toz 1.10'dan 1.19 kg/s'ye, toz ısı kaybı 0.52'den 0.57 MW'a çıktı.
+  - Bütün enerji, kütle ve CO₂ dengeleri kapanıyor.
+
 Dosyalar (repo dışında, `C:\Users\engin\c4_s390`):
 - `c4.msh`
 - `c4s_steady.*`

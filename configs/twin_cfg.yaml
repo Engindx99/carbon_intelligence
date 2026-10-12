@@ -134,6 +134,14 @@ preheater:
   # figure). The escaping dust is caught by the filter and returned with
   # the feed, so it only costs heat. 1.0 = no separation model.
   c1_separation_efficiency: 0.96
+  # Separation efficiency of the mid cyclones C2-C4 (Stages 4-2, indices
+  # 3-1; identical cyclones). Loaded Muschelknautz lower bound for the
+  # S 3.90 geometry, geometry/preheater/cyclone_C4.md (user decision
+  # 12 Oct 2026: 0.93 from our solution; literature band 0.80-0.90 noted).
+  # The escaping dust rises with the gas into the stage above: an
+  # internal loop that moves heat, not plant mass. C5 (Stage 1) has no
+  # value yet: c5_separation_efficiency defaults to 1.0.
+  c2_c4_separation_efficiency: 0.93
 
 cooler:
   length: 25.0   # m

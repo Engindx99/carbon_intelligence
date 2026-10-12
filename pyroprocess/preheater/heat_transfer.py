@@ -32,6 +32,74 @@ from . import solid_phase
 # Preheater's two-level iteration instead of a single global
 # linear system).
 # ======================================================
+def circulating_solid_flows(m_dot_s_in, vapor, separation_efficiency):
+    """
+    Solid flows through the stages with cyclone separation (see
+    CYCLONE SEPARATION AND DUST CIRCULATION in thermal_step).
+
+    m_dot_s_in: solid entering each stage without separation;
+    vapor: free moisture leaving each stage; separation_efficiency:
+    eta per stage, index order. Returns the solid entering each
+    stage with the circulating dust, and the dust each stage lets
+    up with its gas (the last entry goes to the filter and back
+    with the feed). All eta = 1 returns m_dot_s_in unchanged and
+    no dust, exactly.
+    """
+    m_dot_s_in = np.asarray(m_dot_s_in, dtype=float)
+    vapor = np.asarray(vapor, dtype=float)
+    k = 1.0 - np.asarray(separation_efficiency, dtype=float)
+
+    N = m_dot_s_in.shape[0]
+
+    if k.shape != (N,) or vapor.shape != (N,):
+        raise ValueError(
+            "separation_efficiency and vapor must have length equal to N"
+        )
+
+    O0 = m_dot_s_in - vapor
+
+    A = np.eye(N)
+    b = np.zeros(N)
+
+    for i in range(N - 1):
+        A[i, i + 1] += -1.0 + k[i + 1]
+        b[i] += -k[i + 1] * O0[i + 1]
+        if i > 0:
+            A[i, i - 1] += -k[i - 1]
+            b[i] += k[i - 1] * O0[i - 1]
+
+    A[N - 1, N - 1] -= k[N - 1]
+    b[N - 1] += k[N - 1] * O0[N - 1]
+    if N > 1:
+        A[N - 1, N - 2] -= k[N - 2]
+        b[N - 1] += k[N - 2] * O0[N - 2]
+
+    x_extra = np.linalg.solve(A, b) if np.any(b) else np.zeros(N)
+
+    m_dot_s_in = m_dot_s_in + x_extra
+
+    return m_dot_s_in, k * (m_dot_s_in - vapor)
+
+
+def _mixed_solid_inlet(solid_out, Ts_feed, dust_from_below):
+    """
+    Solid inlet temperature of every stage: the stream from above
+    (the next stage's underflow, or the feed into Stage 5, which
+    the returned C1 dust joins at the feed temperature) mixed with
+    the dust share dust_from_below[i] coming up from stage i-1.
+    Same Cp, so the mix is mass-weighted; with no dust it is the
+    stream from above exactly.
+    """
+    base = np.empty_like(solid_out)
+    base[:-1] = solid_out[1:]
+    base[-1] = Ts_feed
+
+    below = base.copy()
+    below[1:] = solid_out[:-1]
+
+    return base + dust_from_below * (below - base)
+
+
 def thermal_step(
     preheater,
     Tg,
@@ -219,38 +287,69 @@ def thermal_step(
     m_dot_s_in = m_dot_s - vapor_upstream_of_solid
 
     # ======================================================
-    # C1 DUST RETURN
+    # CYCLONE SEPARATION AND DUST CIRCULATION
     #
-    # Stage 5 (index N-1) is the plant's top cyclone C1. It
-    # sends eta of the solid it receives down to Stage 4 and
-    # lets the rest out with the exhaust gas; the filter catches
-    # that dust and it comes back with the feed. At steady state
-    # the underflow to Stage 4 is the fresh feed less its
-    # moisture, exactly as without separation, so
+    # Each stage's cyclone sends eta_i of the solid leaving the
+    # stage down (to Stage i-1, or to the calciner from Stage 1)
+    # and lets E_i = (1 - eta_i) of it up with its gas:
     #
-    #   D = (1 - eta) / eta * m_dot_s_in[N-2]
+    #   - from Stages 1-4 (plant C5-C2) into the stage above,
+    #     where it joins that stage's solid: an internal loop;
+    #   - from Stage 5 (plant C1) out with the exhaust; the
+    #     filter catches it and it comes back with the feed.
     #
-    # recirculates through Stage 5 on top of the fresh feed.
-    # Everything below C1 (mass, species, the calciner) is
-    # unchanged. The dust is dry (its free moisture left in C1),
-    # leaves at the Stage 5 solid outlet temperature and returns
-    # at the feed temperature: it costs heat, not mass.
-    # eta = 1 gives D = 0 and the model without separation.
+    # At steady state the solid reaching the calciner is still
+    # the fresh feed less its moisture: the loops add flow
+    # through the stages, not mass to the plant. The dust is dry
+    # (the feed's free moisture leaves in Stage 5) and carries no
+    # species change: it costs heat, not mass. Its heat is real:
+    # dust from a hotter stage reheats the cooler solid above,
+    # and C1's dust leaves at the Stage 5 solid outlet
+    # temperature and returns at the feed temperature.
+    #
+    # With x_i the extra solid entering stage i and O0_i the
+    # stage outflow without separation (O0_i = m_dot_s_in[i]
+    # - vapor[i]),
+    #
+    #   E_i = (1 - eta_i) (O0_i + x_i)
+    #   x_i     = x_{i+1} - E_{i+1} + E_{i-1}     i < N-1
+    #   x_{N-1} = E_{N-1} + E_{N-2}
+    #
+    # (E_{-1} = 0): stage i gets the underflow O_{i+1} - E_{i+1}
+    # from above and the dust E_{i-1} from below; Stage 5 gets
+    # its own dust back with the feed. All eta = 1 gives a zero
+    # right-hand side and x = 0 exactly: the model without
+    # separation. C1 alone gives x_{N-1} = (1-eta)/eta O0_{N-1}.
     # ======================================================
 
-    eta = preheater.c1_separation_efficiency
-
-    m_dot_underflow = (
-        m_dot_s_in[-2]
-        if preheater.N > 1
-        else m_dot_s - vapor[-1]
+    m_dot_s_in, m_dot_escape = circulating_solid_flows(
+        m_dot_s_in, vapor, preheater.separation_efficiency
     )
 
-    m_dot_dust = (1.0 - eta) / eta * m_dot_underflow
+    m_dot_dust = float(m_dot_escape[-1])
 
-    m_dot_s_in[-1] += m_dot_dust
+    preheater.m_dot_dust_return = m_dot_dust
 
-    preheater.m_dot_dust_return = float(m_dot_dust)
+    preheater.m_dot_dust_escape = m_dot_escape.copy()
+
+    preheater.m_dot_s_stage_in = m_dot_s_in.copy()
+
+    N = preheater.N
+
+    # The circulating dust adds flow through the stages, and with
+    # it handoff slop; scale the closure tolerance (above) by the
+    # largest stage flow. Without separation that is m_dot_s.
+    preheater.energy_closure_tolerance = float(
+        (preheater.N - 1)
+        * max(m_dot_s, float(np.max(m_dot_s_in)))
+        * preheater.Cp_s
+        * tolerance
+    )
+
+    # Share of each stage's solid inlet that is dust from the
+    # stage below; the rest comes from above (or is feed).
+    dust_from_below = np.zeros(N)
+    dust_from_below[1:] = m_dot_escape[:-1] / m_dot_s_in[1:]
 
     # Outlet flows handed to the next units: exhaust gas from
     # stage 5, solid to the calciner from stage 1.
@@ -285,12 +384,9 @@ def thermal_step(
 
         for i, stage in enumerate(preheater.stages):
 
-            # Fresh feed enters Stage 5.
-            if i == preheater.N - 1:
-                Ts_current = Ts_feed
-            else:
-                # Solid comes from the next stage.
-                Ts_current = solid_in_guess[i]
+            # Feed (Stage 5) or the next stage's solid, mixed with
+            # the dust from the stage below.
+            Ts_current = solid_in_guess[i]
 
             stage.solve(
                 gas_inlet_temperature=Tg_current,
@@ -315,16 +411,9 @@ def thermal_step(
         # UPDATE SOLID INLET PROFILE
         # --------------------------------------------------
 
-        new_solid_in = np.empty(
-            preheater.N,
-            dtype=float,
+        new_solid_in = _mixed_solid_inlet(
+            solid_out, Ts_feed, dust_from_below
         )
-
-        # Fresh feed enters Stage 5.
-        new_solid_in[-1] = Ts_feed
-
-        # Stage i receives solids from Stage i+1.
-        new_solid_in[:-1] = solid_out[1:]
 
         # --------------------------------------------------
         # CONVERGENCE
@@ -407,10 +496,7 @@ def thermal_step(
 
     for i, stage in enumerate(preheater.stages):
 
-        if i == preheater.N - 1:
-            Ts_current = Ts_feed
-        else:
-            Ts_current = solid_in_guess[i]
+        Ts_current = solid_in_guess[i]
 
         stage.solve(
             gas_inlet_temperature=Tg_current,
@@ -447,10 +533,17 @@ def thermal_step(
     preheater.gas_handoff_residuals = []
     preheater.solid_handoff_residuals = []
 
-    # The dust leaves Stage 5 with the exhaust at the Stage 5
-    # solid outlet temperature (H_dust_out) and is fed back at
-    # the feed temperature (H_dust_in). Stage 5's solid outlet
-    # enthalpy carries it; Stage 4 receives the rest.
+    # Every stage's escaping dust leaves it at its solid outlet
+    # temperature: Stages 1-4's joins the stage above, Stage 5's
+    # (H_dust_out) goes to the filter and is fed back at the feed
+    # temperature (H_dust_in). A stage's solid outlet enthalpy
+    # carries its dust; the stage below receives the rest.
+    H_escape = (
+        m_dot_escape
+        * preheater.Cp_s
+        * (Ts_new - preheater.T_ref)
+    )
+
     H_dust_out = (
         m_dot_dust
         * preheater.Cp_s
@@ -479,15 +572,14 @@ def thermal_step(
                 * (Ts_feed - preheater.T_ref)
                 + H_dust_in
             )
-        elif i == preheater.N - 2:
-            Hsolid_expected = (
-                preheater.stages[i + 1].solid_outlet_enthalpy
-                - H_dust_out
-            )
         else:
             Hsolid_expected = (
                 preheater.stages[i + 1].solid_outlet_enthalpy
+                - H_escape[i + 1]
             )
+
+        if i > 0:
+            Hsolid_expected += H_escape[i - 1]
 
         gas_handoff_residual = (
             stage.gas_inlet_enthalpy
@@ -552,7 +644,11 @@ def thermal_step(
 
     Hgas_out = preheater.stages[-1].gas_outlet_enthalpy
 
-    Hsolid_out = preheater.stages[0].solid_outlet_enthalpy
+    # Stage 1's underflow; its escaping dust stays in the loop.
+    Hsolid_out = (
+        preheater.stages[0].solid_outlet_enthalpy
+        - H_escape[0]
+    )
 
     preheater.energy_in = (
         Hgas_in
