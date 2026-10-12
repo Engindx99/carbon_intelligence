@@ -733,7 +733,23 @@ class Twin:
 
             "m_dot_g": float(self.state.m_dot_g),
             "m_dot_s": float(self.state.m_dot_s),
+
+            # The CO2 each zone releases, which the scalar mass
+            # chain is built from. See FLOW RESIDUAL below.
+            **{
+                name: float(getattr(self.state, name, 0.0))
+                for name in self._FLOW_RESIDUAL_KEYS[2:]
+            },
         }
+
+    # m_dot_g and m_dot_s first; the rest are state scalars.
+    _FLOW_RESIDUAL_KEYS = (
+        "m_dot_g",
+        "m_dot_s",
+        "m_dot_CO2_generated_calciner",
+        "m_dot_CO2_generated_transition",
+        "m_dot_CO2_generated_burning",
+    )
         
     # ==========================================================
     # STEADY-STATE CONVERGENCE RESIDUAL
@@ -800,6 +816,24 @@ class Twin:
         )
 
         # ==========================================================
+        # FLOW RESIDUAL
+        #
+        # Relative change of the plant's flows over the sweep. The
+        # per-cell profiles and the scalar mass chain are two
+        # accountings that agree only once the CO2 each zone
+        # releases has stopped moving, because in any sweep order
+        # some zone's release reaches the chain after a zone that
+        # read it. The one-way sweep hid this behind its slow
+        # solid-handoff convergence; the symmetric sweep stops
+        # early enough to expose it at ~1e-9.
+        # ==========================================================
+        flow_residual = max(
+            abs(float(getattr(self.state, key, 0.0)) - old_state[key])
+            / max(abs(old_state[key]), 1.0)
+            for key in self._FLOW_RESIDUAL_KEYS
+        )
+
+        # ==========================================================
         # SOLID ENERGY HANDOFF RESIDUAL
         # ==========================================================
 
@@ -818,6 +852,7 @@ class Twin:
             "thermal": thermal_residual,
             "mass": mass_residual,
             "solid_handoff": solid_handoff_residual,
+            "flow": flow_residual,
             "zones": zone_residuals,
         }
         
@@ -1252,6 +1287,47 @@ class Twin:
         )
 
         # ======================================================
+        # 4b. RETURN PASS, IN THE SOLID'S DIRECTION
+        #
+        # The pass above runs in the GAS's direction, so every
+        # solid handoff -- preheater -> calciner -> transition ->
+        # burning -- was read one sweep stale, and the plant
+        # converged at ~0.75x per sweep: 67 sweeps cold, ~51
+        # after a 1 % fuel step, most of them spent clearing the
+        # 1e-3 W solid-handoff tolerance. Re-solving the three
+        # zones downstream of the preheater in the solid's
+        # direction hands each of them this sweep's solid, so the
+        # sweep is symmetric Gauss-Seidel instead of one-way.
+        #
+        # Measured (1 node): 19 sweeps cold, 11 after a 1 % fuel
+        # step; same fixed point to within the plant tolerance.
+        # Anderson acceleration on the outer loop was tried first
+        # and made it WORSE (73-141 sweeps): the sweep map depends
+        # on state outside any vector it could mix.
+        # ======================================================
+
+        self.state = self.calciner.apply(
+            self.state,
+        )
+
+        self._update_steady_state_mass_flow(inputs)
+
+        self.state = self.transition.apply(
+            self.state
+        )
+
+        self.state = self.burning.apply(
+            self.state,
+            inputs
+        )
+
+        # The cooler converts the kiln's outlet enthalpy with the
+        # clinker flow of the mass chain, so that chain has to
+        # carry THIS burning pass's CO2 -- as it did when burning
+        # ran once, before the update above.
+        self._update_steady_state_mass_flow(inputs)
+
+        # ======================================================
         # 5. COOLER
         # ======================================================
 
@@ -1352,6 +1428,7 @@ class Twin:
 
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6
+        flow_tolerance = 1e-10
 
         # ======================================================
         # INEXACT INNER SOLVES
@@ -1422,12 +1499,38 @@ class Twin:
             # ==================================================
             # CONVERGENCE CHECK
             # ==================================================
+            # The four matrix zones' own energy balances, by the
+            # same validate_energy the final report applies. They
+            # carry the source linearisation lag -- the kiln's
+            # calcination slope is anchored at the previous pass's
+            # Ts, so its balance closes only as the passes agree --
+            # and with the symmetric sweep the solid-handoff
+            # criterion no longer over-converges the plant enough
+            # to hide that. Converging until the validators pass
+            # is the honest stop, not loosening them.
+            balances_closed = all(
+                validate_energy(
+                    energy_in=zone.energy_in,
+                    energy_out=zone.energy_out,
+                )["converged"]
+                for zone in (
+                    self.burning,
+                    self.transition,
+                    self.calciner,
+                    self.cooler,
+                )
+            )
+
             within_tolerance = (
                 residual["thermal"] < thermal_tolerance
                 and
                 residual["mass"] < mass_tolerance
                 and
                 residual["solid_handoff"] < 1e-3
+                and
+                residual["flow"] < flow_tolerance
+                and
+                balances_closed
             )
 
             solved_at_floor = self.state.inner_tolerance_hint == 0.0
