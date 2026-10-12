@@ -1,6 +1,6 @@
 import numpy as np
 
-from physics.physics import heat_transfer
+from physics.physics import cp_gas
 from physics.shell import loss_conductance
 from physics.shell import shell_closure
 from physics.physics import ZONE_RAD_CONFIG
@@ -211,6 +211,17 @@ def thermal_step(
     # relax the energy validator with it -- buying convergence by
     # lowering the bar the result is checked against.
     tolerance = 1e-5
+
+    # The loop STOPS at stop_tolerance, which is looser only while
+    # the plant itself is far from its fixed point (Twin.run's
+    # inner_tolerance_hint, zero on the sweep that may declare
+    # convergence). The validator above keeps reading `tolerance`,
+    # so its bar is the same on every sweep, and the sweep the
+    # plant converges on is solved to it exactly as before.
+    stop_tolerance = max(
+        tolerance,
+        float(getattr(state, "inner_tolerance_hint", 0.0)),
+    )
 
     # A budget four times larger makes a GENUINE divergence four
     # times more expensive, so pay that back: a sequence that has
@@ -430,7 +441,7 @@ def thermal_step(
 
         preheater.solid_error_history.append(float(solid_error))
 
-        if solid_error < tolerance:
+        if solid_error < stop_tolerance:
             break
 
         # A contraction that has made no progress across a whole
@@ -468,13 +479,13 @@ def thermal_step(
             if previous > 0.0:
                 ratio = solid_error / previous
 
-        shortfall = solid_error / tolerance
+        shortfall = solid_error / stop_tolerance
 
         message = (
             "Preheater counter-current solution did not converge: "
             f"solid_error={solid_error:.6e} K after "
             f"{max_iterations} iterations, which is "
-            f"{shortfall:.2f}x the {tolerance:.1e} K tolerance "
+            f"{shortfall:.2f}x the {stop_tolerance:.1e} K tolerance "
             f"(last contraction ratio {ratio:.4f})."
         )
 
@@ -934,83 +945,45 @@ def solve_stage_node(
     stage.solid_inlet_temperature = Ts_in
 
     # ==========================================================
-    # WALL TEMPERATURE SOLUTION
+    # EXACT NODE EXCHANGE
+    #
+    # Gas and solid flow co-currently through the node, so over
+    # its volume v in [0, V]
+    #
+    #   Cg dTg/dv = -Kgs (Tg - Ts) - Kgw (Tg - Tw) + r
+    #   Cs dTs/dv =  Kgs (Tg - Ts) - Kws (Ts - Tw)
+    #
+    # with r = reaction_power / V on the gas, as the gas balance
+    # books it. With the coefficients and Tw held over the node
+    # this is linear with constant coefficients and is integrated
+    # EXACTLY (_node_mean_affine); the exchanged heats are
+    # the coefficients times the node-mean temperature
+    # differences.
+    #
+    # It replaces a forward-Euler step that evaluated every flux
+    # at the node INLET. At this stage's NTU_gs ~ 0.3 that
+    # overstated the exchange by ~15 % per node and converged
+    # only at first order: one node per stage put stage 1's gas
+    # outlet 38 K off and the calciner's solid inlet enthalpy
+    # 12 % off; five nodes, 5 K; twenty, still ~1.5 K. The exact
+    # form has no such error to converge away, and it stays
+    # exact when the suspension area -- today the vessel-bore
+    # stand-in -- makes NTU large, where forward Euler would not
+    # even keep the order of the temperatures.
+    #
+    # What is still approximate: radiation (k_eff = 0.005 here)
+    # is linearised at the node-mean temperatures, and cp_gas is
+    # taken at the node-mean gas temperature for the exponent.
+    # Both are iterated to self-consistency below. Neither
+    # touches conservation: the heats go through the same
+    # enthalpy balances as before, which close exactly whatever
+    # the profile was.
+    #
+    # Tw is one value per node, as before. For fixed
+    # coefficients Q_gw + Q_ws is AFFINE in Tw, so the wall
+    # balance against the (nonlinear) shell loss is a scalar
+    # root with an exact slope.
     # ==========================================================
-
-    # The shell skin the last residual solved, keyed by its hot
-    # face. The Newton slope is always taken at the Tw the
-    # residual was just evaluated at, and shell_closure is
-    # deterministic, so re-solving it there returned the same
-    # skin bit for bit -- a third of this zone's shell solves.
-    last_shell = {"Tw": None, "T_shell": None}
-
-    def wall_residual_stage(Tw_trial):
-
-        _, q_gw_trial, q_ws_trial = heat_transfer(
-            Tg=np.array([Tg_in]),
-            Ts=np.array([Ts_in]),
-            Tw=np.array([Tw_trial]),
-            hv_gs=model.hv_gs,
-            hv_gw=model.hv_gw,
-            hv_ws=model.hv_ws,
-            a_gs=model.a_gs,
-            a_gw=model.a_gw,
-            a_ws=model.a_ws,
-            zone=model.zone,
-        )
-
-        R_total_trial, T_shell_trial, _ = shell_closure(
-            float(Tw_trial),
-            node_shell,
-            T_amb,
-        )
-
-        last_shell["Tw"] = float(Tw_trial)
-        last_shell["T_shell"] = T_shell_trial
-
-        Q_wall_loss_trial = (
-            float(Tw_trial) - T_amb
-        ) / R_total_trial
-
-        return (
-            float(q_gw_trial[0] + q_ws_trial[0])
-            * V_cell
-            - Q_wall_loss_trial
-        )
-
-    # ----------------------------------------------------------
-    # ANALYTIC SLOPE OF THE WALL RESIDUAL
-    #
-    # The residual is
-    #
-    #   R(Tw) = V_cell * [q_gw(Tw) + q_ws(Tw)] - Q_loss(Tw)
-    #
-    # with (see physics.heat_transfer / physics.radiation)
-    #
-    #   q_gw = hv_gw*a_gw*(Tg - Tw) + C*a_gw*(Tg^4 - Tw^4)
-    #   q_ws = hv_ws*a_ws*(Ts - Tw) + C*a_ws*(Ts^4 - Tw^4)
-    #   C    = k_eff * eps_rad * sigma
-    #
-    # so
-    #
-    #   dR/dTw = -V_cell * [ hv_gw*a_gw + hv_ws*a_ws
-    #                        + 4*C*(a_gw + a_ws)*Tw^3 ]
-    #            - dQ_loss/dTw
-    #
-    # Every term is non-negative before the sign, so dR/dTw is
-    # strictly negative: R decreases monotonically and the root
-    # is unique. Verified over 545 stage solves -- R was
-    # strictly decreasing in all of them.
-    #
-    # Faz 6: Q_loss is NO LONGER AFFINE in Tw. The external film
-    # carries the casing temperature through h_rad ~ T^3 and
-    # h_conv ~ dT^(1/3), so the slope has to be evaluated where
-    # the Newton step is taken, not once at T_amb + 1 K. It comes
-    # from physics.shell.loss_conductance, which differentiates
-    # the same series network shell_closure solves -- so the
-    # slope and the residual still cannot describe different
-    # walls, which is what reading it off wall_losses bought.
-    # ----------------------------------------------------------
 
     rad_cfg = ZONE_RAD_CONFIG[model.zone]
 
@@ -1020,103 +993,112 @@ def solve_stage_node(
         * sigma
     )
 
-    def wall_residual_slope_stage(Tw_trial):
+    def h_rad(T1, T2):
+        # Exact rewrite of C (T1^4 - T2^4) as h (T1 - T2).
+        return C_rad * (T1 + T2) * (T1 * T1 + T2 * T2)
 
-        if last_shell["Tw"] == float(Tw_trial):
-            T_shell_trial = last_shell["T_shell"]
-        else:
-            _, T_shell_trial, _ = shell_closure(
-                float(Tw_trial),
-                node_shell,
-                T_amb,
-            )
-
-        wall_loss_slope = loss_conductance(
-            T_shell_trial,
-            node_shell,
-            T_amb,
-        )
-
-        return (
-            -V_cell
-            * (
-                model.hv_gw * model.a_gw
-                + model.hv_ws * model.a_ws
-                + 4.0
-                * C_rad
-                * (model.a_gw + model.a_ws)
-                * Tw_trial ** 3
-            )
-            - wall_loss_slope
-        )
+    Cs = m_dot_s * model.Cp_s + eps
+    r_gas = reaction_power / V_cell
 
     T_low = T_amb
     T_high = max(Tg_in, Ts_in, T_amb)
 
-    residual_low = wall_residual_stage(T_low)
-    residual_high = wall_residual_stage(T_high)
+    Tw = max(T_amb, min(Tg_in, Ts_in))
+    Tg_bar = Tg_in
+    Ts_bar = Ts_in
 
-    # The previous implementation grew T_high by 1.10x up to 50
-    # times whenever residual_high < 0. Since R is decreasing,
-    # residual_high < 0 already means the root sits below T_high
-    # -- the bracket is valid and growing it only drives the
-    # residual further negative. The loop therefore never hit
-    # its `break` (measured: 0 out of 545 stage solves), always
-    # exhausted, and its `else` reset T_high to exactly the
-    # value it started from. It was 51 residual evaluations per
-    # stage solve that could not change the outcome, so it is
-    # gone. The bracket, the sign test and the fallback below
-    # are unchanged.
+    # The last skin solved, as the next shell solve's start: the
+    # wall root and the coefficient passes move Tw by less each
+    # time, and from the midpoint guess every shell solve took
+    # ~10 Newton passes.
+    shell_guess = [None]
 
-    if residual_low * residual_high <= 0.0:
+    for _ in range(50):
 
-        # ------------------------------------------------------
-        # SAFEGUARDED NEWTON
-        #
-        # Newton on the analytic slope, with the bracket kept up
-        # to date and used as a fallback: if a Newton step would
-        # leave the bracket or the slope is not usable, the step
-        # degrades to a bisection step. Convergence is therefore
-        # never worse than the bisection it replaces, while the
-        # quadratic steps reach the same |R| < 1e-6 criterion in
-        # ~4 evaluations instead of ~40.
-        # ------------------------------------------------------
+        Cg = m_dot_g * float(cp_gas(Tg_bar)) + eps
 
-        Tw = 0.5 * (T_low + T_high)
+        Kgs = (model.hv_gs + h_rad(Tg_bar, Ts_bar)) * model.a_gs
+        Kgw = (model.hv_gw + h_rad(Tg_bar, Tw)) * model.a_gw
+        Kws = (model.hv_ws + h_rad(Ts_bar, Tw)) * model.a_ws
 
-        for _ in range(60):
+        # Node means as an affine function of Tw:
+        #   (Tg_m, Ts_m) = mean_0 + Tw * mean_1
+        mean_0, mean_1 = _node_mean_affine(
+            Tg_in, Ts_in, Cg, Cs, Kgs, Kgw, Kws, r_gas, V_cell,
+        )
 
-            residual_mid = wall_residual_stage(Tw)
+        def exchange(Tw_trial):
 
-            if abs(residual_mid) < 1e-6:
-                break
+            Tg_m = mean_0[0] + Tw_trial * mean_1[0]
+            Ts_m = mean_0[1] + Tw_trial * mean_1[1]
 
-            if residual_low * residual_mid <= 0.0:
-                T_high = Tw
-                residual_high = residual_mid
-            else:
-                T_low = Tw
-                residual_low = residual_mid
-
-            slope = wall_residual_slope_stage(Tw)
-
-            Tw_newton = (
-                Tw - residual_mid / slope
-                if slope != 0.0
-                else T_high
+            return (
+                Tg_m,
+                Ts_m,
+                Kgs * V_cell * (Tg_m - Ts_m),
+                Kgw * V_cell * (Tg_m - Tw_trial),
+                Kws * V_cell * (Ts_m - Tw_trial),
             )
 
-            if T_low < Tw_newton < T_high:
-                Tw = Tw_newton
-            else:
-                Tw = 0.5 * (T_low + T_high)
-
-    else:
-
-        Tw = max(
-            T_amb,
-            min(Tg_in, Ts_in),
+        # Q_gw + Q_ws = q0 + q1 Tw, exactly, for these coefficients.
+        q0 = V_cell * (Kgw * mean_0[0] + Kws * mean_0[1])
+        q1 = V_cell * (
+            Kgw * (mean_1[0] - 1.0)
+            + Kws * (mean_1[1] - 1.0)
         )
+
+        def wall_residual(Tw_trial):
+
+            R_total_trial, T_shell_trial, _ = shell_closure(
+                float(Tw_trial),
+                node_shell,
+                T_amb,
+                T_shell_guess=shell_guess[0],
+            )
+
+            shell_guess[0] = T_shell_trial
+
+            residual = (
+                q0 + q1 * Tw_trial
+                - (Tw_trial - T_amb) / R_total_trial
+            )
+
+            # q1 < 0 and the loss rises with Tw, so the residual
+            # falls strictly: the root is unique.
+            slope = q1 - loss_conductance(
+                T_shell_trial,
+                node_shell,
+                T_amb,
+            )
+
+            return residual, slope
+
+        Tw_new = _safeguarded_root(
+            wall_residual,
+            Tw,
+            T_low,
+            T_high,
+        )
+
+        if Tw_new is None:
+            # The previous solver's fallback, kept as it was.
+            Tw_new = max(T_amb, min(Tg_in, Ts_in))
+
+        Tg_new, Ts_new, _, _, _ = exchange(Tw_new)
+
+        change = max(
+            abs(Tw_new - Tw),
+            abs(Tg_new - Tg_bar),
+            abs(Ts_new - Ts_bar),
+        )
+
+        Tw, Tg_bar, Ts_bar = Tw_new, Tg_new, Ts_new
+
+        # The coefficients move only through radiation and
+        # cp_gas; 1e-7 K is far inside every tolerance that reads
+        # this node, and conservation does not depend on it.
+        if change < 1e-7:
+            break
 
     stage.wall_temperature = float(Tw)
 
@@ -1124,35 +1106,11 @@ def solve_stage_node(
     # HEAT TRANSFER
     # ==========================================================
 
-    _, q_gw, q_ws = heat_transfer(
-        Tg=np.array([Tg_in]),
-        Ts=np.array([Ts_in]),
-        Tw=np.array([Tw]),
-        hv_gs=model.hv_gs,
-        hv_gw=model.hv_gw,
-        hv_ws=model.hv_ws,
-        a_gs=model.a_gs,
-        a_gw=model.a_gw,
-        a_ws=model.a_ws,
-        zone=model.zone,
-    )
+    _, _, Q_gs, Q_gw, Q_ws = exchange(Tw)
 
-    q_gs, _, _ = heat_transfer(
-        Tg=np.array([Tg_in]),
-        Ts=np.array([Ts_in]),
-        Tw=np.array([Tw]),
-        hv_gs=model.hv_gs,
-        hv_gw=model.hv_gw,
-        hv_ws=model.hv_ws,
-        a_gs=model.a_gs,
-        a_gw=model.a_gw,
-        a_ws=model.a_ws,
-        zone=model.zone,
-    )
-
-    stage.Q_gs = float(q_gs[0]) * V_cell
-    stage.Q_gw = float(q_gw[0]) * V_cell
-    stage.Q_ws = float(q_ws[0]) * V_cell
+    stage.Q_gs = float(Q_gs)
+    stage.Q_gw = float(Q_gw)
+    stage.Q_ws = float(Q_ws)
 
     # ==========================================================
     # WALL LOSS
@@ -1162,6 +1120,7 @@ def solve_stage_node(
         float(Tw),
         node_shell,
         T_amb,
+        T_shell_guess=shell_guess[0],
     )
 
     wall_loss = (float(Tw) - T_amb) / R_total
@@ -1251,3 +1210,135 @@ def solve_stage_node(
     stage.gas_T_max = max(Tg_in, Tg_out)
 
     return stage
+
+
+# ======================================================
+# EXACT CO-CURRENT NODE PROFILE
+#
+# y = (Tg, Ts) obeys y' = A y + b over the node volume, with
+#
+#   A = [[-(Kgs + Kgw)/Cg,   Kgs/Cg        ],
+#        [  Kgs/Cs,        -(Kgs + Kws)/Cs ]]
+#   b = [ (Kgw Tw + r)/Cg,   Kws Tw / Cs   ]
+#
+# so y(v) = e^{Av} y0 + int_0^v e^{As} ds b and the node mean is
+#
+#   ybar = ( Phi1(A) y0 + Phi2(A) b ) / V
+#   Phi1(l) = int_0^V e^{lv} dv          = expm1(lV) / l
+#   Phi2(l) = int_0^V (V - s) e^{ls} ds  = (expm1(lV) - lV) / l^2
+#
+# A 2x2 matrix function is exact through its two eigenvalues
+# (Sylvester). A is a diagonal similarity of a symmetric matrix,
+# so they are real; equal eigenvalues take the confluent form.
+# No inverse of A is needed, so a wall-less node (Kgw = Kws = 0,
+# A singular) is handled by the same formula.
+# ======================================================
+def _phi1(l, V):
+    x = l * V
+    if abs(x) < 1e-8:
+        return V * (1.0 + 0.5 * x)
+    return np.expm1(x) / l
+
+
+def _phi2(l, V):
+    x = l * V
+    if abs(x) < 1e-4:
+        return V * V * (0.5 + x / 6.0 + x * x / 24.0)
+    return (np.expm1(x) - x) / (l * l)
+
+
+def _matrix_function(f, A, V):
+
+    a, b = A[0]
+    c, d = A[1]
+
+    half_trace = 0.5 * (a + d)
+    disc = max(0.25 * (a - d) ** 2 + b * c, 0.0)
+    root = disc ** 0.5
+
+    l1 = half_trace + root
+    l2 = half_trace - root
+
+    I = np.eye(2)
+
+    if root > 1e-9 * max(abs(l1), abs(l2), 1e-300):
+        return (
+            f(l1, V) * (A - l2 * I)
+            - f(l2, V) * (A - l1 * I)
+        ) / (l1 - l2)
+
+    # Confluent: f(l) I + f'(l) (A - l I), f' by central difference.
+    h = 1e-6 * max(abs(half_trace), 1e-12)
+    df = (f(half_trace + h, V) - f(half_trace - h, V)) / (2.0 * h)
+    return f(half_trace, V) * I + df * (A - half_trace * I)
+
+
+def _node_mean_affine(
+    Tg_in, Ts_in, Cg, Cs, Kgs, Kgw, Kws, r_gas, V,
+):
+    """Node-mean (Tg, Ts) = mean_0 + Tw * mean_1.
+
+    b is affine in Tw, b = b_0 + Tw b_1, so splitting the
+    Phi2 term gives the wall dependence without evaluating the
+    matrix functions more than once per coefficient set."""
+
+    A = np.array(
+        [
+            [-(Kgs + Kgw) / Cg, Kgs / Cg],
+            [Kgs / Cs, -(Kgs + Kws) / Cs],
+        ]
+    )
+
+    P1 = _matrix_function(_phi1, A, V) / V
+    P2 = _matrix_function(_phi2, A, V) / V
+
+    b_0 = np.array([r_gas / Cg, 0.0])
+    b_1 = np.array([Kgw / Cg, Kws / Cs])
+
+    mean_0 = P1 @ np.array([Tg_in, Ts_in]) + P2 @ b_0
+    mean_1 = P2 @ b_1
+
+    return mean_0, mean_1
+
+
+def _safeguarded_root(fun, x0, lo, hi, tol=1e-6, max_iter=60):
+    """Newton on fun -> (residual, slope) for a strictly falling
+    residual, kept inside [lo, hi] by bisection. Stops on
+    |residual| < tol [W], the criterion the node used before.
+    None when [lo, hi] does not bracket a root."""
+
+    # The ends are evaluated only if Newton has to fall back on
+    # them: from a warm start it rarely does, and each end is a
+    # full shell solve.
+    bracket_checked = False
+
+    x = min(max(x0, lo), hi)
+
+    for _ in range(max_iter):
+
+        f, slope = fun(x)
+
+        if abs(f) < tol:
+            return x
+
+        if f > 0.0:
+            lo = x
+        else:
+            hi = x
+
+        x_newton = x - f / slope if slope != 0.0 else hi
+
+        if lo < x_newton < hi:
+            x = x_newton
+            continue
+
+        if not bracket_checked:
+            f_lo, _ = fun(lo)
+            f_hi, _ = fun(hi)
+            if f_lo * f_hi > 0.0:
+                return None
+            bracket_checked = True
+
+        x = 0.5 * (lo + hi)
+
+    return x
