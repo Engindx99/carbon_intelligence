@@ -139,17 +139,23 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
     def test_the_static_equipment_does_not_follow_the_kiln(self):
         """A vertical riser, a cyclone string and a grate. Moving
         the kiln's bore must not resize any of them. The calciner
-        reads its own PF5000 bore; the preheater and cooler are
-        still 4.2 m placeholders (Faz 6 item 2)."""
+        reads its own PF5000 bore and the preheater is still a
+        4.2 m placeholder (Faz 6 item 2); the cooler is a grate box
+        with no bore at all (geometry/cooler/cooler.md)."""
 
         for cls, key, D in (
             (main.Calciner, "calciner", 6.74),
             (main.Preheater, "preheater", 4.2),
-            (main.Cooler, "cooler", 4.2),
         ):
             self.assertAlmostEqual(
                 self._zone(cls, key).D, D, msg=cls.__name__
             )
+
+        cooler = self._zone(main.Cooler, "cooler")
+
+        self.assertFalse(hasattr(cooler, "D"))
+        self.assertAlmostEqual(cooler.width, 4.0)
+        self.assertAlmostEqual(cooler.casing_height, 3.0)
 
     def test_changing_the_kiln_bore_moves_only_the_kiln(self):
 

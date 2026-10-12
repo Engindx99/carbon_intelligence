@@ -79,6 +79,7 @@ class SteadyStateMassFlow:
 
     m_dot_stored_transition: float = 0.0
     m_dot_stored_burning: float = 0.0
+    m_dot_stored_cooler: float = 0.0
 
     # ======================================================
     # GLOBAL BALANCE
@@ -251,6 +252,7 @@ class SteadyStateMassFlow:
             + self.m_dot_vent_air
             + self.m_dot_stored_transition
             + self.m_dot_stored_burning
+            + self.m_dot_stored_cooler
         )
 
         self.steady_state_mass_residual = (

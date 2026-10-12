@@ -119,7 +119,33 @@ preheater:
   c5_separation_efficiency: 0.90
 
 cooler:
-  length: 25.0   # m
+  # THE GRATE (geometry/cooler/cooler.md; user decision, 13 Oct
+  # 2026). The fluid volume is a box, width x length x casing
+  # height, with the clinker bed as its bottom slice; it replaces
+  # the 4.2 m x 25 m rotary cylinder this zone carried as a
+  # placeholder.
+  #
+  #   length         the PF5000 grate area 119.6 m2 / width
+  #   width          FLS reference cooler, Svensen et al. 2024
+  #                  (arXiv:2409.09076): "36 m long ... 4 m width
+  #                  and 3 m tall"
+  #   casing_height  the same: grate to roof, bed and air above it
+  #   bed_porosity   the same paper's 0.4
+  #   solid_density  its Table II on its clinker (79.96 / 9.76 /
+  #                  10.28 % C3S / C3A / C4AF, C4AF 3.8 g/cm3),
+  #                  mass-weighted harmonic mean [kg/m3]
+  #   grate_speed    the OPERATOR's input. The design bed is the
+  #                  FLS one, 53.06 kg/s / (rho_bulk 4.0 0.017) =
+  #                  0.409 m, and this speed carries 5000 t/d
+  #                  (57.87 kg/s) at that depth; residence 26.9 min
+  #                  (FLS 36). The bed depth then follows the
+  #                  clinker flow, h = m_dot / (rho_bulk w v).
+  length: 29.9          # m
+  width: 4.0            # m
+  casing_height: 3.0    # m
+  bed_porosity: 0.4
+  solid_density: 3178.0 # kg/m3
+  grate_speed_m_s: 0.01854
 
   # Clinker nodule diameter, for the packed-bed specific surface
   # 6(1-eps)/d_p that sets the gas->solid contact area the cooling
@@ -149,6 +175,12 @@ cooler:
   # parameter being fitted, and the plateau is what makes that
   # checkable rather than assertable (see
   # tests/test_cooler_contact_area.py).
+  #
+  # That table was measured on the 4.2 m cylinder placeholder. On
+  # the grate (13 Oct 2026) the area acts over the bed only, ~1/6
+  # of the old volume: NTU 43, still on the plateau, secondary air
+  # 1060 K. The FLS cooler paper gives d_p ~40 mm; moving to it
+  # belongs with the packed-bed heat-transfer closure, not here.
   particle_diameter_m: 0.015
 
 

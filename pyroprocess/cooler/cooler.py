@@ -1,9 +1,6 @@
 import numpy as np
 import yaml
 
-from physics.physics import interfacial_areas
-from physics.physics import kiln_geometry
-from physics.physics import wall_geometry
 from physics.shell import wall_stack
 from physics.physics import ZONE_HT_CONFIG
 from physics.physics import h_gas
@@ -39,87 +36,112 @@ class Cooler:
         # ================= NUMERICAL =================
         self.eps = 1e-9
 
-        # ================= GEOMETRY =================
-        self.D = 4.2
+        # ================= GRATE GEOMETRY =================
+        #
+        # A grate cooler, not the rotary cylinder (D = 4.2 m) this
+        # zone carried as a placeholder. The fluid volume is a box,
+        # width x length x casing height, with the clinker bed as
+        # its bottom slice (geometry/cooler/cooler.md):
+        #
+        #   width 4.0 m, casing 3.0 m, porosity 0.4: the FLS
+        #   reference cooler (Svensen et al. 2024, arXiv:2409.09076)
+        #   length: the PF5000 grate area 119.6 m2 / width
+        #   solid density: their Table II on their clinker
+        #   grate speed: the design bed 0.409 m at 5000 t/d
+        #
+        # The bed depth is not a dimension: the grate speed is the
+        # operator's input, so the bed is as deep as the clinker
+        # flow makes it, h = m_dot / (rho_bulk w v) (bed_depth).
+        cooler_cfg = (cfg or {}).get("cooler", {})
 
-        (
-            self.A_cross,
-            self.V_total,
-            self.V_cell,
-        ) = kiln_geometry(
-            D=self.D,
-            L=self.L,
-            N=self.N,
-        )
+        self.width = float(cooler_cfg.get("width", 4.0))
+        self.casing_height = float(cooler_cfg.get("casing_height", 3.0))
+        self.grate_speed = float(cooler_cfg.get("grate_speed_m_s", 0.01854))
+
+        self.epsilon_bed = float(cooler_cfg.get("bed_porosity", 0.4))
+        self.rho_solid = float(cooler_cfg.get("solid_density", 3178.0))
+
+        # Bulk density of the bed [kg/m3]: what the hold-up is.
+        self.rho_s = (1.0 - self.epsilon_bed) * self.rho_solid
+
+        for name, value in (
+            ("width", self.width),
+            ("casing_height", self.casing_height),
+            ("grate_speed_m_s", self.grate_speed),
+            ("solid_density", self.rho_solid),
+        ):
+            if not value > 0.0:
+                raise ValueError(
+                    f"cooler.{name} must be > 0, got {value}"
+                )
+
+        if not (0.0 < self.epsilon_bed < 1.0):
+            raise ValueError(
+                "cooler.bed_porosity must be in (0, 1), "
+                f"got {self.epsilon_bed}"
+            )
 
         # ================= INTERFACIAL AREA =================
-        self.epsilon_bed = 0.35
         self.k_interfacial = 1.0
 
         # The gas->solid area is a PACKED-BED specific surface and
-        # its d_p is the clinker nodule, not the 4.2 m vessel this
-        # used to pass. See configs/twin_cfg.yaml cooler.
-        # particle_diameter_m for the value, its source and the
-        # measured plateau that makes it a mechanism rather than a
-        # knob. a_ws is unaffected: wall contact is bounded by the
-        # vessel's perimeter, not by the particle size.
+        # its d_p is the clinker nodule. See configs/twin_cfg.yaml
+        # cooler.particle_diameter_m for the value, its source and
+        # the measured plateau that makes it a mechanism rather
+        # than a knob.
         self.particle_diameter = float(
-            (cfg or {}).get("cooler", {}).get(
+            cooler_cfg.get(
                 "particle_diameter_m",
                 0.015,
             )
         )
 
-        if not (0.0 < self.particle_diameter < self.D):
+        if not (0.0 < self.particle_diameter < self.casing_height):
             raise ValueError(
                 "cooler.particle_diameter_m must be positive and "
-                "smaller than the vessel diameter "
-                f"{self.D} m, got {self.particle_diameter}"
+                "smaller than the casing height "
+                f"{self.casing_height} m, got {self.particle_diameter}"
             )
 
-        (
-            self.a_gs,
-            self.a_ws,
-        ) = interfacial_areas(
-            D=self.D,
-            epsilon_bed=self.epsilon_bed,
-            k_interfacial=self.k_interfacial,
-            d_particle=self.particle_diameter,
+        # Per unit BED volume [m2/m3]:
+        #   a_gs  nodule surface, 6(1-eps)/d_p
+        #   a_ws  the bed against the two side walls: 2 h dz over
+        #         w h dz. The grate under it is swept by the air,
+        #         not a lined wall.
+        # a_gw (the walls and roof above the bed) depends on the
+        # bed depth, so bed_geometry() forms it.
+        self.a_gs = (
+            6.0
+            * (1.0 - self.epsilon_bed)
+            * self.k_interfacial
+            / self.particle_diameter
         )
 
-        # ================= WALL GEOMETRY =================
-        (
-            self.wall_perimeter,
-            self.A_wall,
-            self.A_wall_cell,
-            self.a_gw,
-            self.V_wall,
-        ) = wall_geometry(
-            D=self.D,
-            L=self.L,
-            N=self.N,
-            V_cell=self.V_cell,
-        )
+        self.a_ws = 2.0 / self.width
+
+        # ================= CASING (WALL) GEOMETRY =================
+        # The lined casing per cell: two side walls and the roof.
+        # The grate is not a wall, and the two end walls are left
+        # out like a tube's ends.
+        self.wall_perimeter = 2.0 * self.casing_height + self.width
+        self.A_wall_cell = self.wall_perimeter * self.dz
+        self.A_wall = self.wall_perimeter * self.L
 
         # ================= REFRACTORY / SHELL =================
         #
         # Faz 6. A grate cooler is a lagged steel casing, not a
         # bare shell: castable refractory, mineral wool, thin
-        # plate. The old 0.15 m / 1.5 W/(m K) plane wall with
-        # h_ext = 18 and no outer radiation is replaced by the
-        # layer stack in physics.shell.
+        # plate (physics.shell). The casing is flat, so the stack
+        # is resolved as a plane wall, and its outer film is a
+        # vertical plate's on the casing height.
         self.wall_stack = wall_stack(self.plant_cfg, self.zone)
 
         self.refractory_thickness = self.wall_stack.thickness
 
-        # Horizontal vessel, so the external film takes the outer
-        # diameter. The diameter is still the Faz 3 placeholder
-        # rotary geometry that Faz 6 item 4 replaces with the
-        # real grate.
-        self.shell = self.wall_stack.geometry(
-            r_inner=0.5 * self.D,
+        self.shell = self.wall_stack.planar_geometry(
+            A_cell=self.A_wall_cell,
             L_cell=self.dz,
-            L_char=self.D + 2.0 * self.wall_stack.thickness,
+            L_char=self.casing_height,
         )
 
         # ================= THERMODYNAMIC REFERENCE =================
@@ -128,7 +150,6 @@ class Cooler:
 
         # ================= PROPERTIES =================
         self.rho_g = 1.2
-        self.rho_s = 1100.0
         self.rho_wall = 3000.0
 
         self.Cp_g = 1005.0
@@ -167,6 +188,42 @@ class Cooler:
                 f"got {self.tertiary_air_fraction}"
             )
 
+
+    # ======================================================
+    # BED
+    # ======================================================
+    def bed_depth(self, m_dot_s):
+        """Depth [m] of the bed a clinker flow [kg/s] makes on the
+        grate at the grate speed: m_dot = rho_bulk w h v."""
+
+        return float(m_dot_s) / (
+            self.rho_s * self.width * self.grate_speed
+        )
+
+    def bed_geometry(self, h_cells):
+        """Per-cell bed volume [m3] and the gas->wall area per unit
+        bed volume [m2/m3] for bed depths h_cells [m].
+
+        The exchanges are written per unit BED volume (a_gs, a_ws,
+        a_gw), so V_bed is the volume they multiply. The gas above
+        the bed sees the side walls over (H - h) and the roof."""
+
+        h = np.asarray(h_cells, dtype=float)
+
+        if np.any(h <= 0.0) or np.any(h >= self.casing_height):
+            raise ValueError(
+                "cooler bed depth must be in (0, "
+                f"{self.casing_height}) m, got {h.min():.4g} .. "
+                f"{h.max():.4g}"
+            )
+
+        V_bed = self.width * h * self.dz
+
+        a_gw = (
+            2.0 * (self.casing_height - h) + self.width
+        ) / (self.width * h)
+
+        return V_bed, a_gw
 
     # ======================================================
     # THERMAL STEP

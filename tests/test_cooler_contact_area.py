@@ -32,6 +32,14 @@ WHAT IT DOES NOT FIX, stated here so nobody reads the commit as a
 success: secondary air reaches 948.69 K against
 BOUNDS["secondary_air"] = (1050, 1350). Still out of band, by
 about 100 K. The cooler was necessary and is not sufficient.
+
+HISTORY, 13 Oct 2026: everything above was measured on the 4.2 m
+rotary-cylinder PLACEHOLDER. The cooler is now the grate box of
+geometry/cooler/cooler.md and no longer calls interfacial_areas;
+its a_gs is the same 6(1-eps)/d_p over the clinker BED volume
+(tests/test_cooler_grate.py). On that geometry the bed's NTU is 43,
+still on the plateau, and secondary air is 1060 K. The numbers here
+are the record of the d_p correction, not of the current plant.
 """
 
 import unittest

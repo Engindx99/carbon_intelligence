@@ -127,6 +127,12 @@ def apply_gas_energy_balance(
     q_gw,
 ):
 
+    # Per-cell bed volumes and coefficients (Cooler.bed_geometry);
+    # a scalar is taken as the same value in every cell.
+    V_cell = np.broadcast_to(np.asarray(V_cell, dtype=float), (N,))
+    K_gs = np.broadcast_to(np.asarray(K_gs, dtype=float), (N,))
+    K_gw = np.broadcast_to(np.asarray(K_gw, dtype=float), (N,))
+
     # The inlet stream is the same ambient condition for every
     # fan box, so this is one constant, not a per-cell lookup.
     h_in = float(
@@ -193,16 +199,16 @@ def apply_gas_energy_balance(
 
         A[row, gas_i] += (
             Cg_i
-            + V_cell * K_gs
-            + V_cell * K_gw
+            + V_cell[i] * K_gs[i]
+            + V_cell[i] * K_gw[i]
         )
 
         A[row, solid_i] += (
-            -V_cell * K_gs
+            -V_cell[i] * K_gs[i]
         )
 
         A[row, wall_i] += (
-            -V_cell * K_gw
+            -V_cell[i] * K_gw[i]
         )
 
         # Radiation part is already contained in
@@ -211,7 +217,7 @@ def apply_gas_energy_balance(
 
         q_rad_gs = (
             q_gs[i]
-            - K_gs * (
+            - K_gs[i] * (
                 Tg_iter[i]
                 - Ts_iter[i]
             )
@@ -219,7 +225,7 @@ def apply_gas_energy_balance(
 
         q_rad_gw = (
             q_gw[i]
-            - K_gw * (
+            - K_gw[i] * (
                 Tg_iter[i]
                 - Tw_iter[i]
             )
@@ -232,7 +238,7 @@ def apply_gas_energy_balance(
         # needed has no meaning here, and neither does
         # A[row, gas_up] -- there is no gas_up.
         b[row] = (
-            -V_cell * (
+            -V_cell[i] * (
                 q_rad_gs
                 + q_rad_gw
             )

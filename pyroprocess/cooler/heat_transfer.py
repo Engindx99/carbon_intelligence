@@ -5,6 +5,8 @@ from physics.physics import outlet_face_value
 from physics.shell import shell_closure
 from physics.physics import h_gas
 
+from chemistry import parcels
+
 from . import gas_phase
 from . import solid_phase
 
@@ -48,6 +50,17 @@ from . import solid_phase
 # per-cell-driven formulation used by the Transition/Burning
 # siblings -- only the flow direction changed.
 # ======================================================
+def cooler_dynamic(state):
+    """A dynamic step with the clinker bed's train built
+    (Twin.advance) and the kiln's discharge for this step."""
+
+    return (
+        getattr(state, "transient_dt", None) is not None
+        and getattr(state, "cooler_train", None) is not None
+        and getattr(state, "kiln_step_burning", None) is not None
+    )
+
+
 def thermal_step(cooler, Tg, Ts, Tw, state):
 
     # ======================================================
@@ -58,7 +71,64 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     m_dot_s = state.m_dot_s
 
     N = cooler.N
-    V_cell = cooler.V_cell
+
+    # ======================================================
+    # DYNAMIC STEP: THE CLINKER BED AS A PARCEL TRAIN
+    #
+    # The grate carries the bed at the grate speed, so it is plug
+    # flow with no reactions: the cooler's train (chemistry/
+    # parcels.py, TransportReactor) takes what the kiln discharged
+    # during the step and moves every parcel v dt along the grate.
+    # It does not depend on the temperatures, so it is stepped once
+    # here. What it gives the rows: the flow through each face, the
+    # hold-up of each cell at both ends of the step, and so the
+    # bed's dM/dt.
+    # ======================================================
+    dynamic = cooler_dynamic(state)
+
+    if dynamic:
+        train_step = parcels.advance_train(
+            state.cooler_train,
+            state.kiln_step_burning.leaving,
+            np.zeros(N),
+            cooler.grate_speed / cooler.dz,
+            float(state.transient_dt),
+            parcels.TransportReactor,
+        )
+
+        state.cooler_step = train_step
+
+        face_flow = train_step.face_flow
+    else:
+        face_flow = np.full(N + 1, float(m_dot_s))
+
+    # ======================================================
+    # BED GEOMETRY
+    #
+    # The exchanges act over the clinker BED, not over the casing:
+    # V_cell is the bed's volume per cell, w h dz, and every area
+    # is per unit of it (Cooler.bed_geometry). The bed is as deep
+    # as the clinker flow makes it at the grate speed; at steady
+    # state that is one depth along the whole grate.
+    # ======================================================
+    # From the FACE flows, not the parcels' hold-up: a cell holds
+    # 8 or 9 parcels depending on where the step lands them, and
+    # the depth the plug flow lays down at a point is the flux
+    # there over rho w v. The hold-up stays exact in the storage
+    # terms below.
+    bed_depth_cells = np.array(
+        [
+            cooler.bed_depth(0.5 * (face_flow[i] + face_flow[i + 1]))
+            for i in range(N)
+        ]
+    )
+
+    V_cell, a_gw = cooler.bed_geometry(bed_depth_cells)
+    a_gs = np.full(N, cooler.a_gs)
+    a_ws = np.full(N, cooler.a_ws)
+
+    state.Cooler_bed_depth_cells = bed_depth_cells
+    state.Cooler_V_bed_cells = V_cell
 
     # Cross-flow: each grate segment draws its own fresh air
     # from its own fan box. m_dot_g stays as the TOTAL ambient
@@ -78,9 +148,9 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # HEAT TRANSFER COEFFICIENTS
     # ======================================================
 
-    K_gs = cooler.hv_gs * cooler.a_gs
-    K_gw = cooler.hv_gw * cooler.a_gw
-    K_ws = cooler.hv_ws * cooler.a_ws
+    K_gs = cooler.hv_gs * a_gs
+    K_gw = cooler.hv_gw * a_gw
+    K_ws = cooler.hv_ws * a_ws
 
     # ======================================================
     # WALL THERMAL RESISTANCE
@@ -110,6 +180,10 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # (speed, bed depth) gives it a residence time (Faz 6 item 2).
     transient_dt = getattr(state, "transient_dt", None)
 
+    C_s_dt = np.zeros(N)
+    Ts_old = np.zeros(N)
+    H_mass_stored = np.zeros(N)
+
     if transient_dt is None:
         C_w_dt = np.zeros(N)
         Tw_old = np.zeros(N)
@@ -123,6 +197,26 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             / transient_dt,
         )
         Tw_old = np.asarray(state.Tw_cooler_old, dtype=float)
+
+    if dynamic:
+        Ts_old = np.asarray(state.Ts_cooler_old, dtype=float)
+
+        # The bed's sensible heat on its exact hold-up, and the
+        # enthalpy of the mass it gains: d(M h)/dt.
+        C_s_dt = train_step.holdup_cells * cooler.Cp_s / transient_dt
+        H_mass_stored = (
+            cooler.Cp_s
+            * (Ts_old - cooler.T_ref)
+            * train_step.stored_cells
+        )
+
+        # The clinker enters with the flux the kiln discharged; the
+        # inlet temperature follows from that enthalpy over that
+        # flow, as Cooler.apply derives it over m_dot_s.
+        Ts_in = (
+            cooler.T_ref
+            + state.Hsolid_cooler_in / (face_flow[0] * cooler.Cp_s)
+        )
 
     max_iter = 100
     tol = max(
@@ -170,9 +264,9 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             hv_gs=cooler.hv_gs,
             hv_gw=cooler.hv_gw,
             hv_ws=cooler.hv_ws,
-            a_gs=cooler.a_gs,
-            a_gw=cooler.a_gw,
-            a_ws=cooler.a_ws,
+            a_gs=a_gs,
+            a_gw=a_gw,
+            a_ws=a_ws,
             zone=cooler.zone,
         )
 
@@ -222,22 +316,45 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
         Cs = m_dot_s * cooler.Cp_s
 
-        row = solid_phase.apply_solid_energy_balance(
-            A,
-            b,
-            row,
-            N,
-            Ts_in,
-            Tg_iter,
-            Ts_iter,
-            Tw_iter,
-            Cs,
-            V_cell,
-            K_gs,
-            K_ws,
-            q_gs,
-            q_ws,
-        )
+        if dynamic:
+            row = solid_phase.apply_solid_energy_balance(
+                A,
+                b,
+                row,
+                N,
+                Ts_in,
+                Tg_iter,
+                Ts_iter,
+                Tw_iter,
+                face_flow[1:] * cooler.Cp_s,
+                V_cell,
+                K_gs,
+                K_ws,
+                q_gs,
+                q_ws,
+                Cs_in=face_flow[:-1] * cooler.Cp_s,
+                T_ref=cooler.T_ref,
+                C_dt=C_s_dt,
+                Ts_old=Ts_old,
+                H_mass_stored=H_mass_stored,
+            )
+        else:
+            row = solid_phase.apply_solid_energy_balance(
+                A,
+                b,
+                row,
+                N,
+                Ts_in,
+                Tg_iter,
+                Ts_iter,
+                Tw_iter,
+                Cs,
+                V_cell,
+                K_gs,
+                K_ws,
+                q_gs,
+                q_ws,
+            )
 
         # ==================================================
         # WALL
@@ -254,22 +371,22 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
             # ----------------------------------------------
 
             A[row, gas_i] += (
-                V_cell * K_gw
+                V_cell[i] * K_gw[i]
             )
 
             A[row, solid_i] += (
-                V_cell * K_ws
+                V_cell[i] * K_ws[i]
             )
 
             A[row, wall_i] += (
-                -V_cell * K_gw
-                -V_cell * K_ws
+                -V_cell[i] * K_gw[i]
+                -V_cell[i] * K_ws[i]
                 -1.0 / R_total[i]
             )
 
             q_rad_gw = (
                 q_gw[i]
-                - K_gw * (
+                - K_gw[i] * (
                     Tg_iter[i]
                     - Tw_iter[i]
                 )
@@ -277,14 +394,14 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
             q_rad_ws = (
                 q_ws[i]
-                - K_ws * (
+                - K_ws[i] * (
                     Ts_iter[i]
                     - Tw_iter[i]
                 )
             )
 
             b[row] = (
-                -V_cell * (
+                -V_cell[i] * (
                     q_rad_gw
                     + q_rad_ws
                 )
@@ -383,9 +500,9 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         hv_gs=cooler.hv_gs,
         hv_gw=cooler.hv_gw,
         hv_ws=cooler.hv_ws,
-        a_gs=cooler.a_gs,
-        a_gw=cooler.a_gw,
-        a_ws=cooler.a_ws,
+        a_gs=a_gs,
+        a_gw=a_gw,
+        a_ws=a_ws,
         zone=cooler.zone,
     )
 
@@ -438,11 +555,11 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         "R_total": float(np.mean(R_total)),
         "h_ext": float(shell_info["h_ext_mean"]),
         "T_shell_mean": float(shell_info["T_shell_mean"]),
-        "q_loss_mean": float(np.mean(Q_loss_cells / cooler.V_cell)),
+        "q_loss_mean": float(np.mean(Q_loss_cells / cooler.A_wall_cell)),
         "wall_loss_total": wall_loss,
         "A_wall": float(cooler.A_wall),
         "A_wall_cell": float(cooler.A_wall_cell),
-        "V_cell": float(cooler.V_cell),
+        "V_bed": float(np.sum(V_cell)),
         "N": int(N),
     }
 
@@ -493,13 +610,23 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     )
 
     Hs_in = (
-        m_dot_s
+        face_flow[0]
+        * cooler.Cp_s
+        * (Ts_in - cooler.T_ref)
+        if dynamic
+        else m_dot_s
         * cooler.Cp_s
         * (Ts_in - cooler.T_ref)
     )
 
+    # The clinker leaving the grate: in a dynamic step, the flux
+    # through the outlet face, not what the kiln discharged.
+    m_dot_s_out = float(face_flow[-1]) if dynamic else m_dot_s
+
+    state.Cooler_m_dot_s_out = m_dot_s_out
+
     Hs_out = (
-        m_dot_s
+        m_dot_s_out
         * cooler.Cp_s
         * (
             outlet_face_value(
@@ -519,17 +646,27 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         + Hs_in
     )
 
-    # Rate of change of the wall's stored energy; zero when steady.
+    # Rate of change of the stored energy; zero when steady.
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
+    Q_stored_solid = float(
+        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+    )
 
     state.Cooler_wall_stored = Q_stored_wall
-    state.Cooler_stored_energy_change = Q_stored_wall
+    state.Cooler_solid_stored = Q_stored_solid
+    state.Cooler_stored_energy_change = Q_stored_wall + Q_stored_solid
+
+    # The bed's dM/dt [kg/s], for the plant's mass chain.
+    state.Cooler_mass_stored = (
+        float(np.sum(train_step.stored_cells)) if dynamic else 0.0
+    )
 
     energy_out = (
         Hg_out
         + Hs_out
         + wall_loss
         + Q_stored_wall
+        + Q_stored_solid
     )
 
     total_energy_balance = (
@@ -583,10 +720,13 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     gas_gap = (
         Hg_out
         - Hg_in
-        + V_cell * float(
+        + float(
             np.sum(
-                q_gs
-                + q_gw
+                V_cell
+                * (
+                    q_gs
+                    + q_gw
+                )
             )
         )
     )
@@ -594,10 +734,14 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     solid_gap = (
         Hs_out
         - Hs_in
-        - V_cell * float(
+        + Q_stored_solid
+        - float(
             np.sum(
-                q_gs
-                - q_ws
+                V_cell
+                * (
+                    q_gs
+                    - q_ws
+                )
             )
         )
     )

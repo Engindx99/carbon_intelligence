@@ -197,6 +197,13 @@ class GlobalState:
     kiln_step_burning: object = None
     Transition_mass_stored: float = 0.0
     Burning_mass_stored: float = 0.0
+
+    # The grate cooler's clinker bed, the same way (pure transport,
+    # pyroprocess/cooler/heat_transfer.py), and the clinker leaving
+    # its outlet face [kg/s].
+    cooler_train: list = None
+    cooler_step: object = None
+    Cooler_mass_stored: float = 0.0
     
 
     # ======================================================

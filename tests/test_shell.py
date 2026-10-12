@@ -8,6 +8,8 @@ energy balance itself -- and physics/shell.py has to reproduce it.
 Nothing below imports a number from the module it is testing.
 """
 
+import math
+
 import unittest
 
 import numpy as np
@@ -558,6 +560,16 @@ class PlantWallStackTest(unittest.TestCase):
         r_in, L, N = self.GEOMETRY[zone]
         stack = wall_stack(None, zone)
 
+        if zone == "cooler":
+            # The grate cooler is a flat box casing, 4.0 m wide and
+            # 3.0 m tall (geometry/cooler/cooler.md): side walls
+            # and roof per cell, a vertical plate's film.
+            return stack, stack.planar_geometry(
+                A_cell=(2 * 3.0 + 4.0) * L / N,
+                L_cell=L / N,
+                L_char=3.0,
+            )
+
         L_char = (
             2 * r_in + 2 * stack.thickness
             if stack.orientation == "horizontal"
@@ -631,7 +643,9 @@ class PlantWallStackTest(unittest.TestCase):
 
     def test_horizontal_zones_stay_inside_the_correlation(self):
 
-        for zone in ("burning", "transition", "cooler"):
+        # The cooler left this list when it became a box casing
+        # with vertical walls (physics.shell DEFAULT_WALL_STACKS).
+        for zone in ("burning", "transition"):
             with self.subTest(zone=zone):
                 stack, geom = self.build(zone)
                 Ra = rayleigh_number(
@@ -640,6 +654,29 @@ class PlantWallStackTest(unittest.TestCase):
                     geom.L_char,
                 )
                 self.assertLess(Ra, RA_HORIZONTAL_LIMIT)
+
+    def test_planar_wall_conducts_as_a_plane(self):
+        # R = sum t / (k A), exactly; and a cylinder of very large
+        # radius tends to it.
+        stack = wall_stack(None, "cooler")
+        A = 15.0
+
+        planar = stack.planar_geometry(A_cell=A, L_cell=1.5, L_char=3.0)
+
+        expected = sum(
+            layer.thickness / (layer.conductivity * A)
+            for layer in stack.layers
+        )
+
+        self.assertAlmostEqual(planar.R_cond, expected, places=15)
+        self.assertEqual(planar.A_outer_cell, A)
+
+        r = 1.0e4
+        cylinder = stack.geometry(
+            r_inner=r, L_cell=A / (2.0 * math.pi * r), L_char=3.0
+        )
+
+        self.assertAlmostEqual(cylinder.R_cond / planar.R_cond, 1.0, places=4)
 
     def test_config_can_override_a_stack(self):
 

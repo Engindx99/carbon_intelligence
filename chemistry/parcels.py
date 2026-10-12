@@ -139,11 +139,6 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
             h = to_face if crosses else remaining
 
             if h > 0.0:
-                # The slope before the reaction: it is taken on the
-                # CaCO3 available at the start of this piece, as the
-                # march takes it on the cell's inlet flow.
-                slope[i] += reactors[i].slope(species, h)
-
                 q, q_calc, dm = reactors[i].react(species, h)
 
                 Q[i] += q
@@ -177,6 +172,24 @@ def advance_train(parcels, entering, T_cells, cells_per_second, dt, reactor):
 
     for parcel in inside:
         holdup[int(parcel.x)] += _mass(parcel.species)
+
+    # dQ/dTs of the calcination heat, per cell. Only the source-term
+    # linearisation (physics.variable_flow_rows) reads it, so it is
+    # a path quantity: taken in the steady march's own form, on the
+    # CaCO3 that entered the cell over the step and the cell's
+    # residence 1/v, once per cell rather than per parcel piece.
+    # At steady state it is the march's slope exactly.
+    tau_cell = 1.0 / v
+
+    for i, r in enumerate(reactors):
+        if r is not None and face[i] > 0.0:
+            slope[i] = r.slope(
+                {
+                    name: value / dt
+                    for name, value in face_species[i].items()
+                },
+                tau_cell,
+            ) * dt
 
     heat = {}
 
@@ -276,3 +289,20 @@ class CalcinationReactor:
         return self.calcination.reaction_heat_slope(
             float(species["CaCO3"]), self.T, h
         )
+
+
+class TransportReactor:
+    """No reactions: a bed that is only carried, the grate cooler's
+    clinker. The train then is a pure plug-flow delay with an exact
+    hold-up."""
+
+    heat = {}
+
+    def __init__(self, T=None):
+        pass
+
+    def react(self, species, h):
+        return 0.0, 0.0, 0.0
+
+    def slope(self, species, h):
+        return 0.0

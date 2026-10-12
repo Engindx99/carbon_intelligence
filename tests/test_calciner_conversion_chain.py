@@ -54,7 +54,7 @@ would have to be 6.4e6 -- short by a factor of 1.5e5.
     The model reaches any conversion only because the calciner
     SELF-HEATS until Arrhenius catches up: Ts_calciner ran 1519 K
     mean / 1735 K max in the rotary state, 1791 K / 2082 K in the
-    2500-era riser, and runs 1577 K / 1713 K (0.17 %) in the 5000 t/d
+    2500-era riser, and runs 1580 K / 1717 K (0.17 %) in the 5000 t/d
     riser, against a real calciner's 1150-1200 K.
 
 So the 574 s hold-up and that self-heating were a compensating pair
@@ -204,11 +204,11 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
         self.assertTrue(np.all(Ts[10:] > Tg[10:]))
         self.assertEqual(Ts.size, 20)
 
-        # At the inlet the gas leads by ~572 K (the 2500-era riser:
+        # At the inlet the gas leads by ~573 K (the 2500-era riser:
         # ~17 K at most) -- the too-small a_gs of Link 2 at 3.2x the
-        # meal. Downstream the solid overshoots by up to ~364 K.
-        self.assertAlmostEqual(float(np.max(Tg - Ts)), 572.00, delta=0.02)
-        self.assertAlmostEqual(float(np.min(Tg - Ts)), -364.15, delta=0.02)
+        # meal. Downstream the solid overshoots by up to ~365 K.
+        self.assertAlmostEqual(float(np.max(Tg - Ts)), 573.39, delta=0.02)
+        self.assertAlmostEqual(float(np.min(Tg - Ts)), -364.80, delta=0.02)
 
     def test_the_particle_cannot_lag_the_gas(self):
         """A 25 um particle at the Nu = 2 conduction limit. Its
@@ -362,7 +362,7 @@ class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
         """So the zone inlet is not array[0]. Reading it that way
         understates the conversion -- and did, at 21.10 % against
         the true 23.98 % in the rotary state; 0.99 % against 1.11 %
-        in the 2500-era riser; 0.168 % against 0.168 % now."""
+        in the 2500-era riser; 0.172 % against 0.172 % now."""
 
         stored = np.asarray(
             self.snapshot["flow_calciner_solid_CaCO3"], dtype=float
@@ -374,8 +374,8 @@ class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
         naive = 1.0 - stored[-1] / stored[0]
         true = 1.0 - stored[-1] / self.inlet
 
-        self.assertAlmostEqual(naive, 0.001678, places=5)
-        self.assertAlmostEqual(true, 0.001681, places=5)
+        self.assertAlmostEqual(naive, 0.001716, places=5)
+        self.assertAlmostEqual(true, 0.001720, places=5)
 
     def test_the_march_reproduces_the_model_to_machine_precision(self):
         """The decisive one. Same formula, same Ts profile, same
@@ -501,8 +501,8 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
         Ts = np.asarray(self.snapshot["Ts_calciner"], dtype=float)
 
         # 1791.48 / 2081.85 in the 2500-era riser.
-        self.assertAlmostEqual(float(Ts.mean()), 1576.92, delta=0.02)
-        self.assertAlmostEqual(float(Ts.max()), 1713.13, delta=0.02)
+        self.assertAlmostEqual(float(Ts.mean()), 1580.00, delta=0.02)
+        self.assertAlmostEqual(float(Ts.max()), 1716.53, delta=0.02)
 
         # About 380 K above the top of a real calciner's band.
         self.assertGreater(float(Ts.mean()) - REAL_CALCINER_T[1], 350.0)
@@ -528,14 +528,14 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
             conversion = 1.0 - math.exp(-k * transit)
             self.assertLess(conversion, 1.0e-4)
 
-        # What it actually managed, at 1577 K mean.
+        # What it actually managed, at 1580 K mean.
         stored = np.asarray(
             self.snapshot["flow_calciner_solid_CaCO3"], dtype=float
         )
         achieved = 1.0 - stored[-1] / _zone_inlet_CaCO3(
             self.snapshot, model
         )
-        self.assertAlmostEqual(achieved, 0.00168, places=5)
+        self.assertAlmostEqual(achieved, 0.00172, places=5)
 
 
 if __name__ == "__main__":

@@ -555,7 +555,15 @@ class ReactionBase:
         )
 
 
-        if np.any(~np.isfinite(heat)):
+        # A scalar takes math.isfinite: the same check without
+        # numpy's array dispatch (as reaction_rate).
+        finite = (
+            math.isfinite(heat)
+            if isinstance(heat, float)
+            else np.all(np.isfinite(heat))
+        )
+
+        if not finite:
 
             raise FloatingPointError(
                 f"{self.__class__.__name__}: "

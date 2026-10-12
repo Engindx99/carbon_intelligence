@@ -87,6 +87,9 @@ class DynamicStepTest(unittest.TestCase):
                                 twin.state.Transition_mass_stored
                                 + twin.state.Burning_mass_stored
                             ),
+                            "cooler_solid_stored": (
+                                twin.state.Cooler_solid_stored
+                            ),
                             "stored": sum(
                                 getattr(twin.state, name) for name in STORED
                             ),
@@ -144,6 +147,13 @@ class DynamicStepTest(unittest.TestCase):
             self.assertLess(
                 abs(step["mass_residual"]), 1e-9 * step["mass_in"]
             )
+
+    def test_the_grate_bed_stores_heat(self):
+        # The cooler's clinker bed is a parcel train too: the hotter
+        # clinker the kiln discharges after the fuel step heats it,
+        # and that heat is booked as stored, not lost.
+        for step in self.steps:
+            self.assertNotEqual(step["cooler_solid_stored"], 0.0)
 
     def test_steady_mode_restored_after_a_step(self):
         self.assertIsNone(self.twin.state.transient_dt)

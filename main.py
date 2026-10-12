@@ -1117,8 +1117,17 @@ class Twin:
         # CLINKER
         # ======================================================
 
+        # The clinker LEAVING the plant. In a dynamic step the
+        # grate's bed gains or loses mass, so that is the kiln's
+        # discharge less the bed's dM/dt (the cooler's parcel
+        # train); zero at steady state.
+        self.mass_flow.m_dot_stored_cooler = float(
+            getattr(self.state, "Cooler_mass_stored", 0.0)
+        )
+
         self.mass_flow.m_dot_clinker = (
             self.mass_flow.m_dot_s_cooler
+            - self.mass_flow.m_dot_stored_cooler
         )
 
         # ======================================================
@@ -1139,9 +1148,12 @@ class Twin:
         # self.mass_flow.m_dot_vent_air to close correctly.
         # ======================================================
 
+        # Sized on the clinker the cooler RECEIVES, not on what
+        # leaves it: equal at steady state, and the fans do not
+        # follow the bed's hold-up in a dynamic step.
         self.mass_flow.m_dot_air_cooler = (
             self.cooler.cooling_air_rate
-            * self.mass_flow.m_dot_clinker
+            * self.mass_flow.m_dot_s_cooler
         )
 
         # Primary and secondary air serve the KILN burner, so
@@ -1524,6 +1536,9 @@ class Twin:
             self.state.kiln_step_burning = None
             self.state.Transition_mass_stored = 0.0
             self.state.Burning_mass_stored = 0.0
+            self.state.cooler_train = None
+            self.state.cooler_step = None
+            self.state.Cooler_mass_stored = 0.0
 
 
         print(
@@ -2220,6 +2235,7 @@ class Twin:
         self.state.kiln_train_burning = (
             self.state.kiln_step_burning.parcels
         )
+        self.state.cooler_train = self.state.cooler_step.parcels
 
         self.state.t += dt
 
@@ -2273,12 +2289,36 @@ class Twin:
         state.kiln_train_transition = train_transition
         state.kiln_step_transition = step_transition
 
-        state.kiln_train_burning = parcels.steady_train(
+        Ts_burning = np.asarray(state.Ts_burning, dtype=float)
+
+        train_burning = parcels.steady_train(
             step_transition.leaving,
-            np.asarray(state.Ts_burning, dtype=float),
+            Ts_burning,
             u_s / self.burning.dz,
             dt,
             burning_reactor,
+        )
+
+        step_burning = parcels.advance_train(
+            train_burning,
+            step_transition.leaving,
+            Ts_burning,
+            u_s / self.burning.dz,
+            dt,
+            burning_reactor,
+        )
+
+        state.kiln_train_burning = train_burning
+        state.kiln_step_burning = step_burning
+
+        # The grate's bed: what the kiln discharges, carried at the
+        # grate speed (pure transport).
+        state.cooler_train = parcels.steady_train(
+            step_burning.leaving,
+            np.zeros(self.cooler.N),
+            self.cooler.grate_speed / self.cooler.dz,
+            dt,
+            parcels.TransportReactor,
         )
 
 

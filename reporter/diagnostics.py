@@ -911,7 +911,16 @@ def zone_ntu(twin):
 
         a_gs = float(a_gs)
 
-        V_total = float(z.V_cell) * int(z.N)
+        # The grate cooler exchanges over its clinker BED, whose
+        # volume follows the clinker flow, and publishes it per
+        # cell; the tube zones have a fixed V_cell.
+        V_bed_cells = getattr(state, f"{prefix}_V_bed_cells", None)
+
+        V_total = (
+            float(np.sum(V_bed_cells))
+            if V_bed_cells is not None
+            else float(z.V_cell) * int(z.N)
+        )
 
         if K_gs_cells is not None:
             # Per-cell conductance: the zone-average is the honest
@@ -942,7 +951,11 @@ def zone_ntu(twin):
                 "NTU_solid": UA / C_s if C_s else float("nan"),
                 "wall_area_identity": (
                     (float(a_ws) + float(a_gw)) * float(z.D) / 4.0
-                    if (a_ws is not None and a_gw is not None)
+                    if (
+                        a_ws is not None
+                        and a_gw is not None
+                        and hasattr(z, "D")
+                    )
                     else float("nan")
                 ),
             }

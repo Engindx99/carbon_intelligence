@@ -371,6 +371,16 @@ class WallStack:
 
         return ShellGeometry(self, r_inner, L_cell, L_char)
 
+    def planar_geometry(self, A_cell, L_cell, L_char):
+        """
+        The same stack on a FLAT wall of area A_cell per cell: a
+        box casing (the grate cooler), not a cylinder. Series
+        conduction is t/(k A) per layer, exactly, since inner and
+        outer areas are equal.
+        """
+
+        return ShellGeometry(self, None, L_cell, L_char, A_cell=A_cell)
+
 
 class ShellGeometry:
     """
@@ -391,7 +401,11 @@ class ShellGeometry:
         "A_inner_cell",
     )
 
-    def __init__(self, stack, r_inner, L_cell, L_char):
+    def __init__(self, stack, r_inner, L_cell, L_char, A_cell=None):
+
+        if r_inner is None:
+            self._init_planar(stack, L_cell, L_char, A_cell)
+            return
 
         if r_inner <= 0.0:
             raise ValueError(
@@ -451,12 +465,46 @@ class ShellGeometry:
         self.A_outer_cell = 2.0 * np.pi * self.r_outer * L_cell
         self.A_inner_cell = 2.0 * np.pi * self.r_inner * L_cell
 
+    def _init_planar(self, stack, L_cell, L_char, A_cell):
+
+        if A_cell is None or not A_cell > 0.0:
+            raise ValueError(
+                f"wall_stack.{stack.zone}: planar wall area must be "
+                f"> 0 m2, got {A_cell}"
+            )
+
+        if L_cell <= 0.0:
+            raise ValueError(
+                f"wall_stack.{stack.zone}: cell length must be "
+                f"> 0 m, got {L_cell}"
+            )
+
+        # PLANE SERIES CONDUCTION, R_j = t_j / (k_j A). Exact for a
+        # flat wall: the inner and outer areas are the same.
+        self.stack = stack
+        self.r_inner = None
+        self.r_outer = None
+        self.L_cell = float(L_cell)
+        self.L_char = float(L_char)
+        self.R_cond = float(
+            sum(
+                layer.thickness / (layer.conductivity * A_cell)
+                for layer in stack.layers
+            )
+        )
+        self.A_outer_cell = float(A_cell)
+        self.A_inner_cell = float(A_cell)
+
     def __repr__(self):
 
         return (
             f"ShellGeometry({self.stack.zone}, "
-            f"r {self.r_inner:.3f}->{self.r_outer:.3f} m, "
-            f"R_cond {self.R_cond:.4g} K/W)"
+            + (
+                "planar, "
+                if self.r_inner is None
+                else f"r {self.r_inner:.3f}->{self.r_outer:.3f} m, "
+            )
+            + f"R_cond {self.R_cond:.4g} K/W)"
         )
 
 
@@ -900,8 +948,12 @@ DEFAULT_WALL_STACKS = {
         ],
     },
 
+    # The grate cooler is a box casing (geometry/cooler/cooler.md):
+    # its walls are flat and mostly vertical (two 3.0 m sides
+    # against a 4.0 m roof), so the outer film is a vertical
+    # plate's, on the casing height (pyroprocess/cooler/cooler.py).
     "cooler": {
-        "orientation": "horizontal",
+        "orientation": "vertical",
         "shell_emissivity": 0.85,
         "layers": [
             ("castable refractory", 0.150, 1.30),
