@@ -97,18 +97,52 @@ class TwinStateRegressionTest(unittest.TestCase):
         assert_balances_pass(self, self.validations)
 
 
-class NodalPreheaterBalanceTest(unittest.TestCase):
-    """Default configuration: 20 co-current nodes per cyclone stage."""
+class DefaultNodeCountTest(unittest.TestCase):
 
-    @classmethod
-    def setUpClass(cls):
-        cls.twin, cls.validations = run_twin()
-
-    def test_default_is_20_nodes_per_stage(self):
+    def test_default_is_1_node_per_stage(self):
+        """1 since the node exchange is exact; see the config."""
 
         cfg = main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
 
-        self.assertEqual(cfg["preheater"]["nodes_per_stage"], 20)
+        self.assertEqual(cfg["preheater"]["nodes_per_stage"], 1)
+
+
+class NodalPreheaterBalanceTest(unittest.TestCase):
+    """20 co-current nodes per cyclone stage: the multi-node march,
+    and the claim that one exact node already gives its answer."""
+
+    NODES = 20
+
+    @classmethod
+    def setUpClass(cls):
+        cls.twin, cls.validations = run_twin(nodes_per_stage=cls.NODES)
+        cls.reference = json.loads(REFERENCE_PATH.read_text())["snapshot"]
+
+    def test_one_exact_node_matches_twenty(self):
+        """The reference is the 1-node plant. With the node exchange
+        integrated exactly, 20 nodes move the stage outlets by at
+        most 1.16 K (stage 4 solid; gas 0.35-0.93 K) and the
+        calciner's solid inlet enthalpy by 0.09 % -- under the old
+        forward-Euler node, stage 1's gas outlet alone was 38 K off
+        and that enthalpy 12 %. What is left is radiation and cp_gas
+        linearised at the node means, and Tw held over the node."""
+
+        for stage in self.twin.preheater.stages:
+            with self.subTest(stage=stage.stage_id):
+                for side in ("gas", "solid"):
+                    key = f"stage{stage.stage_id}_{side}_outlet_temperature"
+                    self.assertLess(
+                        abs(getattr(stage, f"{side}_outlet_temperature")
+                            - self.reference[key]),
+                        1.5,
+                    )
+
+        H20 = self.twin.state.Hsolid_calciner_in
+        H1 = self.reference["state_Hsolid_calciner_in"]
+        self.assertLess(abs(H20 - H1) / H1, 2e-3)
+
+    def test_runs_20_nodes_per_stage(self):
+
         self.assertEqual(self.twin.preheater.nodes_per_stage, 20)
 
         for stage in self.twin.preheater.stages:

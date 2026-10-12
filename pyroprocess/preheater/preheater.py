@@ -22,7 +22,7 @@ from .stage5 import Stage5
 
 class Preheater:
 
-    def __init__(self, N=5, L=25.0, nodes_per_stage=20, cfg=None):
+    def __init__(self, N=5, L=25.0, nodes_per_stage=1, cfg=None):
 
         # Kept on the instance because the name `cfg` is rebound
         # further down to the ZONE_HT_CONFIG entry for this zone.

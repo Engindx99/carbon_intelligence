@@ -91,7 +91,12 @@ calciner:
 
 preheater:
   length: 25.0   # m, equivalent solid path length (stage volume sizing)
-  nodes_per_stage: 20   # co-current heat-transfer nodes per cyclone stage (numerical)
+  # Co-current heat-transfer nodes per cyclone stage (numerical). 1 since
+  # the node exchange is integrated exactly (54b88f6): 1 node puts every
+  # stage outlet within 1.2 K of 20, at a sixth of the cost. Before that
+  # the node was a forward-Euler step, 1 node was 38 K off and 20 was the
+  # default.
+  nodes_per_stage: 1
   # Cyclone separation efficiencies, per cyclone at the CFD sizes. The
   # plant is two identical 2500 t/d strings (geometry/catalog.md, user
   # decision 12 Oct 2026); the twin solves the tower as one series string
