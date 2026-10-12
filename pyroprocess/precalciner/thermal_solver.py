@@ -293,6 +293,20 @@ def thermal_step(
     # tol is the caller's: the coupling loop in Calciner.apply
     # loosens it while its own iterate is still far from the
     # fixed point (see there). Default 1e-6 K, as before.
+    # Stored energy, dynamic solve only: the wall. The riser's
+    # suspension holds its solid for ~3 s and its gas for less,
+    # against a step of ~10 s, so both stay quasi-steady.
+    transient_dt = getattr(state, "transient_dt", None)
+
+    if transient_dt is None:
+        C_w_dt = np.zeros(N)
+        Tw_old = np.zeros(N)
+    else:
+        C_w_dt = np.full(
+            N, calciner._rho_wall_Vwall_cell_Cp / transient_dt
+        )
+        Tw_old = np.asarray(state.Tw_calciner_old, dtype=float)
+
     max_iter = 100
     relaxation = 0.5
 
@@ -627,6 +641,11 @@ def thermal_step(
                 / R_total[i]
                 - radiation_wall_source
             )
+
+            # Dynamic solve: gains - losses = C/dt (Tw - Tw_old).
+            if transient_dt is not None:
+                A[row, Tw_i] -= C_w_dt[i]
+                b[row] -= C_w_dt[i] * Tw_old[i]
 
             row += 1
 
@@ -1029,6 +1048,11 @@ def thermal_step(
     # residual -> 0
     # ======================================================
 
+    # Rate of change of the wall's stored energy; zero when steady.
+    Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
+
+    state.Calciner_wall_stored = Q_stored_wall
+
     total_energy_balance = (
         Hg_in
         + Hs_in
@@ -1037,6 +1061,7 @@ def thermal_step(
         - Hs_out
         - Q_wall_loss
         - reaction_sink
+        - Q_stored_wall
     )
 
     calciner.energy_in = (
@@ -1050,6 +1075,7 @@ def thermal_step(
         + Hs_out
         + Q_wall_loss
         + reaction_sink
+        + Q_stored_wall
     )
 
     calciner.energy_residual = total_energy_balance

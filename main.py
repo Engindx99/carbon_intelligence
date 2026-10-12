@@ -377,6 +377,20 @@ class Twin:
         # crosses the plant boundary.
         Q_dust = state.Q_dust_loss_preheater
 
+        # Rate of energy going into storage (solid holdup and
+        # refractory) over a dynamic step [W]; zero at steady
+        # state, where nothing is stored.
+        Q_stored_total = sum(
+            getattr(state, f"{zone}_stored_energy_change", 0.0)
+            for zone in (
+                "Burning",
+                "Transition",
+                "Calciner",
+                "Preheater",
+                "Cooler",
+            )
+        )
+
         global_energy_out = (
             H_exhaust_out
             + H_clinker_out
@@ -384,6 +398,7 @@ class Twin:
             + Q_wall_total
             + Q_reaction_total
             + Q_dust
+            + Q_stored_total
         )
 
         # ======================================================
@@ -1429,6 +1444,33 @@ class Twin:
         thermal_tolerance = 1e-3
         mass_tolerance = 1e-6
         flow_tolerance = 1e-10
+        balance_relative_tolerance = 1e-9
+
+        # ======================================================
+        # DYNAMIC STEP (advance)
+        #
+        # A time step is held to the per-step conservation bar,
+        # 1e-6 relative, instead of the steady solve's 1e-10 flow
+        # and 1e-9 zone-balance bars. Those two are what kept a
+        # 10 s step at 13 sweeps: thermal and mass met their
+        # tolerances by sweep 5, the zone balances closed to 1e-6
+        # by then too, and the remaining eight sweeps only took
+        # the flows from 1e-6 to 1e-10. 1e-6 kg/s of CO2 is ~4 W
+        # of calcination enthalpy against ~1e8 W of throughput.
+        # The thermal tolerance stays: 1e-3 K on ~100 kg/s of gas
+        # is ~1e2 W, the same 1e-6 relative.
+        #
+        # A step also ends on the sweep that meets them, without
+        # the extra sweep at the zones' floors (see INEXACT INNER
+        # SOLVES): its inner solves already ran to 1e-2 of a
+        # residual that is below 1e-3 K, and the zone balances it
+        # is judged on are the ones that sweep produced.
+        # ======================================================
+        transient = self.state.transient_dt is not None
+
+        if transient:
+            flow_tolerance = 1e-6
+            balance_relative_tolerance = 1e-6
 
         # ======================================================
         # INEXACT INNER SOLVES
@@ -1447,8 +1489,18 @@ class Twin:
         # floors, so the converged state is solved as tightly as
         # it was before. The preheater is not included: its
         # tolerance sets its energy validator's bar.
+        #
+        # A dynamic step does not start at the floors: its first
+        # sweep takes the hint the previous step's first sweep
+        # produced. Successive steps start about equally far from
+        # their solution (the predictor in advance), and the
+        # floor-tight first sweep cost as much as two later ones.
         # ======================================================
-        self.state.inner_tolerance_hint = 0.0
+        self.state.inner_tolerance_hint = (
+            getattr(self, "_first_sweep_hint", 0.0)
+            if transient
+            else 0.0
+        )
 
 
         print(
@@ -1512,6 +1564,7 @@ class Twin:
                 validate_energy(
                     energy_in=zone.energy_in,
                     energy_out=zone.energy_out,
+                    relative_tolerance=balance_relative_tolerance,
                 )["converged"]
                 for zone in (
                     self.burning,
@@ -1533,13 +1586,21 @@ class Twin:
                 balances_closed
             )
 
-            solved_at_floor = self.state.inner_tolerance_hint == 0.0
+            solved_at_floor = (
+                transient
+                or self.state.inner_tolerance_hint == 0.0
+            )
 
             self.state.inner_tolerance_hint = (
                 0.0
                 if within_tolerance
                 else 0.01 * float(residual["thermal"])
             )
+
+            if transient and iteration == 0:
+                self._first_sweep_hint = 0.01 * float(
+                    residual["thermal"]
+                )
 
             if within_tolerance and solved_at_floor:
 
@@ -2043,6 +2104,90 @@ class Twin:
             "Steady-state solution did not converge "
             f"after {max_iterations} iterations."
         )
+
+    # ==========================================================
+    # DYNAMIC STEP
+    #
+    # Advances the plant by dt [s] with implicit Euler on the
+    # stored energy of the slow states: the kiln's bed (burning,
+    # transition) and every zone's wall. Gas everywhere, and the
+    # calciner and preheater solids, are quasi-steady -- their
+    # transits are seconds against a step of ~10 s.
+    #
+    # The step is the same plant fixed point the steady solve
+    # finds, with C/dt (T - T_old) added to those rows, so it is
+    # solved by the same loop and the same stop criteria. The
+    # start-of-step state is warm, so a step costs a few sweeps.
+    # With unchanged inputs and a converged plant every C/dt
+    # term vanishes and the step returns the steady state.
+    #
+    # Zone energy balances book the stored-energy rate as an
+    # outflow (Burning_stored_energy_change etc.), so the
+    # validators still read in == out during a transient.
+    #
+    # Not yet dynamic (Faz 2.2): the kiln's species hold-up. Its
+    # chemistry is still the steady flow march at each step's
+    # temperatures.
+    # ==========================================================
+    _DYNAMIC_FIELDS = tuple(
+        f"{prefix}_{zone}"
+        for zone in ("burning", "transition", "calciner", "preheater", "cooler")
+        for prefix in ("Tg", "Ts", "Tw")
+    )
+
+    def advance(self, dt):
+
+        dt = float(dt)
+
+        if not (np.isfinite(dt) and dt > 0.0):
+            raise ValueError(f"dt must be > 0 s, got {dt}")
+
+        start = {
+            name: np.asarray(getattr(self.state, name), dtype=float).copy()
+            for name in self._DYNAMIC_FIELDS
+        }
+
+        for name, value in start.items():
+            setattr(self.state, f"{name}_old", value.copy())
+
+        # ======================================================
+        # PREDICTOR
+        #
+        # The step's first sweep starts from T_n + (T_n - T_n-1),
+        # the linear extrapolation of the last step, instead of
+        # T_n. Through a smooth transient the per-step change
+        # hardly varies, so the extrapolation removes most of the
+        # first-sweep error. It is only the starting point: the
+        # step converges to the same tolerances and the same C/dt
+        # (T - T_old) rows, which read T_old, never the guess.
+        # Used only after a step of the same dt.
+        # ======================================================
+        previous = getattr(self, "_previous_step", None)
+
+        if previous is not None and previous[0] == dt:
+            for name, value in start.items():
+                before = previous[1][name]
+                if before.shape == value.shape:
+                    setattr(self.state, name, 2.0 * value - before)
+
+        self._previous_step = (dt, start)
+
+        self.state.transient_dt = dt
+
+        try:
+            self.run(report=False, raise_on_nonconvergence=False)
+        finally:
+            self.state.transient_dt = None
+
+        if not self.converged:
+            raise RuntimeError(
+                f"dynamic step at t = {self.state.t:.1f} s "
+                f"(dt = {dt} s) did not converge"
+            )
+
+        self.state.t += dt
+
+        return self.state
 
 
 if __name__ == "__main__":

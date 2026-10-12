@@ -15,6 +15,15 @@ class GlobalState:
     t: float = 0.0
     dt: float = 0.05
 
+    # Time step of the DYNAMIC solve [s]; None is the steady
+    # solve. Kept apart from `dt` above, which the legacy
+    # held-inventory chemistry still reads. When set, the zones
+    # add the stored-energy terms C/dt (T - T_old) of the solid
+    # bed (rotary zones) and of every wall, with T_old the
+    # <field>_<zone>_old arrays, the state at the start of the
+    # step. See main.Twin.advance.
+    transient_dt: float = None
+
     # ======================================================
     # DISCRETIZATION
     #

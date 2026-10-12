@@ -43,6 +43,7 @@ def compute_energy_balance(calciner, state):
         - state.Hsolid_calciner_out
         - state.Wall_loss_calciner
         - state.Calciner_Q_sink
+        - state.Calciner_stored_energy_change
     )
 
     # ======================================================

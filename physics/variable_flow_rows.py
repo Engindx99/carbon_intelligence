@@ -294,7 +294,14 @@ def apply_solid_energy_balance(
     D_out=0.0,
     dQ_dTs_cell=0.0,
     Ts_star_cell=0.0,
+    C_dt_cell=0.0,
+    Ts_old_cell=0.0,
 ):
+    # C_dt_cell / Ts_old_cell -- STORED ENERGY (dynamic solve only).
+    # Implicit Euler on the bed's sensible heat: C/dt (Ts - Ts_old)
+    # joins the outflow side, so +C/dt goes on the diagonal and
+    # +C/dt Ts_old into b. C is the cell's solid hold-up times
+    # Cp_s. The defaults of 0.0 leave the steady row unchanged.
 
     Tg_i = i
     Ts_i = N + i
@@ -306,6 +313,7 @@ def apply_solid_energy_balance(
         + V_cell * K_gs
         + V_cell * K_ws
         + dQ_dTs_cell
+        + C_dt_cell
     )
 
     A[row, Tg_i] += (
@@ -328,6 +336,7 @@ def apply_solid_energy_balance(
         - Cs_out * D_out
         + Cs_in * D_in
         + (Cs_out - Cs_in) * T_ref
+        + C_dt_cell * Ts_old_cell
     )
 
     if i == 0:

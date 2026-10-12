@@ -104,6 +104,26 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # nothing the next sweep keeps. The hint is zero on the sweep
     # that may declare convergence, so the converged state is
     # solved to the floor below exactly as before.
+    # Stored energy, dynamic solve only: the wall, as a lumped
+    # lining (stack thickness x rho cp) on the hot-face node. The
+    # clinker bed stays quasi-steady until the grate geometry
+    # (speed, bed depth) gives it a residence time (Faz 6 item 2).
+    transient_dt = getattr(state, "transient_dt", None)
+
+    if transient_dt is None:
+        C_w_dt = np.zeros(N)
+        Tw_old = np.zeros(N)
+    else:
+        C_w_dt = np.full(
+            N,
+            cooler.A_wall_cell
+            * cooler.refractory_thickness
+            * cooler.rho_wall
+            * cooler.Cp_wall
+            / transient_dt,
+        )
+        Tw_old = np.asarray(state.Tw_cooler_old, dtype=float)
+
     max_iter = 100
     tol = max(
         1e-6,
@@ -270,6 +290,11 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
                 )
                 -cooler.T_amb / R_total[i]
             )
+
+            # Dynamic solve: gains - losses = C/dt (Tw - Tw_old).
+            if transient_dt is not None:
+                A[row, wall_i] -= C_w_dt[i]
+                b[row] -= C_w_dt[i] * Tw_old[i]
 
             row += 1
 
@@ -494,10 +519,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         + Hs_in
     )
 
+    # Rate of change of the wall's stored energy; zero when steady.
+    Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
+
+    state.Cooler_wall_stored = Q_stored_wall
+    state.Cooler_stored_energy_change = Q_stored_wall
+
     energy_out = (
         Hg_out
         + Hs_out
         + wall_loss
+        + Q_stored_wall
     )
 
     total_energy_balance = (

@@ -83,6 +83,7 @@ class PreheaterStage:
         self.Q_gw = 0.0
         self.Q_ws = 0.0
         self.Q_wall_loss = 0.0
+        self.Q_wall_stored = 0.0
         self.Q_reaction = 0.0
 
         self.energy_in = 0.0
@@ -111,6 +112,7 @@ class PreheaterStage:
         model,
         reaction_power=0.0,
         m_dot_vapor=0.0,
+        wall_temperature_old=None,
     ):
 
         return heat_transfer.solve_stage(
@@ -123,4 +125,5 @@ class PreheaterStage:
             model,
             reaction_power,
             m_dot_vapor,
+            wall_temperature_old,
         )

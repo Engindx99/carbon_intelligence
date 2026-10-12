@@ -382,13 +382,16 @@ class Transition:
         )
 
         # ======================================================
-        # STEADY-STATE STORED ENERGY
+        # STORED ENERGY
         # ======================================================
         state.Transition_gas_stored = 0.0
-        state.Transition_solid_stored = 0.0
-        state.Transition_wall_stored = 0.0
 
-        state.Transition_stored_energy_change = 0.0
+        # Solid and wall rates are set by thermal_step (zero in
+        # the steady solve); the gas is quasi-steady.
+        state.Transition_stored_energy_change = (
+            state.Transition_solid_stored
+            + state.Transition_wall_stored
+        )
 
         # ======================================================
         # STEADY-STATE ENERGY BALANCE

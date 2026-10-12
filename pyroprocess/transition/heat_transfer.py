@@ -190,6 +190,31 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # nothing the next sweep keeps. The hint is zero on the sweep
     # that may declare convergence, so the converged state is
     # solved to the floor below exactly as before.
+    # Stored energy, dynamic solve only (see burning/heat_transfer.py).
+    # The bed's hold-up follows the per-cell flow, which this zone
+    # rebuilds inside the loop, so it is formed there.
+    transient_dt = getattr(state, "transient_dt", None)
+
+    if transient_dt is None:
+        C_w_dt = np.zeros(N)
+        Ts_old = np.zeros(N)
+        Tw_old = np.zeros(N)
+    else:
+        C_w_dt = np.full(
+            N, transition._rho_wall_Vwall_cell_Cp / transient_dt
+        )
+        Ts_old = np.asarray(state.Ts_transition_old, dtype=float)
+        Tw_old = np.asarray(state.Tw_transition_old, dtype=float)
+
+    def solid_capacity_rate(m_s_in_cells, m_s_out_cells):
+        if transient_dt is None:
+            return np.zeros(N)
+        return (
+            0.5 * (m_s_in_cells + m_s_out_cells)
+            * transition.dz / u_s
+            * Cp_s / transient_dt
+        )
+
     max_iter = 100
     tol = max(
         1.0e-9,
@@ -370,6 +395,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             )
         )
 
+        C_s_dt = solid_capacity_rate(m_s_in_cells, m_s_out_cells)
+
         # Suffix sum: cell i's outgoing gas carries the CO2 of
         # every cell from i to N-1 inclusive.
         m_g_out_cells = (
@@ -518,6 +545,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 Ds_face[i + 1],
                 dQ_dTs_cells[i],
                 Ts_iter[i],
+                C_s_dt[i],
+                Ts_old[i],
             )
 
             # ==================================================
@@ -548,6 +577,11 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 -transition.T_amb / R_total[i]
                 - radiation_wall_source
             )
+
+            # Dynamic solve: gains - losses = C/dt (Tw - Tw_old).
+            if transient_dt is not None:
+                A[row, Tw_i] -= C_w_dt[i]
+                b[row] -= C_w_dt[i] * Tw_old[i]
 
             row += 1
 
@@ -908,6 +942,13 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # ======================================================
     # ENERGY BALANCE
     # ======================================================
+    # Rate of change of the stored energy; zero in the steady solve.
+    Q_stored_solid = float(np.sum(C_s_dt * (Ts_ss - Ts_old)))
+    Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
+
+    state.Transition_solid_stored = Q_stored_solid
+    state.Transition_wall_stored = Q_stored_wall
+
     total_energy_balance = (
         Hg_in
         + Hs_in
@@ -915,6 +956,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         - Hs_out
         - wall_loss
         - Q_calcination_transition
+        - Q_stored_solid
+        - Q_stored_wall
     )
 
     transition.energy_in = (
@@ -927,6 +970,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         + Hs_out
         + wall_loss
         + Q_calcination_transition
+        + Q_stored_solid
+        + Q_stored_wall
     )
 
     transition.energy_residual = total_energy_balance

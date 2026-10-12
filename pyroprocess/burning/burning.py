@@ -619,13 +619,19 @@ class Burning:
         # ======================================================
 
         # ======================================================
-        # STEADY-STATE STORED ENERGY
+        # STORED ENERGY
+        #
+        # Rates [W], set by thermal_step: zero in the steady
+        # solve, C/dt (T - T_old) summed over the zone in the
+        # dynamic one. The gas is quasi-steady -- its transit is
+        # seconds against a step of ~10 s -- so it stores none.
         # ======================================================
         state.Burning_gas_stored = 0.0
-        state.Burning_solid_stored = 0.0
-        state.Burning_wall_stored = 0.0
 
-        state.Burning_stored_energy_change = 0.0
+        state.Burning_stored_energy_change = (
+            state.Burning_solid_stored
+            + state.Burning_wall_stored
+        )
 
         # ======================================================
         # STEADY-STATE ENERGY BALANCE

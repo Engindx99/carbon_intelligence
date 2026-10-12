@@ -67,6 +67,12 @@ class ReactionBase:
         )
 
 
+        # A scalar T (np.float64 is a float) takes min/max: the
+        # same value without numpy's array dispatch, which cost
+        # more than the arithmetic on the per-cell calls.
+        if isinstance(window, float):
+            return min(max(window, 0.0), 1.0)
+
         return np.clip(
             window,
             0.0,
@@ -82,9 +88,10 @@ class ReactionBase:
         self.validate_parameters()
 
 
-        T_safe = np.maximum(
-            T,
-            1.0,
+        T_safe = (
+            max(T, 1.0)
+            if isinstance(T, float)
+            else np.maximum(T, 1.0)
         )
 
 
@@ -106,7 +113,13 @@ class ReactionBase:
         )
 
 
-        if np.any(~np.isfinite(rate)):
+        finite = (
+            math.isfinite(rate)
+            if isinstance(rate, float)
+            else np.all(np.isfinite(rate))
+        )
+
+        if not finite:
 
             raise FloatingPointError(
                 f"{self.__class__.__name__}: "

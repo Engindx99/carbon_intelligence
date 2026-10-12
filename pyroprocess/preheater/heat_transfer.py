@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from physics.physics import cp_gas
@@ -116,6 +118,13 @@ def thermal_step(
 
     m_dot_g = state.m_dot_g_preheater
     m_dot_s = state.m_dot_s_preheater
+
+    # Dynamic solve: each stage's wall starts the step at its
+    # Tw_preheater_old entry. None in the steady solve.
+    def wall_old(i):
+        if getattr(state, "transient_dt", None) is None:
+            return None
+        return float(np.asarray(state.Tw_preheater_old)[i])
 
     # ======================================================
     # GAS INLET TEMPERATURE FROM ENTHALPY
@@ -408,6 +417,7 @@ def thermal_step(
                 model=preheater,
                 reaction_power=-reaction_heat_cells[i],
                 m_dot_vapor=vapor[i],
+                wall_temperature_old=wall_old(i),
             )
 
             solid_out[i] = (
@@ -518,6 +528,7 @@ def thermal_step(
             model=preheater,
             reaction_power=-reaction_heat_cells[i],
             m_dot_vapor=vapor[i],
+            wall_temperature_old=wall_old(i),
         )
 
         Tg_new[i] = (
@@ -624,6 +635,15 @@ def thermal_step(
         for stage in preheater.stages
     )
 
+    # Rate of change of the walls' stored energy; zero when steady.
+    Q_wall_stored_total = float(sum(
+        stage.Q_wall_stored
+        for stage in preheater.stages
+    ))
+
+    state.Preheater_wall_stored = Q_wall_stored_total
+    state.Preheater_stored_energy_change = Q_wall_stored_total
+
     # ======================================================
     # SHELL STATE (Faz 6)
     #
@@ -672,6 +692,7 @@ def thermal_step(
         + Hsolid_out
         + Q_wall_loss_total
         + H_dust_out
+        + Q_wall_stored_total
     )
 
     # Net heat the returned dust takes out of the plant: the
@@ -743,6 +764,7 @@ def solve_stage(
     model,
     reaction_power=0.0,
     m_dot_vapor=0.0,
+    wall_temperature_old=None,
 ):
 
     # Local import: stage.py imports this module at load time.
@@ -761,6 +783,13 @@ def solve_stage(
 
     nodes = []
 
+    # Each node's converged (Tw, Tg_bar, Ts_bar) from the last
+    # solve of this stage, as its warm start (solve_stage_node).
+    starts = getattr(stage, "node_starts", None)
+
+    if starts is None or len(starts) != n:
+        starts = [None] * n
+
     for k in range(n):
 
         node = PreheaterStage(stage_id=stage.stage_id)
@@ -777,6 +806,11 @@ def solve_stage(
             m_dot_vapor * volume_fraction,
             volume_fraction,
             H_gas,
+            # One start-of-step wall per stage: exact at one node
+            # per stage (the default); with more, every node of
+            # the stage starts the step from the stage's mean.
+            wall_temperature_old,
+            start=starts[k],
         )
 
         nodes.append(node)
@@ -784,6 +818,8 @@ def solve_stage(
         Tg = node.gas_outlet_temperature
         Ts = node.solid_outlet_temperature
         H_gas = node.gas_outlet_enthalpy
+
+    stage.node_starts = [node.node_start for node in nodes]
 
     first = nodes[0]
     last = nodes[-1]
@@ -818,6 +854,7 @@ def solve_stage(
     stage.Q_ws = float(sum(node.Q_ws for node in nodes))
     stage.Q_wall_loss = float(sum(node.Q_wall_loss for node in nodes))
     stage.Q_reaction = float(sum(node.Q_reaction for node in nodes))
+    stage.Q_wall_stored = float(sum(node.Q_wall_stored for node in nodes))
 
     stage.energy_in = float(
         stage.gas_inlet_enthalpy
@@ -829,6 +866,7 @@ def solve_stage(
         + stage.solid_outlet_enthalpy
         + stage.Q_wall_loss
         - stage.Q_reaction
+        + stage.Q_wall_stored
     )
 
     stage.energy_residual = stage.energy_in - stage.energy_out
@@ -906,6 +944,8 @@ def solve_stage_node(
     m_dot_vapor=0.0,
     volume_fraction=1.0,
     gas_inlet_enthalpy=None,
+    wall_temperature_old=None,
+    start=None,
 ):
 
     stage.reset_diagnostics()
@@ -1003,9 +1043,36 @@ def solve_stage_node(
     T_low = T_amb
     T_high = max(Tg_in, Ts_in, T_amb)
 
+    # Stored energy, dynamic solve only: the node's share of the
+    # lagged lining (stack thickness x rho cp) on its wall node.
+    transient_dt = getattr(state, "transient_dt", None)
+
+    if transient_dt is None or wall_temperature_old is None:
+        C_w_dt = 0.0
+        Tw_old = 0.0
+    else:
+        C_w_dt = (
+            A_wall_cell
+            * model.refractory_thickness
+            * model.rho_wall
+            * model.Cp_wall
+            / transient_dt
+        )
+        Tw_old = float(wall_temperature_old)
+
     Tw = max(T_amb, min(Tg_in, Ts_in))
     Tg_bar = Tg_in
     Ts_bar = Ts_in
+
+    # Warm start: (Tw, Tg_bar, Ts_bar) this node converged to on
+    # the previous solve. Between sweeps, and between dynamic
+    # steps, they move by far less than the ~1e3 K the cold guess
+    # above is off, which cost two of the node's ~five
+    # coefficient passes and most of its shell solves. Only the
+    # starting point: the passes run to the same 1e-7 K.
+    if start is not None and all(map(math.isfinite, start)):
+        Tw = min(max(start[0], T_low), T_high)
+        Tg_bar, Ts_bar = float(start[1]), float(start[2])
 
     # The last skin solved, as the next shell solve's start: the
     # wall root and the coefficient passes move Tw by less each
@@ -1061,6 +1128,7 @@ def solve_stage_node(
             residual = (
                 q0 + q1 * Tw_trial
                 - (Tw_trial - T_amb) / R_total_trial
+                - C_w_dt * (Tw_trial - Tw_old)
             )
 
             # q1 < 0 and the loss rises with Tw, so the residual
@@ -1069,7 +1137,7 @@ def solve_stage_node(
                 T_shell_trial,
                 node_shell,
                 T_amb,
-            )
+            ) - C_w_dt
 
             return residual, slope
 
@@ -1101,6 +1169,7 @@ def solve_stage_node(
             break
 
     stage.wall_temperature = float(Tw)
+    stage.node_start = (float(Tw), float(Tg_bar), float(Ts_bar))
 
     # ==========================================================
     # HEAT TRANSFER
@@ -1127,6 +1196,7 @@ def solve_stage_node(
 
     stage.Q_wall_loss = float(wall_loss)
     stage.shell_temperature = float(T_shell)
+    stage.Q_wall_stored = float(C_w_dt * (float(Tw) - Tw_old))
 
     # ==========================================================
     # SOLID ENTHALPY
@@ -1183,6 +1253,7 @@ def solve_stage_node(
         + H_solid_out
         + stage.Q_wall_loss
         - reaction_power
+        + stage.Q_wall_stored
     )
 
     energy_residual = energy_in - energy_out

@@ -1,6 +1,11 @@
 """Steady-state performance benchmark for the twin.
 
     python3 -m tools.benchmark [--nodes N|cfg] [--profile K] [--reference PATH]
+    python3 -m tools.benchmark --dynamic STEPS [--dt 10] [--fuel-step 1.05]
+
+--dynamic times Twin.advance instead: real-time factor (simulated
+over wall time, the steady solve not counted), sweeps per step and
+the worst per-step global energy residual with stored energy.
 
 Reports the wall time of one cold-start steady solve, the outer sweep
 count and the time spent in each zone's apply(). With --profile K it
@@ -143,6 +148,66 @@ def run(nodes_per_stage, profile_rows=0):
     }
 
 
+def run_dynamic(steps, dt, fuel_step):
+    """Steady solve, then fuel x fuel_step and `steps` dynamic
+    steps of dt [s]. Returns RTF, sweeps per step and the worst
+    per-step global energy residual (stored energy included)."""
+
+    residuals = []
+
+    def collect(result, equipment, balance_type="energy"):
+        residuals.append(result)
+        return result
+
+    cwd = os.getcwd()
+    os.chdir(REPO_ROOT)
+
+    try:
+        cfg = main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
+
+        twin = main.Twin(
+            state=GlobalState(N=cfg["plant"]["N"]),
+            cfg=cfg,
+        )
+
+        sweeps = [0]
+        step = twin.step
+
+        def counted_step():
+            sweeps[0] += 1
+            step()
+
+        twin.step = counted_step
+
+        with contextlib.redirect_stdout(io.StringIO()):
+            twin.run(report=False)
+
+        twin._last_inputs["Fuel_rate_total"] *= fuel_step
+        sweeps[0] = 0
+        wall = 0.0
+
+        with mock.patch.object(main, "report_validation", collect):
+            with contextlib.redirect_stdout(io.StringIO()):
+                for _ in range(steps):
+                    t0 = time.perf_counter()
+                    twin.advance(dt)
+                    wall += time.perf_counter() - t0
+                    # Measures only; outside the timed step.
+                    twin._validate_global_energy_balance()
+
+    finally:
+        os.chdir(cwd)
+
+    return {
+        "wall": wall,
+        "rtf": steps * dt / wall,
+        "sweeps_per_step": sweeps[0] / steps,
+        "worst_global_relative": max(
+            r["relative_residual"] for r in residuals
+        ),
+    }
+
+
 def _is_residual(key):
     # A balance residual sits at round-off; its relative change is
     # noise over noise, so it is compared in absolute terms [W].
@@ -212,7 +277,29 @@ def main_cli(argv=None):
     )
     parser.add_argument("--profile", type=int, default=0, metavar="K")
     parser.add_argument("--reference", default=None)
+    parser.add_argument(
+        "--dynamic",
+        type=int,
+        default=0,
+        metavar="STEPS",
+        help="after the steady solve, step the fuel and time STEPS "
+        "dynamic steps (Twin.advance) instead",
+    )
+    parser.add_argument("--dt", type=float, default=10.0)
+    parser.add_argument("--fuel-step", type=float, default=1.05)
     args = parser.parse_args(argv)
+
+    if args.dynamic:
+        result = run_dynamic(args.dynamic, args.dt, args.fuel_step)
+        print(
+            f"{args.dynamic} steps x {args.dt:g} s after fuel "
+            f"x{args.fuel_step:g}: wall {result['wall']:.1f} s | "
+            f"RTF {result['rtf']:.1f} | "
+            f"{result['sweeps_per_step']:.2f} sweeps/step | "
+            f"worst global energy residual "
+            f"{result['worst_global_relative']:.1e} relative"
+        )
+        return result
 
     nodes = None if args.nodes == "cfg" else int(args.nodes)
 

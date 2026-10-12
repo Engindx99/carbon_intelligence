@@ -439,6 +439,7 @@ class Preheater:
             - state.Hsolid_preheater_out
             - state.Wall_loss_preheater
             - state.Q_dust_loss_preheater
+            - state.Preheater_stored_energy_change
         )
 
         return state
