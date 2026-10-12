@@ -23,7 +23,7 @@ Volüt geometrisi: TBD — 2500 hattı için kaynak yok
 
 Aşağıdaki koordinatlar ve hacim ayrımı (domen 273.1 m³) C2'nin **eski** katalog ölçülerine (D 6.10) aitti ve ara kademe standardıyla geçersiz oldu; kaldırıldı. Siklon makroyla C4 ölçüleriyle kurulunca doldurulacak: TBD.
 
-Ekipman hacmi (gövde + koni): 194.5 m³ (C4 ile özdeş)
+Ekipman hacmi (gövde + koni): 283.2 m³ (C4'ün CFD gövdesiyle özdeş; aşağıda)
 
 CFD domen hacmi, modelleme parametrelerine bağlı uzatmaları içerir; fiziksel hesapta kullanılmaz.
 
@@ -58,5 +58,5 @@ Giriş kesiti: 11.99 m²
 Giriş hidrolik çapı: 2.24 m
 Vorteks bulucu kesiti: 16.84 m²
 Toz çıkışı kesiti: 0.515 m²
-Islak alan (gövde + çatı halkası + koni): 169.9 m²
-Ekipman hacmi (gövde + koni): 194.5 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
+Islak alan (gövde + çatı halkası + koni): **226.1 m²** — CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır); katalog gövdesiyle 169.9 m²'ydi
+Ekipman hacmi (gövde + koni): **283.2 m³** — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır; katalog gövdesiyle 194.5 m³'tü

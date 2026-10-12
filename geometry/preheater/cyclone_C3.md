@@ -28,4 +28,6 @@ TBD (CFD_VIEW.pdf'te C3 için verilmemiş).
 
 ## Derived Properties
 
-Ekipman hacmi: 194.5 m³ (C4 ile özdeş; katalog ölçüleriyle 187.0 m³ idi)
+Ekipman hacmi (gövde + koni): **283.2 m³** — C4 ile özdeş, CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog gövdesiyle 194.5 m³, bu kademenin kendi katalog ölçüleriyle 187.0 m³ idi.
+
+Islak alan (gövde + çatı halkası + koni): **226.1 m²** (C4 ile özdeş)

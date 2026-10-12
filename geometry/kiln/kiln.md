@@ -15,4 +15,9 @@ Dönme hızı, max: 4.0 rpm
 
 12 Ekim 2026'ya kadar bu doküman 2500 t/d hattının fırınını anlatıyordu: Jiangsu Pengfei 2500, Ø4.0 × 60 m, %3, 0.39–4.10 rpm.
 
-Twin (`configs/twin_cfg.yaml`, `kiln:`) bu ölçüleri henüz okumaz; twin'in 5000 t/d'ye taşınması ayrı bir adımdır.
+Twin bu ölçüleri okur (`configs/twin_cfg.yaml`, `kiln:` 74.0 m, Ø4.8; 12 Ekim 2026). Tüp iki bölgeye bölünür: geçiş 30.83 m, yanma 43.17 m (`transition.length`).
+
+## Derived Properties
+
+Ekipman hacmi: **1339.07 m³** (π/4 · 4.8² · 74; geçiş 557.89 + yanma 781.19)
+Duvar alanı: 1115.89 m² (π · 4.8 · 74)

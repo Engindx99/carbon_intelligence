@@ -67,7 +67,7 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | Fırın | Ø4.8 × 74 m, %3 eğim | kiln.md (PF5000) |
 | Soğutucu | ızgara alanı 119.6 m² | cooler.md (PF5000) |
 
-Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den, ya da onun ölçülerinden türetilmiş ([calciner.md](calciner/calciner.md), [kiln.md](kiln/kiln.md), [cooler.md](cooler/cooler.md); 12 Ekim 2026). Giriş odası ve başlık şematiktir, fırının çevresinde bir paydır. Twin henüz 2500 t/d beslemesiyle çalışır; 5000'e taşınması ayrı bir adımdır.
+Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den, ya da onun ölçülerinden türetilmiş ([calciner.md](calciner/calciner.md), [kiln.md](kiln/kiln.md), [cooler.md](cooler/cooler.md); 12 Ekim 2026). Giriş odası ve başlık şematiktir, fırının çevresinde bir paydır. Twin 5000 t/d beslemesiyle çalışır; hangi ekipmanı hangi akış hacmiyle hesapladığı [fluid_volumes.md](fluid_volumes.md)'dedir.
 
 Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüleri kullanır; çizim onlardan ayrılmaz.
 

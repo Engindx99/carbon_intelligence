@@ -69,4 +69,6 @@ C5'ten kaçan toz, C2–C4'teki gibi gazla bir üst kademeye (C4) gider.
 
 Gövde + koni hacmi: **311.0 m³** (C4'ün CFD gövdesi 283.2 m³ × k³). İki hattın C5'leri toplam 622.1 m³.
 
-Katalog ölçüleriyle tek C5 211.2 m³'tü; h = D gövde hacmi büyüttü. Twin'in ön ısıtıcı modeli bu hacmi okumaz ve değişmez.
+Katalog ölçüleriyle tek C5 211.2 m³'tü; h = D gövde hacmi büyüttü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı bu hacmi kullanır.
+
+Islak alan (gövde + çatı halkası + koni): **240.7 m²** (C4'ün 226.1 m²'si × k²).

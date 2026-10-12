@@ -6,8 +6,8 @@ Bağlantı: C2 → C1 (CFD_VIEW.pdf: "Riserler R1–R4 (C2→C1 … C5→C4)").
 ## Geometrik Ölçüler
 
 Efektif iç çap: 3.07 m — HFC2500 (yayınlanmış)
-Boy: TBD — Hiçbir kaynakta yayınlanmamış
-Şekil: TBD — FLS makalesinin metni ile denklemleri çelişiyor (SOURCES.md, "Açık belirsizlikler")
+Boy: 21.38 m — FLS R1'in `h_tot`'u, arXiv 2504.02886 Tablo 8 (yayınlanmış; tesis riser'ının boyu yayınlanmamış, FLS'ninki aktarıldı)
+Şekil: düz silindir, tesisin yayınlanmış çapıyla (kullanıcı kararı, 13 Ekim 2026). FLS'de metin ile denklemler riser'ın uç konisinde çelişiyor (`c99b93a^:geometry/SOURCES.md`, "Açık belirsizlikler"). İki okuma `h_tot`'ta birleşir, koni yalnız FLS'nin kendi çaplarına aittir; aradaki hacim farkı ≤ %6. 21 Eylül 2026'daki "riser hacmi hesaplanmaz" kararının yerini bu karar aldı: twin'in ön ısıtıcı kademesi riser + siklon hacmiyle çalışır.
 Dirsek geometrisi: TBD — `LayoutParams` alanı tanımlı, değeri yok
 
 ## CFD Geometry
@@ -78,7 +78,8 @@ Durum"). Riser'ın yüklü ΔP'si 190 Pa.
 
 ## Derived Properties
 
-Ekipman hacmi: — (tesis riser'ının boyu yayınlanmamış)
+Ekipman hacmi: 158.26 m³ (π/4 · 3.07² · 21.38; hat başına bir riser)
+Duvar alanı: 206.20 m² (π · 3.07 · 21.38)
 CFD domenindeki riser hacmi: dirsek 13.32 m³ + düz riser 27.76 m³ + geçiş ~4.2 m³ (loft, kesin
 değer makro log'unda) + oluk 0.370 m³ ≈ 45.6 m³ (C1 + riser domeni, kaz boyunlu çıkışla ≈ 250.2 m³;
 yatay stub ve 2.5 m'lik besleme altıyla 242.65 m³ idi)

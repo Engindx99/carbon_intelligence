@@ -36,7 +36,7 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 - FLS oranının 3.46 m'si (h/D 0.55) 3.17 m'lik daldırmayla vorteks bulucu ağzını koninin yalnız 0.29 m üstüne koyuyordu.
 - h/D 1.0 ile ağız koninin 3.13 m üstüne çıkıyordu; daldırma 3.90 m'ye inince 2.40 m üstünde (aşağıda).
 - Koni, vorteks bulucu çapı ve toz çıkışı katalogdaki gibi.
-- CFD gövdesinin hacmi 283.2 m³; katalog ekipman hacmi 194.5 m³. Twin'in ön ısıtıcısı katalog hacmini kullanmıyor (yer tutucu geometri), bu yüzden twin etkilenmiyor.
+- CFD gövdesinin hacmi 283.2 m³; katalog ölçüleriyle 194.5 m³'tü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı CFD gövdesinin hacmini ve ıslak alanını kullanır (aşağıda, Derived Properties).
 
 **Çıkış:**
 - Vorteks bulucu çatının 5.79 m (1.25 D_x) üstüne uzar; bu, C1'deki geri akış ölçümünün oranı.
@@ -275,4 +275,6 @@ Mesh'teki named selection'lar C1'in adlarıyla gelmişti (`meal_feed` = giriş, 
 
 ## Derived Properties
 
-Ekipman hacmi: 194.5 m³ (katalog ölçüleriyle); CFD gövdesi (h = 6.30 m) 283.2 m³
+Ekipman hacmi (gövde + koni): **283.2 m³** — CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog ölçüleriyle (gövde 3.46 m) 194.5 m³'tü.
+
+Islak alan (gövde + çatı halkası + koni): **226.1 m²** — CFD gövdesiyle; katalog ölçüleriyle 169.9 m²'ydi.
