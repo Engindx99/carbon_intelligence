@@ -185,10 +185,61 @@ Betikler repo dışında: `C:\Users\engin\c4\mm\` (`mm_loaded.py`, `c4_loaded.py
 | v_max | 60.8 m/s | 58.7 m/s |
 
 - ΔP %8 arttı. Uzayan vorteks bulucu girdabı ağzın altına indiriyor; vorteks bulucu kaybı büyüyor.
-- Ortalama alan analizi, zamana bağlı DPM ve MM henüz yapılmadı. Bakılacaklar:
-  - koniye inen gaz payı (S 3.17'de ~%10);
-  - z 8.5–9.5'te duvar yukarı akışı;
-  - v_θCS.
+
+**Ortalama alan** (9 otomatik kayıt, t 7.1–19.1 s; her kayıttan önce case yeniden okundu):
+
+| | S 3.17 | S 3.90 |
+|---|---|---|
+| Koniye inen gaz (z 6.5) | %9.9 | %12.1 |
+| Duvar yanı w, ağzın ~1 m altı | +6.0 m/s (en çok +10) | +7.0 m/s (en çok +16.7) |
+| v_θCS / duvar v_θ | 31.7 / 25.4 m/s | 31.1 / 26.6 m/s |
+
+- Gaz yapısı daldırmayla değişmedi, yalnız ağızla birlikte aşağı kaydı.
+- Ana aşağı akış barel duvarında değil, vorteks bulucu hizasında (r 2.2–2.6 m) halka jeti olarak iniyor. Jetle duvar arasında, duvar boyunca yukarı dönen bir girdap var.
+- Olası neden geniş vorteks bulucu. Gövde ile vorteks bulucu dış duvarı arasındaki halka yalnız 0.75 m, volüt akımı 2.9 m genişliğinde; akım vorteks bulucu duvarına yapışıyor.
+- **Vorteks bulucu katalogdaki gibi kalır** (kullanıcı kararı, 12 Ekim 2026). MM'ye göre D_x/D'yi 0.60'a indirmek yüklü ΔP'yi %60 artırır, yüklü η'yı ~2 puan iyileştirir. Alt ve ara kademelerde geniş vorteks bulucu düşük ΔP için bilerek seçilir.
+- SST-CC'nin eksenel alan zayıflığı ayrıca payı olabilir; RSM kontrolü yapılmadı.
+
+**Temiz gaz DPM, zamana bağlı** (URANS ile eşzamanlı, 19.7–28.7 s, DRW kapalı; S 3.17 ile aynı kurulum):
+- İlk 1.26 s'de her adımda 288 parsel (12 çap × 24 nokta), her çaptan 1032 parsel.
+- Toz çıkışı "trap", duvar sekmesi 0.8.
+
+| d (µm) | S 3.17: kaçan / toz / domende | **S 3.90: kaçan / toz / domende** |
+|---|---|---|
+| 2–10 | %84–87 / 0 / %13–16 | %76–84 / 0 / %16–24 |
+| 15 | %80 / %3 / %17 | %73 / %12 / %16 |
+| 20–25 | %81–83 / %5–9 / %8–14 | %66–72 / %18–20 / %10–14 |
+| 30 | %86 / %7 / %7 | %54 / %36 / %10 |
+| 40 | %69 / 0 / %31 | %20 / **%76** / %4 |
+| 50–70 | %9–65 / 0 / %35–91 (çatı halkası) | %6 / **%94** / ~%1 |
+| 100 | 0 / 0 / %100 (halka) | %2 / %91 / %8 |
+| 170 | 0 / 0 / %100 (halka) | 0 / %65 / %35 |
+
+| Beslemeyle ağırlıklı | S 3.17 | **S 3.90** |
+|---|---|---|
+| Kaçan | %60.8 | **%44.5** |
+| 9 s'de toz çıkışına inen | %1.7 | **%41.3** |
+| Temiz gaz η (domende kalan tutulmuş sayılırsa) | %39 | **%56** |
+
+- **Daldırma kısa devreyi çözdü.** Gaz yapısı az değişse de giriş akımı artık doğrudan vorteks bulucuya girmiyor.
+- 40–100 µm'lik tanelerin %76–94'ü ~4 s'de toz çıkışına iniyor. S 3.17'deki çatı halkası kayboldu.
+- Kesme çapı CFD'de ~30 µm (30 µm'de %54 kaçış). MM'nin temiz gaz x₅₀'si 37.7 µm, iç girdap verimi %40. CFD, MM'den biraz iyi ayırıyor; C1'deki uyuma benzer (CFD %71–75, MM %75.5).
+
+**Yüklü MM, S 3.90:**
+- α, CFD'nin v_θCS'sine (31.1 m/s) yeniden kalibre edildi: 0.913. H_CS 4.62 m. c₀ 0.95.
+- Siklon ΔP **368–415 Pa** (515.5 × MM oranı).
+- x₅₀ 51–54 µm, c₀L 0.065–0.070.
+- η **%92.7–95.2**.
+
+**Twin'e giden değerler (S 3.90, kullanıcı kararı 12 Ekim 2026: η bizim çözümümüzden):**
+- **η %93**: yüklü MM'nin alt ucu (yalnız sınır yükleme), C1'deki gibi.
+  - Literatürdeki ara kademe bandı (%80–90; KHD, JCPE 2025) bunun altında. Fark not edildi, değer değiştirilmedi.
+  - MM'nin sınır yükleme bağıntısı yüksek c₀'da iyimser olabilir.
+- **Gaz-yalnız ΔP:** Eu 11.38, yani 56 kg/s ve 1033 K'de 515.5 Pa.
+- **Yüklü siklon ΔP:** ~390 Pa (368–415). Farklı debilerde ΔP ∝ ṁ_g².
+- **R4'te farin kaynaklı ek kayıp:** ~124 Pa (S 3.17 bölümündeki hesap; geometriden bağımsız).
+- İki hatlı tesiste siklon başına aynı: c₀ ve giriş hızı korunur.
+- Bu değerler S 3.17'nin "Twin'e giden değerler"inin yerine geçer.
 
 Dosyalar (repo dışında, `C:\Users\engin\c4_s390`):
 - `c4.msh`
@@ -196,6 +247,7 @@ Dosyalar (repo dışında, `C:\Users\engin\c4_s390`):
 - `c4s_urans.cas.h5` / `.dat.h5`
 - `c4su-*.dat.h5` (otomatik kayıtlar; case `c4su-*.cas.h5` ile ve her biri için yeniden okunarak açılmalı)
 - `c4s_urans.out`
+- `dpm\`: `c4s_dpm_unst_end.*`, `unst\*.dpm` (örnek dosyaları)
 
 ## Boundary Faces
 
