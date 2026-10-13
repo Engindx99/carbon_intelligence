@@ -18,7 +18,6 @@ EXPECTED_VALIDATIONS = {
     ("Preheater Stage 2", "energy"),
     ("Preheater Stage 3", "energy"),
     ("Preheater Stage 4", "energy"),
-    ("Preheater Stage 5", "energy"),
     ("Pyroprocess", "global_energy"),
     ("Pyroprocess", "global_mass"),
     ("Cooler", "air_split"),

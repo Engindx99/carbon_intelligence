@@ -17,7 +17,7 @@ ZONES = [
 ]
 
 
-PREHEATER_STAGE_XLABEL = "Cyclone stage (gas: 1 → 5, solid feed: 5 → 1)"
+PREHEATER_STAGE_XLABEL = "Cyclone stage (gas: 1 → 4, solid feed: 4 → 1)"
 
 
 AXIAL_XLABEL = "Axial position along solid path z [m]"

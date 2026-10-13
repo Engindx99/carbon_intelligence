@@ -1149,6 +1149,14 @@ def thermal_step(
     # re-deriving it from a cell-centre array and a scalar
     # flow -- extrapolating the product of two varying
     # profiles is not the product of their extrapolations.
+    #
+    # The outlet face is also C5's: the calciner gas carries
+    # the meal up the gooseneck into C5, which drops it into
+    # the kiln inlet and sends the gas on to C4 (Stage 1 of the
+    # preheater). For now C5 is an ideal, adiabatic separator,
+    # so its outlets are these fluxes unchanged; its escaping
+    # dust (configs calciner.c5_separation_efficiency) and its
+    # volume and wall are the next steps.
     # ======================================================
 
     state.Hgas_calciner_out = float(Hg_out)

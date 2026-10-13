@@ -76,7 +76,7 @@ def gas_temperature_from_enthalpy(preheater, H, state, m_dot_g=None):
 # Moved from Preheater.gas_enthalpy_out()
 # (pyroprocess/preheater/preheater.py).
 #
-# The exhaust leaving stage 5 carries the moisture
+# The exhaust leaving stage 4 (C1) carries the moisture
 # evaporated in the stages (heat_transfer.thermal_step()
 # stores that outlet flow as preheater.m_dot_g_out), so it is
 # that flow, not the gas inlet flow, that multiplies h.

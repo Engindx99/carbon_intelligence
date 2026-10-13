@@ -9,7 +9,7 @@ import numpy as np
 #
 # One continuous coordinate z [m] along the SOLID flow path:
 #
-#   z = 0  : raw meal feed inlet of the preheater (Stage 5)
+#   z = 0  : raw meal feed inlet of the preheater (Stage 4, C1)
 #   z = L  : clinker discharge of the cooler
 #
 # Units are laid end to end in solid flow order; gas travels

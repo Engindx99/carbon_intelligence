@@ -504,7 +504,7 @@ class Calciner:
         # The calciner receives the single solid stream that
         # leaves cyclone stage 1 (index 0 of the preheater
         # stage flows) -- not a spatial interpolation of all
-        # five stages. The preheater fills those flows later in
+        # preheater stages. The preheater fills those flows later in
         # the same step, so on the very first pass they are
         # still zero; the raw-meal stream it would receive
         # before any drying is used then.

@@ -107,6 +107,7 @@ class Twin:
         )
 
         self.preheater = Preheater(
+            N=self.state.N_preheater,
             L=cfg["preheater"]["length"],
             nodes_per_stage=cfg["preheater"]["nodes_per_stage"],
             cfg=cfg,

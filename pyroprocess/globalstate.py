@@ -31,13 +31,14 @@ class GlobalState:
     # zones (Precalciner, Transition, Burning, Cooler).
     #
     # N_preheater: number of preheater cyclone stages. This
-    # is a physical equipment count (5 real stages, each with
-    # its own operating temperature band — see
-    # pyroprocess/preheater/preheater.py), not a numerical
-    # mesh resolution, so it is kept independent of N.
+    # is a physical equipment count (4 real stages, C1-C4, each
+    # with its own operating temperature band — see
+    # pyroprocess/preheater/preheater.py; C5 is the calciner's
+    # outlet cyclone), not a numerical mesh resolution, so it
+    # is kept independent of N.
     # ======================================================
     N: int = 5
-    N_preheater: int = 5
+    N_preheater: int = 4
 
     # ======================================================
     # OPERATION
@@ -68,7 +69,7 @@ class GlobalState:
     # The preheater's meal rides the gas too: each stage holds it
     # for V / Q_g (Preheater.stage_residence_time), index order.
     residence_time_preheater_cells: np.ndarray = field(
-        default_factory=lambda: np.zeros(5)
+        default_factory=lambda: np.zeros(4)
     )   # s
 
     # Bed cross-section fraction, an OUTPUT of the transit time

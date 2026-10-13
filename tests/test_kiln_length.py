@@ -154,7 +154,7 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
         )
 
         self.assertFalse(hasattr(preheater, "D"))
-        self.assertAlmostEqual(preheater.V_total, 4262.87, delta=0.01)
+        self.assertAlmostEqual(preheater.V_total, 3640.87, delta=0.01)  # C1-C4
 
         cooler = self._zone(main.Cooler, "cooler")
 

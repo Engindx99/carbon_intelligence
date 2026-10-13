@@ -21,9 +21,9 @@ class PreheaterStage:
     NOTE:
         This class does not model cyclone separation; it is applied
         to the stages' solid flows in heat_transfer.thermal_step.
-        The top cyclone C1 (Stage 5) returns its escaping dust with
-        the feed; C2-C5 (Stages 4-1) let theirs up into the stage
-        above.
+        The top cyclone C1 (Stage 4) returns its escaping dust with
+        the feed; C2-C4 (Stages 3-1) let theirs up into the stage
+        above. C5 is the calciner's outlet cyclone.
     """
 
     stage_id: int

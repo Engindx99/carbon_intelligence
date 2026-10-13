@@ -126,8 +126,9 @@ class RunFlagsTest(unittest.TestCase):
 
         self.assertTrue(twin.converged)
 
-        # The 14 balances the plant validates on convergence.
-        self.assertEqual(len(calls), 14)
+        # The 13 balances the plant validates on convergence (one
+        # per preheater stage: C1-C4, C5 being the calciner's).
+        self.assertEqual(len(calls), 13)
 
         # And the printed report is the other half of report=True.
         self.assertIn("D14", buffer.getvalue())

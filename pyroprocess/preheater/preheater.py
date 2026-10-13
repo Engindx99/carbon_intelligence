@@ -18,12 +18,11 @@ from .stage1 import Stage1
 from .stage2 import Stage2
 from .stage3 import Stage3
 from .stage4 import Stage4
-from .stage5 import Stage5
 
 
 class Preheater:
 
-    def __init__(self, N=5, L=25.0, nodes_per_stage=1, cfg=None):
+    def __init__(self, N=4, L=20.0, nodes_per_stage=1, cfg=None):
 
         # Kept on the instance because the name `cfg` is rebound
         # further down to the ZONE_HT_CONFIG entry for this zone.
@@ -43,11 +42,12 @@ class Preheater:
 
         self.zone = "preheater"
 
-        # Cyclone separation efficiencies. C1 (Stage 5) lets its
+        # Cyclone separation efficiencies. C1 (Stage 4) lets its
         # dust out with the exhaust, the filter returns it with the
-        # feed; C2-C4 (identical cyclones) and C5 let theirs up with
-        # the gas into the stage above. See heat_transfer.thermal_step.
-        # 1.0 = no separation model.
+        # feed; C2-C4 (identical cyclones) let theirs up with the gas
+        # into the stage above. See heat_transfer.thermal_step.
+        # 1.0 = no separation model. C5 is the calciner's outlet
+        # cyclone (configs `calciner.c5_separation_efficiency`).
         preheater_cfg = (cfg or {}).get("preheater", {})
 
         self.c1_separation_efficiency = float(
@@ -56,14 +56,10 @@ class Preheater:
         self.c2_c4_separation_efficiency = float(
             preheater_cfg.get("c2_c4_separation_efficiency", 1.0)
         )
-        self.c5_separation_efficiency = float(
-            preheater_cfg.get("c5_separation_efficiency", 1.0)
-        )
 
         for key in (
             "c1_separation_efficiency",
             "c2_c4_separation_efficiency",
-            "c5_separation_efficiency",
         ):
             eta = getattr(self, key)
             if not 0.0 < eta <= 1.0:
@@ -75,11 +71,10 @@ class Preheater:
         self.m_dot_dust_return = 0.0
 
         # The same in index order: Stage 1 (index 0) is the plant's
-        # C5, Stage 5 (index N-1) its C1 (gas_T_bounds_K below).
+        # C4, Stage 4 (index N-1) its C1 (gas_T_bounds_K below).
         if N > 1:
             self.separation_efficiency = np.array(
-                [self.c5_separation_efficiency]
-                + [self.c2_c4_separation_efficiency] * (N - 2)
+                [self.c2_c4_separation_efficiency] * (N - 1)
                 + [self.c1_separation_efficiency]
             )
         else:
@@ -101,8 +96,7 @@ class Preheater:
             Stage2(),
             Stage3(),
             Stage4(),
-            Stage5(),
-        ]
+        ][:N]
         
         # ======================================================
         # ENERGY DIAGNOSTICS
@@ -120,17 +114,18 @@ class Preheater:
         #
         # Index i is Stage i+1, numbered along the GAS path as the
         # solver marches it (heat_transfer.thermal_step): Stage 1
-        # (index 0) takes the calciner gas and is the plant's hot
-        # bottom cyclone C5; Stage 5 (index N-1) takes the fresh
-        # feed and is the plant's top cyclone C1, whose gas leaves
-        # as exhaust. geometry/ uses the plant C1..C5 names.
+        # (index 0) takes the calciner gas (through C5, the
+        # calciner's outlet cyclone) and is the plant's C4, whose
+        # underflow is the calciner's meal; Stage 4 (index N-1)
+        # takes the fresh feed and is the plant's top cyclone C1,
+        # whose gas leaves as exhaust. geometry/ uses the plant
+        # C1..C5 names.
 
         gas_T_bounds_K = [
-            (1113.15, 1143.15),  # Stage 1 (C5)
-            (1023.15, 1043.15),  # Stage 2 (C4)
-            (903.15, 923.15),    # Stage 3 (C3)
-            (763.15, 773.15),    # Stage 4 (C2)
-            (573.15, 583.15),    # Stage 5 (C1)
+            (1023.15, 1043.15),  # Stage 1 (C4)
+            (903.15, 923.15),    # Stage 2 (C3)
+            (763.15, 773.15),    # Stage 3 (C2)
+            (573.15, 583.15),    # Stage 4 (C1)
         ]
 
         for stage, (T_min, T_max) in zip(
@@ -422,11 +417,11 @@ class Preheater:
         # ======================================================
         # PREHEATER CHEMISTRY (STEADY-STATE DRYING)
         #
-        # Species flows through the five stages, with free
+        # Species flows through the stages, with free
         # moisture evaporated per stage into the gas stream.
         # Runs BEFORE the boundary assignments below: those
         # overwrite Ts_preheater[-1] with the feed temperature,
-        # which would evaluate stage 5's drying kinetics at the
+        # which would evaluate stage 4's drying kinetics at the
         # cold feed (below the drying window) instead of at the
         # stage's own solid temperature. The thermal step does
         # not read those two entries (it takes the gas inlet

@@ -11,7 +11,7 @@ from physics.axial_coordinate import (
 
 # Lengths [m] and cell counts from configs/twin_cfg.yaml
 LENGTHS = {
-    "preheater": 25.0,
+    "preheater": 20.0,
     "calciner": 25.0,
     "transition": 25.0,
     "burning": 60.0,
@@ -19,7 +19,7 @@ LENGTHS = {
 }
 
 CELL_COUNTS = {
-    "preheater": 5,
+    "preheater": 4,
     "calciner": 20,
     "transition": 20,
     "burning": 20,
@@ -35,11 +35,11 @@ class AxialLayoutTest(unittest.TestCase):
     def test_segment_bounds_follow_solid_path(self):
 
         expected = {
-            "preheater": (0.0, 25.0),
-            "calciner": (25.0, 50.0),
-            "transition": (50.0, 75.0),
-            "burning": (75.0, 135.0),
-            "cooler": (135.0, 160.0),
+            "preheater": (0.0, 20.0),
+            "calciner": (20.0, 45.0),
+            "transition": (45.0, 70.0),
+            "burning": (70.0, 130.0),
+            "cooler": (130.0, 155.0),
         }
 
         for zone, (z0, z1) in expected.items():
@@ -47,7 +47,7 @@ class AxialLayoutTest(unittest.TestCase):
                 self.assertAlmostEqual(self.layout[zone].z_start, z0)
                 self.assertAlmostEqual(self.layout[zone].z_end, z1)
 
-        self.assertAlmostEqual(total_length(self.layout), 160.0)
+        self.assertAlmostEqual(total_length(self.layout), 155.0)
 
     def test_segments_are_contiguous(self):
 
@@ -75,9 +75,9 @@ class AxialLayoutTest(unittest.TestCase):
     def test_index_order(self):
 
         pre = self.layout["preheater"]
-        # Stage 5 (index 4, feed inlet) sits upstream of Stage 1 (index 0)
-        self.assertLess(pre.z_at_index[4], pre.z_at_index[0])
-        np.testing.assert_allclose(pre.z_at_index, [22.5, 17.5, 12.5, 7.5, 2.5])
+        # Stage 4 (index 3, C1, feed inlet) sits upstream of Stage 1 (index 0)
+        self.assertLess(pre.z_at_index[3], pre.z_at_index[0])
+        np.testing.assert_allclose(pre.z_at_index, [17.5, 12.5, 7.5, 2.5])
 
         for zone in SOLID_FLOW_ZONE_ORDER[1:]:
             with self.subTest(zone=zone):

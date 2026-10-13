@@ -52,8 +52,8 @@ class ChemistryModel:
     # Steady-state drying on species mass FLOWS [kg/s].
     #
     # Fresh raw meal (state.m_dot_s_preheater, moisture
-    # included) enters cyclone stage 5 (index N-1); the solid
-    # then passes stage 4 -> ... -> stage 1 (index 0), which
+    # included) enters cyclone stage 4 (C1, index N-1); the solid
+    # then passes stage 3 -> ... -> stage 1 (C4, index 0), which
     # hands it to the calciner. In each stage the free
     # moisture is exposed to that stage's solid temperature
     # for the stage residence time residence_time[i] [s],

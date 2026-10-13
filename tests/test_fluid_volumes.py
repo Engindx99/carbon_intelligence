@@ -54,14 +54,16 @@ CYCLONE = {
 }
 CYCLONES_PER_STRING = {1: 2, 2: 1, 3: 1, 4: 1, 5: 1}
 
-# Twin stage i (0-based) is C(5 - i), fed by the riser below it;
-# C5 is fed by a gooseneck branch, which belongs to the calciner.
+# Twin stage i (0-based) is C(4 - i), fed by the riser below it.
+# C5 is the calciner's outlet cyclone, fed by the gooseneck: both
+# belong to the calciner zone.
 PREHEATER_STAGES = [
     STRINGS * (
         RISER.get(c, 0.0) + CYCLONES_PER_STRING[c] * CYCLONE[c]
     )
-    for c in (5, 4, 3, 2, 1)
+    for c in (4, 3, 2, 1)
 ]
+C5_PAIR = STRINGS * CYCLONES_PER_STRING[5] * CYCLONE[5]
 
 # geometry/calciner/calciner.md: 65 deg cone + cylinder
 CALCINER = 1009.71
@@ -89,10 +91,10 @@ class TheDocumentedVolumesTest(unittest.TestCase):
         self.assertAlmostEqual(CYCLONE[5], 311.0, delta=0.1)
 
     def test_the_preheater_stages(self):
-        self.assertAlmostEqual(PREHEATER_STAGES[0], 622.0, delta=0.5)
-        self.assertAlmostEqual(PREHEATER_STAGES[1], 970.9, delta=0.5)
-        self.assertAlmostEqual(PREHEATER_STAGES[4], 814.7, delta=0.5)
-        self.assertAlmostEqual(sum(PREHEATER_STAGES), 4262.9, delta=0.5)
+        self.assertAlmostEqual(C5_PAIR, 622.0, delta=0.5)
+        self.assertAlmostEqual(PREHEATER_STAGES[0], 970.9, delta=0.5)
+        self.assertAlmostEqual(PREHEATER_STAGES[3], 814.7, delta=0.5)
+        self.assertAlmostEqual(sum(PREHEATER_STAGES), 3640.9, delta=0.5)
 
     def test_the_tube(self):
         self.assertAlmostEqual(_cylinder(KILN_D, KILN_L), 1339.07, delta=0.01)
@@ -153,7 +155,9 @@ class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
         calciner = main.Calciner(
             N=self.N, L=self.cfg["calciner"]["length"], cfg=self.cfg
         )
-        doc = CALCINER + GOOSENECK
+        # The calciner zone runs from its inlet through the
+        # gooseneck to the C5 pair, its outlet cyclones.
+        doc = CALCINER + GOOSENECK + C5_PAIR
         cells = np.size(calciner.V_cell) if np.ndim(calciner.V_cell) else self.N
         self.assertAlmostEqual(
             self._volume(calciner, cells),
