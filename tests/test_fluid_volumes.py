@@ -137,7 +137,6 @@ class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
         box = cooler.L * cooler.width * cooler.casing_height
         self.assertAlmostEqual(box, COOLER_BOX, delta=RTOL * COOLER_BOX)
 
-    @unittest.expectedFailure  # plan step 2
     def test_the_preheater_stages(self):
         preheater = main.Preheater(
             L=self.cfg["preheater"]["length"],

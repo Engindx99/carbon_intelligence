@@ -56,12 +56,9 @@ class ChemistryModel:
     # then passes stage 4 -> ... -> stage 1 (index 0), which
     # hands it to the calciner. In each stage the free
     # moisture is exposed to that stage's solid temperature
-    # for the stage residence time
-    #
-    #   tau = solid_holdup_mass / m_dot_s,in     [s]
-    #
-    # where solid_holdup_mass [kg] is the solid held up in one
-    # stage (supplied by the preheater from its own geometry).
+    # for the stage residence time residence_time[i] [s],
+    # supplied by the preheater from its own stage volumes
+    # (Preheater.stage_residence_time).
     #
     # The evaporated water LEAVES the solid stream and joins
     # the gas stream; per-stage amounts are written to
@@ -73,16 +70,18 @@ class ChemistryModel:
     # (state.Ts_preheater), the same lag every zone's
     # chemistry already has.
     # ------------------------------------------------------
-    def apply_preheater(self, state, solid_holdup_mass):
-
-        solid_holdup_mass = float(solid_holdup_mass)
-
-        if not (np.isfinite(solid_holdup_mass) and solid_holdup_mass > 0.0):
-            raise ValueError("Preheater solid hold-up mass must be > 0.")
+    def apply_preheater(self, state, residence_time):
 
         Ts = np.asarray(state.Ts_preheater, dtype=float)
 
         N = Ts.size
+
+        tau = np.broadcast_to(
+            np.asarray(residence_time, dtype=float), (N,)
+        )
+
+        if not (np.all(np.isfinite(tau)) and np.all(tau > 0.0)):
+            raise ValueError("Preheater stage residence times must be > 0.")
 
         flows = state.material_flows["preheater"]
 
@@ -99,7 +98,7 @@ class ChemistryModel:
                 Q_cells[i], evaporated = self.drying.react_flow(
                     flow,
                     float(Ts[i]),
-                    solid_holdup_mass / m_dot_s_in,
+                    float(tau[i]),
                 )
 
             else:

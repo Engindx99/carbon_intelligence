@@ -66,6 +66,64 @@ def gas_density(T, p=P_ATM):
 
 
 # ======================================================
+# GAS -> PARTICLE EXCHANGE IN A DILUTE SUSPENSION
+#
+# The raw meal crossing the preheater stages and the calciner is
+# carried by the gas as dispersed particles, so its exchange area
+# per unit volume is the particles' own surface at the solids
+# volume fraction the flow carries:
+#
+#   alpha = m_s rho_g / (m_g rho_p)   no slip
+#   a     = 6 alpha / d_p
+#   h     = Nu k_g / d_p, Nu = 2      Ranz-Marshall at Re_p -> 0
+#
+# Re_p is the SLIP Reynolds number, and the slip is a fraction of
+# a percent of u_g for raw meal (precalciner.py, FLOW): Re_p ~
+# 1e-3, so Nu = 2 is the correlation there, not a floor. k_g at
+# the film temperature. The no-slip alpha overstates the hold-up
+# by that same fraction of a percent.
+#
+# d_p enters as 1/d_p^2, unlike in the slip, but not the answer:
+# the solid NTU of a volume with gas residence tau is
+# 12 k_g tau / (rho_p d_p^2 cp_s), ~500 tau at 25 um and ~40 tau
+# at 90 um, so for any defensible meal size gas and meal leave
+# within a fraction of a kelvin of each other -- the near-
+# equilibrium every cyclone-stage balance assumes.
+#
+# Gas -> particle RADIATION is not put on this area: it is
+# bounded by the gas emissivity, not by the particle surface, and
+# beside ~5000 W/(m2 K) of conduction it does not register.
+#
+# Replaces 6 (1 - eps) / D, a packed-bed formula with the vessel
+# bore where the particle diameter belongs: 0.93 m2/m3 on the
+# 4.2 m preheater bore against ~30 for the suspension, which left
+# every stage's gas 400-500 K above its meal and the exhaust at
+# 1400 kJ/kg clinker against 600-750 (MEASURED 13 Oct 2026).
+# ======================================================
+def suspension_gas_solid_coefficient(
+    m_dot_s, m_dot_g, Tg, Ts, d_particle, rho_particle,
+):
+    """(h [W/(m2 K)], a [m2/m3]) of a dilute gas-particle flow.
+    Array-aware in every argument."""
+
+    m_dot_g = np.maximum(np.asarray(m_dot_g, dtype=float), 1e-12)
+    Tg = np.asarray(Tg, dtype=float)
+    Ts = np.asarray(Ts, dtype=float)
+
+    alpha = (
+        np.asarray(m_dot_s, dtype=float)
+        * gas_density(Tg)
+        / (m_dot_g * rho_particle)
+    )
+
+    a = 6.0 * alpha / d_particle
+
+    h = 2.0 * k_gas(0.5 * (Tg + Ts)) / d_particle
+
+    return h, a
+
+
+# ======================================================
 # CONVECTION -- TSCHENG & WATKINSON (1979)
 #
 # Two correlations measured in an electrically heated rotary

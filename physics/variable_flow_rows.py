@@ -36,7 +36,9 @@ from physics.physics import h_solid
 # cell i, in place. First written for the transition zone
 # (Faz 1b) and shared with the calciner unchanged (Faz 1c).
 #
-# Gas direction: N-1 -> 0.
+# Gas direction: N-1 -> 0 by default (counter-current to the
+# solid, the rotary kiln); cocurrent=True runs it 0 -> N-1 with
+# the solid, the precalciner riser.
 #
 # The deferred corrections enter b only, so A stays the
 # diagonally dominant upwind M-matrix. Same construction as
@@ -62,13 +64,14 @@ def apply_gas_energy_balance(
     Tg_in,
     D_in=0.0,
     D_out=0.0,
+    cocurrent=False,
 ):
     """
     THE STREAM GAINS MASS. The CO2 the bed releases in this cell
     joins the gas here, so the flow leaving the cell is not the
     flow that entered it:
 
-      mg_out (h_i + D_out) - mg_in (h_{i+1} + D_in)
+      mg_out (h_i + D_out) - mg_in (h_up + D_in)
         - dm_gas * h_gas(Ts_i)                 <- CO2 arriving
         + V K_gs (Tg - Ts) + V K_gw (Tg - Tw)
       = -radiation_gas_sink
@@ -84,6 +87,10 @@ def apply_gas_energy_balance(
     rather than pre-differenced. The gas inlet face carries no
     correction -- it is a known handoff, not a reconstruction --
     which is D[0] == 0 by construction there.
+
+    h_up is the upstream cell's, i+1 counter-current and i-1
+    co-current; the inlet cell (N-1, or 0 co-current) takes the
+    known handoff Tg_in instead.
 
     With mg_in == mg_out and dm_gas == 0 this reduces exactly to
     the constant-flow form it replaces.
@@ -129,7 +136,10 @@ def apply_gas_energy_balance(
         + dm_gas * h_const_s
     )
 
-    if i == N - 1:
+    inlet_cell = 0 if cocurrent else N - 1
+    up = i - 1 if cocurrent else i + 1
+
+    if i == inlet_cell:
 
         h_in = h_gas(
             Tg_in,
@@ -144,20 +154,20 @@ def apply_gas_energy_balance(
 
     else:
 
-        Tg_up_i = i + 1
+        Tg_up_i = up
 
         Cp_g_up = cp_gas(
-            Tg_iter[i + 1]
+            Tg_iter[up]
         )
 
         h_up_iter = h_gas(
-            Tg_iter[i + 1],
+            Tg_iter[up],
             T_ref
         )
 
         h_linear_const_up = (
             h_up_iter
-            - Cp_g_up * Tg_iter[i + 1]
+            - Cp_g_up * Tg_iter[up]
         )
 
         A[row, Tg_up_i] += (

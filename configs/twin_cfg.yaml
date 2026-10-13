@@ -90,7 +90,9 @@ calciner:
   particle_density_kg_m3: 2700.0
 
 preheater:
-  length: 25.0   # m, equivalent solid path length (stage volume sizing)
+  # m, the zone's extent on the plant's axial coordinate only
+  # (physics/axial_coordinate.py); the stage volumes are `stages` below.
+  length: 25.0
   # Co-current heat-transfer nodes per cyclone stage (numerical). 1 since
   # the node exchange is integrated exactly (54b88f6): 1 node puts every
   # stage outlet within 1.2 K of 20, at a sixth of the cost. Before that
@@ -117,6 +119,26 @@ preheater:
   # C5 (Stage 1, index 0), one per string, the CFD C4 x 6.50/6.30:
   # geometry/preheater/cyclone_C5.md. Its dust rises into C4.
   c5_separation_efficiency: 0.90
+  # THE STAGE FLUID VOLUMES (geometry/fluid_volumes.md; user decisions,
+  # 13 Oct 2026). A twin stage is the riser below a cyclone, where the
+  # co-current gas/meal exchange happens, plus the cyclone itself: body
+  # + cone, C2-C4 on the CFD body (h = D). Per STRING; the twin solves
+  # the two identical strings as one at the total flow, so it takes
+  # `strings` times each volume and wall area. C5 has no riser: a
+  # gooseneck branch feeds it, and that volume is the calciner's.
+  # Replaces a 4.2 m x 25 m rotary-cylinder placeholder (346 m3 in all).
+  #   riser   published bore (HFC2500) x FLS h_tot (arXiv 2504.02886
+  #           Table 8), a straight cylinder: geometry/preheater/riser_R*.md
+  #   cyclone geometry/preheater/cyclone_C*.md, "Ekipman hacmi" and
+  #           "Islak alan"; cyclone_height is body + cone
+  # Listed in the twin's stage order, the gas path: Stage 1 = C5.
+  strings: 2
+  stages:
+    - {cyclone: C5, cyclones_per_string: 1, cyclone_volume: 311.0, cyclone_wall_area: 240.7, cyclone_height: 14.032}
+    - {cyclone: C4, cyclones_per_string: 1, cyclone_volume: 283.2, cyclone_wall_area: 226.1, cyclone_height: 13.60, riser_diameter: 3.60, riser_length: 19.87}
+    - {cyclone: C3, cyclones_per_string: 1, cyclone_volume: 283.2, cyclone_wall_area: 226.1, cyclone_height: 13.60, riser_diameter: 3.45, riser_length: 20.37}
+    - {cyclone: C2, cyclones_per_string: 1, cyclone_volume: 283.2, cyclone_wall_area: 226.1, cyclone_height: 13.60, riser_diameter: 3.35, riser_length: 19.38}
+    - {cyclone: C1, cyclones_per_string: 2, cyclone_volume: 124.54, cyclone_wall_area: 139.7, cyclone_height: 11.44, riser_diameter: 3.07, riser_length: 21.38}
 
 cooler:
   # THE GRATE (geometry/cooler/cooler.md; user decision, 13 Oct

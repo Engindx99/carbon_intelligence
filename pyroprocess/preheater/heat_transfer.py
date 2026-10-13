@@ -666,6 +666,18 @@ def thermal_step(
         np.max(state.Preheater_T_shell_cells)
     )
 
+    # The suspension conductance each stage used (its nodes'
+    # mean), for reporter/diagnostics.zone_ntu: the area follows
+    # the flow, so there is no fixed a_gs on the zone to read.
+    state.Preheater_K_gs_cells = np.array(
+        [stage.K_gs for stage in preheater.stages],
+        dtype=float,
+    )
+
+    state.Preheater_a_gs = float(
+        np.mean([stage.a_gs for stage in preheater.stages])
+    )
+
     # ======================================================
     # GLOBAL PREHEATER ENERGY BALANCE
     # ======================================================
@@ -822,6 +834,11 @@ def solve_stage(
 
     stage.node_starts = [node.node_start for node in nodes]
 
+    # Equal-volume nodes, so the plain mean is the stage's
+    # volume-weighted suspension conductance and area.
+    stage.K_gs = float(np.mean([node.K_gs for node in nodes]))
+    stage.a_gs = float(np.mean([node.a_gs for node in nodes]))
+
     first = nodes[0]
     last = nodes[-1]
 
@@ -914,7 +931,7 @@ def solve_stage(
 #
 # NODE VOLUME:
 #     The balance is applied to volume_fraction of the stage:
-#     V_cell, A_wall_cell and A_wall are scaled by it. All
+#     its V_cell and A_wall_cell are scaled by it. All
 #     volumetric fluxes and the wall loss are linear in these,
 #     so volume_fraction = 1 is the whole lumped stage.
 #
@@ -955,9 +972,14 @@ def solve_stage_node(
     T_ref = model.T_ref
     T_amb = model.T_amb
 
-    V_cell = model.V_cell * volume_fraction
-    A_wall_cell = model.A_wall_cell * volume_fraction
-    A_wall = model.A_wall * volume_fraction
+    # This stage's own fluid volume and wall (Preheater
+    # GEOMETRY); stage_id 1 is index 0.
+    i_stage = stage.stage_id - 1
+
+    V_cell = float(model.V_cell[i_stage]) * volume_fraction
+    A_wall_cell = float(model.A_wall_cell[i_stage]) * volume_fraction
+    a_gw = float(model.a_gw[i_stage])
+    stage_shell = model.stage_shells[i_stage]
 
     # ==========================================================
     # SHELL GEOMETRY FOR THIS NODE
@@ -974,9 +996,9 @@ def solve_stage_node(
     # nothing in it moves while the wall temperature is solved.
     # ==========================================================
     node_shell = model.wall_stack.geometry(
-        r_inner=model.shell.r_inner,
-        L_cell=model.shell.L_cell * volume_fraction,
-        L_char=model.shell.L_char,
+        r_inner=stage_shell.r_inner,
+        L_cell=stage_shell.L_cell * volume_fraction,
+        L_char=stage_shell.L_char,
     )
 
     Tg_in = float(gas_inlet_temperature)
@@ -1089,8 +1111,15 @@ def solve_stage_node(
         # balances below close on h_solid whatever it is.
         Cs = m_dot_s * float(cp_solid(float(Ts_bar))) + eps
 
-        Kgs = (model.hv_gs + h_rad(Tg_bar, Ts_bar)) * model.a_gs
-        Kgw = (model.hv_gw + h_rad(Tg_bar, Tw)) * model.a_gw
+        # The suspension's own conductance (Preheater
+        # suspension_gs_coefficient), at the node means as the
+        # other coefficients are.
+        h_gs, a_gs = model.suspension_gs_coefficient(
+            m_dot_s, m_dot_g, Tg_bar, Ts_bar,
+        )
+
+        Kgs = h_gs * a_gs
+        Kgw = (model.hv_gw + h_rad(Tg_bar, Tw)) * a_gw
         Kws = (model.hv_ws + h_rad(Ts_bar, Tw)) * model.a_ws
 
         # Node means as an affine function of Tw:
@@ -1175,6 +1204,8 @@ def solve_stage_node(
 
     stage.wall_temperature = float(Tw)
     stage.node_start = (float(Tw), float(Tg_bar), float(Ts_bar))
+    stage.K_gs = float(Kgs)
+    stage.a_gs = float(a_gs)
 
     # ==========================================================
     # HEAT TRANSFER

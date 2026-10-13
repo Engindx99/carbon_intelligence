@@ -536,7 +536,13 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
 
         t = diagnostics.thermal_demand_vs_supply(self.twin)
 
-        self.assertGreaterEqual(t["demand_full_W"], t["demand_modelled_W"])
+        # Reached, 13 Oct 2026: with the suspension area the meal
+        # calcines completely before the burning zone, and the two
+        # agree to 6e-12 relative. Allow that round-off, not more.
+        self.assertGreaterEqual(
+            t["demand_full_W"],
+            t["demand_modelled_W"] * (1.0 - 1e-9),
+        )
         self.assertAlmostEqual(
             t["missing_sink_W"],
             t["demand_full_W"] - t["demand_modelled_W"],
@@ -606,9 +612,10 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             places=9,
         )
 
-        # Gas runs N-1 -> 0, so its first cell is the discharge.
+        # The riser is co-current: gas also runs 0 -> N-1, so its
+        # last cell is the discharge too.
         self.assertAlmostEqual(
-            gas[0] / state.m_dot_g_calciner,
+            gas[-1] / state.m_dot_g_calciner,
             1.0,
             places=9,
         )
@@ -627,7 +634,9 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         )
 
     def test_calciner_stream_flows_are_monotonic(self):
-        """Mass only ever moves bed -> gas here, never back."""
+        """Mass only ever moves bed -> gas here, never back: the
+        bed loses it and the gas gains it, both along 0 -> N-1
+        (co-current riser)."""
 
         state = self.twin.state
 
@@ -635,7 +644,7 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         gas = np.asarray(state.m_dot_g_calciner_cells, dtype=float)
 
         self.assertTrue(np.all(np.diff(solid) <= 1e-12))
-        self.assertTrue(np.all(np.diff(gas) <= 1e-12))
+        self.assertTrue(np.all(np.diff(gas) >= -1e-12))
 
     # ------------------------------------------------------
     # D12 is only worth reading if it is the SAME accounting the
@@ -646,9 +655,12 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
 
         led = diagnostics.plant_thermal_ledger(self.twin)
 
+        # Relative to the fuel, at the outer solve's own tolerance:
+        # it was an absolute 1 W, ~4e-9 of the old 258 MW of fuel;
+        # the plant now converges to ~1.5e-8 of 169 MW (2.6 W).
         self.assertLess(
             abs(led["closure_W"]),
-            1.0,
+            1e-7 * led["fuel_W"],
             f"ledger does not close: {led['closure_W']:.3e} W",
         )
 

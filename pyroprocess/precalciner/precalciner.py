@@ -69,10 +69,18 @@ class Calciner:
         )
 
         # ================= INTERFACIAL AREA =================
+        #
+        # Gas -> meal is the SUSPENSION, resolved per cell from the
+        # flow in thermal_solver (physics.kiln_closures.
+        # suspension_gas_solid_coefficient), so there is no fixed
+        # a_gs here. Its old 6 (1 - eps) / D on the bore, 0.58 m2/m3
+        # against ~30, is recorded in tests/test_calciner_
+        # conversion_chain.py (Link 2). Meal -> wall still comes
+        # from the bore, a perimeter quantity.
         self.epsilon_bed = 0.35
         self.k_interfacial = 1.0
 
-        self.a_gs, self.a_ws = interfacial_areas(
+        _, self.a_ws = interfacial_areas(
             D=self.D,
             epsilon_bed=self.epsilon_bed,
             k_interfacial=self.k_interfacial,
@@ -205,7 +213,6 @@ class Calciner:
         # ================= HEAT TRANSFER =================
         cfg = ZONE_HT_CONFIG[self.zone]
 
-        self.hv_gs = cfg["hv_gs"]
         self.hv_gw = cfg["hv_gw"]
         self.hv_ws = cfg["hv_ws"]
 
@@ -319,10 +326,7 @@ class Calciner:
         #
         # These are physical inlet conditions.
         #
-        # Gas:
-        #     N-1 -> 0
-        #
-        # Solid:
+        # Gas and solid, co-current up the riser:
         #     0 -> N-1
         # ======================================================
 

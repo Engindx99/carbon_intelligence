@@ -1,9 +1,9 @@
 import numpy as np
 
 from physics.physics import h_solid
+from physics.kiln_closures import gas_density
+from physics.kiln_closures import suspension_gas_solid_coefficient
 from physics.physics import interfacial_areas
-from physics.physics import kiln_geometry
-from physics.physics import wall_geometry
 from physics.physics import ZONE_HT_CONFIG
 from physics.shell import wall_stack
 
@@ -147,43 +147,87 @@ class Preheater:
         self.eps = 1e-9
 
         # ================= GEOMETRY =================
-        self.D = 4.2
+        #
+        # Each stage is its own fluid volume: the riser below the
+        # cyclone, where gas and meal exchange co-currently, plus
+        # the cyclone (geometry/fluid_volumes.md; configs
+        # `preheater.stages`). Per string, times the two identical
+        # strings the twin solves as one at the total flow. This
+        # replaces five equal slices of a 4.2 m x 25 m rotary
+        # cylinder, 346 m3 for the whole tower.
+        stage_cfg = preheater_cfg.get("stages")
 
-        (
-            self.A_cross,
-            self.V_total,
-            self.V_cell,
-        ) = kiln_geometry(
-            D=self.D,
-            L=self.L,
-            N=self.N,
-        )
+        if stage_cfg is None or len(stage_cfg) != N:
+            raise ValueError(
+                f"preheater.stages must list the {N} stages' fluid "
+                "volumes (configs/twin_cfg.yaml)"
+            )
+
+        strings = int(preheater_cfg.get("strings", 1))
+
+        V_stage = np.empty(N)
+        A_stage = np.empty(N)
+        H_stage = np.empty(N)
+
+        for i, st in enumerate(stage_cfg):
+
+            n_cyc = int(st["cyclones_per_string"])
+            V = n_cyc * float(st["cyclone_volume"])
+            A = n_cyc * float(st["cyclone_wall_area"])
+            H = float(st["cyclone_height"])
+
+            if "riser_diameter" in st:
+                D_r = float(st["riser_diameter"])
+                L_r = float(st["riser_length"])
+                V += np.pi * D_r**2 / 4.0 * L_r
+                A += np.pi * D_r * L_r
+                H = max(H, L_r)
+
+            V_stage[i] = strings * V
+            A_stage[i] = strings * A
+            H_stage[i] = H
+
+        self.V_cell = V_stage
+        self.V_total = float(np.sum(V_stage))
+        self.A_wall_cell = A_stage
+        self.A_wall = float(np.sum(A_stage))
+        self.a_gw = A_stage / V_stage
 
         # ================= INTERFACIAL AREA =================
+        #
+        # GAS -> MEAL: the SUSPENSION, 6 alpha / d_p at the solids
+        # fraction the flow carries, resolved per node from the
+        # flow (suspension_gs_coefficient below; the closure and
+        # why it replaced the bore formula are in
+        # physics.kiln_closures.suspension_gas_solid_coefficient).
+        #
+        # The meal is the calciner's: same particle size and
+        # PARTICLE density (configs `calciner`, sourced there).
+        calciner_cfg = (self.plant_cfg or {}).get("calciner", {})
+
+        self.particle_diameter = float(
+            calciner_cfg.get("particle_diameter_m", 25.0e-6)
+        )
+
+        self.particle_density = float(
+            calciner_cfg.get("particle_density_kg_m3", 2700.0)
+        )
+
+        # GAS -> WALL and MEAL -> WALL stay on the old closure: the
+        # wall areas are the stage geometry above, and a_ws is a
+        # perimeter quantity the bore still stands in for (plan
+        # step 4, not this change).
+        self.bore_placeholder_D = 4.2
         self.epsilon_bed = 0.35
         self.k_interfacial = 1.0
 
         (
-            self.a_gs,
+            _,
             self.a_ws,
         ) = interfacial_areas(
-            D=self.D,
+            D=self.bore_placeholder_D,
             epsilon_bed=self.epsilon_bed,
             k_interfacial=self.k_interfacial,
-        )
-
-        # ================= WALL GEOMETRY =================
-        (
-            self.wall_perimeter,
-            self.A_wall,
-            self.A_wall_cell,
-            self.a_gw,
-            self.V_wall,
-        ) = wall_geometry(
-            D=self.D,
-            L=self.L,
-            N=self.N,
-            V_cell=self.V_cell,
         )
 
         # ================= REFRACTORY / SHELL =================
@@ -198,15 +242,24 @@ class Preheater:
 
         self.refractory_thickness = self.wall_stack.thickness
 
-        # Vertical vessel: the external film takes the tower
-        # height as its characteristic length. The height is the
-        # zone length, still the Faz 3 placeholder geometry that
-        # Faz 6 item 2 replaces with the real cyclone string.
-        self.shell = self.wall_stack.geometry(
-            r_inner=0.5 * self.D,
-            L_cell=self.L / self.N,
-            L_char=self.L,
-        )
+        # One shell per stage, on the cylinder with the stage's own
+        # volume AND wall area: r = 2 V / A, length A / (2 pi r).
+        # A riser is exactly that cylinder; a cyclone is a cylinder
+        # and a cone, whose mean curvature this carries. Cylindrical
+        # conduction is kept (physics/shell.py: a plane wall on the
+        # inner area would overstate the lining resistance). The
+        # external film is a vertical surface as tall as the
+        # stage's tallest piece, riser or cyclone.
+        r_stage = 2.0 * V_stage / A_stage
+
+        self.stage_shells = [
+            self.wall_stack.geometry(
+                r_inner=float(r_stage[i]),
+                L_cell=float(A_stage[i] / (2.0 * np.pi * r_stage[i])),
+                L_char=float(H_stage[i]),
+            )
+            for i in range(N)
+        ]
 
         # ================= EXTERNAL WALL =================
         self.T_ref = 298.15
@@ -223,24 +276,20 @@ class Preheater:
         self.Cp_wall = 1000.0
 
         # ================= FLOW =================
+        #
+        # No fill fraction: the meal is CARRIED by the gas, and the
+        # slip is a fraction of a percent of u_g for any defensible
+        # meal size (tests/test_suspension_transport.py). Its
+        # residence in a stage is therefore the gas's, V / Q_g,
+        # evaluated per sweep in apply() because Q_g follows the gas
+        # temperature. The 0.10 settled-heap fill on the old
+        # cylinder put the tower at 342.9 s against 30-60 s.
         self.u_g = 0.0
         self.u_s = 0.0
-        self.fill_fraction = 0.10
-
-        # Solid held up in one stage [kg]. Sets the stage solid
-        # residence time (hold-up / solid mass flow) used by the
-        # steady-state drying kinetics; derived from the stage
-        # geometry and bed properties above, no new parameter.
-        self.solid_holdup_mass = (
-            self.rho_s
-            * self.fill_fraction
-            * self.V_cell
-        )
 
         # ================= HEAT TRANSFER =================
         cfg = ZONE_HT_CONFIG[self.zone]
 
-        self.hv_gs = cfg["hv_gs"]
         self.hv_gw = cfg["hv_gw"]
         self.hv_ws = cfg["hv_ws"]
 
@@ -248,17 +297,6 @@ class Preheater:
         self._dTg_dz = np.zeros(N)
         self._dTs_dz = np.zeros(N)
 
-        # ================= CACHE (AFTER V_CELL) =================
-        self._rho_g_Vcell_Cp_g = (
-            self.rho_g * self.V_cell * self.Cp_g
-        )
-
-        self.V_wall_cell = self.V_wall / self.N
-
-        self._rho_wall_Vwall_cell_Cp = (
-            self.rho_wall * self.V_wall_cell * self.Cp_wall
-        )
-        
         # ======================================================
         # HANDOFF DIAGNOSTICS
         # ======================================================
@@ -320,6 +358,42 @@ class Preheater:
 
 
     # ======================================================
+    # STAGE RESIDENCE TIME
+    #
+    # The meal rides the gas (no slip; see FLOW above), so each
+    # stage holds it for V / Q_g, at the stage's gas temperature.
+    # ======================================================
+    def stage_residence_time(self, state):
+
+        m_dot_g = float(state.m_dot_g_preheater)
+
+        if not m_dot_g > 0.0:
+            raise ValueError(
+                f"preheater gas flow must be > 0, got {m_dot_g}"
+            )
+
+        rho_g = gas_density(np.asarray(state.Tg_preheater, dtype=float))
+
+        return self.V_cell * rho_g / m_dot_g
+
+    # ======================================================
+    # GAS -> MEAL CONDUCTANCE OF THE SUSPENSION
+    # (physics.kiln_closures.suspension_gas_solid_coefficient)
+    # ======================================================
+    def suspension_gs_coefficient(self, m_dot_s, m_dot_g, Tg, Ts):
+
+        h_gs, a_gs = suspension_gas_solid_coefficient(
+            m_dot_s,
+            m_dot_g,
+            Tg,
+            Ts,
+            self.particle_diameter,
+            self.particle_density,
+        )
+
+        return float(h_gs), float(a_gs)
+
+    # ======================================================
     # STATE UPDATE
     # ======================================================
     def apply(self, state):
@@ -361,16 +435,21 @@ class Preheater:
         # else.
         # ======================================================
 
+        state.residence_time_preheater_cells = self.stage_residence_time(
+            state
+        )
+
         state = self.chemistry.apply_preheater(
             state,
-            self.solid_holdup_mass,
+            state.residence_time_preheater_cells,
         )
 
         # ======================================================
         # BOUNDARY CONDITIONS
         # ======================================================
 
-        state.Tg_preheater[0] = state.Tg_calciner[0]
+        # The calciner's gas leaves at its top, cell N-1 (co-current).
+        state.Tg_preheater[0] = state.Tg_calciner[-1]
         state.Ts_preheater[-1] = state.Feed_temperature
 
         # ======================================================

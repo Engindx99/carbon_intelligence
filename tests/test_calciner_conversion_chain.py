@@ -33,10 +33,13 @@ dimensional substitution bbc1045 fixed for the cooler and Faz 5
 fixed for the kiln. It is ~34x too small. It now costs the inlet
 cells a gas lead of ~570 K, but it is still not the conversion
 collapse: at a real calciner temperature the kinetics convert
-nothing in any transit the riser has (LINK 4). RECORDED
-HERE, DELIBERATELY NOT FIXED: fixing it belongs in its own commit
-and would move the plant for a reason that has nothing to do with
-this collapse.
+nothing in any transit the riser has (LINK 4).
+
+    FIXED 13 Oct 2026, once the rate was: the calciner and the
+    preheater stages now exchange over the suspension area
+    6 alpha / d_p (physics.kiln_closures), and the calciner riser
+    runs co-current. With the bore area the plant stalled at 37 %
+    calcination and the kiln oscillated.
 
 LINK 3, the chemistry: applied exactly as stated. The march is
 analytic, not an Euler step, and re-integrating it by hand over the
@@ -101,7 +104,10 @@ import numpy as np
 
 import main
 from chemistry.calcination import CalcinationModel
-from physics.physics import CP_SOLID
+from physics.kiln_closures import suspension_gas_solid_coefficient
+from physics.physics import ZONE_HT_CONFIG
+from physics.physics import cp_solid
+from physics.physics import interfacial_areas
 from physics.physics import residence_time
 from tests.twin_harness import REPO_ROOT
 
@@ -112,6 +118,38 @@ FIXTURE = REPO_ROOT / "tests" / "data" / "twin_state_reference.json"
 def _snapshot():
     with open(FIXTURE) as handle:
         return json.load(handle)["snapshot"]
+
+
+def _cp_calciner(snapshot):
+    """The solid Cp at the zone's mean bed temperature; h_solid
+    is nonlinear, so there is no single constant to quote."""
+    return float(cp_solid(float(np.mean(snapshot["Ts_calciner"]))))
+
+
+def _bore_a_gs(calciner):
+    """The gas -> meal area the calciner used to solve on: the
+    packed-bed formula with its bore for the particle diameter."""
+    a_gs, _ = interfacial_areas(
+        D=calciner.D,
+        epsilon_bed=calciner.epsilon_bed,
+        k_interfacial=calciner.k_interfacial,
+    )
+    return float(a_gs)
+
+
+def _suspension_ntu(calciner, snapshot, cp_s):
+    """Solid NTU over the zone on the suspension conductance the
+    solver uses, at the fixture's flows and mean temperatures."""
+    m_s = float(snapshot["mass_flow_m_dot_s_calciner_in"])
+    m_g = float(snapshot["mass_flow_m_dot_g_calciner"])
+    Tg = float(np.mean(snapshot["Tg_calciner"]))
+    Ts = float(np.mean(snapshot["Ts_calciner"]))
+    h, a = suspension_gas_solid_coefficient(
+        m_s, m_g, Tg, Ts,
+        calciner.particle_diameter,
+        calciner.particle_density,
+    )
+    return float(h * a) * calciner.V_total / (m_s * cp_s)
 
 
 def _calciner():
@@ -206,25 +244,21 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
         self.m_dot_s = float(
             self.snapshot["mass_flow_m_dot_s_calciner_in"]
         )
+        self.cp_s = _cp_calciner(self.snapshot)
 
     def test_the_solid_is_driven_onto_the_gas(self):
         """NTU over the zone. Well above 1 means the bed reaches the
-        gas temperature regardless of how fast it passes."""
+        gas temperature regardless of how fast it passes.
 
-        c = self.calciner
+        On the old bore area it was 2.993 (Cp 850; 5.018 at the
+        2500-era feed), so the bed came within e^-3 of the gas. On
+        the suspension area the solver now uses (Link 2, FIXED) it
+        is in the hundreds."""
 
-        ntu = (
-            c.V_total
-            * c.hv_gs
-            * c.a_gs
-            / (self.m_dot_s * CP_SOLID)
+        self.assertGreater(
+            _suspension_ntu(self.calciner, self.snapshot, self.cp_s),
+            100.0,
         )
-
-        # 5.018 at the 2500-era feed: the meal grew 3.23x, V*a_gs
-        # only 1.93x. Still past 1, so the bed approaches the gas
-        # to within e^-3 ~ 5 % over the zone, no longer e^-5.
-        self.assertAlmostEqual(ntu, 2.993, delta=0.002)
-        self.assertGreater(ntu, 1.0)
 
     def test_the_solid_overshoots_the_gas_downstream(self):
         """A bed that OVERSHOOTS the gas is not a bed starved of
@@ -267,8 +301,15 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
 
 
 class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
-    """Recorded, not fixed. Fixing it belongs in its own commit and
-    would move the plant for reasons unrelated to this collapse."""
+    """FIXED 13 Oct 2026: the calciner solves gas -> meal on the
+    suspension area (physics.kiln_closures.
+    suspension_gas_solid_coefficient), per cell. These tests keep
+    the old bore formula as the record of what was replaced.
+
+    It did not matter to the conversion collapse, which the rate
+    set (Link 4). It mattered to the plant once the rate was
+    fixed: with the bore area in the calciner and the preheater the
+    calcination stalled at 37 % and the kiln oscillated."""
 
     PARTICLE_DIAMETER = 25.0e-6
 
@@ -276,6 +317,7 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         snapshot = _snapshot()
         self.calciner = _calciner()
         self.m_dot_s = float(snapshot["mass_flow_m_dot_s_calciner_in"])
+        self.cp_s = _cp_calciner(snapshot)
 
         # The suspension's solids volume fraction, m_s/(rho_p u_s A),
         # on the converged stream. (The 2500-era file held a recorded
@@ -287,19 +329,21 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
             c.particle_density * u_s * A
         )
 
-    def test_a_gs_is_the_vessel_diameter_substitution(self):
-        """`interfacial_areas` is called without `d_particle`, so
-        the packed-bed specific surface 6(1-eps)/d_p gets the 6.74 m
-        BORE where a particle diameter belongs."""
+    def test_a_gs_was_the_vessel_diameter_substitution(self):
+        """`interfacial_areas` was called without `d_particle`, so
+        the packed-bed specific surface 6(1-eps)/d_p got the 6.74 m
+        BORE where a particle diameter belongs. The zone no longer
+        carries a fixed a_gs at all."""
 
         c = self.calciner
 
         self.assertAlmostEqual(
-            c.a_gs,
+            _bore_a_gs(c),
             6.0 * (1.0 - c.epsilon_bed) / c.D,
             places=12,
         )
-        self.assertAlmostEqual(c.a_gs, 0.5786350148, places=9)
+        self.assertAlmostEqual(_bore_a_gs(c), 0.5786350148, places=9)
+        self.assertFalse(hasattr(c, "a_gs"))
 
     def test_the_true_suspension_area_is_far_larger(self):
 
@@ -310,26 +354,30 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         )
 
         self.assertAlmostEqual(self.SOLIDS_VOLUME_FRACTION, 8.32e-5, delta=0.01e-5)
-        self.assertGreater(suspension / self.calciner.a_gs, 30.0)
+        self.assertGreater(suspension / _bore_a_gs(self.calciner), 30.0)
 
     def test_both_areas_drive_the_solid_onto_the_gas(self):
-        """Both are past 1. At 5000 t/d the vessel-bore area leaves
-        the inlet cells lagging the gas (Link 1); the true area
-        would not. Neither changes the conversion, which the rate
-        sets (Link 4)."""
+        """Both are past 1. The vessel-bore area, on the zone's old
+        hv_gs, left the inlet cells lagging the gas by ~570 K
+        (Link 1); the suspension area does not."""
 
         c = self.calciner
-        suspension = (
-            6.0 * self.SOLIDS_VOLUME_FRACTION / self.PARTICLE_DIAMETER
+
+        ntu_bore = (
+            c.V_total
+            * ZONE_HT_CONFIG["calciner"]["hv_gs"]
+            * _bore_a_gs(c)
+            / (self.m_dot_s * self.cp_s)
         )
 
-        def ntu(a_gs):
-            return c.V_total * c.hv_gs * a_gs / (self.m_dot_s * CP_SOLID)
+        # 2.993 at Cp 850; Cp(T) at the fixture's hot bed is larger.
+        self.assertGreater(ntu_bore, 1.0)
+        self.assertLess(ntu_bore, 3.0)
 
-        self.assertAlmostEqual(ntu(c.a_gs), 2.993, delta=0.002)
-
-        self.assertGreater(ntu(c.a_gs), 1.0)
-        self.assertGreater(ntu(suspension), 30.0)
+        self.assertGreater(
+            _suspension_ntu(c, _snapshot(), self.cp_s),
+            30.0 * ntu_bore,
+        )
 
     def test_the_wall_areas_still_double_count(self):
         """A second defect on the same line, also recorded and not

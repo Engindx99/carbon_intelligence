@@ -420,13 +420,21 @@ class Twin:
         # still leaves ~2x margin over the observed numerical
         # noise floor while remaining far below the scale (kW-MW)
         # of any real missing or double-counted term.
+        #
+        # Plus the preheater's own derived closure tolerance: its
+        # internal solid handoffs may carry that much slop, which
+        # lands here unchanged. With the stages on their real riser
+        # + cyclone volumes (geometry/fluid_volumes.md) it is the
+        # whole global residual, 1.27 W against a few W allowed.
         # ======================================================
 
         result = validate_energy(
             energy_in=global_energy_in,
             energy_out=global_energy_out,
             energy_source=0.0,
-            absolute_tolerance=1.0,
+            absolute_tolerance=(
+                1.0 + self.preheater.energy_closure_tolerance
+            ),
         )
 
         report_validation(

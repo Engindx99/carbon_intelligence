@@ -920,10 +920,12 @@ def zone_ntu(twin):
         # cell; the tube zones have a fixed V_cell.
         V_bed_cells = getattr(state, f"{prefix}_V_bed_cells", None)
 
+        # The preheater's stages each carry their own volume, an
+        # array; the tube zones a scalar per cell.
         V_total = (
             float(np.sum(V_bed_cells))
             if V_bed_cells is not None
-            else float(z.V_cell) * int(z.N)
+            else float(np.sum(np.broadcast_to(z.V_cell, (int(z.N),))))
         )
 
         if K_gs_cells is not None:
@@ -1279,17 +1281,35 @@ def shell_loss_split(twin):
     for zone in SOLID_ZONE_ORDER:
 
         obj = _zone_object(twin, zone)
-        shell = getattr(obj, "shell", None)
 
-        if shell is None:
-            continue
+        # The preheater carries one shell per stage, each on its own
+        # riser + cyclone; the other zones one shell for every cell.
+        shells = getattr(obj, "stage_shells", None)
+
+        if shells is None:
+            shell = getattr(obj, "shell", None)
+
+            if shell is None:
+                continue
+
+            shells = [shell] * int(obj.N)
+
+        shell = shells[0]
 
         loss = float(getattr(state, f"Wall_loss_{zone}", 0.0))
 
-        # Outer area of the whole zone, not of one cell: the
-        # preheater marches sub-volumes of a stage, so its cell
-        # count is not its stage count.
-        area = shell.A_outer_cell * obj.N
+        # Outer area of the whole zone, summed over its stages or
+        # cells (the preheater marches sub-volumes of a stage, so
+        # its node count is not its stage count).
+        area = float(sum(sh.A_outer_cell for sh in shells))
+
+        # Area-specific, referenced to the OUTER face: shell.R_cond
+        # is per CELL, and the cells differ in length across zones
+        # and across the preheater's stages, so the raw K/W figures
+        # are not comparable and this area-weighted one is.
+        R_area = float(
+            sum(sh.R_cond * sh.A_outer_cell ** 2 for sh in shells) / area
+        )
 
         rows.append(
             {
@@ -1301,13 +1321,7 @@ def shell_loss_split(twin):
                 "T_shell": float(
                     getattr(state, f"{zone.capitalize()}_T_shell_max", 0.0)
                 ),
-                # Area-specific, referenced to the OUTER face.
-                # shell.R_cond is per CELL, and the zones do not
-                # share a cell length (the preheater's N counts
-                # cyclone stages, the kiln's counts mesh cells),
-                # so the raw K/W figures are not comparable
-                # across rows and this one is.
-                "R_cond_m2K_W": shell.R_cond * shell.A_outer_cell,
+                "R_cond_m2K_W": R_area,
                 "stack": " + ".join(
                     f"{layer.name} {layer.thickness * 1e3:.0f} mm"
                     for layer in shell.stack.layers

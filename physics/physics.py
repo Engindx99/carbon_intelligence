@@ -21,13 +21,16 @@ ZONE_ENERGY_WEIGHTS = {
         ],
     },
 
+    # Highest where the gas enters, as before: the riser is now
+    # co-current, its gas entering at cell 0 (the bottom, with the
+    # tertiary air and the fuel), so the profile runs the other way.
     "calciner": {
         "axial": [
-            0.10,
-            0.15,
-            0.20,
-            0.25,
             0.30,
+            0.25,
+            0.20,
+            0.15,
+            0.10,
         ],
     },
 
@@ -169,33 +172,142 @@ def h_gas(T, T_ref):
 # h_solid at the iterate the way the gas rows linearise h_gas
 # (physics/variable_flow_rows.py), so h_solid is free to be
 # nonlinear.
+#
+# SENSIBLE HEAT. A Maier-Kelley form, Cp = a + b T - c / T^2,
+# fitted (least squares on h) to the "Clinker 2000" column of the
+# clinker enthalpy table in cementkilns.co.uk, "Thermochemistry
+# of clinker minerals" (D. Moore, cemkilndoc021, data mainly
+# CODATA), 0-1550 degC: the fit reproduces every tabulated h
+# within 3.5 kJ/kg. Cp runs from ~750 J/(kg K) at 300 K to ~1180
+# at 1500 K, where the constant 850 it replaces sat. One
+# relation for meal, calcined meal and clinker alike (user
+# decision, 13 Oct 2026): their table Cp's differ by a few %.
+# Cp > 0 above ~160 K, so h is strictly increasing over the
+# T_SOLID_MIN..T_SOLID_MAX window the inverse searches.
+#
+# MELTING. The table excludes the melt; its Note 2 gives the
+# latent heat taken up by a typical modern clinker as "about
+# 60 kJ/kg ... between 1320 and 1360 degC, and as temperature
+# rises, further melting requires an extra 0.08 kJ/kg/degC" --
+# a 60 kJ/kg ramp over 1593.15-1633.15 K plus 80 J/(kg K)
+# above it. It is part of h, so the cooler gets the same heat
+# back when the liquid freezes, and the handoffs conserve it.
 # ======================================================
 
-CP_SOLID = 850.0  # J/(kg K)
+CP_SOLID_A = 924.488  # J/(kg K)
+CP_SOLID_B = 0.173533  # J/(kg K^2)
+CP_SOLID_C = 2.20348e7  # J K/kg
+
+MELT_T_ONSET = 1593.15  # K, 1320 degC
+MELT_T_END = 1633.15  # K, 1360 degC
+MELT_LATENT = 60.0e3  # J/kg clinker, over the onset ramp
+MELT_CP_EXTRA = 80.0  # J/(kg K), further melting above MELT_T_END
+
+T_SOLID_MIN = 200.0  # K
+T_SOLID_MAX = 4000.0  # K
+
+_MELT_RAMP = MELT_LATENT / (MELT_T_END - MELT_T_ONSET)
+
+
+def _H_solid_abs(T):
+    """Solid enthalpy on an arbitrary common datum [J/kg]."""
+
+    sensible = (
+        CP_SOLID_A * T
+        + 0.5 * CP_SOLID_B * T * T
+        + CP_SOLID_C / T
+    )
+
+    melt = (
+        _MELT_RAMP * (np.clip(T, MELT_T_ONSET, MELT_T_END) - MELT_T_ONSET)
+        + MELT_CP_EXTRA * np.maximum(T - MELT_T_END, 0.0)
+    )
+
+    return sensible + melt
 
 
 def cp_solid(T):
-    """Solid Cp [J/(kg K)] at T [K], the derivative of h_solid."""
+    """Solid Cp [J/(kg K)] at T [K], the derivative of h_solid,
+    the latent heat of the melt included."""
 
-    if isinstance(T, float):
-        return CP_SOLID
+    scalar = np.ndim(T) == 0
+    T = np.asarray(T, dtype=float)
 
-    return np.full(np.shape(T), CP_SOLID)
+    cp = (
+        CP_SOLID_A
+        + CP_SOLID_B * T
+        - CP_SOLID_C / (T * T)
+        + np.where((T > MELT_T_ONSET) & (T <= MELT_T_END), _MELT_RAMP, 0.0)
+        + np.where(T > MELT_T_END, MELT_CP_EXTRA, 0.0)
+    )
+
+    return float(cp) if scalar else cp
 
 
 def h_solid(T, T_ref):
     """Solid enthalpy relative to T_ref [J/kg]."""
 
-    if isinstance(T, float):
-        return CP_SOLID * (T - T_ref)
+    scalar = np.ndim(T) == 0
 
-    return CP_SOLID * (np.asarray(T, dtype=float) - T_ref)
+    h = _H_solid_abs(np.asarray(T, dtype=float)) - _H_solid_abs(
+        float(T_ref)
+    )
+
+    return float(h) if scalar else h
 
 
 def T_solid_from_h(h_target, T_ref):
-    """Invert h_solid: the T [K] with h_solid(T, T_ref) = h_target."""
+    """Invert h_solid: the T [K] with h_solid(T, T_ref) = h_target.
 
-    return T_ref + h_target / CP_SOLID
+    Bracketed Newton on cp_solid, as T_gas_from_h: h_solid is
+    strictly increasing, so the root is unique; a step leaving
+    the bracket falls back to bisection. Out of the window it
+    raises rather than clip, like the gas inverse.
+    """
+
+    if np.ndim(h_target) > 0:
+        return np.array(
+            [
+                T_solid_from_h(h, T_ref)
+                for h in np.asarray(h_target, dtype=float).ravel()
+            ]
+        ).reshape(np.shape(h_target))
+
+    h_target = float(h_target)
+    lo, hi = T_SOLID_MIN, T_SOLID_MAX
+
+    f_lo = h_solid(lo, T_ref) - h_target
+    f_hi = h_solid(hi, T_ref) - h_target
+
+    if f_lo > 0.0 or f_hi < 0.0:
+        raise ValueError(
+            f"solid enthalpy {h_target:.6g} J/kg is outside "
+            f"[{T_SOLID_MIN}, {T_SOLID_MAX}] K"
+        )
+
+    # The constant-Cp guess is within a few % everywhere.
+    T = min(max(float(T_ref) + h_target / 1000.0, lo), hi)
+
+    for _ in range(100):
+
+        f = h_solid(T, T_ref) - h_target
+
+        if f > 0.0:
+            hi = T
+        else:
+            lo = T
+
+        T_new = T - f / cp_solid(T)
+
+        if not (lo < T_new < hi):
+            T_new = 0.5 * (lo + hi)
+
+        if abs(T_new - T) <= 1e-12 * T:
+            return T_new
+
+        T = T_new
+
+    return T
 
 
 def T_gas_from_h(h_target, T_ref, T_min, T_max):

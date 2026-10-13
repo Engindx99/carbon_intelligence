@@ -9,6 +9,7 @@ from physics.physics import second_order_upwind_correction
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import T_gas_from_h
 from physics.physics import T_solid_from_h
+from physics.kiln_closures import suspension_gas_solid_coefficient
 from physics.shell import shell_closure
 from physics.variable_flow_rows import apply_gas_energy_balance
 from physics.variable_flow_rows import apply_solid_energy_balance
@@ -89,10 +90,18 @@ def thermal_step(
     # enthalpy that inverted 110 K too hot while every energy
     # balance still closed to machine precision.
     #
-    # Solid runs 0 -> N-1 and loses dm_gas in each cell; gas runs
-    # N-1 -> 0 and gains it. Both are cumulative sums of the same
-    # array, so what leaves one phase is what joins the other,
-    # cell for cell.
+    # CO-CURRENT: the riser carries meal and gas up together, so
+    # both run 0 -> N-1 (bottom to top), entering at the bottom
+    # and leaving together for the cyclone above. It used to run
+    # the gas N-1 -> 0, counter-current like the kiln: with the
+    # suspension's NTU of hundreds that made the riser a perfect
+    # counter-current exchanger, the gas leaving at the cold meal
+    # inlet at 1033 K where an ILC calciner's gas and meal leave
+    # together at ~1150 K (MEASURED 13 Oct 2026).
+    #
+    # The solid loses dm_gas in each cell and the gas gains it.
+    # Both are cumulative sums of the same array, so what leaves
+    # one phase is what joins the other, cell for cell.
     #
     # The gas INLET flow is derived as the zone outlet minus
     # everything the bed adds, rather than being reassembled from
@@ -133,11 +142,11 @@ def thermal_step(
         - float(np.sum(dm_gas_cells))
     )
 
-    # Suffix sum: cell i's outgoing gas carries the mass released
-    # by every cell from i to N-1 inclusive.
+    # Prefix sum: cell i's outgoing gas carries the mass released
+    # by every cell from 0 to i inclusive.
     m_g_out_cells = (
         m_dot_g_in
-        + np.cumsum(dm_gas_cells[::-1])[::-1]
+        + np.cumsum(dm_gas_cells)
     )
 
     m_g_in_cells = (
@@ -153,18 +162,32 @@ def thermal_step(
     # HEAT TRANSFER PARAMETERS
     # ======================================================
 
-    hv_gs = calciner.hv_gs
     hv_gw = calciner.hv_gw
     hv_ws = calciner.hv_ws
 
-    a_gs = calciner.a_gs
     a_gw = calciner.a_gw
     a_ws = calciner.a_ws
 
-    K_gs = (
-        hv_gs
-        * a_gs
-    )
+    # Gas -> meal over the SUSPENSION, per cell at the iterate
+    # (physics.kiln_closures.suspension_gas_solid_coefficient).
+    # It replaces hv_gs times 6 (1 - eps) / D on the 6.74 m bore,
+    # the packed-bed formula with the vessel where the particle
+    # belongs (tests/test_calciner_conversion_chain.py, Link 2).
+    m_s_mean_cells = 0.5 * (m_s_in_cells + m_s_out_cells)
+    m_g_mean_cells = 0.5 * (m_g_in_cells + m_g_out_cells)
+
+    def suspension_K_gs(Tg_cells, Ts_cells):
+
+        h, a = suspension_gas_solid_coefficient(
+            m_s_mean_cells,
+            m_g_mean_cells,
+            Tg_cells,
+            Ts_cells,
+            calciner.particle_diameter,
+            calciner.particle_density,
+        )
+
+        return h * a, a
 
     K_gw = (
         hv_gw
@@ -415,12 +438,12 @@ def thermal_step(
         # RADIATION
         # ==================================================
 
-        q_gs_rad = radiation(
-            Tg_iter,
-            Ts_iter,
-            zone=calciner.zone,
-            area=a_gs,
-        )
+        # No gas -> particle radiation on the suspension area: it
+        # is bounded by the gas emissivity, not the particle
+        # surface (kiln_closures, the suspension closure).
+        K_gs_cells, a_gs_cells = suspension_K_gs(Tg_iter, Ts_iter)
+
+        q_gs_rad = np.zeros(N)
 
         q_gw_rad = radiation(
             Tg_iter,
@@ -461,7 +484,7 @@ def thermal_step(
         Dg_face = second_order_upwind_face_corrections(
             h_gas(Tg_iter, T_ref),
             h_gas_in,
-            reverse=True,
+            reverse=False,
         )
 
         Ds_face = second_order_upwind_face_corrections(
@@ -523,7 +546,8 @@ def thermal_step(
             # ==================================================
             # GAS ENERGY BALANCE
             #
-            # Gas direction: N-1 ---> 0. The gas GAINS the mass
+            # Gas direction: 0 ---> N-1, with the solid. The gas
+            # GAINS the mass
             # the bed releases, so it enters and leaves each cell
             # with different flows; the row is built on both.
             # ==================================================
@@ -536,10 +560,9 @@ def thermal_step(
                 )
             )
 
-            # Gas cell i sits at flow position p = N-1-i, so its
-            # inflow face is Dg_face[p] and its outflow face
-            # Dg_face[p+1].
-            p_gas = N - 1 - i
+            # Co-current, so gas cell i sits at flow position i:
+            # inflow face Dg_face[i], outflow face Dg_face[i+1].
+            p_gas = i
 
             row = apply_gas_energy_balance(
                 A,
@@ -555,12 +578,13 @@ def thermal_step(
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
+                K_gs_cells[i],
                 K_gw,
                 radiation_gas_sink,
                 Tg_in,
                 Dg_face[p_gas],
                 Dg_face[p_gas + 1],
+                cocurrent=True,
             )
 
             # The fuel burns in the gas stream, exactly as the
@@ -600,7 +624,7 @@ def thermal_step(
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
                 V_cell,
-                K_gs,
+                K_gs_cells[i],
                 K_ws,
                 radiation_solid_source,
                 reaction_heat_cells[i],
@@ -786,10 +810,7 @@ def thermal_step(
     # ======================================================
     # INLET / OUTLET
     #
-    # Gas:
-    #     N-1 -> 0
-    #
-    # Solid:
+    # Gas and solid, co-current:
     #     0 -> N-1
     # ======================================================
 
@@ -805,7 +826,7 @@ def thermal_step(
     # inverse, reporting the temperature the preheater sees.
     h_gas_out_face = outlet_face_value(
         h_gas(Tg_ss, T_ref),
-        reverse=True,
+        reverse=False,
     )
 
     Tg_out = T_gas_from_h(
@@ -831,12 +852,12 @@ def thermal_step(
     # FINAL RADIATION
     # ======================================================
 
-    q_gs_rad_final = radiation(
-        Tg_ss,
-        Ts_ss,
-        zone=calciner.zone,
-        area=a_gs,
-    )
+    # The conductance the last sweep's rows were built with, so
+    # the reported exchange is the one the balance closed on.
+    q_gs_rad_final = np.zeros(N)
+
+    state.Calciner_K_gs_cells = np.asarray(K_gs_cells, dtype=float)
+    state.Calciner_a_gs = float(np.mean(a_gs_cells))
 
     q_gw_rad_final = radiation(
         Tg_ss,
@@ -858,7 +879,7 @@ def thermal_step(
 
     Qgs_conv = (
         V_cell
-        * K_gs
+        * K_gs_cells
         * (
             Tg_ss
             - Ts_ss

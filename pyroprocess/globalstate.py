@@ -65,6 +65,12 @@ class GlobalState:
     residence_time_calciner: float = 0.0    # s
     solids_volume_fraction_calciner: float = 0.0   # -
 
+    # The preheater's meal rides the gas too: each stage holds it
+    # for V / Q_g (Preheater.stage_residence_time), index order.
+    residence_time_preheater_cells: np.ndarray = field(
+        default_factory=lambda: np.zeros(5)
+    )   # s
+
     # Bed cross-section fraction, an OUTPUT of the transit time
     # through mass continuity (physics.rotary_bed_motion).
     # Distinct from operational.kiln_load, which is a capacity figure.
