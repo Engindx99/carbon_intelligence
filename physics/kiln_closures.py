@@ -548,6 +548,13 @@ def kiln_transfer_coefficients(
     # resistance is per-cell and the coefficient comes back as
     # an array anyway.
     # --------------------------------------------------
+    # bed_cp may be per cell (physics.cp_solid at the bed
+    # temperature), like k_gas at the wall.
+    k_g_cells = np.atleast_1d(k_gas(Tw))
+    cp_b_cells = np.broadcast_to(
+        np.atleast_1d(np.asarray(bed_cp, dtype=float)), k_g_cells.shape
+    )
+
     h_cont = np.array(
         [
             wall_bed_contact_coefficient(
@@ -555,12 +562,12 @@ def kiln_transfer_coefficients(
                 rpm=rpm,
                 k_b=bed_conductivity,
                 rho_b=bed_density,
-                cp_b=bed_cp,
+                cp_b=float(cp_b_cell),
                 d_p=particle_diameter,
                 k_g=float(k_g_cell),
                 chi=contact_chi,
             )
-            for k_g_cell in np.atleast_1d(k_gas(Tw))
+            for k_g_cell, cp_b_cell in zip(k_g_cells, cp_b_cells)
         ],
         dtype=float,
     )

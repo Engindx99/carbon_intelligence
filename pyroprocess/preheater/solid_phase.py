@@ -1,3 +1,7 @@
+from physics.physics import h_solid
+from physics.physics import T_solid_from_h
+
+
 # ======================================================
 # SOLID ENTHALPY TO NEXT ZONE
 #
@@ -13,8 +17,7 @@ def solid_enthalpy_out(preheater, Ts, state):
 
     H_solid_out = (
         getattr(preheater, "m_dot_s_out", state.m_dot_s_preheater)
-        * preheater.Cp_s
-        * (Ts[0] - preheater.T_ref)
+        * h_solid(float(Ts[0]), preheater.T_ref)
     )
 
     return H_solid_out
@@ -40,11 +43,7 @@ def apply_stage_solid_energy_balance(
     eps,
 ):
 
-    H_solid_in = (
-        m_dot_s
-        * model.Cp_s
-        * (Ts_in - T_ref)
-    )
+    H_solid_in = m_dot_s * h_solid(Ts_in, T_ref)
 
     H_solid_out = (
         H_solid_in
@@ -52,10 +51,9 @@ def apply_stage_solid_energy_balance(
         - Q_ws
     )
 
-    Ts_out = (
-        T_ref
-        + H_solid_out
-        / (m_dot_s * model.Cp_s + eps)
+    Ts_out = T_solid_from_h(
+        H_solid_out / max(m_dot_s, eps),
+        T_ref,
     )
 
     return H_solid_in, H_solid_out, Ts_out

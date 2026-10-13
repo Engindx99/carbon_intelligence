@@ -21,6 +21,9 @@ import numpy as np
 from chemistry.calcination import CalcinationModel
 from physics.physics import h_gas
 from physics.physics import T_gas_from_h
+from physics.physics import cp_solid
+from physics.physics import h_solid
+from physics.physics import T_solid_from_h
 
 
 # Solid-path zone order. Gas travels the reverse.
@@ -214,7 +217,7 @@ def _zone_object(twin, zone):
 # D1. ZONE BOUNDARY CONTINUITY
 #
 # Each zone builds its solid enthalpy array as
-#   H = m_dot_s_<zone> * Cp_s * (Ts - T_ref)
+#   H = m_dot_s_<zone> * h_solid(Ts)
 # and inverts an incoming enthalpy with its own m_dot_s_<zone>.
 # So a handoff preserves temperature only when the two zones
 # carry the same flow. Where they differ -- and they must
@@ -242,12 +245,10 @@ def zone_boundary_continuity(twin):
         m_up, src_up = _solid_build_flow(twin, upstream)
         m_down, src_down = _solid_invert_flow(twin, downstream)
 
-        cp_up = _zone_object(twin, upstream).Cp_s
-        cp_down = _zone_object(twin, downstream).Cp_s
         T_ref = _zone_object(twin, downstream).T_ref
 
-        T_up = T_ref + float(H) / (m_up * cp_up)
-        T_down = T_ref + float(H) / (m_down * cp_down)
+        T_up = T_solid_from_h(float(H) / m_up, T_ref)
+        T_down = T_solid_from_h(float(H) / m_down, T_ref)
 
         rows.append(
             {
@@ -261,7 +262,9 @@ def zone_boundary_continuity(twin):
                 "T_upstream_face": T_up,
                 "T_downstream_in": T_down,
                 "delta_T": T_down - T_up,
-                "spurious_W": m_down * cp_down * (T_down - T_up),
+                "spurious_W": m_down * (
+                    h_solid(T_down, T_ref) - h_solid(T_up, T_ref)
+                ),
             }
         )
 
@@ -307,23 +310,24 @@ def burning_enthalpy_ceiling(twin):
     state = twin.state
     T_ref = twin.burning.T_ref
 
-    Hg_in = float(state.m_dot_g) * float(h_gas(state.Tg_burning_in, T_ref))
+    # The fluxes the zone booked at its faces. Rebuilding them
+    # from a temperature and a flow went wrong for the solid:
+    # state.m_dot_s is the CLINKER flow, not the meal entering.
+    Hg_in = float(state.Hgas_burning_in)
 
-    Hs_in = (
-        float(state.m_dot_s)
-        * twin.burning.Cp_s
-        * (float(state.Ts_burning_in) - T_ref)
+    Hs_in = float(state.Hsolid_burning_in)
+
+    h_ceiling = (Hg_in + Hs_in + float(state.Q_burning)) / float(
+        state.m_dot_g
     )
 
-    return float(
-        T_gas_from_h(
-            (Hg_in + Hs_in + float(state.Q_burning))
-            / float(state.m_dot_g),
-            T_ref,
-            T_ref,
-            4000.0,
-        )
-    )
+    # Past the gas table's window the ceiling is no bound at all
+    # on any gas the zone can hold, so report it as unbounded
+    # rather than raise from a diagnostic.
+    if h_ceiling > float(h_gas(4000.0, T_ref)):
+        return float("inf")
+
+    return float(T_gas_from_h(h_ceiling, T_ref, T_ref, 4000.0))
 
 
 def plausibility_bounds(twin):
@@ -938,7 +942,9 @@ def zone_ntu(twin):
             UA = float(hv_gs) * a_gs * V_total
 
         m_s = float(getattr(state, ZONE_SOLID_FLOW_ATTR[zone]))
-        C_s = m_s * float(z.Cp_s)
+        # Cp at the zone's mean bed temperature.
+        Ts_zone = np.asarray(getattr(state, f"Ts_{zone}"), dtype=float)
+        C_s = m_s * float(cp_solid(float(np.mean(Ts_zone))))
 
         rows.append(
             {

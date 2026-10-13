@@ -1,6 +1,7 @@
 import numpy as np
 
 from physics.physics import h_gas
+from physics.physics import h_solid
 from physics.closure_config import closure_settings
 from physics.shell import wall_stack
 
@@ -98,7 +99,8 @@ class Transition:
         self.rho_wall = 3000.0
 
         self.Cp_g = 1150.0
-        self.Cp_s = 850.0
+        # Solid Cp and enthalpy: physics.cp_solid / h_solid, one
+        # definition for every solid stream in the plant.
         self.Cp_wall = 1000.0
 
         # ================= BED =================
@@ -140,7 +142,6 @@ class Transition:
 
         # ================= CACHE =================
         self._rho_g_Vcell_Cp_g = self.rho_g * self.V_cell * self.Cp_g
-        self._rho_s_Vcell_Cp_s = self.rho_s * self.V_cell * self.Cp_s
         self._rho_wall_Vwall_cell_Cp = self.rho_wall * self.V_wall_cell * self.Cp_wall
 
 
@@ -271,11 +272,7 @@ class Transition:
         # cell. thermal_step publishes the profile it solved on.
         state.Hs_transition = (
             state.m_dot_s_transition_cells
-            * self.Cp_s
-            * (
-                state.Ts_transition
-                - self.T_ref
-            )
+            * h_solid(state.Ts_transition, self.T_ref)
         )
 
         # ======================================================

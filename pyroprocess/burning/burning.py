@@ -4,6 +4,7 @@ import numpy as np
 import yaml
 
 from physics.physics import h_gas
+from physics.physics import h_solid
 from physics.physics import kiln_geometry
 from physics.physics import wall_geometry
 from physics.closure_config import closure_settings
@@ -164,7 +165,8 @@ class Burning:
         self.rho_wall = 3000.0
 
         self.Cp_g = 1150.0
-        self.Cp_s = 850.0
+        # Solid Cp and enthalpy: physics.cp_solid / h_solid, one
+        # definition for every solid stream in the plant.
         self.Cp_wall = 1000.0
 
         # ======================================================
@@ -317,12 +319,6 @@ class Burning:
             self.rho_g
             * self.V_cell
             * self.Cp_g
-        )
-
-        self._rho_s_Vcell_Cp_s = (
-            self.rho_s
-            * self.V_cell
-            * self.Cp_s
         )
 
         self.V_wall_cell = self.V_wall / self.N
@@ -598,8 +594,7 @@ class Burning:
 
         state.Hs_burning = (
             state.m_dot_s_burning_cells
-            * self.Cp_s
-            * (state.Ts_burning - self.T_ref)
+            * h_solid(state.Ts_burning, self.T_ref)
         )
 
         # ======================================================

@@ -5,6 +5,7 @@ from physics.kiln_closures import fuel_combustion_products
 from physics.kiln_closures import kiln_transfer_coefficients
 from physics.kiln_closures import radiating_partial_pressure
 from physics.physics import cp_gas, h_gas
+from physics.physics import cp_solid, h_solid, T_solid_from_h
 from physics.physics import fill_fraction_from_holdup
 from physics.physics import outlet_face_value
 from physics.physics import second_order_upwind_correction
@@ -71,7 +72,9 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         )
     )
 
-    Cp_s = burning.Cp_s
+    # The bed's inlet enthalpy [J/kg], as the transition handed
+    # it over: the inlet face of the solid row.
+    hs_in = float(state.Hsolid_burning_in) / m_dot_s_in
 
     # ======================================================
     # GEOMETRY
@@ -276,7 +279,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             eps_wall=burning.closure.wall_emissivity,
             bed_conductivity=burning.closure.bed_conductivity,
             bed_density=burning.rho_s,
-            bed_cp=burning.Cp_s,
+            bed_cp=cp_solid(Ts_at),
             particle_diameter=burning.closure.particle_diameter,
             contact_chi=burning.closure.contact_chi,
         )
@@ -415,7 +418,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
 
     if transient_dt is None:
 
-        C_s_dt = np.zeros(N)
+        M_s_dt = np.zeros(N)
+        hs_old = np.zeros(N)
         C_w_dt = np.zeros(N)
         Ts_old = np.zeros(N)
         Tw_old = np.zeros(N)
@@ -427,20 +431,19 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
             * burning.dz / u_s
         )
 
-        C_s_dt = solid_holdup_cells * Cp_s / transient_dt
+        M_s_dt = solid_holdup_cells / transient_dt
         C_w_dt = np.full(
             N, burning._rho_wall_Vwall_cell_Cp / transient_dt
         )
         Ts_old = np.asarray(state.Ts_burning_old, dtype=float)
         Tw_old = np.asarray(state.Tw_burning_old, dtype=float)
+        hs_old = h_solid(Ts_old, T_ref)
 
         if dynamic:
             # The train's own hold-up, and the enthalpy of the mass
             # it gains: d(M h)/dt (physics.variable_flow_rows).
-            C_s_dt = train_step.holdup_cells * Cp_s / transient_dt
-            H_mass_stored = (
-                Cp_s * (Ts_old - T_ref) * train_step.stored_cells
-            )
+            M_s_dt = train_step.holdup_cells / transient_dt
+            H_mass_stored = hs_old * train_step.stored_cells
 
     max_iter = 100
     tol = max(
@@ -509,10 +512,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         # converged answer satisfies the second-order
         # equation. See physics.second_order_upwind_correction.
         #
-        # The gas is reconstructed in ENTHALPY, since the gas
-        # flux is m_dot_g * h and h is cubic in T; the solid
-        # is reconstructed in TEMPERATURE, since its flux
-        # Cs * (Ts - T_ref) is affine in Ts.
+        # Both phases are reconstructed in ENTHALPY, since each
+        # flux is a mass flow times h, and h is nonlinear in T.
         # ==================================================
 
         # Per FACE, not pre-differenced: each face of a cell
@@ -527,8 +528,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         )
 
         Ds_face = second_order_upwind_face_corrections(
-            Ts_iter,
-            state.Ts_burning_in,
+            h_solid(Ts_iter, T_ref),
+            hs_in,
             reverse=False,
         )
 
@@ -620,9 +621,10 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 row,
                 i,
                 N,
-                m_s_out_cells[i] * Cp_s,
-                m_s_in_cells[i] * Cp_s,
+                Ts_iter,
                 T_ref,
+                m_s_out_cells[i],
+                m_s_in_cells[i],
                 dm_gas_cells[i],
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
@@ -631,13 +633,13 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 K_ws[i],
                 radiation_solid_source,
                 reaction_q_cell[i],
-                state.Ts_burning_in,
+                hs_in,
                 Ds_face[i],
                 Ds_face[i + 1],
                 reaction_slope_cell[i],
                 Ts_reaction[i],
-                C_s_dt[i],
-                Ts_old[i],
+                M_s_dt[i],
+                hs_old[i],
                 H_mass_stored[i],
             )
 
@@ -793,12 +795,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         4000.0,
     )
 
-    # The solid flux is affine in Ts, so extrapolating the
-    # temperature is identical to extrapolating its enthalpy.
-    Ts_out = outlet_face_value(
-        Ts_ss,
+    # The solid likewise, in enthalpy: the face enthalpy is what
+    # the scheme transported, and Ts_out its inverse.
+    hs_out_face = outlet_face_value(
+        h_solid(Ts_ss, T_ref),
         reverse=False,
     )
+
+    Ts_out = T_solid_from_h(hs_out_face, T_ref)
 
     # The wall does not advect, so it has no outlet face.
     Tw_out = Tw_ss[-1]
@@ -931,13 +935,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # SOLID ENTHALPY BALANCE
     # ======================================================
 
-    Hs_in = (
-        m_dot_s_in
-        * Cp_s
-        * (
-            Ts_in - T_ref
-        )
-    )
+    Hs_in = m_dot_s_in * hs_in
 
     # The bed discharges what is left after every cell has
     # finished calcining.
@@ -948,13 +946,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         - float(np.sum(dm_gas_cells))
     )
 
-    Hs_out = (
-        m_s_out_face
-        * Cp_s
-        * (
-            Ts_out - T_ref
-        )
-    )
+    Hs_out = m_s_out_face * hs_out_face
 
     solid_energy_change = (
         Hs_out
@@ -988,7 +980,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # solve. Booked as an outflow so the zone balance still reads
     # in == out while the zone is heating or cooling.
     Q_stored_solid = float(
-        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+        np.sum(M_s_dt * (h_solid(Ts_ss, T_ref) - hs_old) + H_mass_stored)
     )
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
 
@@ -1150,7 +1142,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # Capacity rates, for NTU. The gas side is evaluated at the
     # converged profile rather than at a single temperature,
     # since cp_gas varies by ~25% across this zone.
-    state.Burning_C_solid = float(m_s_out_face * Cp_s)
+    state.Burning_C_solid = float(m_s_out_face * cp_solid(Ts_out))
     state.Burning_C_gas_cells = m_g_out_cells * cp_gas(Tg_ss)
 
     # ======================================================

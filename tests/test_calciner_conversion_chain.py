@@ -95,6 +95,7 @@ import numpy as np
 
 import main
 from chemistry.calcination import CalcinationModel
+from physics.physics import CP_SOLID
 from physics.physics import residence_time
 from tests.twin_harness import REPO_ROOT
 
@@ -180,7 +181,7 @@ class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
             c.V_total
             * c.hv_gs
             * c.a_gs
-            / (self.m_dot_s * c.Cp_s)
+            / (self.m_dot_s * CP_SOLID)
         )
 
         # 5.018 at the 2500-era feed: the meal grew 3.23x, V*a_gs
@@ -287,7 +288,7 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         )
 
         def ntu(a_gs):
-            return c.V_total * c.hv_gs * a_gs / (self.m_dot_s * c.Cp_s)
+            return c.V_total * c.hv_gs * a_gs / (self.m_dot_s * CP_SOLID)
 
         self.assertAlmostEqual(ntu(c.a_gs), 2.993, delta=0.002)
 

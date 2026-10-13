@@ -158,6 +158,46 @@ def h_gas(T, T_ref):
     return h
 
 
+# ======================================================
+# SOLID THERMODYNAMIC PROPERTIES
+#
+# One enthalpy for every solid stream in the plant -- raw meal,
+# calcined meal, clinker -- so a handoff that passes H between
+# two zones hands over the same temperature it would read back.
+# Every zone used to carry its own literal Cp_s = 850 and build
+# H = m Cp (T - T_ref) itself; the solid rows now linearise
+# h_solid at the iterate the way the gas rows linearise h_gas
+# (physics/variable_flow_rows.py), so h_solid is free to be
+# nonlinear.
+# ======================================================
+
+CP_SOLID = 850.0  # J/(kg K)
+
+
+def cp_solid(T):
+    """Solid Cp [J/(kg K)] at T [K], the derivative of h_solid."""
+
+    if isinstance(T, float):
+        return CP_SOLID
+
+    return np.full(np.shape(T), CP_SOLID)
+
+
+def h_solid(T, T_ref):
+    """Solid enthalpy relative to T_ref [J/kg]."""
+
+    if isinstance(T, float):
+        return CP_SOLID * (T - T_ref)
+
+    return CP_SOLID * (np.asarray(T, dtype=float) - T_ref)
+
+
+def T_solid_from_h(h_target, T_ref):
+    """Invert h_solid: the T [K] with h_solid(T, T_ref) = h_target."""
+
+    return T_ref + h_target / CP_SOLID
+
+
 def T_gas_from_h(h_target, T_ref, T_min, T_max):
     """
     Invert h_gas: solve h_gas(T, T_ref) = h_target for T,

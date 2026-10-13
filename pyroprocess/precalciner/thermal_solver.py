@@ -2,11 +2,13 @@ import numpy as np
 
 from physics.physics import cp_gas
 from physics.physics import h_gas
+from physics.physics import h_solid
 from physics.physics import outlet_face_value
 from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import T_gas_from_h
+from physics.physics import T_solid_from_h
 from physics.shell import shell_closure
 from physics.variable_flow_rows import apply_gas_energy_balance
 from physics.variable_flow_rows import apply_solid_energy_balance
@@ -99,7 +101,9 @@ def thermal_step(
     # by construction, so the two accountings cannot drift.
     # ======================================================
 
-    Cp_s = calciner.Cp_s
+    # The bed's inlet enthalpy [J/kg]: the inlet face of the
+    # solid row (Ts_in is its inverse).
+    hs_in = h_solid(Ts_in, T_ref)
 
     if dm_gas_cells is None:
         dm_gas_cells = np.zeros(N)
@@ -461,8 +465,8 @@ def thermal_step(
         )
 
         Ds_face = second_order_upwind_face_corrections(
-            Ts_iter,
-            Ts_in,
+            h_solid(Ts_iter, T_ref),
+            hs_in,
             reverse=False,
         )
 
@@ -588,9 +592,10 @@ def thermal_step(
                 row,
                 i,
                 N,
-                m_s_out_cells[i] * Cp_s,
-                m_s_in_cells[i] * Cp_s,
+                Ts_iter,
                 T_ref,
+                m_s_out_cells[i],
+                m_s_in_cells[i],
                 dm_gas_cells[i],
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
@@ -599,7 +604,7 @@ def thermal_step(
                 K_ws,
                 radiation_solid_source,
                 reaction_heat_cells[i],
-                Ts_in,
+                hs_in,
                 Ds_face[i],
                 Ds_face[i + 1],
                 reaction_heat_slope_cells[i],
@@ -810,12 +815,14 @@ def thermal_step(
         4000.0,
     )
 
-    # The solid flux is affine in Ts, so extrapolating the
-    # temperature is identical to extrapolating its enthalpy.
-    Ts_out = outlet_face_value(
-        Ts_ss,
+    # The solid likewise, in enthalpy: the face enthalpy is what
+    # the scheme transported, and Ts_out its inverse.
+    hs_out_face = outlet_face_value(
+        h_solid(Ts_ss, T_ref),
         reverse=False,
     )
+
+    Ts_out = T_solid_from_h(hs_out_face, T_ref)
 
     # The wall does not advect, so it has no outlet face.
     Tw_out = Tw_ss[-1]
@@ -980,14 +987,7 @@ def thermal_step(
     # SOLID ENTHALPY BALANCE
     # ======================================================
 
-    Hs_in = (
-        m_dot_s_in
-        * Cp_s
-        * (
-            Ts_in
-            - T_ref
-        )
-    )
+    Hs_in = m_dot_s_in * hs_in
 
     # The bed discharges what is left after every cell has
     # calcined and dehydroxylated, not what it was fed.
@@ -996,14 +996,7 @@ def thermal_step(
         - float(np.sum(dm_gas_cells))
     )
 
-    Hs_out = (
-        m_s_out_face
-        * Cp_s
-        * (
-            Ts_out
-            - T_ref
-        )
-    )
+    Hs_out = m_s_out_face * hs_out_face
 
     solid_energy_change = (
         Hs_out

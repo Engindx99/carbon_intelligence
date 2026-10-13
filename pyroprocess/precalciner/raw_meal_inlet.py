@@ -1,5 +1,6 @@
 from physics.physics import h_gas
 from physics.physics import T_gas_from_h
+from physics.physics import T_solid_from_h
 
 
 # ======================================================
@@ -104,14 +105,9 @@ def solid_temperature_from_enthalpy(
     state,
 ):
 
-    return (
-        H
-        / (
-            state.m_dot_s_calciner
-            * calciner.Cp_s
-            + calciner.eps
-        )
-        + calciner.T_ref
+    return T_solid_from_h(
+        H / float(state.m_dot_s_calciner),
+        calciner.T_ref,
     )
 
 

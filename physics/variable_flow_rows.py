@@ -24,7 +24,9 @@ zone with no reaction is numerically unaffected by adopting them.
 """
 
 from physics.physics import cp_gas
+from physics.physics import cp_solid
 from physics.physics import h_gas
+from physics.physics import h_solid
 
 
 # ======================================================
@@ -190,20 +192,18 @@ def apply_gas_energy_balance(
 # leaving it, and the balance is written on the two flows
 # separately:
 #
-#   Cs_out (Ts_i + D_out - T_ref)
-#     - Cs_in (Ts_{i-1} + D_in - T_ref)
+#   ms_out (h_i + D_out)
+#     - ms_in (h_{i-1} + D_in)
 #     + dm_gas * h_gas(Ts_i)                 <- CO2 leaving
 #     + V K_gs (Ts - Tg) + V K_ws (Ts - Tw)
 #   = radiation_solid_source - Q_reaction_cell
 #
-# Two things follow from the variable flow that do not arise
-# with a constant one:
-#
-#   - T_ref no longer cancels between the two flux terms, so
-#     (Cs_out - Cs_in) * T_ref appears explicitly;
-#   - the face corrections cannot be pre-differenced, because
-#     each face carries its own flow. D_in and D_out come from
-#     physics.second_order_upwind_face_corrections.
+# with h = physics.h_solid. The face corrections cannot be
+# pre-differenced, because each face carries its own flow; D_in
+# and D_out come from physics.second_order_upwind_face_corrections
+# on h_solid. (Until 13 Oct 2026 this row was written in
+# temperature with Cs = m Cp_s, which needed (Cs_out - Cs_in)
+# T_ref explicitly and could not carry a nonlinear h.)
 #
 # `dm_gas` is the mass this cell hands to the gas. It leaves
 # at the local bed temperature carrying its GAS-phase
@@ -278,9 +278,10 @@ def apply_solid_energy_balance(
     row,
     i,
     N,
-    Cs_out,
-    Cs_in,
+    Ts_iter,
     T_ref,
+    ms_out,
+    ms_in,
     dm_gas,
     cp_gas_s,
     h_const_s,
@@ -289,40 +290,61 @@ def apply_solid_energy_balance(
     K_ws,
     radiation_solid_source,
     Q_reaction_cell,
-    Ts_in,
+    hs_in,
     D_in=0.0,
     D_out=0.0,
     dQ_dTs_cell=0.0,
     Ts_star_cell=0.0,
-    C_dt_cell=0.0,
-    Ts_old_cell=0.0,
+    M_dt_cell=0.0,
+    hs_old_cell=0.0,
     H_mass_stored_cell=0.0,
 ):
-    # C_dt_cell / Ts_old_cell -- STORED ENERGY (dynamic solve only).
-    # Implicit Euler on the bed's sensible heat: C/dt (Ts - Ts_old)
-    # joins the outflow side, so +C/dt goes on the diagonal and
-    # +C/dt Ts_old into b. C is the cell's solid hold-up times
-    # Cp_s. The defaults of 0.0 leave the steady row unchanged.
-    #
-    # H_mass_stored_cell [W] -- the other half of d(M h)/dt when the
-    # hold-up M itself changes over the step (the kiln's parcel
-    # train): (M_new h_new - M_old h_old)/dt = C_new/dt (Ts - Ts_old)
-    # + h(Ts_old) (M_new - M_old)/dt, with C_new = M_new Cp_s. The
-    # second term is a constant of the step, so it goes into b on
-    # the outflow side. With it the row closes on the bed's mass
-    # balance in - out - CO2 = dM/dt, which no longer vanishes.
+    """
+    The solid row in ENTHALPY, written exactly like the gas row:
+
+      ms_out (h_i + D_out) - ms_in (h_{i-1} + D_in)
+        + dm_gas h_gas(Ts_i) + V K_gs (Ts - Tg) + V K_ws (Ts - Tw)
+        + M/dt (h_i - h_old) + H_mass_stored
+      = radiation_solid_source - Q_reaction_cell
+
+    with h = h_solid(Ts, T_ref) linearised at the iterate Ts_iter,
+    h ~ cp_solid(Ts*) Ts + (h(Ts*) - cp_solid(Ts*) Ts*). The face
+    corrections D_in / D_out are in J/kg, reconstructed on h_solid
+    (physics.second_order_upwind_face_corrections), and hs_in is
+    the enthalpy [J/kg] crossing the inlet face.
+
+    ms_out / ms_in are the solid flows leaving and entering the
+    cell [kg/s]; M_dt_cell is the cell's hold-up over dt [kg/s]
+    and hs_old_cell its enthalpy at the start of the step.
+
+    With a constant Cp this is algebraically the temperature row
+    it replaces: Cs (Ts + D - T_ref) is m (h + D_h) when
+    h = Cp (Ts - T_ref) and D_h = Cp D.
+    """
+
+    # STORED ENERGY (dynamic solve only). Implicit Euler on the
+    # bed's enthalpy, M/dt (h(Ts) - h(Ts_old)), linearised like the
+    # flux terms. H_mass_stored_cell [W] is the other half of
+    # d(M h)/dt when the hold-up itself changes over the step (the
+    # kiln's parcel train): h(Ts_old) (M_new - M_old)/dt, a
+    # constant of the step on the outflow side. Defaults of 0.0
+    # leave the steady row unchanged.
 
     Tg_i = i
     Ts_i = N + i
     Tw_i = 2 * N + i
 
+    T_i = float(Ts_iter[i])
+    cp_i = cp_solid(T_i)
+    hc_i = h_solid(T_i, T_ref) - cp_i * T_i
+
     A[row, Ts_i] += (
-        Cs_out
+        ms_out * cp_i
         + dm_gas * cp_gas_s
         + V_cell * K_gs
         + V_cell * K_ws
         + dQ_dTs_cell
-        + C_dt_cell
+        + M_dt_cell * cp_i
     )
 
     A[row, Tg_i] += (
@@ -342,21 +364,24 @@ def apply_solid_energy_balance(
         radiation_solid_source
         - (Q_reaction_cell - dQ_dTs_cell * Ts_star_cell)
         - dm_gas * h_const_s
-        - Cs_out * D_out
-        + Cs_in * D_in
-        + (Cs_out - Cs_in) * T_ref
-        + C_dt_cell * Ts_old_cell
+        - ms_out * (hc_i + D_out)
+        + ms_in * D_in
+        - M_dt_cell * (hc_i - hs_old_cell)
         - H_mass_stored_cell
     )
 
     if i == 0:
         b[row] = (
-            Cs_in * Ts_in
+            ms_in * hs_in
             + b_common
         )
     else:
+        T_up = float(Ts_iter[i - 1])
+        cp_up = cp_solid(T_up)
+        hc_up = h_solid(T_up, T_ref) - cp_up * T_up
+
         Ts_up_i = N + i - 1
-        A[row, Ts_up_i] += -Cs_in
-        b[row] = b_common
+        A[row, Ts_up_i] += -ms_in * cp_up
+        b[row] = b_common + ms_in * hc_up
 
     return row + 1

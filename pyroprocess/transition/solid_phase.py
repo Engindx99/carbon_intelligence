@@ -1,4 +1,5 @@
 from physics.physics import outlet_face_value
+from physics.physics import T_solid_from_h
 
 # The variable-flow solid row moved to physics.variable_flow_rows when
 # the calciner adopted it too (Faz 1c). Re-exported here so this
@@ -14,16 +15,20 @@ from physics.variable_flow_rows import apply_solid_energy_balance  # noqa: F401
 # was renamed to `transition` since this is now a free
 # function taking the owning Transition instance explicitly.
 # ======================================================
+def solid_inlet_enthalpy(state):
+    """The solid's inlet enthalpy [J/kg]: what the calciner
+    discharged, on the flow it discharged."""
+
+    return float(state.Hsolid_transition_in) / float(
+        state.m_dot_s_transition
+    )
+
+
 def solid_inlet_temperature_from_enthalpy(transition, H, state):
 
-    return (
-        H
-        / (
-            state.m_dot_s_transition
-            * transition.Cp_s
-            + transition.eps
-        )
-        + transition.T_ref
+    return T_solid_from_h(
+        H / float(state.m_dot_s_transition),
+        transition.T_ref,
     )
 
 
@@ -39,8 +44,9 @@ def solid_inlet_temperature_from_enthalpy(transition, H, state):
 # is also the flux the second-order scheme in
 # apply_solid_energy_balance() transports out of the last
 # cell, so it must be the value handed off or the
-# difference leaks. Hs is affine in Ts, so the extrapolation
-# may be taken on Hs directly. Same construction as
+# difference leaks. The scheme reconstructs the solid in
+# enthalpy, so the extrapolation is taken on Hs directly. Same
+# construction as
 # pyroprocess/burning/solid_phase.py.
 # ======================================================
 def solid_enthalpy_out(Hs):

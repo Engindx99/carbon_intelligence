@@ -2,6 +2,7 @@ import numpy as np
 
 from physics.physics import rotary_bed_motion
 from physics.physics import outlet_face_value
+from physics.physics import T_solid_from_h
 
 
 # ======================================================
@@ -86,10 +87,9 @@ def resolve_solid_inlet(burning, state):
         )
     )
 
-    state.Ts_burning_in = (
-        burning.T_ref
-        + state.Hsolid_burning_in
-        / (m_dot_s_in * burning.Cp_s)
+    state.Ts_burning_in = T_solid_from_h(
+        state.Hsolid_burning_in / m_dot_s_in,
+        burning.T_ref,
     )
 
     return state.Ts_burning_in
@@ -110,98 +110,9 @@ def resolve_solid_inlet(burning, state):
 # transports out of the last cell, so it must be the value
 # handed off or the difference leaks.
 #
-# Hs is m_dot_s * Cp_s * (Ts - T_ref) elementwise, i.e.
-# affine in Ts, so the extrapolation may be taken on Hs
-# directly.
+# The scheme reconstructs the solid in enthalpy (h_solid), so
+# the extrapolation is taken on Hs directly.
 # ======================================================
 def solid_enthalpy_out(Hs):
 
     return outlet_face_value(Hs, reverse=False)
-
-
-# ======================================================
-# SOLID PHASE ENERGY BALANCE ROW
-#
-# Moved from the per-cell loop inside Burning.thermal_step()
-# (pyroprocess/burning.py). Builds the solid-side row of the
-# 3N linear system for cell i in place, using the same
-# arithmetic and operand order as the original code so the
-# Picard solve is numerically unchanged.
-#
-# Solid direction: 0 -> N-1.
-#
-# `reaction_q_cell_i` is the clinkering enthalpy consumed in
-# this cell [W]. The reactions run in the bed, so the heat
-# leaves the solid, exactly as calcination does on the solid
-# rows of the transition zone and the calciner. It was
-# previously subtracted from the gas row instead, which left
-# the bed temperature unaffected by its own reactions.
-# Like the radiation and advection terms it enters b only.
-#
-# `advection_correction` is the per-cell van Leer deferred
-# correction from physics.second_order_upwind_correction,
-# in temperature units (K) -- the solid flux
-# Cs * (Ts - T_ref) is affine in Ts, so the reconstruction
-# is done on Ts directly. It is zero by default, which
-# leaves this row exactly first-order upwind as before, and
-# it enters b only so that A stays the diagonally dominant
-# upwind M-matrix. See the gas-side note in gas_phase.py.
-# ======================================================
-def apply_solid_energy_balance(
-    A,
-    b,
-    row,
-    i,
-    N,
-    Cs,
-    V_cell,
-    K_gs,
-    K_ws,
-    radiation_solid_source,
-    reaction_q_cell_i,
-    Ts_in,
-    advection_correction=0.0,
-):
-
-    Tg_i = i
-    Ts_i = N + i
-    Tw_i = 2 * N + i
-
-    A[row, Ts_i] += (
-        Cs
-        + V_cell * K_gs
-        + V_cell * K_ws
-    )
-
-    A[row, Tg_i] += (
-        -V_cell * K_gs
-    )
-
-    A[row, Tw_i] += (
-        -V_cell * K_ws
-    )
-
-    if i == 0:
-
-        b[row] = (
-            Cs * Ts_in
-            + radiation_solid_source
-            - reaction_q_cell_i
-            - Cs * advection_correction
-        )
-
-    else:
-
-        Ts_up_i = N + i - 1
-
-        A[row, Ts_up_i] += (
-            -Cs
-        )
-
-        b[row] = (
-            radiation_solid_source
-            - reaction_q_cell_i
-            - Cs * advection_correction
-        )
-
-    return row + 1

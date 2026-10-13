@@ -3,6 +3,9 @@ import math
 import numpy as np
 
 from physics.physics import cp_gas
+from physics.physics import cp_solid
+from physics.physics import h_solid
+from physics.physics import T_solid_from_h
 from physics.shell import loss_conductance
 from physics.shell import shell_closure
 from physics.physics import ZONE_RAD_CONFIG
@@ -83,14 +86,23 @@ def circulating_solid_flows(m_dot_s_in, vapor, separation_efficiency):
     return m_dot_s_in, k * (m_dot_s_in - vapor)
 
 
-def _mixed_solid_inlet(solid_out, Ts_feed, dust_from_below):
+def _cp_scale(Ts, Ts_feed):
+    """The largest solid Cp over the stage temperatures, to turn
+    the inner loop's kelvin tolerance into watts."""
+
+    T = np.append(np.asarray(Ts, dtype=float), float(Ts_feed))
+
+    return float(np.max(cp_solid(T)))
+
+
+def _mixed_solid_inlet(solid_out, Ts_feed, dust_from_below, T_ref):
     """
     Solid inlet temperature of every stage: the stream from above
     (the next stage's underflow, or the feed into Stage 5, which
     the returned C1 dust joins at the feed temperature) mixed with
     the dust share dust_from_below[i] coming up from stage i-1.
-    Same Cp, so the mix is mass-weighted; with no dust it is the
-    stream from above exactly.
+    Mixed in enthalpy, mass-weighted, then read back as a
+    temperature; with no dust it is the stream from above exactly.
     """
     base = np.empty_like(solid_out)
     base[:-1] = solid_out[1:]
@@ -99,7 +111,12 @@ def _mixed_solid_inlet(solid_out, Ts_feed, dust_from_below):
     below = base.copy()
     below[1:] = solid_out[:-1]
 
-    return base + dust_from_below * (below - base)
+    h_base = h_solid(base, T_ref)
+
+    return T_solid_from_h(
+        h_base + dust_from_below * (h_solid(below, T_ref) - h_base),
+        T_ref,
+    )
 
 
 def thermal_step(
@@ -263,7 +280,7 @@ def thermal_step(
     preheater.energy_closure_tolerance = float(
         (preheater.N - 1)
         * m_dot_s
-        * preheater.Cp_s
+        * _cp_scale(Ts, Ts_feed)
         * tolerance
     )
 
@@ -362,7 +379,7 @@ def thermal_step(
     preheater.energy_closure_tolerance = float(
         (preheater.N - 1)
         * max(m_dot_s, float(np.max(m_dot_s_in)))
-        * preheater.Cp_s
+        * _cp_scale(Ts, Ts_feed)
         * tolerance
     )
 
@@ -433,7 +450,7 @@ def thermal_step(
         # --------------------------------------------------
 
         new_solid_in = _mixed_solid_inlet(
-            solid_out, Ts_feed, dust_from_below
+            solid_out, Ts_feed, dust_from_below, preheater.T_ref
         )
 
         # --------------------------------------------------
@@ -560,23 +577,13 @@ def thermal_step(
     # (H_dust_out) goes to the filter and is fed back at the feed
     # temperature (H_dust_in). A stage's solid outlet enthalpy
     # carries its dust; the stage below receives the rest.
-    H_escape = (
-        m_dot_escape
-        * preheater.Cp_s
-        * (Ts_new - preheater.T_ref)
+    H_escape = m_dot_escape * h_solid(Ts_new, preheater.T_ref)
+
+    H_dust_out = m_dot_dust * h_solid(
+        float(Ts_new[-1]), preheater.T_ref
     )
 
-    H_dust_out = (
-        m_dot_dust
-        * preheater.Cp_s
-        * (Ts_new[-1] - preheater.T_ref)
-    )
-
-    H_dust_in = (
-        m_dot_dust
-        * preheater.Cp_s
-        * (Ts_feed - preheater.T_ref)
-    )
+    H_dust_in = m_dot_dust * h_solid(Ts_feed, preheater.T_ref)
 
     for i, stage in enumerate(preheater.stages):
 
@@ -589,9 +596,7 @@ def thermal_step(
 
         if i == preheater.N - 1:
             Hsolid_expected = (
-                m_dot_s
-                * preheater.Cp_s
-                * (Ts_feed - preheater.T_ref)
+                m_dot_s * h_solid(Ts_feed, preheater.T_ref)
                 + H_dust_in
             )
         else:
@@ -667,11 +672,7 @@ def thermal_step(
 
     Hgas_in = state.Hgas_preheater_in
 
-    Hsolid_in = (
-        m_dot_s
-        * preheater.Cp_s
-        * (Ts_feed - preheater.T_ref)
-    )
+    Hsolid_in = m_dot_s * h_solid(Ts_feed, preheater.T_ref)
 
     Hgas_out = preheater.stages[-1].gas_outlet_enthalpy
 
@@ -925,7 +926,7 @@ def solve_stage(
 #     m_dot_g + m_dot_vapor. The solid energy balance on the
 #     inlet mass gives the common outlet temperature Ts_out;
 #     the vapor leaves the solid at Ts_out carrying
-#     H_vapor = m_dot_vapor * Cp_s * (Ts_out - T_ref) into the
+#     H_vapor = m_dot_vapor * h_solid(Ts_out) into the
 #     gas, and the latent heat is the (negative)
 #     reaction_power drawn from the gas as before. Summing the
 #     two balances, H_vapor cancels and the stage closes
@@ -1037,7 +1038,6 @@ def solve_stage_node(
         # Exact rewrite of C (T1^4 - T2^4) as h (T1 - T2).
         return C_rad * (T1 + T2) * (T1 * T1 + T2 * T2)
 
-    Cs = m_dot_s * model.Cp_s + eps
     r_gas = reaction_power / V_cell
 
     T_low = T_amb
@@ -1083,6 +1083,11 @@ def solve_stage_node(
     for _ in range(50):
 
         Cg = m_dot_g * float(cp_gas(Tg_bar)) + eps
+
+        # The solid's Cp frozen at the node mean, as cp_gas is: it
+        # sets only the exponent of the exact exchange. The heat
+        # balances below close on h_solid whatever it is.
+        Cs = m_dot_s * float(cp_solid(float(Ts_bar))) + eps
 
         Kgs = (model.hv_gs + h_rad(Tg_bar, Ts_bar)) * model.a_gs
         Kgw = (model.hv_gw + h_rad(Tg_bar, Tw)) * model.a_gw
@@ -1215,11 +1220,7 @@ def solve_stage_node(
         eps,
     )
 
-    H_vapor = (
-        m_dot_vapor
-        * model.Cp_s
-        * (Ts_out - T_ref)
-    )
+    H_vapor = m_dot_vapor * h_solid(Ts_out, T_ref)
 
     # Enthalpy of the solid stream actually leaving the stage.
     H_solid_out = H_solid_out - H_vapor

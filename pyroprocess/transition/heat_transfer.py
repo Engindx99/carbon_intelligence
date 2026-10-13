@@ -1,7 +1,10 @@
 import numpy as np
 
 from physics.physics import cp_gas
+from physics.physics import cp_solid
 from physics.physics import h_gas
+from physics.physics import h_solid
+from physics.physics import T_solid_from_h
 from physics.physics import outlet_face_value
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import fill_fraction_from_holdup
@@ -44,7 +47,9 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # SOLID THERMAL CAPACITY
     # ======================================================
 
-    Cp_s = transition.Cp_s
+    # The bed's inlet enthalpy [J/kg]: the inlet face of the
+    # solid row.
+    hs_in = solid_phase.solid_inlet_enthalpy(state)
 
     # ======================================================
     # STREAM MASS FLOWS
@@ -161,7 +166,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             eps_wall=transition.closure.wall_emissivity,
             bed_conductivity=transition.closure.bed_conductivity,
             bed_density=transition.rho_s,
-            bed_cp=transition.Cp_s,
+            bed_cp=cp_solid(Ts_at),
             particle_diameter=transition.closure.particle_diameter,
             contact_chi=transition.closure.contact_chi,
         )
@@ -212,14 +217,20 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     dynamic = calcination.kiln_dynamic(state)
     H_mass_stored = np.zeros(N)
 
-    def solid_capacity_rate(m_s_in_cells, m_s_out_cells):
+    # The bed's hold-up over dt [kg/s] and its start-of-step
+    # enthalpy, for M/dt (h(Ts) - h(Ts_old)).
+    def solid_holdup_rate(m_s_in_cells, m_s_out_cells):
         if transient_dt is None:
             return np.zeros(N)
         return (
             0.5 * (m_s_in_cells + m_s_out_cells)
             * transition.dz / u_s
-            * Cp_s / transient_dt
+            / transient_dt
         )
+
+    hs_old = (
+        np.zeros(N) if transient_dt is None else h_solid(Ts_old, T_ref)
+    )
 
     max_iter = 100
     tol = max(
@@ -292,8 +303,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         )
 
         Ds_face = second_order_upwind_face_corrections(
-            Ts_iter,
-            Ts_in,
+            h_solid(Ts_iter, T_ref),
+            hs_in,
             reverse=False,
         )
 
@@ -412,7 +423,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             )
         )
 
-        C_s_dt = solid_capacity_rate(m_s_in_cells, m_s_out_cells)
+        M_s_dt = solid_holdup_rate(m_s_in_cells, m_s_out_cells)
 
         if dynamic:
             # The train's faces and hold-ups: in - out - CO2 is the
@@ -420,10 +431,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
             # d(M h)/dt (physics.variable_flow_rows).
             m_s_in_cells = step.face_flow[:-1].copy()
             m_s_out_cells = step.face_flow[1:].copy()
-            C_s_dt = step.holdup_cells * Cp_s / transient_dt
-            H_mass_stored = (
-                Cp_s * (Ts_old - T_ref) * step.stored_cells
-            )
+            M_s_dt = step.holdup_cells / transient_dt
+            H_mass_stored = hs_old * step.stored_cells
 
         # Suffix sum: cell i's outgoing gas carries the CO2 of
         # every cell from i to N-1 inclusive.
@@ -557,9 +566,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 row,
                 i,
                 N,
-                m_s_out_cells[i] * Cp_s,
-                m_s_in_cells[i] * Cp_s,
+                Ts_iter,
                 T_ref,
+                m_s_out_cells[i],
+                m_s_in_cells[i],
                 dm_gas_cells[i],
                 cp_gas_s_cells[i],
                 h_const_s_cells[i],
@@ -568,13 +578,13 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 K_ws[i],
                 radiation_solid_source,
                 Q_calcination_cells[i],
-                Ts_in,
+                hs_in,
                 Ds_face[i],
                 Ds_face[i + 1],
                 dQ_dTs_cells[i],
                 Ts_iter[i],
-                C_s_dt[i],
-                Ts_old[i],
+                M_s_dt[i],
+                hs_old[i],
                 H_mass_stored[i],
             )
 
@@ -904,10 +914,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         final_step = state.kiln_step_transition
         m_s_out_face = float(final_step.face_flow[-1])
         m_s_cells_final = final_step.face_flow[1:].copy()
-        C_s_dt = final_step.holdup_cells * Cp_s / transient_dt
-        H_mass_stored = (
-            Cp_s * (Ts_old - T_ref) * final_step.stored_cells
-        )
+        M_s_dt = final_step.holdup_cells / transient_dt
+        H_mass_stored = hs_old * final_step.stored_cells
         state.Transition_mass_stored = float(
             np.sum(final_step.stored_cells)
         )
@@ -920,10 +928,12 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         + float(np.sum(dm_gas_final))
     )
 
-    Ts_out_face = outlet_face_value(
-        Ts_ss,
+    hs_out_face = outlet_face_value(
+        h_solid(Ts_ss, T_ref),
         reverse=False,
     )
+
+    Ts_out_face = T_solid_from_h(hs_out_face, T_ref)
 
     h_gas_out_face = outlet_face_value(
         h_gas(
@@ -938,14 +948,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         * h_gas_out_face
     )
 
-    Hs_out = (
-        m_s_out_face
-        * Cp_s
-        * (
-            Ts_out_face
-            - T_ref
-        )
-    )
+    Hs_out = m_s_out_face * hs_out_face
 
     # Published so Transition.apply() hands downstream exactly
     # the flux this balance booked, rather than re-deriving it
@@ -989,7 +992,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # ======================================================
     # Rate of change of the stored energy; zero in the steady solve.
     Q_stored_solid = float(
-        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+        np.sum(M_s_dt * (h_solid(Ts_ss, T_ref) - hs_old) + H_mass_stored)
     )
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
 

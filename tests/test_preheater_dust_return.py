@@ -21,6 +21,7 @@ from pyroprocess.preheater.preheater import Preheater
 from tests.test_preheater_nodes import assert_balances_pass
 from tests.twin_harness import REPO_ROOT, run_twin
 import main
+from physics.physics import h_solid
 
 
 def stage_mass_residuals(m_dot_s_in, m_dot_escape, vapor, eta, feed):
@@ -137,10 +138,9 @@ class DustReturnTest(unittest.TestCase):
         ph = self.twin.preheater
         state = self.twin.state
 
-        expected = (
-            ph.m_dot_dust_return
-            * ph.Cp_s
-            * (state.Ts_preheater[-1] - state.Feed_temperature)
+        expected = ph.m_dot_dust_return * (
+            h_solid(float(state.Ts_preheater[-1]), ph.T_ref)
+            - h_solid(float(state.Feed_temperature), ph.T_ref)
         )
 
         self.assertGreater(state.Q_dust_loss_preheater, 0.0)

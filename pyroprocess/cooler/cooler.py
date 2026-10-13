@@ -4,6 +4,7 @@ import yaml
 from physics.shell import wall_stack
 from physics.physics import ZONE_HT_CONFIG
 from physics.physics import h_gas
+from physics.physics import T_solid_from_h
 
 from chemistry.phases import get_cell_solid_flow
 from chemistry.phases import set_cell_solid_flow
@@ -153,7 +154,8 @@ class Cooler:
         self.rho_wall = 3000.0
 
         self.Cp_g = 1005.0
-        self.Cp_s = 850.0
+        # Solid Cp and enthalpy: physics.cp_solid / h_solid, one
+        # definition for every solid stream in the plant.
         self.Cp_wall = 1000.0
 
         # ================= HEAT TRANSFER =================
@@ -297,10 +299,9 @@ class Cooler:
         # N=20. Deriving T from H is also what every other zone
         # already does; see burning/solid_phase.resolve_solid_inlet
         # and precalciner/raw_meal_inlet.solid_temperature_from_enthalpy.
-        Ts_in = (
-            self.T_ref
-            + state.Hsolid_cooler_in
-            / (state.m_dot_s * self.Cp_s)
+        Ts_in = T_solid_from_h(
+            state.Hsolid_cooler_in / state.m_dot_s,
+            self.T_ref,
         )
 
         state.Tg_cooler_in = Tg_in

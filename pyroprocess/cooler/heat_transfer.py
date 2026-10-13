@@ -4,6 +4,8 @@ from physics.physics import heat_transfer
 from physics.physics import outlet_face_value
 from physics.shell import shell_closure
 from physics.physics import h_gas
+from physics.physics import h_solid
+from physics.physics import T_solid_from_h
 
 from chemistry import parcels
 
@@ -175,14 +177,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # that may declare convergence, so the converged state is
     # solved to the floor below exactly as before.
     # Stored energy, dynamic solve only: the wall, as a lumped
-    # lining (stack thickness x rho cp) on the hot-face node. The
-    # clinker bed stays quasi-steady until the grate geometry
-    # (speed, bed depth) gives it a residence time (Faz 6 item 2).
+    # lining (stack thickness x rho cp) on the hot-face node, and
+    # the clinker bed on its parcel train's hold-up.
     transient_dt = getattr(state, "transient_dt", None)
 
-    C_s_dt = np.zeros(N)
-    Ts_old = np.zeros(N)
+    M_s_dt = np.zeros(N)
+    hs_old = np.zeros(N)
     H_mass_stored = np.zeros(N)
+
+    # The clinker's inlet enthalpy [J/kg]: the kiln's discharge
+    # over the flow it discharged (Ts_in is its inverse).
+    hs_in = h_solid(Ts_in, cooler.T_ref)
 
     if transient_dt is None:
         C_w_dt = np.zeros(N)
@@ -200,23 +205,17 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
     if dynamic:
         Ts_old = np.asarray(state.Ts_cooler_old, dtype=float)
+        hs_old = h_solid(Ts_old, cooler.T_ref)
 
-        # The bed's sensible heat on its exact hold-up, and the
+        # The bed's enthalpy on its exact hold-up, and the
         # enthalpy of the mass it gains: d(M h)/dt.
-        C_s_dt = train_step.holdup_cells * cooler.Cp_s / transient_dt
-        H_mass_stored = (
-            cooler.Cp_s
-            * (Ts_old - cooler.T_ref)
-            * train_step.stored_cells
-        )
+        M_s_dt = train_step.holdup_cells / transient_dt
+        H_mass_stored = hs_old * train_step.stored_cells
 
-        # The clinker enters with the flux the kiln discharged; the
-        # inlet temperature follows from that enthalpy over that
-        # flow, as Cooler.apply derives it over m_dot_s.
-        Ts_in = (
-            cooler.T_ref
-            + state.Hsolid_cooler_in / (face_flow[0] * cooler.Cp_s)
-        )
+        # The clinker enters with the flux the kiln discharged,
+        # over the train's inlet face flow.
+        hs_in = float(state.Hsolid_cooler_in) / float(face_flow[0])
+        Ts_in = T_solid_from_h(hs_in, cooler.T_ref)
 
     max_iter = 100
     tol = max(
@@ -314,47 +313,27 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         # SOLID
         # ==================================================
 
-        Cs = m_dot_s * cooler.Cp_s
-
-        if dynamic:
-            row = solid_phase.apply_solid_energy_balance(
-                A,
-                b,
-                row,
-                N,
-                Ts_in,
-                Tg_iter,
-                Ts_iter,
-                Tw_iter,
-                face_flow[1:] * cooler.Cp_s,
-                V_cell,
-                K_gs,
-                K_ws,
-                q_gs,
-                q_ws,
-                Cs_in=face_flow[:-1] * cooler.Cp_s,
-                T_ref=cooler.T_ref,
-                C_dt=C_s_dt,
-                Ts_old=Ts_old,
-                H_mass_stored=H_mass_stored,
-            )
-        else:
-            row = solid_phase.apply_solid_energy_balance(
-                A,
-                b,
-                row,
-                N,
-                Ts_in,
-                Tg_iter,
-                Ts_iter,
-                Tw_iter,
-                Cs,
-                V_cell,
-                K_gs,
-                K_ws,
-                q_gs,
-                q_ws,
-            )
+        row = solid_phase.apply_solid_energy_balance(
+            A,
+            b,
+            row,
+            N,
+            hs_in,
+            Tg_iter,
+            Ts_iter,
+            Tw_iter,
+            face_flow[1:] if dynamic else m_dot_s,
+            face_flow[:-1] if dynamic else m_dot_s,
+            V_cell,
+            K_gs,
+            K_ws,
+            q_gs,
+            q_ws,
+            cooler.T_ref,
+            M_dt=M_s_dt,
+            hs_old=hs_old,
+            H_mass_stored=H_mass_stored,
+        )
 
         # ==================================================
         # WALL
@@ -609,15 +588,7 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         state,
     )
 
-    Hs_in = (
-        face_flow[0]
-        * cooler.Cp_s
-        * (Ts_in - cooler.T_ref)
-        if dynamic
-        else m_dot_s
-        * cooler.Cp_s
-        * (Ts_in - cooler.T_ref)
-    )
+    Hs_in = (face_flow[0] if dynamic else m_dot_s) * hs_in
 
     # The clinker leaving the grate: in a dynamic step, the flux
     # through the outlet face, not what the kiln discharged.
@@ -625,16 +596,9 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
 
     state.Cooler_m_dot_s_out = m_dot_s_out
 
-    Hs_out = (
-        m_dot_s_out
-        * cooler.Cp_s
-        * (
-            outlet_face_value(
-                Ts_ss,
-                reverse=False,
-            )
-            - cooler.T_ref
-        )
+    Hs_out = m_dot_s_out * outlet_face_value(
+        h_solid(Ts_ss, cooler.T_ref),
+        reverse=False,
     )
 
     # ======================================================
@@ -649,7 +613,10 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # Rate of change of the stored energy; zero when steady.
     Q_stored_wall = float(np.sum(C_w_dt * (Tw_ss - Tw_old)))
     Q_stored_solid = float(
-        np.sum(C_s_dt * (Ts_ss - Ts_old) + H_mass_stored)
+        np.sum(
+            M_s_dt * (h_solid(Ts_ss, cooler.T_ref) - hs_old)
+            + H_mass_stored
+        )
     )
 
     state.Cooler_wall_stored = Q_stored_wall
@@ -701,9 +668,9 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     #          this is structurally exact instead. What is left
     #          is the Picard gap, bounded by `tol`.
     #
-    # solid_gap  Same for the solid rows. Cp_s is constant, so
-    #          those telescope exactly too; again only the
-    #          Picard gap remains.
+    # solid_gap  Same for the solid rows, written in h_solid on
+    #          per-face flows, so they telescope exactly too;
+    #          again only the Picard gap remains.
     #
     # wall_mismatch  The wall rows dissipate through the
     #          R_total of the LAST Picard iterate; the reported
