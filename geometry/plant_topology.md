@@ -13,11 +13,11 @@ Bir SolidWorks **çizim sayfası**: A1 yatay (841 × 594 mm), ölçek **1:300**.
 İlk sürüm bir parça sketch'iydi. Renkler orada görünmedi, çünkü sketch'in durum rengi özel rengi bastırıyordu. Etiketler 1 m yükseklikte okunmuyordu, her köşede de nokta yığını vardı. Çizim belgesine bu yüzden geçildi (kullanıcı kararı, 5 Ekim 2026).
 
 - **Ekipman, gerçek kesit dış hatlarıyla:** siklonlar (toz çıkışı, koni, gövde, tavan, gaz çıkış stub'ı), kalsinatör (boğaz, koni, gövde), fırın giriş odası, fırın, soğutucu, fırın başlığı.
-- **Akışın geçtiği duvarlar açıktır:** fırının iki ucu (giriş odasına ve başlığa açılır), kalsinatör boğazı (giriş odasının tavanı), kaz boynu kollarının kalsinatör tavanındaki ağızları, tersiyer hava kanalının başlık tavanındaki ve kalsinatör duvarındaki ağızları, başlığın altı (soğutucuya açık), her siklonun toz çıkışı, gaz çıkış stub'ının tepesi ve girişinin geldiği taraftaki gövde duvarı. Riser'lar stub'ın üstünde açık başlar; yalnız stub'ın dış duvarının üstünde kapakları vardır. Açıklığın yanında kalan, `MIN_SEG`'ten (0.05 m) kısa duvar parçası çizilmez. Bütün siklonlarda giriş tavandan aşağı iner; gövde duvarı yalnız kanalın yüksekliği boyunca açıktır, altında kapalı devam eder. Tek çizgili yollar (farin, egzoz, primer hava) duvarda biter.
-- **Ana kanallar gerçek çapında, çift çizgiyle:** R1–R4, kaz boynu ve tersiyer hava kanalı. Kenarlar eksenin w/2 iki yanındadır; köşeler kenarların kesişiminde birleşir.
+- **Akışın geçtiği duvarlar açıktır:** fırının iki ucu (giriş odasına ve başlığa açılır), kalsinatör boğazı (giriş odasının tavanı), kaz boynu kollarının kalsinatör tavanındaki ağızları, tersiyer hava kanalının başlık tavanındaki ve kalsinatör duvarındaki ağızları, başlığın altı (soğutucuya açık), her siklonun toz çıkışı, gaz çıkış stub'ının tepesi ve girişinin geldiği taraftaki gövde duvarı. Riser'lar (R1–R4) stub'ın üstünde 45°'lik kısa bir daralmayla açık başlar. Açıklığın yanında kalan, `MIN_SEG`'ten (0.05 m) kısa duvar parçası çizilmez. Bütün siklonlarda giriş tavandan aşağı iner; gövde duvarı yalnız kanalın yüksekliği boyunca açıktır, altında kapalı devam eder. Tek çizgili yollar (farin, egzoz, primer hava) duvarda biter.
+- **Ana kanallar gerçek çapında, çift çizgiyle:** R1–R4, kaz boynu ve tersiyer hava kanalı. Kenarlar eksenin w/2 iki yanındadır; köşeler kenarların kesişiminde birleşir. Kaz boynunun dirseği yaydır; R2–R4'ünkiler 45°'lik düz parçalardır.
 - **Diğer yollar tek çizgiyle, eksen boyunca:** farin hatları, C1 egzozu, ikincil hava, fırın → kalsinatör gazı.
 - **Akış okları:** her yolun en uzun parçasının ortasında, akış yönünde. Çizimden çıkan ya da yalnızca bir akımı belirten yollarda ("to ID fan", "to cooler vent", "to clinker transport", primer hava, tersiyer hava oku) ok yolun ucundadır; okun ötesinde çizgi kalmaz.
-- **Kesişmeler:** bir farin hattı bir gaz kanalını kestiği yerde kırılır: kanalın içinde ve kenarlarının `CROSS_GAP` (0.5 m) ötesinde çizilmez, kanalın arkasından geçtiği okunur. Makro her kanalı kapalı bir dış hat olarak kaydeder: çizilen kenarları (`DuctEdge`) ve açık uçlarını kapatan, çizilmeyen kenarları (`UnseenEdge`; stub ağzı, kanal uçları, R1'in C1'lere açılan uçları). C5'in kesiti de kapalı bir dış hat olarak kaydedilir; C4 farini onun arkasından geçer. Farin hatları bu dış hatlarla kesilir (`PathM`): her kesişme hattı içeri / dışarı çevirir ve bu durum hattın bir sonraki parçasına taşınır. Bir hattın yalnız ucunun değdiği kenar (riser duvarına giren farin) sayılmaz; bir kanala giren, `CROSS_GAP`'ten kısa ara parça çizilmez; kanalın arkasında biten bir farin hattı makroyu durdurur. Ok, çizilen en uzun parçaya konur. Lejantta bir örneği var.
+- **Kesişmeler:** bir farin hattı bir gaz kanalını kestiği yerde kırılır: kanalın içinde ve kenarlarının `CROSS_GAP` (0.5 m) ötesinde çizilmez, kanalın arkasından geçtiği okunur. Makro her kanalı kapalı bir dış hat olarak kaydeder: çizilen kenarları (`DuctEdge`) ve açık uçlarını kapatan, çizilmeyen kenarları (`UnseenEdge`; stub ağzı, kanal uçları, R1'in C1'lere açılan uçları). C5'in ve C2'nin kesitleri de kapalı dış hat olarak kaydedilir: C4 farini C5'in, dış C1 farini C2'nin arkasından geçer. Farin hatları bu dış hatlarla kesilir (`PathM`): her kesişme hattı içeri / dışarı çevirir ve bu durum hattın bir sonraki parçasına taşınır. Bir hattın yalnız ucunun değdiği kenar (riser duvarına giren farin) sayılmaz; bir kanala giren, `CROSS_GAP`'ten kısa ara parça çizilmez; kanalın arkasında biten bir farin hattı makroyu durdurur. Ok, çizilen en uzun parçaya konur. Lejantta bir örneği var.
 - **Şematik not:** lejantta, giriş odasının ölçüsünün kaynaksız olduğu ve farin borularının 2D izdüşümü olduğu (C4 ve C5 boruları ve oda rampası 3D yerleşimde daha diktir) yazılıdır.
 - **Etiketler:** not olarak, kâğıtta 3.5 mm yükseklikte. Siklon adları gövdenin içinde (oradan hiçbir yol geçmez), riser adları kanalın içinde. Sayılar yerel ayardan bağımsız olarak noktalı ve sabit ondalıklı yazılır ("2.440").
 - **Kot cetveli:** solda, çerçevenin içinde, 0'dan 100 m'ye; her 10 m'de bir çentik ve kot. Zemin çizgisi cetvelden başlar.
@@ -25,7 +25,7 @@ Bir SolidWorks **çizim sayfası**: A1 yatay (841 × 594 mm), ölçek **1:300**.
 - **Çerçeve (ISO 5457):** A1, sol 20 mm, diğer kenarlar 10 mm; 12 × 8 bölge, üst ve altta 1–12, yanlarda A–H.
 - **Antet (ISO 7200):** 180 mm, sağ altta. Belge türü, başlık ve ek başlık, ölçek, birim, tarih, dil, sayfa, durum, teknik referans, kaynak. Çizen, onaylayan, sorumlu birim, çizim numarası ve revizyon alanları boş bırakılır (kullanıcı kararı); elle doldurulur.
 - **Revizyon tablosu:** antetin üstünde, Rev / Description / Date / By başlığı ve iki boş satır.
-- **Ekipman etiketleri ve listesi:** siklonlar (C1–C5, L/R) ve riser'lar (R1–R4) adlarıyla; diğerleri etiketle: CAL kalsinatör, GN kaz boynu, TAD tersiyer hava kanalı, KIC giriş odası, KLN fırın, HD başlık, CLR soğutucu. Sağ sütundaki ekipman listesi her etiketin adını, adedini (iki hat birlikte), ölçüsünü ve dayanağını (CFD, yayınlanmış, türetilmiş, şematik) verir; ölçüler çizimin kullandığı sabitlerden yazılır.
+- **Ekipman etiketleri ve listesi:** siklonlar (C1–C5, L/R) ve riser'lar (R1–R4) adlarıyla; diğerleri etiketle: CAL kalsinatör, GN kaz boynu, TAD tersiyer hava kanalı, KIC giriş odası, KLN fırın, HD başlık, CLR soğutucu, RM ham farin girişi (R1'e giren kısa ok). Sağ sütundaki ekipman listesi her etiketin adını, adedini (iki hat birlikte), ölçüsünü ve dayanağını (CFD, yayınlanmış, türetilmiş, şematik) verir; ölçüler çizimin kullandığı sabitlerden yazılır.
 - **Kot işaretleri:** sağ hattın sağında (x = 33) her kademenin toz çıkışı, kalsinatör tavanı ve kule tepesi; giriş odasının solunda fırın ekseni. Üçgen sembol, seviye çizgisi ve "+36.30 C4 dust outlet" biçiminde yazı.
 - **Grid ve ölçüler:** kulenin üstünde beş kolon ekseni (1 dış L, 2 iç L, 3 kalsinatör, 4 iç R, 5 dış R) balonlarıyla; aralarındaki mesafeler (8.000 / 13.289 / 13.289 / 8.000) ve toplam (42.579) eğik çizgi uçlu ölçülerle.
 - **Eksen çizgileri (ISO 128 noktalı çizgi):** her siklonun ekseni, fırın ekseni ve kalsinatörün tavan üstündeki ekseni (tavanın altında fırın gazı eksen üstünden gider).
@@ -77,15 +77,19 @@ Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüle
 |---|---|---|
 | `STUB_OVER_VD` | 0.5 | Siklon gaz çıkış stub'ının tavan üstündeki boyu, vorteks bulucu çapı cinsinden. 1.0 idi; kule 128 m çıkınca yarıya indi (kullanıcı kararı, 12 Ekim 2026). Riser boyları (~19.5 m) zaten FLS Tablo 7'nin 19.4–21.4 m'siyle uyumluydu; şematik pay stub'daydı |
 | `STAGE_GAP` | 4.0 m | Bir siklonun toz çıkışının, alttaki kademenin tepesinden yüksekliği. En geniş riser'dan (Ø3.60) büyük olmalı; ön kontrol bunu zorlar |
-| `ZIG_DX` | 11.0 m | Hattın dış kolonunun (C4, C2) iç kolonundan (C5, C3) uzaklığı. Riser'lar iki kolonun ortasından çıkar; bu aralık en geniş riser (Ø3.60) ile iki yandaki siklonun yarıçapına yetmeli. Ön kontrol bunu zorlar |
-| `C1_TWIN_GAP` | 4.0 m | İkiz C1 gövdeleri arasındaki boşluk. R1 (Ø3.07) bu boşluktan yükselir; ön kontrol sığmasını zorlar |
+| `ZIG_DX` | 11.0 m | Hattın dış kolonunun (C4, C2) iç kolonundan (C5, C3) uzaklığı. R2–R4 kendi kolonunda yükselir ve bu aralık, riser'ın döndüğü siklonun yarıçapına yetmeli; ön kontrol bunu zorlar |
+| `C1_TWIN_GAP` | 6.0 m | İkiz C1 gövdeleri arasındaki boşluk. 4 m'de çizim sıkışıktı (13 Ekim 2026); ikiz C1'ler C2'nin ekseninin iki yanındadır. R1 (Ø3.07) bu boşluktan C2'den dik yükselir; ön kontrol sığmasını zorlar |
 | `GN_TO_C5_GAP` | 1.0 m | Kaz boynu inişi ile C5 gövdesi arasındaki boşluk. İniş, C5'in giriş kotunda bu boşluğu yatay geçerek gövdeye girer |
 | `C5_OVER_TA` | 1.75 m | C5'lerin toz çıkışının tersiyer hava kanalının üstünden en az bu kadar yukarıda olması. Tam boy C5 (gövde + koni 14 m) kaz boynu kolunun bittiği kottan asılınca kanala iniyordu; C5 bu kadar yukarıda durur, kol daha yukarıda biter |
-| `MEAL_JOIN_DEG` | 50° | Dış C1'in farin borusunun, dik iniş ve dirsekten sonra iç C1'in borusuna katılırken indiği eğim. 60°'de R2'nin köşesini kesiyordu |
+| `MEAL_JOIN_DEG` | 50° | Dış C1'in farin borusunun, dik iniş ve dirsekten sonra iç C1'in borusuna katılırken indiği eğim |
 | `C1_MEAL_DROP` | 1.0 m | Dış C1 farininin dirsekten önceki dik inişi |
-| `MEAL_ENTRY_UP` | 1.5 m | Farinin riser'ın düşey kısmına, yatay parçasının üst kenarının bu kadar üstünde girdiği yer |
+| `MEAL_ENTRY_UP` | 1.5 m | Farinin riser'a, ayağının (daralmanın tepesinin) bu kadar üstünde girdiği yer |
+| `RISER_BEND_LEG` | 1.0 | R2–R4'ün siklona dönerken 45° parçasının yatay (ve düşey) boyu, riser çapı cinsinden. Ön kontrol, ardından en az yarım çaplık yatay giriş kalmasını zorlar |
+| `MEAL_SIDE_DROP` | 1.0 m | R2–R4'e giden farinin, riser'ın yanına dönmeden önceki dik inişi |
+| `MEAL_SIDE_L` | 1.0 m | Bu farin hattının riser duvarının yanında indiği uzaklık. Hat buradan 60° ile duvara girer |
 | `EXHAUST_L` | 10.0 m | C1 egzozunun ID fana doğru çizilen boyu |
-| `RAW_L` | 6.0 m | Ham farin hattının dışarıdan çizildiği uzaklık |
+| `RAW_L` | 1.0 m | Ham farin okunun boyu. Primer hava gibi yalnız girişi işaretler; ok başı diğerlerinin yarısı (2 mm) |
+| `RAW_ENTRY_UP` | 1.0 m | Ham farin okunun ucunun R1'in ayağının üstündeki yüksekliği |
 | `KILN_AXIS_Z` | 10.0 m | Fırın giriş ekseninin kotu |
 | `CHAMBER_MARGIN` | 1.0 m | Giriş odası ve başlık: fırının çevresinde bu payla bir kare. Şematiktir; [kiln_inlet_chamber.md](kiln/kiln_inlet_chamber.md)'de ölçü yok |
 | `COOLER_W` / `COOLER_H` | 4.0 / 4.0 m | Izgara genişliği, FLS referans soğutucusunun (boy alandan çıkar: 29.9 m), ve soğutucu gövde yüksekliği |
@@ -108,7 +112,7 @@ Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüle
 | `RULER_X` | 0.04 m | Kot cetvelinin sayfadaki yeri, çerçevenin içinde |
 | `TEXT_H`, `ARROW_L`, `CAP_H` | 3.5, 4, 2 mm | Kâğıtta yazı yüksekliği, ok boyu, antetteki başlık yazısı |
 | `FR_X0`…`FR_Y1`, `COL_X0` | 0.020–0.831 × 0.010–0.584 m; 0.651 m | Çerçeve ve sağ sütunun (lejant, liste, revizyon, antet) sol kenarı |
-| `LEVEL_X` | 33 m | Kot işaretlerinin model x'i, sağ hattın sağında |
+| `LEVEL_X` | 45 m | Kot işaretlerinin model x'i, sağ hattın sağında |
 
 ## Yerleşim
 
@@ -121,8 +125,8 @@ kalsinatör          z 13.4 .. 46.530; Y kaz boynu: boyun eksende, kollar x = ±
                     x = ±11.225'ten C5'in giriş kotuna (z 36.872) iner ve yatay C5 gövdesine girer
 iç kolon (C5, C3)   x = ±17.225    C5 kendi kolundan 1.0 m dışarıda
 dış kolon (C4, C2)  x = ±28.225
-riser'lar           x = ±22.725    iki kolonun ortası
-ikiz C1             x = ±18.565 ve ±26.885 (R1 aralarından yükselir)
+riser'lar          alttaki siklonun kolonunda dik (R4 ve R2 x = ±17.225, R3 ve R1 x = ±28.225)
+ikiz C1             x = ±23.065 ve ±33.385, C2'nin ekseninin iki yanında (R1 aralarından yükselir)
 toz çıkışları       C5 24.591 · C4 45.011 · C3 64.926 · C2 84.841 · C1 104.756; kule tepesi 117.396
 tersiyer hava       z 21.621, Ø2.439
 fırın               (3.4, 10.0) → (77.367, 7.781)
@@ -136,18 +140,19 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
 
 **Gaz:**
 - başlık (brülör ucu) → fırın boyunca, eksenin 1.0 m üstünde → giriş odası (rampanın 1 m üstünden kalsinatör eksenine döner) → kalsinatör → kaz boynu → C5. Kaz boynu `calciner.bas`'taki gibi bir Y'dir: tavanın ortasından Ø4.95 boyun yükselir; tepesinde iki Ø3.50 kol başlar, her biri 180° dirsekle dışa döner ve iner. İki kolun dış duvarları boynun 3.6 m üstünde, eksende kesişir; çatal orasıdır. İniş, C5'in giriş kotunda dirsek yapar ve yatay olarak C5 gövdesinin yan duvarına, üst duvarı tavan hizasında girer; bu, volütlü girişin yandan görünüşüdür. Kol Ø3.50'dir ve C5'in volüt girişinin yüksekliğine (3.508 m) sığar; ön kontrol bunu zorlar. Kolun inişi, C5 tersiyer hava kanalının üstünde durduğu için `calciner.bas`'taki kol ucundan (kalsinatörün yarı yüksekliği) daha yukarıda biter.
-- C5 → R4 → C4 → R3 → C3 → R2 → C2: riser, alttaki siklonun gaz çıkış stub'ının tepesinde yatay kanal olarak başlar. Kolonların ortasına gider, yükselir ve üstteki siklonun yanından girer: kanalın üst duvarı çatı hizasındadır (CFD katılarında giriş çatıdan aşağı iner: C1 yarığı, C2–C5 volütü).
-- C2 → R1 → ikiz C1: R1 iki C1'in arasında yükselir. İkiye ayrılır; her kolun alanı R1'in yarısıdır (Ø2.171, CFD'deki C1 riser'ı).
+- C5 → R4 → C4 → R3 → C3 → R2 → C2: riser, alttaki siklonun gaz çıkış stub'ından (vorteks bulucu) 45°'lik bir daralmayla dik yükselir. Üstteki siklonun girişine ulaşınca iki 45°'lik adımla, düz parçalarla döner: girişin bir riser çapı altında 45° döner, 45° ile girişin seviyesine çıkar ve yatay olarak siklonun yanından girer (`RISER_BEND_LEG`). Yol bir dik köşeden uzun değildir; kanalın tepesi tavan hizasını aşmaz. Tesislerde riser böyledir: dik yükselir, dirsek üst siklona ulaşınca gelir ve parça parça kıvrılır. Düşey kısım ~11.6–11.9 m'dir. (Bir ara dirsek yay olarak, sonra girişin üstüne çıkıp inen düz parçalarla çizildi; ikisi de geri alındı.) Girişte kanalın üst duvarı çatı hizasındadır (CFD katılarında giriş çatıdan aşağı iner: C1 yarığı, C2–C5 volütü).
+- C2 → R1 → ikiz C1: R1 de C2'nin gaz çıkışından 45°'lik daralmayla dik yükselir, iki C1'in arasından geçer ve tepede ikiye ayrılır. İkiye ayrılır; her kolun alanı R1'in yarısıdır (Ø2.171, CFD'deki C1 riser'ı).
 - ikiz C1 → egzoz: iki stub birleşir ve hattın dışına, "to ID fan" ucuna gider
 
 **Farin:**
-- ham farin → R1: 60° ile aşağı inip R1'in yatay parçasının dış ucuna, C2'nin gaz çıkışının hemen üstüne girer
-- C2 → R3, C3 → R4, iç C1 → R2: farin önce kendi kolonunda **düşey iner**, sonra **60°'lik bir parçayla** riser'ın düşey kısmına yan duvarından girer.
-  - C3'ün farini R4'e, C4 farin hattının R4'ü kestiği kotun en az 1 m üstünden girer; iki farin borusu kesişmez.
-  - Giriş noktası, riser'ın alttaki siklonun üstündeki yatay parçasının 1.5 m üstündedir (`MEAL_ENTRY_UP`).
+- ham farin → R1: yalnız girişi işaretleyen, küçük başlı 1.0 m'lik bir ok. Dış C1'in altından 60° ile R1'in dış duvarına, ayağının 1.0 m üstünden girer; dış C1'e ve farin borusuna değmez. Dışarıdan gelen bir hat dış C1'in konisini ya da farin borusunu kesiyordu. Okun kuyruğunun hemen yanında küçük (2 mm) "RM" yazılıdır; dış C1'in altında "raw meal" yazısına yer yok
+- C2 → R3, C3 → R4, iç C1 → R2: her riser, farini verecek siklonun hemen altında yükselir. Farin 1 m **düşey iner** (`MEAL_SIDE_DROP`), 60° ile riser duvarının 1 m yanına geçer (`MEAL_SIDE_L`), duvarın yanında iner ve **60°'lik bir parçayla** riser'ın düşey kısmına yan duvarından girer.
+  - C2 ve C3'ün farini riser'ın dirseğinin dış tarafından, dirseğin en az 2.2 m üstünden geçer ve hiçbir kanalı kesmez. C3'ün hattı, kaz boynu kolunun 1.45 m dışında iner.
+  - İç C1'in farini R2'nin yatay kanalı tarafından iner. Kanalın arkasından geçer ve orada kırılır.
+  - Giriş noktası, riser'ın ayağının (daralmanın tepesi) 1.5 m üstündedir (`MEAL_ENTRY_UP`).
   - 60° eğim, kalsinatör besleme borularının eğimidir (Fidaros 2007). Boru dik riser duvarıyla 30° yapar, yani farin duvara yatık, neredeyse teğet kayarak girer.
   - Tesislerde farin, riser'a alttaki siklonun hemen üstünden bu şekilde verilir.
-- dış C1 → iç C1'in borusu: dış C1, C2'nin ve R1'in C2 stub'ı üstündeki yatay kanalının hemen üstünde durduğu için düşey inemez. Farini C4 gibi 1 m dik iner, 1 m'lik dirsekten geçer ve 50° ile iç C1'in borusuna katılır; ikiz C1'lerin farini birleşir. Hat R1'in yatay kanalının arkasından geçer ve orada kırılır.
+- dış C1 → iç C1'in borusu: dış C1 C2'nin tam üstündedir, düşey inemez. Farini C4 gibi 1 m dik iner, 1 m'lik dirsekten geçer ve 50° ile iç C1'in R2'nin yanından inen borusuna, R2'nin yatay kanalının altında (z ≈ 87.2) katılır; ikiz C1'lerin farini birleşir. Hat C2'nin arkasından geçer ve orada kırılır. Bu bir 2D izdüşümüdür: gerçekte ikiz C1'ler çoğunlukla derinlik yönünde yan yanadır.
 - C4 → önce 3.0 m dik iner, 1 m'lik bir ara dirsekten geçer, sonra düz hatla kalsinatör duvarına, z 24.943'e (`calciner.bas`'ın besleme kotunun 3 m altı) iner; her hattın C4'ü kendi taraftaki besleme borusunu besler. Hat C5'in arkasından geçer ve orada kırılır (tam ölçekte kaz boynu inişinin altından geçer). Kesitte ~37°'dir: bu bir 2D izdüşümüdür. Çizimde iki hat yan yana dizildiği için yatay mesafe şişer; gerçekte C4 farin borusu C5'in yanından, başka bir derinlikte ve dik geçer. Bir ara C4'ü 9.2 m yükseltip kesitte 45° verilmişti; bu R4'ü ~23 m'ye uzatıyordu (R2, R3 ~12.6 m), kademeler yeniden `STAGE_GAP`'e indirildi.
 - C5 → giriş odasının tavanı: C4 gibi dik iner (0.5 m), 1 m'lik dirsekten geçer, düz hatla odanın tavanına, kenarından 1 m içeride iner. Bu hat kesitte ~36°'dir, farinin akabileceğinden (~40–45°) yatıktır. Bu bir 2D izdüşümüdür: çizimde iki hattın C5'leri fırın ekseni boyunca sağa sola dizilir, gerçekte ise odanın iki yanında, fırın eksenine dik durur; gerçek boru daha kısa ve diktir. Kesitte 40°'yi zorlamak odayı ±4.6 m'ye, 45° ±6.8 m'ye genişletiyordu (fırın doğrultusunda kalsinatörden geniş, gerçekçi değil); oda bu yüzden şematik kaldı: fırının çevresinde 1 m pay (Ø4.8 fırınla ±3.4 m). Gerçek eğim, oda ve borunun ölçüleri bir kaynaktan gelince belirlenir. Sağdaki C5'te hat TA kanalını çapraz keser
 - Giriş odasında farin birikmez: düz taban yerine fırının alt dudağından odanın sol üst köşesine çıkan bir rampa var, 40.5° (Ø4.0 fırınla 39.8°'ydi). Bu, farinin yığılma açısı (~40°), yani kayabildiği sınır; makro 39°'nin altına izin vermez. İki C5'in farini rampaya düşer ve fırına kayar. Eski düz taban fırın ağzının 1 m altındaydı ve sol yarısı fırından 5 m uzak bir ölü bölgeydi
@@ -164,7 +169,8 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
 ## Doğrulama
 
 Makronun ön kontrolleri:
-- kolonlar arasında riser'a yer var
+- R1 ikiz C1'lerin arasına sığıyor, R2–R4'e döndükleri siklonun yanında yer var; her riser alttaki siklonun gaz çıkışından dar
+- R2–R4'e giden farin riser'ın dirseğinin üstünden geçiyor ve riser'ın yanında inecek yeri var; dış C1 farini iç C1'in borusuna, R2'nin yatay kanalının altında katılıyor
 - C5'ler kalsinatöre, hatlar kaz boynu kollarına değmiyor
 - kaz boynu kolu C5'in volüt girişinin yüksekliğine sığıyor
 - C5'ler TA kanalının en az `C5_OVER_TA` üstünde (yerleşim bunu kurar)
@@ -178,22 +184,23 @@ Makronun ön kontrolleri:
 | Katman | Çizgi | Yay |
 |---|---|---|
 | EKIPMAN | 119 | 0 |
-| GAZ | 143 | 4 |
-| FARIN | 73 | 0 |
+| GAZ | (sonraki log) | 4 |
+| FARIN | 87 | 0 |
 | HAVA | 4 | 0 |
-| YAZI | 89 | 0 |
+| YAZI | 90 | 0 |
 | CERCEVE | 16 | 0 |
 | EKSEN | 19 | 0 |
 | OLCU | 47 | 5 |
 
-Sayfada 231 not vardır. Bu sayılar okları, lejantı, tabloları ve anteti içerir. OLCU'daki 5 yay grid balonlarıdır. Çizgilerin kâğıttaki kapsamı da çizildiği kapsama 0.1 mm içinde oturmalı.
+Sayfada 236 not vardır. Bu sayılar okları, lejantı, tabloları ve anteti içerir. OLCU'daki 5 yay grid balonları, GAZ'daki 4 yay kaz boynunundur. Çizgilerin kâğıttaki kapsamı da çizildiği kapsama 0.1 mm içinde oturmalı.
 
 1/√2 ölçekli sürüm bir Python betiğiyle de kurulmuştu; tam ölçekli sürüm (12 Ekim 2026) için bu tarama yinelenmedi, aşağıdaki kırılmalar makro log'undan ve PDF'ten. O betik, hiçbir kanal kenarının ya da farin hattının kendi kaynağı ya da hedefi olmayan bir ekipman dış hattını kesmediğini doğruladı. Bilinçli istisnalar, ekipmanın içinden geçen akış çizgileridir (fırın → giriş odası → kalsinatör, soğutucu → başlık → fırın, giriş odası → fırın → soğutucu klinker yolu). Farin hatlarının gaz kanallarıyla çaprazlaması 2D'de kaçınılmazdır; gerçekte ikisi farklı derinliktedir. Çizimde bu yerlerde farin hattı kırılır:
-- dış C1 farini ile R1'in yatay kanalı
+- dış C1 farini ile C2
+- iç C1 farini ile R2'nin yatay kanalı
 - C4 farini ile C5 (iki hatta)
 - sağ C5 farini ile TA kanalı
 
-Makro log'u kırılmaları hat hat yazar; tam ölçekli çizimde (12 Ekim 2026) dış C1 farini R1'in yatay kanalının arkasından geçer, C4 farininin kaz boynu ile kesişmesi kalktı.
+Makro log'u kırılmaları hat hat yazar; riser'lar dik yükselince (13 Ekim 2026) R1'in yatay kanalının arkasındaki kırılma kalktı. Log, bir kanala bir parçada girip sonraki parçada çıkan hattı saymaz.
 
 Ham farin R1'e, kendi hedefine girer. Betik ayrıca etiketlerin yaklaşık metin kutularını taradı: hiçbir etiket bir çizgiyle ya da başka bir etiketle çakışmıyor.
 
