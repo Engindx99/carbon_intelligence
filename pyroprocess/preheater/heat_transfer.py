@@ -1035,8 +1035,8 @@ def solve_stage_node(
     # even keep the order of the temperatures.
     #
     # What is still approximate: radiation (k_eff = 0.005 here)
-    # is linearised at the node-mean temperatures, and cp_gas is
-    # taken at the node-mean gas temperature for the exponent.
+    # is linearised at the node-mean temperatures, and each
+    # stream's heat capacity is one secant value over the node.
     # Both are iterated to self-consistency below. Neither
     # touches conservation: the heats go through the same
     # enthalpy balances as before, which close exactly whatever
@@ -1102,14 +1102,34 @@ def solve_stage_node(
     # ~10 Newton passes.
     shell_guess = [None]
 
+    # ==========================================================
+    # SECANT HEAT-CAPACITY FLOWS
+    #
+    # The exponent of the exact exchange needs one C per stream
+    # over the node. The outlets, though, are set by the enthalpy
+    # balances below, so the C that makes the linear profile end
+    # where those balances put the outlet is the SECANT over
+    # [inlet, outlet], not the Cp at the node mean: with the
+    # solid's Cp(T) the point value left one node 4-15 K off
+    # twenty (measured 13 Oct 2026) and the bed leaving hotter
+    # than the gas. Each pass takes the outlets its own heats
+    # imply; the passes already iterate to 1e-7 K.
+    # ==========================================================
+    gas = gas_mixture(state, m_dot_g)
+
+    hg_in = float(gas.h(Tg_in, T_ref))
+    hs_in = float(h_solid(Ts_in, T_ref))
+
+    def secant_C(m_dot, h_of_T, cp_of_T, T_in, h_in, T_out):
+        dT = T_out - T_in
+        if abs(dT) < 1e-6:
+            return m_dot * float(cp_of_T(T_in))
+        return m_dot * (float(h_of_T(T_out)) - h_in) / dT
+
+    Cg = m_dot_g * float(gas.cp(float(Tg_bar))) + eps
+    Cs = m_dot_s * float(cp_solid(float(Ts_bar))) + eps
+
     for _ in range(50):
-
-        Cg = m_dot_g * float(gas_mixture(state, m_dot_g).cp(float(Tg_bar))) + eps
-
-        # The solid's Cp frozen at the node mean, as cp_gas is: it
-        # sets only the exponent of the exact exchange. The heat
-        # balances below close on h_solid whatever it is.
-        Cs = m_dot_s * float(cp_solid(float(Ts_bar))) + eps
 
         # The suspension's own conductance (Preheater
         # suspension_gs_coefficient), at the node means as the
@@ -1186,18 +1206,43 @@ def solve_stage_node(
             # The previous solver's fallback, kept as it was.
             Tw_new = max(T_amb, min(Tg_in, Ts_in))
 
-        Tg_new, Ts_new, _, _, _ = exchange(Tw_new)
+        Tg_new, Ts_new, Q_gs_k, Q_gw_k, Q_ws_k = exchange(Tw_new)
+
+        # The outlets these heats give (the stream balances below,
+        # without the vapour, which the profile does not carry).
+        Tg_end = _gas_T_clipped(
+            gas,
+            hg_in + (reaction_power - Q_gs_k - Q_gw_k) / max(m_dot_g, eps),
+            T_ref,
+        ) if m_dot_g > eps else Tg_in
+        Ts_end = float(T_solid_from_h(
+            hs_in + (Q_gs_k - Q_ws_k) / max(m_dot_s, eps),
+            T_ref,
+        )) if m_dot_s > eps else Ts_in
+
+        Cg_new = secant_C(
+            m_dot_g, lambda T: gas.h(T, T_ref), gas.cp,
+            Tg_in, hg_in, Tg_end,
+        ) + eps
+        Cs_new = secant_C(
+            m_dot_s, lambda T: h_solid(T, T_ref), cp_solid,
+            Ts_in, hs_in, Ts_end,
+        ) + eps
 
         change = max(
             abs(Tw_new - Tw),
             abs(Tg_new - Tg_bar),
             abs(Ts_new - Ts_bar),
+            abs(Cg_new / Cg - 1.0) * 1e3,
+            abs(Cs_new / Cs - 1.0) * 1e3,
         )
 
         Tw, Tg_bar, Ts_bar = Tw_new, Tg_new, Ts_new
+        Cg, Cs = Cg_new, Cs_new
 
-        # The coefficients move only through radiation and
-        # cp_gas; 1e-7 K is far inside every tolerance that reads
+        # The coefficients move only through radiation and the
+        # secant C's (their relative change weighted x1e3, about
+        # the kelvin it moves a ~1e3 K outlet); 1e-7 K is far inside every tolerance that reads
         # this node, and conservation does not depend on it.
         if change < 1e-7:
             break
@@ -1410,6 +1455,16 @@ def _node_mean_affine(
     mean_1 = P2 @ b_1
 
     return mean_0, mean_1
+
+
+def _gas_T_clipped(gas, h, T_ref, T_lo=250.0, T_hi=4000.0):
+    """gas.T_from_h clipped to [T_lo, T_hi], as the stage's own
+    inversion (gas_phase.gas_temperature_from_enthalpy) is."""
+    if h <= gas.h(T_lo, T_ref):
+        return T_lo
+    if h >= gas.h(T_hi, T_ref):
+        return T_hi
+    return float(gas.T_from_h(h, T_ref, T_lo, T_hi))
 
 
 def _safeguarded_root(fun, x0, lo, hi, tol=1e-6, max_iter=60):

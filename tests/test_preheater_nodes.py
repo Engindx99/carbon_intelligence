@@ -116,29 +116,37 @@ class NodalPreheaterBalanceTest(unittest.TestCase):
     @classmethod
     def setUpClass(cls):
         cls.twin, cls.validations = run_twin(nodes_per_stage=cls.NODES)
-        cls.reference = json.loads(REFERENCE_PATH.read_text())["snapshot"]
+        cls.one_node, _ = run_twin(nodes_per_stage=1)
 
     def test_one_exact_node_matches_twenty(self):
-        """The reference is the 1-node plant. With the node exchange
-        integrated exactly, 20 nodes move the stage outlets by at
-        most 1.16 K (stage 4 solid; gas 0.35-0.93 K) and the
-        calciner's solid inlet enthalpy by 0.09 % -- under the old
-        forward-Euler node, stage 1's gas outlet alone was 38 K off
-        and that enthalpy 12 %. What is left is radiation and cp_gas
-        linearised at the node means, and Tw held over the node."""
+        """The reference is a 1-node plant on the SAME physics, run
+        here (the stored twin_state_reference.json predates solid
+        Cp(T) and the composition-aware gas). With each stream's
+        heat capacity a secant over the node, 20 nodes move the
+        stage outlets by at most 1.98 K (stage 3 solid; gas
+        0.35-1.16 K) and the calciner's solid inlet enthalpy by
+        0.09 % (measured 13 Oct 2026). With Cp at the node mean
+        instead, the solid's Cp(T) put one node 4-15 K off twenty
+        and that enthalpy 0.9 %; under the old forward-Euler node,
+        stage 1's gas outlet alone was 38 K off and that enthalpy
+        12 %. What is left is radiation linearised at the node
+        means, Tw held over the node, and the plant loop
+        reconverging around both."""
+
+        one = {s.stage_id: s for s in self.one_node.preheater.stages}
 
         for stage in self.twin.preheater.stages:
             with self.subTest(stage=stage.stage_id):
                 for side in ("gas", "solid"):
-                    key = f"stage{stage.stage_id}_{side}_outlet_temperature"
+                    attr = f"{side}_outlet_temperature"
                     self.assertLess(
-                        abs(getattr(stage, f"{side}_outlet_temperature")
-                            - self.reference[key]),
-                        1.5,
+                        abs(getattr(stage, attr)
+                            - getattr(one[stage.stage_id], attr)),
+                        2.5,
                     )
 
         H20 = self.twin.state.Hsolid_calciner_in
-        H1 = self.reference["state_Hsolid_calciner_in"]
+        H1 = self.one_node.state.Hsolid_calciner_in
         self.assertLess(abs(H20 - H1) / H1, 2e-3)
 
     def test_runs_20_nodes_per_stage(self):
