@@ -216,8 +216,8 @@ Makronun ön kontrolleri:
 | Katman | Çizgi | Yay |
 |---|---|---|
 | EKIPMAN | 155 | 0 |
-| GAZ | 197 | 36 |
-| FARIN | 85 | 0 |
+| GAZ | 171 | 36 |
+| FARIN | 73 | 0 |
 | HAVA | 4 | 0 |
 | YAZI | 90 | 0 |
 | CERCEVE | 16 | 0 |
@@ -225,7 +225,7 @@ Makronun ön kontrolleri:
 | OLCU | 47 | 5 |
 | GIZLI | 24 | 0 |
 
-Bu sayılar bacaktaki 1.5 m'lik adımlı çalıştırmanındır (14 Ekim 2026); adım kalktı ve bütün farin hatları yalnız uçlarıyla çizilir oldu; GAZ, FARIN ve YAZI sonraki log'dan güncellenecek. Sayfada 240 not vardı. GIZLI'daki 24 çizgi on iki vorteks bulucunun (her hatta C2–C5 ve iki C1) duvarları. Bu sayılar okları, lejantı, tabloları ve anteti içerir. OLCU'daki 5 yay grid balonları, GAZ'daki 36 yay kaz boynunun (4), dört C1'in kol ve çıkış dirseklerinin (16) ve sekiz C2–C5 çıkış dirseğinin (16) duvarlarıdır. Çizgilerin kâğıttaki kapsamı da çizildiği kapsama 0.1 mm içinde oturmalı.
+Son doğrulanmış çalıştırma 14 Ekim 2026 (CFD birebir çıkışlar, farin hatları yalnız uçlarıyla, CFD kilidi). Sayfada 251 not vardır. GIZLI'daki 24 çizgi on iki vorteks bulucunun (her hatta C2–C5 ve iki C1) duvarları. Bu sayılar okları, lejantı, tabloları ve anteti içerir. OLCU'daki 5 yay grid balonları, GAZ'daki 36 yay kaz boynunun (4), dört C1'in kol ve çıkış dirseklerinin (16) ve sekiz C2–C5 çıkış dirseğinin (16) duvarlarıdır. Çizgilerin kâğıttaki kapsamı da çizildiği kapsama 0.1 mm içinde oturmalı.
 
 1/√2 ölçekli sürüm bir Python betiğiyle de kurulmuştu; o betik, hiçbir kanal kenarının ya da farin hattının kendi kaynağı ya da hedefi olmayan bir ekipman dış hattını kesmediğini doğruladı. Bilinçli istisnalar, ekipmanın içinden geçen akış çizgileridir (fırın → giriş odası → kalsinatör, soğutucu → başlık → fırın, giriş odası → fırın → soğutucu klinker yolu). Farin hatları yalnız uçlarıyla çizildiği için artık hiçbir kanalı kesmez (14 Ekim 2026).
 
