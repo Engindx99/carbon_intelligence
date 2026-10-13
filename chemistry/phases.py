@@ -111,8 +111,8 @@ def raw_meal_solid_flow(m_dot_raw_meal):
     """
     Species mass flows [kg/s] of a raw-meal stream of total
     mass flow m_dot_raw_meal [kg/s], split by
-    chemistry.composition.RAW_MEAL_COMPOSITION (a 100 000 kg
-    mass basis). The species sum equals m_dot_raw_meal.
+    chemistry.composition.RAW_MEAL_COMPOSITION (normalised
+    by its sum). The species sum equals m_dot_raw_meal.
     """
 
     basis = sum(RAW_MEAL_COMPOSITION.values())

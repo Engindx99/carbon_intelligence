@@ -507,7 +507,7 @@ class GlobalState:
             component_mass = (
                 zone_inventory
                 * RAW_MEAL_COMPOSITION[key]
-                / 100_000.0
+                / sum(RAW_MEAL_COMPOSITION.values())
             )
 
             return np.full(

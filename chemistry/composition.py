@@ -1,11 +1,15 @@
 # ======================================================
 # Raw meal composition
-# Mass basis = 100000 kg
+# Mass basis: species masses [kg]; users normalise by the sum
 # ======================================================
 
 RAW_MEAL_COMPOSITION = {
 
-    "H2O": 5000,
+    # Free moisture at the preheater inlet: 1 wt %, the meal dried
+    # in the raw mill (CEMCAP D3.2, VDZ reference plant, Table 3.2).
+    # raw_meal_solid_flow normalises by the sum, so the basis no
+    # longer adds up to 100 000 kg.
+    "H2O": 1000,
 
     "Bound_H2O": 2000,
 

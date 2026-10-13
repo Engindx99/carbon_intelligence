@@ -114,7 +114,8 @@ class CalcinationModel(ReactionBase):
         # ======================================================
 
         self.CaCO3_mass_fraction = (
-            RAW_MEAL_COMPOSITION["CaCO3"] / 100000.0
+            RAW_MEAL_COMPOSITION["CaCO3"]
+            / sum(RAW_MEAL_COMPOSITION.values())
         )
 
         # ======================================================
