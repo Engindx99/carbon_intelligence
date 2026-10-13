@@ -1,6 +1,7 @@
 import numpy as np
 import yaml
 
+from physics.gas_thermo import GasMixture
 from physics.physics import h_gas
 from physics.physics import h_solid
 from physics.physics import interfacial_areas
@@ -819,12 +820,14 @@ class Calciner:
         # along this zone, so a single scalar would be the true
         # flow in at most one cell. thermal_step publishes the
         # profiles it solved on.
-        state.Hg_calciner = (
-            state.m_dot_g_calciner_cells
-            * h_gas(
-                state.Tg_calciner,
-                self.T_ref,
-            )
+        state.Hg_calciner = state.m_dot_g_calciner_cells * np.array(
+            [
+                GasMixture(s).h(float(T), self.T_ref)
+                for s, T in zip(
+                    state.Calciner_gas_species_cells,
+                    state.Tg_calciner,
+                )
+            ]
         )
 
 

@@ -19,7 +19,9 @@ exposed the lag.
 import unittest
 
 from physics.physics import T_gas_from_h, h_gas
+from physics.gas_thermo import GasMixture
 from pyroprocess.precalciner.raw_meal_inlet import (
+    calciner_inlet_species,
     gas_temperature_from_enthalpy,
 )
 
@@ -47,8 +49,23 @@ class _StubState:
         self.m_dot_tertiary_air = m_dot_tertiary_air
         self.m_dot_fuel_calciner = m_dot_fuel_calciner
         self.m_dot_g_calciner = m_dot_g_calciner
+        # Kiln gas as the transition discharges it (mass fractions
+        # of a converged run), for the inlet mixture's composition.
+        self.Transition_gas_species_out = {
+            s: w * m_dot_g_transition
+            for s, w in (
+                ("N2", 0.68), ("O2", 0.03), ("Ar", 0.012),
+                ("CO2", 0.25), ("H2O", 0.028),
+            )
+        }
         if stale_inlet is not None:
             self.m_dot_g_calciner_in = stale_inlet
+
+
+def _h_in(state, T):
+    """Specific enthalpy of the calciner's inlet mixture, the one
+    gas_temperature_from_enthalpy inverts with."""
+    return GasMixture(calciner_inlet_species(state)).h(T, T_REF)
 
 
 class InletFlowIsAssembledLiveTest(unittest.TestCase):
@@ -63,7 +80,7 @@ class InletFlowIsAssembledLiveTest(unittest.TestCase):
         )
 
         expected_flow = 14.9204 + 20.8807 + 1.5
-        H = expected_flow * h_gas(1200.0, T_REF)
+        H = expected_flow * _h_in(state, 1200.0)
 
         T = gas_temperature_from_enthalpy(_StubCalciner(), H, state)
 
@@ -110,7 +127,7 @@ class InletFlowIsAssembledLiveTest(unittest.TestCase):
         with_fuel = _StubState(10.0, 20.0, 1.5, 40.0)
         without = _StubState(10.0, 20.0, 0.0, 40.0)
 
-        H = 31.5 * h_gas(1100.0, T_REF)
+        H = 31.5 * _h_in(with_fuel, 1100.0)
 
         self.assertAlmostEqual(
             gas_temperature_from_enthalpy(_StubCalciner(), H, with_fuel),

@@ -1,5 +1,6 @@
 from physics.physics import outlet_face_value
 from physics.physics import T_gas_from_h
+from physics.gas_thermo import GasMixture
 
 # The variable-flow gas row moved to physics.variable_flow_rows when
 # the calciner adopted it too (Faz 1c). Re-exported here so this
@@ -25,6 +26,21 @@ def inlet_gas_flow(state):
     return float(getattr(state, "m_dot_g_burning_out", state.m_dot_g))
 
 
+def inlet_species(state):
+    """The species the kiln gas brings in: what the burning zone
+    published for its outlet face (physics.gas_thermo). Before
+    Burning has run once there is no such face, and the burner
+    gas is all there is."""
+
+    species = getattr(state, "Burning_gas_species_out", None)
+
+    if species is None:
+        from pyroprocess.burning.gas_phase import kiln_inlet_species
+        species = kiln_inlet_species(state)
+
+    return species
+
+
 def gas_inlet_temperature_from_enthalpy(transition, H, state):
 
     # The INLET flow, not state.m_dot_g_transition -- that
@@ -44,7 +60,9 @@ def gas_inlet_temperature_from_enthalpy(transition, H, state):
 
     h_target = H / m_dot_g
 
-    return T_gas_from_h(
+    # Inverted with the mixture H was built on, the burning zone's
+    # outlet gas, so the handoff keeps its temperature.
+    return GasMixture(inlet_species(state)).T_from_h(
         h_target,
         transition.T_ref,
         transition.T_ref,

@@ -8,6 +8,10 @@ from physics.physics import radiation
 from physics.physics import second_order_upwind_correction
 from physics.physics import second_order_upwind_face_corrections
 from physics.physics import T_gas_from_h
+from physics.gas_thermo import CO2_GAS
+from physics.gas_thermo import GasMixture
+from physics.gas_thermo import cell_species
+from pyroprocess.precalciner.raw_meal_inlet import calciner_inlet_species
 from physics.physics import T_solid_from_h
 from physics.kiln_closures import suspension_gas_solid_coefficient
 from physics.shell import shell_closure
@@ -153,6 +157,46 @@ def thermal_step(
         m_g_out_cells
         - dm_gas_cells
     )
+
+    # The gas's COMPOSITION along the riser (physics.gas_thermo).
+    # dm_gas_cells is calcination CO2 plus dehydroxylation water
+    # (Calciner.apply); the water is the published per-cell H2O,
+    # the CO2 the rest. Fixed for this thermal step, so the
+    # mixtures are built once.
+    dm_H2O_cells = np.asarray(
+        getattr(state, "m_dot_H2O_generated_cells", np.zeros(N)),
+        dtype=float,
+    )
+    if dm_H2O_cells.size != N:
+        dm_H2O_cells = np.zeros(N)
+    dm_H2O_cells = np.minimum(np.maximum(dm_H2O_cells, 0.0), dm_gas_cells)
+    dm_CO2_cells = dm_gas_cells - dm_H2O_cells
+
+    released_cells = [
+        {"CO2": float(c), "H2O": float(w)}
+        for c, w in zip(dm_CO2_cells, dm_H2O_cells)
+    ]
+
+    species_in = calciner_inlet_species(state)
+    species_cells = cell_species(species_in, released_cells, reverse=False)
+    gas_in = GasMixture(species_in)
+    gas_cells = [GasMixture(s) for s in species_cells]
+
+    # What each cell's bed releases, as a gas of its own.
+    released_gas = [
+        GasMixture(r) if r["CO2"] + r["H2O"] > 0.0 else CO2_GAS
+        for r in released_cells
+    ]
+
+    def h_gas_cells(Tg_cells):
+        return np.array(
+            [g.h(float(T), T_ref) for g, T in zip(gas_cells, Tg_cells)]
+        )
+
+    def h_released_cells(Ts_cells):
+        return np.array(
+            [g.h(float(T), T_ref) for g, T in zip(released_gas, Ts_cells)]
+        )
 
     V_cell = calciner.V_cell
 
@@ -340,8 +384,8 @@ def thermal_step(
     # Inlet face enthalpy of the incoming gas stream. It is a
     # known handoff, not a reconstruction, so it is the one
     # face that carries no second-order correction.
-    h_gas_in = h_gas(
-        Tg_in,
+    h_gas_in = gas_in.h(
+        float(Tg_in),
         T_ref,
     )
 
@@ -482,7 +526,7 @@ def thermal_step(
         # (physics.second_order_upwind_face_corrections). Both
         # arrays are in FLOW order and have N+1 entries.
         Dg_face = second_order_upwind_face_corrections(
-            h_gas(Tg_iter, T_ref),
+            h_gas_cells(Tg_iter),
             h_gas_in,
             reverse=False,
         )
@@ -499,10 +543,12 @@ def thermal_step(
         # same term with opposite signs, so it cancels over the
         # zone: the released mass crosses phases at the bed
         # temperature it actually left, creating no energy.
-        cp_gas_s_cells = cp_gas(Ts_iter)
+        cp_gas_s_cells = np.array(
+            [g.cp(float(T)) for g, T in zip(released_gas, Ts_iter)]
+        )
 
         h_const_s_cells = (
-            h_gas(Ts_iter, T_ref)
+            h_released_cells(Ts_iter)
             - cp_gas_s_cells * Ts_iter
         )
 
@@ -585,6 +631,9 @@ def thermal_step(
                 Dg_face[p_gas],
                 Dg_face[p_gas + 1],
                 cocurrent=True,
+                gas_i=gas_cells[i],
+                gas_up=gas_cells[i - 1] if i > 0 else None,
+                gas_in=gas_in,
             )
 
             # The fuel burns in the gas stream, exactly as the
@@ -825,11 +874,12 @@ def thermal_step(
     # comes straight from the face enthalpy and Tg_out is its
     # inverse, reporting the temperature the preheater sees.
     h_gas_out_face = outlet_face_value(
-        h_gas(Tg_ss, T_ref),
+        h_gas_cells(Tg_ss),
         reverse=False,
     )
 
-    Tg_out = T_gas_from_h(
+    # Co-current: the gas leaves through cell N-1's outflow face.
+    Tg_out = gas_cells[-1].T_from_h(
         h_gas_out_face,
         T_ref,
         200.0,
@@ -949,8 +999,8 @@ def thermal_step(
     # temperature across the handoff.
     Hg_in = (
         m_dot_g_in
-        * h_gas(
-            Tg_in,
+        * gas_in.h(
+            float(Tg_in),
             T_ref,
         )
     )
@@ -972,10 +1022,7 @@ def thermal_step(
     H_phase_change = float(
         np.sum(
             dm_gas_cells
-            * h_gas(
-                Ts_ss,
-                T_ref,
-            )
+            * h_released_cells(Ts_ss)
         )
     )
 
@@ -1112,6 +1159,11 @@ def thermal_step(
 
     state.m_dot_s_calciner_cells = m_s_out_cells.copy()
     state.m_dot_g_calciner_cells = m_g_out_cells.copy()
+
+    # The gas's composition per cell and through its outlet face
+    # (cell N-1, co-current): the preheater takes the latter.
+    state.Calciner_gas_species_cells = species_cells
+    state.Calciner_gas_species_out = species_cells[-1]
 
     # ======================================================
     # RETURN

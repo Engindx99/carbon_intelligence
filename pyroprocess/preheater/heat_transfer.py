@@ -2,7 +2,7 @@ import math
 
 import numpy as np
 
-from physics.physics import cp_gas
+from pyroprocess.preheater.gas_phase import gas_mixture
 from physics.physics import cp_solid
 from physics.physics import h_solid
 from physics.physics import T_solid_from_h
@@ -1104,7 +1104,7 @@ def solve_stage_node(
 
     for _ in range(50):
 
-        Cg = m_dot_g * float(cp_gas(Tg_bar)) + eps
+        Cg = m_dot_g * float(gas_mixture(state, m_dot_g).cp(float(Tg_bar))) + eps
 
         # The solid's Cp frozen at the node mean, as cp_gas is: it
         # sets only the exponent of the exact exchange. The heat
@@ -1251,6 +1251,14 @@ def solve_stage_node(
         eps,
     )
 
+    # The water is carried at the BED's enthalpy, h_solid(Ts_out),
+    # not as H2O gas: Ts_out was solved on the wet flow m_dot_s,
+    # and the next stage takes the dry solid by TEMPERATURE, so
+    # (m_dot_s - m_dot_vapor) h_solid(Ts_out) is exactly what it
+    # books only if the water left at h_solid too. Rating it as
+    # vapour here leaked 2.15 MW across the five stages (measured
+    # 13 Oct 2026). The vapour's own Cp is therefore approximated
+    # by the bed's for the few kg/s of free moisture.
     H_vapor = m_dot_vapor * h_solid(Ts_out, T_ref)
 
     # Enthalpy of the solid stream actually leaving the stage.

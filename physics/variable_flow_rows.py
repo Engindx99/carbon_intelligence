@@ -65,6 +65,9 @@ def apply_gas_energy_balance(
     D_in=0.0,
     D_out=0.0,
     cocurrent=False,
+    gas_i=None,
+    gas_up=None,
+    gas_in=None,
 ):
     """
     THE STREAM GAINS MASS. The CO2 the bed releases in this cell
@@ -94,17 +97,32 @@ def apply_gas_energy_balance(
 
     With mg_in == mg_out and dm_gas == 0 this reduces exactly to
     the constant-flow form it replaces.
+
+    COMPOSITION. gas_i, gas_up and gas_in are physics.gas_thermo
+    GasMixtures: cell i's outgoing gas, its upstream neighbour's,
+    and the inlet handoff's. The outflow is rated with gas_i and
+    the inflow with gas_up (or gas_in at the inlet cell), so each
+    face is rated with the same mixture in the two rows it joins
+    and the zone telescopes exactly. Left None, the row uses the
+    representative closure physics.h_gas / cp_gas, as before.
     """
+
+    def props(gas):
+        if gas is None:
+            return h_gas, cp_gas
+        return gas.h, gas.cp
+
+    h_i_fn, cp_i_fn = props(gas_i)
 
     Tg_i = i
     Ts_i = N + i
     Tw_i = 2 * N + i
 
-    Cp_g_i = cp_gas(
+    Cp_g_i = cp_i_fn(
         Tg_iter[i]
     )
 
-    h_i_iter = h_gas(
+    h_i_iter = h_i_fn(
         Tg_iter[i],
         T_ref
     )
@@ -141,7 +159,7 @@ def apply_gas_energy_balance(
 
     if i == inlet_cell:
 
-        h_in = h_gas(
+        h_in = props(gas_in)[0](
             Tg_in,
             T_ref
         )
@@ -156,11 +174,13 @@ def apply_gas_energy_balance(
 
         Tg_up_i = up
 
-        Cp_g_up = cp_gas(
+        h_up_fn, cp_up_fn = props(gas_up)
+
+        Cp_g_up = cp_up_fn(
             Tg_iter[up]
         )
 
-        h_up_iter = h_gas(
+        h_up_iter = h_up_fn(
             Tg_iter[up],
             T_ref
         )

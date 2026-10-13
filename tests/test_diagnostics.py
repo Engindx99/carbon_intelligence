@@ -2,7 +2,7 @@ import unittest
 
 import numpy as np
 
-from physics.physics import h_gas
+from pyroprocess.burning.gas_phase import kiln_inlet_gas
 from reporter import diagnostics
 from tests.twin_harness import run_twin
 
@@ -260,8 +260,11 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         Qgs = float(np.sum(state.Burning_Qgs_cells))
         Qgw = float(np.sum(state.Burning_Qgw_cells))
 
+        # Rebuilt with the kiln's own inlet mixture, the one the
+        # burner enthalpy was inverted with.
         Hg_in = float(
-            state.m_dot_g * h_gas(state.Tg_burning_in, burning.T_ref)
+            state.m_dot_g
+            * kiln_inlet_gas(state).h(float(state.Tg_burning_in), burning.T_ref)
         )
         Hg_out = float(state.Hgas_burning_out)
 

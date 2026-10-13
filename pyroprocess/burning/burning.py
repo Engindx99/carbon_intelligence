@@ -1,6 +1,8 @@
 import math
 
 import numpy as np
+
+from physics.gas_thermo import GasMixture
 import yaml
 
 from physics.physics import h_gas
@@ -584,12 +586,14 @@ class Burning:
         # bed loses CO2 and the gas gains it along the zone and a
         # single scalar would be the true flow in at most one
         # cell. thermal_step publishes the profiles it solved on.
-        state.Hg_burning = (
-            state.m_dot_g_burning_cells
-            * h_gas(
-                state.Tg_burning,
-                self.T_ref
-            )
+        state.Hg_burning = state.m_dot_g_burning_cells * np.array(
+            [
+                GasMixture(s).h(float(T), self.T_ref)
+                for s, T in zip(
+                    state.Burning_gas_species_cells,
+                    state.Tg_burning,
+                )
+            ]
         )
 
         state.Hs_burning = (

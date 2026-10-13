@@ -3,6 +3,9 @@ import numpy as np
 from physics.physics import cp_gas
 from physics.physics import cp_solid
 from physics.physics import h_gas
+from physics.gas_thermo import CO2_GAS
+from physics.gas_thermo import GasMixture
+from physics.gas_thermo import cell_species
 from physics.physics import h_solid
 from physics.physics import T_solid_from_h
 from physics.physics import outlet_face_value
@@ -243,8 +246,33 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     # Inlet face enthalpy of the incoming gas stream. It is a
     # known handoff, not a reconstruction, so it is the one
     # face that carries no second-order correction.
-    h_gas_in = h_gas(
-        Tg_in,
+    # The gas's composition (physics.gas_thermo): the kiln gas
+    # as the burning zone discharged it, plus each cell's
+    # calcination CO2 in the flow direction. The CO2 is resolved
+    # inside the Picard loop here, so the cell mixtures are
+    # rebuilt there whenever dm_gas_cells moves.
+    species_in = gas_phase.inlet_species(state)
+    gas_in = GasMixture(species_in)
+
+    def gas_cells_for(dm_cells):
+        return [
+            GasMixture(s)
+            for s in cell_species(
+                species_in,
+                [{"CO2": float(dm)} for dm in dm_cells],
+                reverse=True,
+            )
+        ]
+
+    def h_gas_cells(gas_cells, Tg_cells):
+        return np.array(
+            [g.h(float(T), T_ref) for g, T in zip(gas_cells, Tg_cells)]
+        )
+
+    gas_cells = [gas_in] * N
+
+    h_gas_in = gas_in.h(
+        float(Tg_in),
         T_ref,
     )
 
@@ -297,8 +325,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # corrections cannot be collapsed into one per-cell
         # term (physics.second_order_upwind_face_corrections).
         # Both arrays are in FLOW order and have N+1 entries.
+        # Rated on the previous pass's mixtures; a deferred
+        # correction, frozen at the iterate like the rest of it.
         Dg_face = second_order_upwind_face_corrections(
-            h_gas(Tg_iter, T_ref),
+            h_gas_cells(gas_cells, Tg_iter),
             h_gas_in,
             reverse=True,
         )
@@ -450,10 +480,13 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # h_gas(Ts) for the CO2 leaving the bed, linearised at
         # the current iterate exactly as the gas row linearises
         # its own enthalpy.
-        cp_gas_s_cells = cp_gas(Ts_iter)
+        gas_cells = gas_cells_for(dm_gas_cells)
+
+        # The released gas is CO2, rated as CO2.
+        cp_gas_s_cells = CO2_GAS.cp(Ts_iter)
 
         h_const_s_cells = (
-            h_gas(Ts_iter, T_ref)
+            CO2_GAS.h(Ts_iter, T_ref)
             - cp_gas_s_cells * Ts_iter
         )
 
@@ -553,6 +586,9 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 Tg_in,
                 Dg_face[p_gas],
                 Dg_face[p_gas + 1],
+                gas_i=gas_cells[i],
+                gas_up=gas_cells[i + 1] if i < N - 1 else None,
+                gas_in=gas_in,
             )
 
             # ==================================================
@@ -936,13 +972,21 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
     Ts_out_face = T_solid_from_h(hs_out_face, T_ref)
 
+    gas_cells_final = gas_cells_for(dm_gas_final)
+
     h_gas_out_face = outlet_face_value(
-        h_gas(
-            Tg_ss,
-            T_ref
-        ),
+        h_gas_cells(gas_cells_final, Tg_ss),
         reverse=True,
     )
+
+    # The gas's composition per cell and through its outlet face,
+    # as flows [kg/s]: the calciner takes the latter as its inlet.
+    state.Transition_gas_species_cells = cell_species(
+        species_in,
+        [{"CO2": float(dm)} for dm in dm_gas_final],
+        reverse=True,
+    )
+    state.Transition_gas_species_out = state.Transition_gas_species_cells[0]
 
     Hg_out = (
         m_g_out_face

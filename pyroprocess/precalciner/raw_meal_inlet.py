@@ -1,6 +1,11 @@
 from physics.physics import h_gas
 from physics.physics import T_gas_from_h
 from physics.physics import T_solid_from_h
+from physics.physics import FUEL_COMPOSITION
+from physics.gas_thermo import GasMixture
+from physics.gas_thermo import add
+from physics.gas_thermo import air
+from physics.gas_thermo import burn_in
 
 
 # ======================================================
@@ -23,6 +28,32 @@ def inlet_gas_flow(state):
         state.m_dot_g_transition
         + state.m_dot_tertiary_air
         + getattr(state, "m_dot_fuel_calciner", 0.0)
+    )
+
+
+# ======================================================
+# ITS COMPOSITION
+#
+# Kiln gas as the transition discharged it, plus tertiary air,
+# with the calciner fuel burned in that mixture's O2
+# (physics.gas_thermo). Taken as fully burned from the inlet face
+# on, as the kiln's: the fuel's mass is already in inlet_gas_flow,
+# its heat stays axial (q_fuel_cells). Shared by the inversion
+# below and the zone's inlet flux (thermal_solver), so the round
+# trip H -> Tg_in -> H stays exact.
+# ======================================================
+def calciner_inlet_species(state):
+
+    kiln_gas = getattr(state, "Transition_gas_species_out", None)
+
+    if kiln_gas is None:
+        from pyroprocess.transition.gas_phase import inlet_species
+        kiln_gas = inlet_species(state)
+
+    return burn_in(
+        add(kiln_gas, air(float(state.m_dot_tertiary_air))),
+        float(getattr(state, "m_dot_fuel_calciner", 0.0)),
+        FUEL_COMPOSITION,
     )
 
 
@@ -91,7 +122,7 @@ def gas_temperature_from_enthalpy(calciner, H, state):
         )
     )
 
-    return T_gas_from_h(
+    return GasMixture(calciner_inlet_species(state)).T_from_h(
         h_target,
         calciner.T_ref,
         200.0,

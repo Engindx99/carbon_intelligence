@@ -29,6 +29,7 @@ SI throughout: T in K, h in J/kg relative to T_ref, cp in J/(kg K).
 """
 
 import bisect
+import functools
 import math
 
 import numpy as np
@@ -160,7 +161,24 @@ class GasMixture:
                     mix[k] += f * c[k]
             self._coeffs.append(tuple(mix))
 
+        # NIST's segment fits do not meet exactly: H steps by up to
+        # a few tens of J/kg at an edge. Shift each upper interval's
+        # constant so H is continuous there; otherwise an enthalpy
+        # read at an edge inverts a hundredth of a kelvin off.
+        for k, edge in enumerate(_EDGES):
+            step = self._H_on(k, edge) - self._H_on(k + 1, edge)
+            A, B, C, D, E, K = self._coeffs[k + 1]
+            self._coeffs[k + 1] = (A, B, C, D, E, K + step / 1000.0)
+
         self._h_ref = self._H(T_REF)
+
+    def _H_on(self, k, T):
+        A, B, C, D, E, K = self._coeffs[k]
+        t = T * 1e-3
+        return 1000.0 * (
+            t * (A + t * (0.5 * B + t * (C / 3.0 + t * 0.25 * D)))
+            - E / t + K
+        )
 
     # ------------------------------------------------------
     # internals: absolute H (J/kg, H(298.15 K) ~ 0) and Cp
@@ -265,13 +283,21 @@ def air(m_dot):
 
 
 def burned(m_dot_air, m_dot_fuel, fuel_composition):
-    """Species flows after m_dot_fuel burns completely in m_dot_air.
+    """Species flows after m_dot_fuel burns completely in m_dot_air
+    of dry air. See burn_in."""
+
+    return burn_in(air(m_dot_air), m_dot_fuel, fuel_composition)
+
+
+def burn_in(flows, m_dot_fuel, fuel_composition):
+    """Species flows after m_dot_fuel burns completely in the gas
+    `flows` (a species dict) -- the calciner burns its fuel in kiln
+    gas plus tertiary air, not in fresh air.
 
     C -> CO2, H -> H2O, S -> SO2 (booked as CO2 mass), fuel O
     offsets the O2 demand. Mass is conserved: the result sums to
-    m_dot_air + m_dot_fuel. Raises if the air cannot burn the fuel."""
+    the gas plus m_dot_fuel. Raises if the gas cannot burn the fuel."""
 
-    m_air = float(m_dot_air)
     m_fuel = float(m_dot_fuel)
 
     # Element molar masses; the product masses are built from the
@@ -290,11 +316,11 @@ def burned(m_dot_air, m_dot_fuel, fuel_composition):
     m_H2O = H / (2.0 * M_H) * (2.0 * M_H + M_O)
     m_SO2 = S / M_S * (M_S + 2.0 * M_O)
 
-    flows = air(m_air)
+    flows = add(flows)
 
     if O2_demand > flows["O2"] * (1.0 + 1e-12):
         raise ValueError(
-            f"{m_air:.6g} kg/s of air cannot burn {m_fuel:.6g} kg/s of fuel"
+            f"{flows['O2']:.6g} kg/s of O2 cannot burn {m_fuel:.6g} kg/s of fuel"
         )
 
     flows["O2"] -= O2_demand
@@ -315,3 +341,72 @@ def mixture(flows):
     """GasMixture of a species flow dict."""
 
     return GasMixture(flows)
+
+
+# ======================================================
+# A ZONE'S GAS, CELL BY CELL
+#
+# The stream enters a zone with species flows `inlet` and picks
+# up what each cell's bed releases. Cell i's OUTGOING gas holds
+# the inlet plus every release from the inlet cell up to and
+# including i, in the flow direction: a suffix sum when the gas
+# runs N-1 -> 0 (the kiln, counter-current to the bed), a prefix
+# sum when it runs 0 -> N-1 (the calciner riser).
+#
+# A cell's inflow face is its upstream neighbour's outflow face,
+# so a row that rates the inflow with the upstream cell's mixture
+# and the outflow with its own telescopes exactly over the zone.
+# ======================================================
+
+def cell_species(inlet, released_cells, reverse):
+    """Per-cell outgoing species flows [kg/s].
+
+    inlet          : species dict entering the zone
+    released_cells : list of N species dicts, what each cell adds
+    reverse        : True when the gas runs N-1 -> 0
+    """
+
+    N = len(released_cells)
+    order = range(N - 1, -1, -1) if reverse else range(N)
+
+    out = [None] * N
+    running = add(inlet)
+
+    for i in order:
+        running = add(running, released_cells[i])
+        out[i] = running
+
+    return out
+
+
+CO2_GAS = GasMixture({"CO2": 1.0})
+H2O_GAS = GasMixture({"H2O": 1.0})
+
+
+# ======================================================
+# CACHED MIXTURES
+#
+# Building a GasMixture is ~30 us; the preheater's node loops ask
+# for the same few compositions thousands of times per sweep.
+# Keyed on the mass FRACTIONS rounded to 1e-12, far below any
+# property difference that could matter.
+# ======================================================
+
+@functools.lru_cache(maxsize=4096)
+def _mixture_from_key(key):
+    return GasMixture(dict(key))
+
+
+def mixture_cached(flows):
+    """GasMixture of a species flow dict, memoised on its fractions."""
+
+    total = sum(float(flows.get(s, 0.0)) for s in SPECIES)
+
+    if not total > 0.0:
+        raise ValueError("a gas mixture needs a positive total mass")
+
+    key = tuple(
+        (s, round(float(flows.get(s, 0.0)) / total, 12)) for s in SPECIES
+    )
+
+    return _mixture_from_key(key)

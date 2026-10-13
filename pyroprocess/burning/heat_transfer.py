@@ -13,6 +13,10 @@ from physics.physics import second_order_upwind_face_corrections
 from physics.variable_flow_rows import apply_gas_energy_balance
 from physics.variable_flow_rows import apply_solid_energy_balance
 from physics.physics import T_gas_from_h
+from physics.gas_thermo import CO2_GAS
+from physics.gas_thermo import GasMixture
+from physics.gas_thermo import cell_species
+from pyroprocess.burning.gas_phase import kiln_inlet_species
 from physics.shell import shell_closure
 
 from . import combustion
@@ -138,6 +142,25 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         m_g_out_cells
         - dm_gas_cells
     )
+
+    # The gas's COMPOSITION along the zone (physics.gas_thermo):
+    # burned burner air at the inlet face, plus each cell's
+    # calcination CO2 in the flow direction. Fixed for this
+    # thermal step -- it moves only with dm_gas_cells -- so the
+    # mixtures are built once here, not per Picard pass.
+    species_in = kiln_inlet_species(state)
+    species_cells = cell_species(
+        species_in,
+        [{"CO2": float(dm)} for dm in dm_gas_cells],
+        reverse=True,
+    )
+    gas_in = GasMixture(species_in)
+    gas_cells = [GasMixture(s) for s in species_cells]
+
+    def h_gas_cells(Tg_cells):
+        return np.array(
+            [g.h(float(T), T_ref) for g, T in zip(gas_cells, Tg_cells)]
+        )
 
     # ======================================================
     # HEAT TRANSFER PARAMETERS
@@ -455,8 +478,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # Inlet face enthalpy of the incoming gas stream. It is a
     # known handoff, not a reconstruction, so it is the one
     # face that carries no second-order correction.
-    h_gas_in = h_gas(
-        state.Tg_burning_in,
+    h_gas_in = gas_in.h(
+        float(state.Tg_burning_in),
         T_ref,
     )
 
@@ -522,7 +545,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         # per-cell term. Both arrays are in FLOW order with N+1
         # entries.
         Dg_face = second_order_upwind_face_corrections(
-            h_gas(Tg_iter, T_ref),
+            h_gas_cells(Tg_iter),
             h_gas_in,
             reverse=True,
         )
@@ -537,10 +560,11 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
         # the current iterate exactly as the gas row linearises
         # its own enthalpy. Both phases carry this term with
         # opposite signs, so it cancels over the zone.
-        cp_gas_s_cells = cp_gas(Ts_iter)
+        # The released gas is CO2, rated as CO2.
+        cp_gas_s_cells = CO2_GAS.cp(Ts_iter)
 
         h_const_s_cells = (
-            h_gas(Ts_iter, T_ref)
+            CO2_GAS.h(Ts_iter, T_ref)
             - cp_gas_s_cells * Ts_iter
         )
 
@@ -602,6 +626,9 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
                 state.Tg_burning_in,
                 Dg_face[p_gas],
                 Dg_face[p_gas + 1],
+                gas_i=gas_cells[i],
+                gas_up=gas_cells[i + 1] if i < N - 1 else None,
+                gas_in=gas_in,
             )
 
             # The burner's heat is a source on the gas row. The
@@ -784,11 +811,12 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # enthalpy below and Tg_out is its inverse -- reporting
     # the outlet temperature the next zone actually sees.
     h_gas_out_face = outlet_face_value(
-        h_gas(Tg_ss, T_ref),
+        h_gas_cells(Tg_ss),
         reverse=True,
     )
 
-    Tg_out = T_gas_from_h(
+    # The gas leaves through cell 0's outflow face.
+    Tg_out = gas_cells[0].T_from_h(
         h_gas_out_face,
         T_ref,
         T_ref,
@@ -880,8 +908,8 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # calcination CO2 on top.
     Hg_in = (
         m_dot_g_in
-        * h_gas(
-            Tg_in,
+        * gas_in.h(
+            float(Tg_in),
             T_ref
         )
     )
@@ -912,7 +940,7 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     H_phase_change = float(
         np.sum(
             dm_gas_cells
-            * h_gas(
+            * CO2_GAS.h(
                 Ts_ss,
                 T_ref,
             )
@@ -1143,7 +1171,14 @@ def thermal_step(burning, Tg, Ts, Tw, state, inputs, u_g, u_s):
     # converged profile rather than at a single temperature,
     # since cp_gas varies by ~25% across this zone.
     state.Burning_C_solid = float(m_s_out_face * cp_solid(Ts_out))
-    state.Burning_C_gas_cells = m_g_out_cells * cp_gas(Tg_ss)
+    state.Burning_C_gas_cells = m_g_out_cells * np.array(
+        [g.cp(float(T)) for g, T in zip(gas_cells, Tg_ss)]
+    )
+
+    # The gas's composition, per cell and as it leaves through
+    # cell 0: the transition takes the latter as its inlet.
+    state.Burning_gas_species_cells = species_cells
+    state.Burning_gas_species_out = species_cells[0]
 
     # ======================================================
     # HANDOFF FLUXES AND PER-CELL FLOWS

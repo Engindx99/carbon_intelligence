@@ -1,6 +1,7 @@
 import numpy as np
 
 from physics.physics import h_gas
+from physics.gas_thermo import GasMixture
 from physics.physics import h_solid
 from physics.closure_config import closure_settings
 from physics.shell import wall_stack
@@ -259,12 +260,14 @@ class Transition:
         # UPDATE ENTHALPY STATES
         # ======================================================
 
-        state.Hg_transition = (
-            state.m_dot_g_transition_cells
-            * h_gas(
-                state.Tg_transition,
-                self.T_ref,
-            )
+        state.Hg_transition = state.m_dot_g_transition_cells * np.array(
+            [
+                GasMixture(s).h(float(T), self.T_ref)
+                for s, T in zip(
+                    state.Transition_gas_species_cells,
+                    state.Tg_transition,
+                )
+            ]
         )
 
         # Per-cell flow: the bed calcines along this zone, so a

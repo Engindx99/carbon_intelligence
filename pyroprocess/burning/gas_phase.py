@@ -3,6 +3,9 @@ from physics.physics import h_gas
 from physics.physics import outlet_face_value
 from physics.physics import T_gas_from_h
 from physics.gas_thermo import AIR_MIXTURE
+from physics.gas_thermo import GasMixture
+from physics.gas_thermo import burned
+from physics.physics import FUEL_COMPOSITION
 
 
 # ======================================================
@@ -63,6 +66,34 @@ def resolve_gas_inlet(burning, state):
     return state.Tg_burning_in
 
 
+# ======================================================
+# THE KILN'S INLET GAS
+#
+# state.m_dot_g is burner air plus kiln fuel. Its COMPOSITION is
+# taken as fully burned from the inlet face on: the fuel's mass
+# already enters the gas there in this model, and the heat
+# release stays axial (combustion.axial_heat_distribution), so
+# only the mixture's Cp is being assigned early, not its heat.
+# One definition for the burner-mixture inversion below and for
+# the zone's inlet flux (heat_transfer.thermal_step), so the
+# round trip H -> Tg_in -> H stays exact.
+# ======================================================
+def kiln_inlet_species(state):
+
+    m_fuel = float(getattr(state, "m_dot_fuel_kiln", 0.0))
+
+    return burned(
+        float(state.m_dot_g) - m_fuel,
+        m_fuel,
+        FUEL_COMPOSITION,
+    )
+
+
+def kiln_inlet_gas(state):
+
+    return GasMixture(kiln_inlet_species(state))
+
+
 def gas_inlet_temperature_from_enthalpy(burning, H, state):
 
     # state.m_dot_g is m_dot_g_burning = m_dot_air_kiln +
@@ -100,7 +131,7 @@ def gas_inlet_temperature_from_enthalpy(burning, H, state):
 
     h_target = H / m_dot_g
 
-    return T_gas_from_h(
+    return kiln_inlet_gas(state).T_from_h(
         h_target,
         burning.T_ref,
         burning.T_ref,

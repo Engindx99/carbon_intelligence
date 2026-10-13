@@ -19,6 +19,7 @@ Nothing here is a tuning target. Bounds are physical limits
 import numpy as np
 
 from chemistry.calcination import CalcinationModel
+from pyroprocess.burning.gas_phase import kiln_inlet_gas
 from physics.physics import h_gas
 from physics.physics import T_gas_from_h
 from physics.physics import cp_solid
@@ -287,10 +288,14 @@ def adiabatic_flame_temperature(twin):
     m_dot_g = float(state.m_dot_g)
     Q = float(state.Q_burning)
 
-    h_in = float(h_gas(state.Tg_burning_in, T_ref))
+    # The kiln's inlet gas mixture (physics.gas_thermo), the one
+    # Tg_burning_in was inverted with.
+    gas = kiln_inlet_gas(state)
+
+    h_in = float(gas.h(float(state.Tg_burning_in), T_ref))
 
     return float(
-        T_gas_from_h(
+        gas.T_from_h(
             h_in + Q / m_dot_g,
             T_ref,
             T_ref,
@@ -324,10 +329,12 @@ def burning_enthalpy_ceiling(twin):
     # Past the gas table's window the ceiling is no bound at all
     # on any gas the zone can hold, so report it as unbounded
     # rather than raise from a diagnostic.
-    if h_ceiling > float(h_gas(4000.0, T_ref)):
+    gas = kiln_inlet_gas(state)
+
+    if h_ceiling > float(gas.h(4000.0, T_ref)):
         return float("inf")
 
-    return float(T_gas_from_h(h_ceiling, T_ref, T_ref, 4000.0))
+    return float(gas.T_from_h(h_ceiling, T_ref, T_ref, 4000.0))
 
 
 def plausibility_bounds(twin):
