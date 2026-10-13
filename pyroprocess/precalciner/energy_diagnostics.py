@@ -18,6 +18,7 @@ def compute_energy_balance(calciner, state):
     #
     #   Hgas_in
     # + Hsolid_in
+    # + Q_calciner (the calciner fuel's heat release)
     #
     # Energy out:
     #
@@ -36,9 +37,13 @@ def compute_energy_balance(calciner, state):
     #   residual -> 0
     # ======================================================
 
+    # Q_calciner is the calciner fuel's heat release; the zone's own
+    # energy_in (thermal_solver) books it, and leaving it out here put
+    # this figure off by exactly that, ~ -101.6 MW.
     state.Calciner_energy_balance = (
         state.Hgas_calciner_in
         + state.Hsolid_calciner_in
+        + state.Q_calciner
         - state.Hgas_calciner_out
         - state.Hsolid_calciner_out
         - state.Wall_loss_calciner
@@ -59,6 +64,9 @@ def compute_energy_balance(calciner, state):
         )
         + abs(
             state.Calciner_Q_sink
+        )
+        + abs(
+            state.Q_calciner
         )
         + calciner.eps
     )
