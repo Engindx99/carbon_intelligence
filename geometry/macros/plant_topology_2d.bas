@@ -114,7 +114,8 @@ Const COOLER_AREA As Double = 119.6
 ' SCHEMATIC -- no source; they only lay the plant out.
 Const STAGE_GAP      As Double = 4#       ' C1's dust outlet at least this far over C2's stub [m] (R1's Y sets it higher).
                                           ' C2..C4 stand where the outlet below (as its CFD) runs into them
-Const ZIG_DX         As Double = 20#      ' a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]
+Const ZIG_DX         As Double = 15#      ' a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]: each
+                                          ' riser's leg past the CFD outlet face, its taper and 0.5 m (14.6 m for R4); was 20
 Const C5_OVER_TA     As Double = 1.75     ' the C5 dust outlets at least this far over the tertiary air duct [m]
 Const GN_TO_C5_GAP   As Double = 1#       ' a gooseneck drop to its C5 barrel; its inlet run spans it [m]
 Const GN_BEND_LEG    As Double = 0.5      ' the drop turns into C5 in two 45 deg steps: a 45 deg piece this many leg D across, then level [-]
@@ -133,8 +134,8 @@ Const C1_OUT_RISE    As Double = 3#       ' gas outlet pipe (D = C1_VD) straight
 Const C1_OUT_R       As Double = 3.6      ' ... a 180 deg bend away from the branch, its walls arcs, and down as far as it rose
 Const R1_BRANCH_HALF As Double = 2.75     ' R1's Y: the twin's branches this far either side of R1's axis [m]
 Const R1_UP_MIN      As Double = 0.5      ' R1's wall on C2's side straight up at least this far over the leg before its Y; the C1 stage stands that high [m]
-Const R1_LEG_ON      As Double = 1.55     ' C2's outlet leg runs on this far past the CFD's 4.63 m into R1's elbow: R1 and the twin C1 where
-                                          ' the meal of the C1 over C2 joins the other's over R2's bend [m]
+Const R1_LEG_ON      As Double = 0.5      ' C2's outlet leg runs on this far past the CFD's 4.63 m into R1's elbow: the
+                                          ' two strings' far C1 outlet bends ~6 m apart over the calciner [m]
 Const ID_FAN_L       As Double = 2.5      ' "to ID fan": an arrow this long down from each C1 outlet's leg [m]
 Const RM_L           As Double = 0.8      ' raw meal: a small-headed arrow along each chute's axis, from this far past its end [m]
 Const MEAL_ENTRY_UP  As Double = 1.5      ' meal enters a riser this far over its foot (R2..R4: over the roof, into the CFD outlet pipe) [m]
