@@ -2,6 +2,7 @@ from physics.physics import cp_gas
 from physics.physics import h_gas
 from physics.physics import outlet_face_value
 from physics.physics import T_gas_from_h
+from physics.gas_thermo import AIR_MIXTURE
 
 
 # ======================================================
@@ -39,11 +40,13 @@ def resolve_gas_inlet(burning, state):
         0.0,
     )
 
+    # Primary air is ambient air: NIST dry air, as the cooler's
+    # secondary air it mixes with (physics.gas_thermo).
     H_primary = (
         state.m_dot_primary_air
         * float(
-            h_gas(
-                burning.T_amb,
+            AIR_MIXTURE.h(
+                float(burning.T_amb),
                 burning.T_ref,
             )
         )

@@ -22,7 +22,7 @@ import unittest
 
 import numpy as np
 
-from physics.physics import cp_gas
+from pyroprocess.cooler.gas_phase import cp_gas  # the cooler's air Cp
 from pyroprocess.cooler import gas_phase
 
 

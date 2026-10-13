@@ -1,8 +1,14 @@
 import numpy as np
 
-from physics.physics import cp_gas
-from physics.physics import h_gas
-from physics.physics import T_gas_from_h
+# The cooler's gas is ambient air from inlet to hood, so its
+# enthalpy is NIST dry air (physics.gas_thermo), not the
+# combustion-gas curve physics.h_gas, which runs 5-10 % high on
+# air. Same names and signatures, so the rows read unchanged.
+from physics.gas_thermo import AIR_MIXTURE
+
+cp_gas = AIR_MIXTURE.cp
+h_gas = AIR_MIXTURE.h
+T_gas_from_h = AIR_MIXTURE.T_from_h
 
 
 # ======================================================

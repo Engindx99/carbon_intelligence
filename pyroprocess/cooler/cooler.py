@@ -3,7 +3,13 @@ import yaml
 
 from physics.shell import wall_stack
 from physics.physics import ZONE_HT_CONFIG
-from physics.physics import h_gas
+# The cooler's gas is ambient air from inlet to hood, so its
+# enthalpy is NIST dry air (physics.gas_thermo), not the
+# combustion-gas curve physics.h_gas, which runs 5-10 % high on
+# air. Same names and signatures, so the rows read unchanged.
+from physics.gas_thermo import AIR_MIXTURE
+
+h_gas = AIR_MIXTURE.h
 from physics.physics import T_solid_from_h
 
 from chemistry.phases import get_cell_solid_flow

@@ -99,9 +99,12 @@ class StreamTemperaturesTest(unittest.TestCase):
 
         state = _StubState(12.5284, 20.8807, 8.7958)
 
-        H_sec = state.m_dot_secondary_air * float(h_gas(1200.0, T_REF))
-        H_ter = state.m_dot_tertiary_air * float(h_gas(800.0, T_REF))
-        H_vent = state.m_dot_vent_air * float(h_gas(400.0, T_REF))
+        # The cooler's own air enthalpy (NIST dry air), which is
+        # what stream_temperatures inverts with.
+        h_air = gas_phase.h_gas
+        H_sec = state.m_dot_secondary_air * float(h_air(1200.0, T_REF))
+        H_ter = state.m_dot_tertiary_air * float(h_air(800.0, T_REF))
+        H_vent = state.m_dot_vent_air * float(h_air(400.0, T_REF))
 
         T_sec, T_ter, T_vent = gas_phase.stream_temperatures(
             _StubCooler(), H_sec, H_ter, H_vent, state

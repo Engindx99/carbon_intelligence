@@ -3,7 +3,13 @@ import numpy as np
 from physics.physics import heat_transfer
 from physics.physics import outlet_face_value
 from physics.shell import shell_closure
-from physics.physics import h_gas
+# The cooler's gas is ambient air from inlet to hood, so its
+# enthalpy is NIST dry air (physics.gas_thermo), not the
+# combustion-gas curve physics.h_gas, which runs 5-10 % high on
+# air. Same names and signatures, so the rows read unchanged.
+from physics.gas_thermo import AIR_MIXTURE
+
+h_gas = AIR_MIXTURE.h
 from physics.physics import h_solid
 from physics.physics import T_solid_from_h
 
