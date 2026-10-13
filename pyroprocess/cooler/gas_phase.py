@@ -316,12 +316,32 @@ def apply_gas_energy_balance(
 # There is no single gas outlet face any more. Each cell's
 # air leaves vertically through the hood at Tg[i], so the
 # cooler has N outlets and the question is which take-off
-# each one feeds. Hot end first, in the order a plant is
-# plumbed: the kiln hood sits over the clinker-inlet end and
-# takes secondary air off the hottest grate, the tertiary
-# duct taps immediately downstream, and whatever is left
-# vents. The source does the same -- secondary is its segment
-# 1 and tertiary its segment 2.
+# each one feeds. The kiln hood sits over the hot end of the
+# grate (the recuperation zone) and BOTH combustion airs leave
+# through it: secondary straight into the kiln, tertiary
+# through the duct tapped at the hood or the cooler roof over
+# that same zone. So the hot zone is as wide as secondary plus
+# tertiary, both streams draw from it in proportion to their
+# mass, and whatever is left downstream vents.
+#
+# This replaced "secondary hottest-first, tertiary after it",
+# which handed the kiln the hottest air on its own:
+#
+#   source                         secondary   tertiary
+#   CEMCAP D3.2 Table 3.8 (VDZ)     1137 C      1086 C
+#   Svensen 2024 (FLS cooler)       1089 C       899 C (FLSmidth 968 C)
+#   twin, hottest-first             1419 C       800 C
+#
+# The real streams sit within 50-190 K of each other; hottest-
+# first put them 620 K apart and sent 40 % of the clinker's
+# heat back to the kiln as secondary air, against VDZ's 21 %.
+# The kiln returns ~95 % of any extra burner-end heat to the
+# clinker, so that share is what set the kiln-cooler loop.
+#
+# A shared, mixed hood is the simplest form that gives the two
+# streams one temperature; the real hood is in between (FLS
+# draws its segments separately), and its split is not
+# measured for this plant.
 #
 # The masses are NOT decided here. main.py:1074-1097 sets
 # them from combustion stoichiometry (secondary is the kiln's
@@ -371,13 +391,11 @@ def stream_masses(cooler, state):
 
     total = float(edges[-1])
 
-    lo_sec = 0.0
-    hi_sec = min(max(float(state.m_dot_secondary_air), 0.0), total)
+    m_sec = max(float(state.m_dot_secondary_air), 0.0)
+    m_ter = max(float(state.m_dot_tertiary_air), 0.0)
 
-    hi_ter = min(
-        max(hi_sec + float(state.m_dot_tertiary_air), hi_sec),
-        total,
-    )
+    # The hot zone the hood draws from: secondary + tertiary.
+    hi_hot = min(m_sec + m_ter, total)
 
     def overlap(lo, hi):
         return np.maximum(
@@ -385,8 +403,15 @@ def stream_masses(cooler, state):
             np.minimum(edges[1:], hi) - np.maximum(edges[:-1], lo),
         )
 
-    w_secondary = overlap(lo_sec, hi_sec)
-    w_tertiary = overlap(hi_sec, hi_ter)
+    w_hot = overlap(0.0, hi_hot)
+
+    # Each stream's share of every hot cell is its share of the
+    # hood draw. Tertiary is the hot zone's residual, so the two
+    # add back to w_hot exactly (note 1 below holds unchanged).
+    share_sec = m_sec / (m_sec + m_ter) if m_sec + m_ter > 0.0 else 0.0
+
+    w_secondary = w_hot * share_sec
+    w_tertiary = w_hot - w_secondary
 
     # The residual, for the reason in note 1 above.
     w_vent = m_air - w_secondary - w_tertiary

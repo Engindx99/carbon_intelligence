@@ -32,6 +32,10 @@ is the larger stream (20.88 vs 12.53 kg/s, because
 fuel.kiln_fraction = 0.40 sends 60% of the fuel to the calciner) so
 drawn hot-end-first after secondary it takes the cooler half of the
 grate. The source's plant has the opposite ratio.
+
+SUPERSEDED (13 Oct 2026): secondary and tertiary now share the hot
+zone through the kiln hood (gas_phase.stream_masses; CEMCAP D3.2
+Table 3.8 has them 51 K apart), so they leave at one temperature.
 """
 
 import unittest
@@ -219,12 +223,12 @@ class StreamMassesTest(unittest.TestCase):
 
 class HotEndFirstTest(unittest.TestCase):
 
-    def test_secondary_is_hotter_than_tertiary_than_vent(self):
-        """The plumbing order: the kiln hood sits over the
-        clinker-inlet end and takes the hottest grate, the tertiary
-        duct taps immediately downstream, the rest vents. A
-        reversed allocation would still conserve energy, which is
-        why it needs its own test."""
+    def test_the_hood_streams_share_the_hot_zone(self):
+        """Secondary and tertiary both leave through the kiln hood
+        over the hot end of the grate (CEMCAP D3.2 Table 3.8:
+        1137 vs 1086 C), so they carry one mixed temperature and
+        the rest vents colder. A reversed allocation would still
+        conserve energy, which is why it needs its own test."""
 
         cooler = _StubCooler(20)
         state = _StubState(TOTAL, SECONDARY, TERTIARY)
@@ -233,7 +237,7 @@ class HotEndFirstTest(unittest.TestCase):
         H = gas_phase.gas_enthalpy_split(cooler, Tg, state)
         T = gas_phase.stream_temperatures(cooler, *H, state)
 
-        self.assertGreater(T[0], T[1])
+        self.assertAlmostEqual(T[0], T[1], places=6)
         self.assertGreater(T[1], T[2])
 
     def test_the_streams_no_longer_share_one_temperature(self):
