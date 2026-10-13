@@ -214,10 +214,21 @@ simulation:
 
 
 fuel:
-  # Scaled with the feed for the 5000 t/d plant (user decision 12 Oct
-  # 2026: keep today's fuel per kg of meal; bringing the specific heat
-  # consumption into its band is separate work): 2.5 x 3.229 kg/s.
-  Fuel_rate_total: 8.07
+  # The middle of the specific heat consumption band (user decision,
+  # 13 Oct 2026): SHC_BAND 2900-3300 kJ/kg clinker in
+  # reporter/diagnostics.py, so 3100 kJ/kg on the clinker the meal can
+  # make (D11 clinker_potential: 89.70 kg/s meal -> 54.63 kg/s) at
+  # LHV 32 MJ/kg = 5.29 kg/s. A fixed operating input, not a control
+  # loop. With kiln_fraction 0.40 the kiln burns 1240 kJ/kg, where the
+  # FLS reference scenario measures 300 kcal/kg = 1256 (Svensen et al.
+  # 2025, arXiv:2504.02886, sec. 4.3).
+  #
+  # Was 8.07 (4460 kJ/kg): the 2500-era fuel per kg of meal, scaled
+  # with the feed on 12 Oct 2026. It only ran because the old
+  # calcination kinetics had the calciner self-heat to 1580 K; with
+  # calcination finishing in the calciner, the kiln got ~30 MW more
+  # than its bed can take and ran to 2400-2900 K.
+  Fuel_rate_total: 5.29
   O2: 3.5              # dry STACK O2 [%], sizing the plant's total combustion air
 
   # Share of the total fuel burned at the kiln burner; the rest fires
@@ -266,9 +277,8 @@ cooler_air:
 # Superseded: the 2500-era 4.5 x 60 m tube at 3.5 rpm and 2.2 %
 # gave 33.84 min, and the band's faster half broke the 1773 K
 # clinker liquidus there because that plant burnt 4440 kJ/kg
-# clinker against SHC_BAND = (2900, 3300). The fuel is still
-# scaled from that plant (user decision, 12 Oct 2026), so the
-# question is not settled here either.
+# clinker against SHC_BAND = (2900, 3300). The fuel now sits at
+# the band's middle (`fuel:` below, 13 Oct 2026).
 #
 # The slope is a PERCENT, which is how a kiln is built and
 # quoted. It used to read `inclination_deg: 3.0` -- 5.24 %,

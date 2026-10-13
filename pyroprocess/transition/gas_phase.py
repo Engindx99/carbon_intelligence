@@ -15,16 +15,29 @@ from physics.variable_flow_rows import apply_gas_energy_balance  # noqa: F401
 # was renamed to `transition` since this is now a free
 # function taking the owning Transition instance explicitly.
 # ======================================================
+def inlet_gas_flow(state):
+    """The gas Burning discharged [kg/s]: its burner gas plus
+    the CO2 of its own residual calcination, the flow its outlet
+    face published with Hgas_burning_out. Before Burning has run
+    once there is no such face yet, and the burner gas is all
+    there is."""
+
+    return float(getattr(state, "m_dot_g_burning_out", state.m_dot_g))
+
+
 def gas_inlet_temperature_from_enthalpy(transition, H, state):
 
     # The INLET flow, not state.m_dot_g_transition -- that
     # scalar already carries every kg of CO2 this zone will
     # release, so dividing the incoming enthalpy by it invented
-    # a colder inlet than Burning actually discharged. H was
-    # built by Burning on state.m_dot_g, so the inversion has
-    # to use the same flow or the handoff conserves J/s while
-    # rescaling K.
-    m_dot_g = state.m_dot_g
+    # a colder inlet than Burning actually discharged. Nor
+    # state.m_dot_g, the burner gas alone: H was built by
+    # Burning on its OUTLET face flow, which carries the kiln's
+    # calcination CO2 too, and dividing by the smaller flow
+    # read the inlet ~56 K hot at 2300 K (13 Oct 2026). The
+    # inversion has to use the flow H was built on, or the
+    # handoff conserves J/s while rescaling K.
+    m_dot_g = inlet_gas_flow(state)
 
     if m_dot_g <= transition.eps:
         return transition.T_ref

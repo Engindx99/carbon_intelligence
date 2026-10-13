@@ -1,6 +1,28 @@
 import numpy as np
 
 from chemistry.base import ReactionBase
+from chemistry.base import anchored_prefactor
+from chemistry.composition import RAW_MEAL_COMPOSITION
+
+
+def lime_budget(meal=RAW_MEAL_COMPOSITION):
+    """(CaO left for alite, clinker mass) from a raw meal, in the
+    meal's units: all CaCO3 calcined, Fe2O3 taken by C4AF, the
+    rest of the Al2O3 by C3A, all SiO2 by belite."""
+
+    CaO = meal["CaCO3"] * 56.08 / 100.09
+    clinker = CaO + meal["SiO2"] + meal["Al2O3"] + meal["Fe2O3"]
+
+    Al2O3_c4af = meal["Fe2O3"] * 101.96 / 159.69
+
+    CaO_free = (
+        CaO
+        - meal["Fe2O3"] * 4.0 * 56.08 / 159.69
+        - (meal["Al2O3"] - Al2O3_c4af) * 3.0 * 56.08 / 101.96
+        - meal["SiO2"] * 2.0 * 56.08 / 60.08
+    )
+
+    return CaO_free, clinker
 
 
 class AliteModel(ReactionBase):
@@ -10,8 +32,10 @@ class AliteModel(ReactionBase):
         super().__init__()
 
         # ================= KINETICS =================
-        self.prefactor = 1.0e3
-        self.activation_energy = 2.2e5
+        #
+        # Mastorakos (1999) activation energy; prefactor from the
+        # anchor in chemistry/base.py, set below with the window.
+        self.activation_energy = 4.20e5
 
         # ================= THERMODYNAMICS =================
         #
@@ -35,10 +59,10 @@ class AliteModel(ReactionBase):
         #   +14.79 kJ/mol / 0.17224 kg/mol = +8.587e4 J/kg C2S
         #   ( equivalently +64.8 kJ/kg C3S produced )
         #
-        # NOT tuned. The audit's finding was that C3S is frozen
-        # by CaO starvation, not by kinetics, so adjusting the
-        # prefactor or activation energy here would be fitting a
-        # symptom. Those are left exactly as they were.
+        # The kinetics were left untouched by that audit, which
+        # found C3S frozen by CaO starvation. Starvation is gone
+        # once calcination finishes upstream, and they are now
+        # anchored (KINETICS above, TEMPERATURE below).
         self.deltaH = 8.587e4
 
         # ================= STOICHIOMETRY =================
@@ -48,8 +72,28 @@ class AliteModel(ReactionBase):
         self.C3S_produced = 228.32 / 172.24
 
         # ================= TEMPERATURE =================
-        self.T_start = 1373.0
-        self.T_end = 1723.0
+        #
+        # Alite "only begins to form when liquid is formed", and
+        # the liquid appears over 1300-1425 C. The window is that
+        # liquid's share of its full amount, linear from 1573 K
+        # to 1698 K: the reaction runs in the melt and scales
+        # with it.
+        self.T_start = 1573.0
+        self.T_end = 1698.0
+
+        # Free lime 1.25 % of clinker after 900 s at 1723 K, past
+        # the window. With this plant's meal (lime_budget: per
+        # 100 t, 60.90 t clinker) belite, C3A and C4AF leave
+        # 8.98 t CaO, and CaO is alite's limiting reactant, so
+        # 1.25 % of clinker is 91.5 % of it reacted.
+        CaO_free, clinker = lime_budget()
+
+        self.prefactor = anchored_prefactor(
+            self.activation_energy,
+            T_anchor=1723.0,
+            t_anchor=900.0,
+            conversion=1.0 - 0.0125 * clinker / CaO_free,
+        )
 
 
     # ======================================================

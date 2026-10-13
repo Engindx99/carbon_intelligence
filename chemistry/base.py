@@ -3,6 +3,65 @@ import math
 import numpy as np
 
 
+R_GAS = 8.314
+
+
+# ======================================================
+# CLINKER KINETICS: CALIBRATED, AND SAID SO
+#
+# The Arrhenius SHAPE (activation energy) of the four
+# clinkering reactions is Mastorakos et al. (1999), the set the
+# FLS models carry (Ritschel et al. 2024, arXiv:2405.03208,
+# Table A.1; Svensen et al. 2025, arXiv:2504.02886, Table 5).
+# Its prefactors are NOT taken: those papers call them "guiding
+# values for tuning" and scale them by 1e2-1e10 to their plant
+# (2504.02886 sec. 4.2), with a concentration basis that does
+# not carry over to this model's first-order march.
+#
+# Instead each prefactor is SOLVED from one anchor, a stated
+# conversion after a stated isothermal time at a stated
+# temperature, each from a plant-chemistry source
+# (cementkilns.co.uk, "Thermochemistry of clinker burning"):
+#
+#   belite, aluminate, ferrite  form from 650-900 C and are
+#       "complete below 1300 C": 99 % in 600 s at 1473 K
+#       (600 s, about a third of the kiln transit, is this
+#       model's reading of "before 1300 C", not a quote)
+#   alite  "only begins to form when liquid is formed", the
+#       liquid appearing over 1300-1425 C; the burning zone
+#       holds the clinker "perhaps 10-20 minutes": free lime
+#       down to 1.25 % of clinker (preferred 1.0-1.5 %,
+#       CA 2189804) after 900 s at 1450 C = 1723 K
+#
+# So a k0 below is a consequence of its anchor, and the anchor
+# is what to argue with.
+# ======================================================
+def anchored_prefactor(
+    activation_energy,
+    T_anchor,
+    t_anchor,
+    conversion,
+    window=1.0,
+):
+    """k0 [1/s] of a first-order reaction that reaches
+    `conversion` of its limiting reactant after `t_anchor` [s]
+    at `T_anchor` [K], where its temperature window is
+    `window`."""
+
+    if not (0.0 < conversion < 1.0 and t_anchor > 0.0 and window > 0.0):
+        raise ValueError(
+            "anchor needs 0 < conversion < 1, t > 0 and window > 0"
+        )
+
+    k_anchor = -math.log(1.0 - conversion) / t_anchor
+
+    return (
+        k_anchor
+        / window
+        * math.exp(activation_energy / (R_GAS * T_anchor))
+    )
+
+
 class ReactionBase:
 
     def __init__(self):

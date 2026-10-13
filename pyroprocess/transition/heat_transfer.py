@@ -69,9 +69,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
 
     # The gas arriving is the stream Burning discharged, which
     # is also the stream whose enthalpy Hgas_transition_in
-    # carries; taking it from state.m_dot_g keeps the flow and
-    # the enthalpy at this boundary from drifting apart.
-    m_dot_g_in = state.m_dot_g
+    # carries; taking the flow Burning published with it keeps
+    # the flow and the enthalpy at this boundary from drifting
+    # apart (gas_phase.inlet_gas_flow).
+    m_dot_g_in = gas_phase.inlet_gas_flow(state)
 
     # ======================================================
     # INLET TEMPERATURES FROM ENTHALPY

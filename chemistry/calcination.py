@@ -17,8 +17,32 @@ class CalcinationModel(ReactionBase):
         # KINETICS
         # ======================================================
 
-        self.prefactor = 42.5             # 1/s
-        self.activation_energy = 1.5e5      # J/mol
+        # First-order decomposition of CaCO3.
+        #
+        # SOURCE: the open-access calciner model of Ritschel et
+        # al., arXiv:2405.03208, Table A.1, reaction r1 (k0 = 1e8,
+        # n = 0, EA = 175.7 kJ/mol), itself after Mastorakos et
+        # al. (1999). The standard reference for cement
+        # precalciner calcination is Borgwardt, AIChE J 31 (1985)
+        # 103-111, which the Norcem precalciner CFD study (SIMS
+        # 2017) cites for the same reaction.
+        #
+        # WHAT WAS WRONG. The previous pair (42.5 1/s, 150 kJ/mol)
+        # was slower by ~5 orders of magnitude: t90 at 1150 K was
+        # 17 325 MINUTES against the 2-10 SECONDS a real
+        # precalciner achieves. The plant calcined at all only
+        # because its residence times are 50-100x too long
+        # (preheater 274 s per stage, calciner ~22 min), so the
+        # two errors partly cancelled -- the same
+        # compensating-error pattern already dismantled for
+        # hv_gs x k_eff and for kinetics x residence.
+        #
+        # These values need no such help. Against plant practice:
+        #   1073 K  t90 = 8.2 s
+        #   1123 K  t90 = 3.4 s   (850 C, "a few seconds")
+        #   1173 K  t90 = 1.5 s   (900 C)
+        self.prefactor = 1.0e8              # 1/s
+        self.activation_energy = 1.757e5    # J/mol
         self.deltaH = 1.78e6                # J/kg CaCO3
 
         # ======================================================
@@ -30,11 +54,59 @@ class CalcinationModel(ReactionBase):
         self.CO2_ratio = 44.01 / 100.09
 
         # ======================================================
-        # TEMPERATURE WINDOW
+        # TEMPERATURE WINDOW -- SUPERSEDED
+        #
+        # reaction_rate() below no longer uses this window: the
+        # gate is now the thermodynamic driving force against the
+        # CO2 already in the gas. The two values are kept only
+        # because ReactionBase.validate_parameters() requires a
+        # consistent pair, and they are deliberately left at the
+        # figures the window used so the change is visible in the
+        # diff rather than hidden by a renumbering.
+        #
+        # NOTE that rate_vanishing_temperature() is overridden
+        # below for the same reason: the base class answers
+        # T_start, which stops being where this reaction dies the
+        # moment the window stops gating it.
         # ======================================================
 
         self.T_start = 1073.0               # K
         self.T_end = 1300.0                 # K
+
+        # ======================================================
+        # CO2 PARTIAL PRESSURE IN THE PROCESS GAS [atm]
+        #
+        # Sets where the driving force vanishes -- the calcination
+        # plateau. DERIVED from this model's own converged
+        # streams, not assumed: the preheater gas carries
+        # 44.1 kg/s, of which ~6.6 kg/s is CO2 released by
+        # calcination and ~8.0 kg/s is combustion CO2 from
+        # 2.5 kg/s of petcoke, so
+        #
+        #   y_CO2 = (14.6/44.01) / ((29.5/28.96) + (14.6/44.01))
+        #         = 0.246
+        #
+        # giving a plateau at equilibrium_temperature(0.25) =
+        # 1087.7 K, which brackets the 1073 K the fixed window
+        # asserted.
+        #
+        # THIS IS THE WEAK LINK IN THE MODULE, and it is a single
+        # representative number because the model carries no gas
+        # SPECIES balance -- it tracks CO2 generation per zone but
+        # not the composition of the stream flowing through a
+        # cell. Zone-local generation alone is NOT a substitute:
+        # measured, it gives the calciner 0.043 atm and a 998 K
+        # plateau, because each zone's gas also carries CO2 from
+        # the fuel and from upstream. When a real species balance
+        # exists this becomes a local quantity and this constant
+        # should be the first thing deleted.
+        #
+        # It matters: T_eq spans 1005 K at 0.05 atm to 1114 K at
+        # 0.40 atm, and T_eq is what decides where calcination
+        # can run at all.
+        # ======================================================
+
+        self.co2_partial_pressure = 0.25    # atm
 
 
         # ======================================================
@@ -124,6 +196,217 @@ class CalcinationModel(ReactionBase):
             )
 
         return self.dH_molar / denominator
+
+    # ======================================================
+    # TEMPERATURE AT WHICH THIS REACTION STOPS [K]
+    #
+    # Overrides ReactionBase.rate_vanishing_temperature, which
+    # answers T_start -- correct only while the window law gates
+    # the rate. Here the gate is the CO2 back-pressure, so the
+    # reaction dies at the equilibrium temperature for the CO2
+    # the gas already carries, and nowhere else.
+    #
+    # This has to be an EXACT zero of the rate, because it is
+    # the anchor of the chord in ReactionBase.reaction_heat_slope
+    # and the chord is only a secant of the real Q(T) if both its
+    # endpoints lie on it. It is: at T = T_eq the driving force
+    # is 1 - p/P_eq(T_eq) = 0 identically, so k = 0 and Q = 0.
+    # ======================================================
+    def rate_vanishing_temperature(self):
+
+        return self.equilibrium_temperature(
+            self.co2_partial_pressure
+        )
+
+    # ======================================================
+    # REACTION RATE [1/s]
+    #
+    # Overrides ReactionBase.reaction_rate to replace the linear
+    # temperature_window with the thermodynamic driving force:
+    #
+    #   k(T) = A exp(-EA/RT) * max(0, 1 - p_CO2 / P_eq(T))
+    #
+    # WHY. The window ramped the rate from 0 at 1073 K to full at
+    # 1300 K. Those are not properties of anything -- they are a
+    # stand-in for the equilibrium the reaction actually obeys.
+    # The replacement costs no new parameter (P_eq comes from
+    # this reaction's own enthalpy) and gains the composition
+    # dependence the window could not express: a gas leaner in
+    # CO2 lets calcination start colder (1039 K at 0.10 atm) and
+    # a richer one holds it off (1098 K at 0.30 atm).
+    #
+    # It also smooths the reaction front instead of suppressing
+    # it, which is what main.Twin.run's own note asks for: the
+    # front oscillation that forced the sweep budget up is a
+    # step-change in rate across a cell boundary, and a driving
+    # force that decays to zero as T approaches the plateau turns
+    # that step into a ramp.
+    #
+    # Scalar fast path for the same reason the rest of the module
+    # has one: the burning zone's Strang march evaluates this
+    # once per cell per sweep.
+    # ======================================================
+    def reaction_rate(self, T):
+
+        self.validate_parameters()
+
+        if isinstance(T, float):
+
+            T_safe = max(T, 1.0)
+
+            arrhenius = self.prefactor * math.exp(
+                -self.activation_energy / (self.R * T_safe)
+            )
+
+            driving_force = 1.0 - (
+                self.co2_partial_pressure
+                / self.equilibrium_pressure(T_safe)
+            )
+
+            if driving_force <= 0.0:
+                return 0.0
+
+            rate = arrhenius * driving_force
+
+            if not math.isfinite(rate):
+                raise FloatingPointError(
+                    "CalcinationModel: reaction_rate produced NaN/Inf"
+                )
+
+            return rate
+
+        T_safe = np.maximum(np.asarray(T, dtype=float), 1.0)
+
+        arrhenius = self.prefactor * np.exp(
+            -self.activation_energy / (self.R * T_safe)
+        )
+
+        p_eq = np.exp(
+            -(self.dH_molar - T_safe * self.dS_molar)
+            / (self.R * T_safe)
+        )
+
+        driving_force = np.clip(
+            1.0 - self.co2_partial_pressure / p_eq,
+            0.0,
+            1.0,
+        )
+
+        rate = arrhenius * driving_force
+
+        if np.any(~np.isfinite(rate)):
+            raise FloatingPointError(
+                "CalcinationModel: reaction_rate produced NaN/Inf"
+            )
+
+        return rate
+
+    # ======================================================
+    # REACTION RATE DERIVATIVE [1/(s K)]
+    #
+    # Overrides ReactionBase.reaction_rate_derivative, which
+    # differentiates the window law this class no longer uses.
+    # The two MUST move together: the solid row's diagonal
+    # carries this slope against the heat the rate above
+    # produced, and a slope belonging to a different rate law
+    # would not cancel at the fixed point.
+    #
+    # With k = A e^{-EA/RT} phi, phi = max(0, 1 - p/P_eq) and
+    # P_eq = exp(-(dH_m - T dS_m)/(RT)), so
+    # P_eq' = P_eq dH_m/(R T^2):
+    #
+    #   dphi/dT = (p / P_eq) dH_m / (R T^2)
+    #   dk/dT   = (A e^{-EA/RT} / (R T^2)) [ phi EA + (p/P_eq) dH_m ]
+    #
+    # Both bracket terms are >= 0, so dk/dT >= 0 -- the sign the
+    # linearisation rests on survives the change of rate law.
+    #
+    # Note it is LARGER than the Arrhenius part alone near the
+    # plateau: there phi -> 0 kills the first term while
+    # p/P_eq -> 1 makes the second maximal. That is exactly where
+    # the slope is needed.
+    # ======================================================
+    def reaction_rate_derivative(self, T):
+
+        self.validate_parameters()
+
+        if isinstance(T, float):
+
+            if T <= 1.0:
+                return 0.0
+
+            p_eq = self.equilibrium_pressure(T)
+
+            ratio = self.co2_partial_pressure / p_eq
+
+            driving_force = 1.0 - ratio
+
+            if driving_force <= 0.0:
+                return 0.0
+
+            arrhenius = self.prefactor * math.exp(
+                -self.activation_energy / (self.R * T)
+            )
+
+            derivative = (
+                arrhenius
+                / (self.R * T * T)
+                * (
+                    driving_force * self.activation_energy
+                    + ratio * self.dH_molar
+                )
+            )
+
+            if not math.isfinite(derivative):
+                raise FloatingPointError(
+                    "CalcinationModel: reaction_rate_derivative "
+                    "produced NaN/Inf"
+                )
+
+            return derivative
+
+        T = np.asarray(T, dtype=float)
+
+        T_safe = np.maximum(T, 1.0)
+
+        p_eq = np.exp(
+            -(self.dH_molar - T_safe * self.dS_molar)
+            / (self.R * T_safe)
+        )
+
+        ratio = self.co2_partial_pressure / p_eq
+
+        driving_force = 1.0 - ratio
+
+        arrhenius = self.prefactor * np.exp(
+            -self.activation_energy / (self.R * T_safe)
+        )
+
+        derivative = (
+            arrhenius
+            / (self.R * T_safe * T_safe)
+            * (
+                driving_force * self.activation_energy
+                + ratio * self.dH_molar
+            )
+        )
+
+        # Zero wherever the rate itself is pinned: past the
+        # plateau the driving force is clipped at 0, and below
+        # the T_safe floor the temperature is frozen.
+        derivative = np.where(
+            (driving_force > 0.0) & (T > 1.0),
+            derivative,
+            0.0,
+        )
+
+        if np.any(~np.isfinite(derivative)):
+            raise FloatingPointError(
+                "CalcinationModel: reaction_rate_derivative "
+                "produced NaN/Inf"
+            )
+
+        return derivative
 
     # ======================================================
     # HEAT-TRANSFER-CONTROLLED EXTENT -- REMOVED

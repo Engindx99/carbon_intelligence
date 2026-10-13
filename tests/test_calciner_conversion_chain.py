@@ -51,6 +51,12 @@ conversion at 1123 K. A real ILC precalciner does it in about 3.4
 seconds. To meet that at the same activation energy the prefactor
 would have to be 6.4e6 -- short by a factor of 1.5e5.
 
+    FIXED 13 Oct 2026: chemistry/calcination.py carries the
+    literature pair (1e8 1/s, 175.7 kJ/mol; t90 3.4 s at 1123 K)
+    behind a CO2 back-pressure gate (Link4FixedTest). The record
+    below keeps the committed pair as CommittedKinetics, because
+    the reference fixture it reads was solved with it.
+
     The model reaches any conversion only because the calciner
     SELF-HEATS until Arrhenius catches up: Ts_calciner ran 1519 K
     mean / 1735 K max in the rotary state, 1791 K / 2082 K in the
@@ -158,6 +164,36 @@ def _riser_transit(snapshot):
 # What a real in-line calciner runs at, and what it achieves.
 REAL_CALCINER_T = (1150.0, 1200.0)
 REAL_CALCINER_T90_S = 3.4
+
+
+class CommittedKinetics(CalcinationModel):
+    """The calcination kinetics this diagnosis was made on, and
+    that the reference fixture was solved with: 42.5 1/s,
+    150 kJ/mol, behind a linear 1073-1300 K window. Replaced on
+    13 Oct 2026 by the literature pair with a CO2 back-pressure
+    gate (chemistry/calcination.py); kept here, as literals, so
+    the record below still reads against the state it explains."""
+
+    def __init__(self):
+        super().__init__()
+        self.prefactor = 42.5
+        self.activation_energy = 1.5e5
+        self.T_start = 1073.0
+        self.T_end = 1300.0
+
+    def reaction_rate(self, T):
+        window = np.clip(
+            (np.asarray(T, dtype=float) - self.T_start)
+            / (self.T_end - self.T_start),
+            0.0,
+            1.0,
+        )
+        rate = (
+            self.prefactor
+            * np.exp(-self.activation_energy / (8.314 * np.asarray(T, dtype=float)))
+            * window
+        )
+        return float(rate) if np.ndim(rate) == 0 else rate
 
 
 class Link1TheTransitDoesNotSetTheSolidTemperatureTest(unittest.TestCase):
@@ -320,7 +356,7 @@ class Link3TheChemistryIsAppliedExactlyAsStatedTest(unittest.TestCase):
     def setUp(self):
         self.snapshot = _snapshot()
         self.calciner = _calciner()
-        self.model = CalcinationModel()
+        self.model = CommittedKinetics()
         self.Ts = np.asarray(
             self.snapshot["Ts_calciner"], dtype=float
         )
@@ -455,7 +491,7 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
     """`self.prefactor = 42.5  # 1/s`."""
 
     def setUp(self):
-        self.model = CalcinationModel()
+        self.model = CommittedKinetics()
         self.snapshot = _snapshot()
 
     def test_the_committed_pair_needs_hours_where_a_plant_needs_seconds(self):
@@ -537,6 +573,32 @@ class Link4TheRateConstantIsTheCauseTest(unittest.TestCase):
             self.snapshot, model
         )
         self.assertAlmostEqual(achieved, 0.00172, places=5)
+
+
+class Link4FixedTest(unittest.TestCase):
+    """The literature pair now in chemistry/calcination.py meets
+    the constraint the committed one missed by 1.5e5x."""
+
+    def test_the_bare_rate_finishes_a_calciner_in_seconds(self):
+
+        model = CalcinationModel()
+
+        self.assertAlmostEqual(model.prefactor, 1.0e8)
+        self.assertAlmostEqual(model.activation_energy, 1.757e5)
+
+        k = model.prefactor * math.exp(
+            -model.activation_energy / (8.314 * 1123.0)
+        )
+        self.assertAlmostEqual(
+            math.log(10.0) / k, REAL_CALCINER_T90_S, delta=0.2
+        )
+
+    def test_the_co2_gate_still_leaves_seconds(self):
+        """With the back-pressure gate at the configured p_CO2 the
+        rate at 1123 K is lower, and still a matter of seconds."""
+
+        k = float(CalcinationModel().reaction_rate(1123.0))
+        self.assertLess(math.log(10.0) / k, 10.0)
 
 
 if __name__ == "__main__":

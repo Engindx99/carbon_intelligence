@@ -1,6 +1,7 @@
 import numpy as np
 
 from chemistry.base import ReactionBase
+from chemistry.base import anchored_prefactor
 
 
 class C4AFModel(ReactionBase):
@@ -10,8 +11,10 @@ class C4AFModel(ReactionBase):
         super().__init__()
 
         # ================= KINETICS =================
-        self.prefactor = 1.0e3
-        self.activation_energy = 2.2e5
+        #
+        # Mastorakos (1999) activation energy; prefactor from the
+        # anchor in chemistry/base.py, set below with the window.
+        self.activation_energy = 3.30e5
 
         # ================= THERMODYNAMICS =================
         #
@@ -61,8 +64,20 @@ class C4AFModel(ReactionBase):
         )
 
         # ================= TEMPERATURE =================
-        self.T_start = 1373.0
-        self.T_end = 1723.0
+        #
+        # Incipient ferrite forms in the solid from 700-900 C and
+        # is complete below 1300 C (it then melts and re-freezes,
+        # which is the melt's heat, not this reaction's). Onset
+        # as a 1 K step at 973 K (700 C); same anchor as belite.
+        self.T_start = 973.0
+        self.T_end = 974.0
+
+        self.prefactor = anchored_prefactor(
+            self.activation_energy,
+            T_anchor=1473.0,
+            t_anchor=600.0,
+            conversion=0.99,
+        )
 
 
     # ======================================================

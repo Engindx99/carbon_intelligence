@@ -1,6 +1,7 @@
 import numpy as np
 
 from chemistry.base import ReactionBase
+from chemistry.base import anchored_prefactor
 
 
 class BeliteModel(ReactionBase):
@@ -10,8 +11,15 @@ class BeliteModel(ReactionBase):
         super().__init__()
 
         # ================= KINETICS =================
-        self.prefactor = 1.0e3
-        self.activation_energy = 2.0e5
+        #
+        # Mastorakos (1999) activation energy, prefactor from the
+        # anchor in chemistry/base.py: 99 % in 600 s at 1473 K,
+        # "complete below 1300 C". Was k0 1e3, Ea 200 kJ/mol with
+        # a 1123-1473 K window, which finished belite only near
+        # 1900 K and released its heat where the bed was hottest:
+        # the kiln then settled on a 2900 K self-heated branch
+        # (13 Oct 2026).
+        self.activation_energy = 2.40e5
 
         # ================= THERMODYNAMICS =================
         #
@@ -55,8 +63,19 @@ class BeliteModel(ReactionBase):
         self.C2S_produced = 172.24 / 60.08
 
         # ================= TEMPERATURE =================
-        self.T_start = 1123.0
-        self.T_end = 1473.0
+        #
+        # Onset only: belite starts forming at 650-900 C. A 1 K
+        # step at 923 K (650 C), the Arrhenius factor shapes the
+        # rest.
+        self.T_start = 923.0
+        self.T_end = 924.0
+
+        self.prefactor = anchored_prefactor(
+            self.activation_energy,
+            T_anchor=1473.0,
+            t_anchor=600.0,
+            conversion=0.99,
+        )
 
 
     # ======================================================

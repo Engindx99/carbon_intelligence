@@ -251,6 +251,46 @@ class ChemistryModel:
 
         return rate, float(self.calcination.reaction_rate(T))
 
+    # Below this share of the cell's solid, a reaction's
+    # limiting-reactant pool is treated as spent for the substep
+    # count only; it still reacts, exactly, in the sequence.
+    _LIVE_FRACTION = 1e-6
+
+    def _live_clinkering(self, flow):
+        """The clinkering reactions with reactant left, counting
+        what the cell can still MAKE: CaO from residual CaCO3, and
+        alite's C2S from belite's SiO2."""
+
+        total = sum(flow.values())
+
+        CaO_pool = flow["CaO"] + flow["CaCO3"] * (56.08 / 100.09)
+
+        capacity = {
+            self.belite: min(
+                flow["SiO2"],
+                CaO_pool / self.belite.CaO_required,
+            ),
+            self.alite: min(
+                flow["C2S"] + flow["SiO2"] * self.belite.C2S_produced,
+                CaO_pool / self.alite.CaO_required,
+            ),
+            self.c3a: min(
+                flow["Al2O3"],
+                CaO_pool / self.c3a.CaO_required,
+            ),
+            self.c4af: min(
+                flow["Al2O3"],
+                CaO_pool / self.c4af.CaO_required,
+                flow["Fe2O3"] / self.c4af.Fe2O3_required,
+            ),
+        }
+
+        return [
+            model
+            for model, amount in capacity.items()
+            if amount > self._LIVE_FRACTION * total
+        ]
+
     def react_burning(
         self,
         flow,
@@ -296,10 +336,19 @@ class ChemistryModel:
         # with tau ~ 190 s per cell the old criterion demanded
         # ~1e5-1e6 substeps per cell, so a single plant sweep
         # never completed.
+        #
+        # Only reactions that still HAVE something to react count
+        # (_live_clinkering). The split error is the coupling of
+        # reacting amounts; a reaction whose reactants are gone
+        # contributes none, however fast its k. Counting C3A and
+        # C4AF at full rate after their Al2O3 was spent cost ~1e6
+        # substeps per cell on a hot bed and minutes per sweep.
+        live = self._live_clinkering(flow)
+
         n_sub = max(
             1,
             math.ceil(
-                max(rate.values())
+                max((rate[model] for model in live), default=0.0)
                 * length
                 / self._MAX_RATE_SUBSTEP
             ),
