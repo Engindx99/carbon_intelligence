@@ -73,14 +73,48 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 
 Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüleri kullanır; çizim onlardan ayrılmaz.
 
+## CFD domenleri ve serbest bölge
+
+Çizim CFD çözümünü bozmadan geliştirilir (kullanıcı kararı, 14 Ekim 2026). Her CFD domeni çizimde donmuş bir bloktur: giriş ve çıkış yüzlerinin arasındaki hiçbir ölçü yalnız çizimde değişmez. Değişecekse önce `cyclone.bas` değişir, CFD yeniden çözülür, sonra çizim. Yüzlerin dışı serbesttir.
+
+| Blok | Domen (donmuş) | Giriş yüzü | Çıkış yüzü |
+|---|---|---|---|
+| C1 (×4) | gövde, VF 2.16, Ø2.171 kol, 95° R 2.171 dirsek, 1.5 m geçiş, 5° kanal, 0.6 m oluk; 3.0 m çıkış borusu, R 3.6 180° dirsek, 3.0 m iniş | kolun tabanı, toz çıkışının 0.885 m üstü | inişin ucu, çatı kotunda, eksenden 7.2 m |
+| C2–C4 (×6) | gövde, VF 3.90, volüt ve 3.0 m giriş kanalı, 5.7875 m çıkış borusu, R 4.63 90° dirsek, 4.63 m bacak | giriş kanalının ucu, eksenden 3.0 m (`C4_IN_L`) | bacağın ucu, eksenden 9.26 m, çatının 10.42 m üstünde |
+| C5 (×2) | C2–C4'ün 6.50/6.30 = 1.0317 katı (CFD'si ayrıca çözülmez) | eksenden 3.10 m | eksenden 9.55 m |
+
+**Serbest:**
+- R1'in dirseği ve Y'si, yani C1 kol tabanının altı.
+- Çıkış yüzünden sonraki bacak ve giriş yüzüne kadar olan kanal: uzunluğu, 4.63 → 3.40 daralması.
+- Kolon aralıkları (`ZIG_DX`, `R1_LEG_ON`, `R1_BRANCH_HALF`, `GN_TO_C5_GAP`).
+- Kalsinatör, kaz boynu, TA, fırın, soğutucu yerleşimi.
+- Farin hatlarının gösterimi, etiketler, tablolar.
+
+**Kısıtlar:**
+- Gaz kanalı bir çıkış yüzünden bir giriş yüzüne kıvrımsız gider. Kademeler arası yükseklik bu yüzden donmuştur: 5.7875 + 4.63 + 2.315 m. Kule ancak CFD değişirse uzar ya da kısalır.
+- Daralma ve geçişler yalnız iki yüzün arasındadır.
+
+**Farin girişi:** C1–C3'ün farini R2–R4'e, yani C3–C5'in CFD çıkış borusuna, çatının 1.5 m üstünden girer; bu domenin içidir. CFD gaz-only olduğu ve farin yükü analitik hesaplandığı için çözümü bozmaz. İleride yüklü (DDPM) bir CFD yapılırsa giriş yeri domenin içinde modellenmelidir.
+
+**Kilit:**
+- `tests/test_plant_topology_cfd_lock.py` iki makroyu metin olarak okur. Çizimdeki her domen ölçüsünün `cyclone.bas`'taki `SelectCyclone` değerlerine 1 mm içinde eşit olduğunu doğrular; C5 için ayrıca C4 × 1.0317 olduğunu. Biri öbürü olmadan değişirse test hangi ölçünün kaydığını yazarak düşer (`python3 -m unittest tests.test_plant_topology_cfd_lock`).
+- Makronun ön kontrolleri yüzleri korur: R4–R2'nin daralması alttaki siklonun çıkış yüzünden sonra başlar ve üsttekinin giriş yüzünün dışında biter; R1'in dirseği C2'nin çıkış yüzünden sonra başlar; kaz boynu C5'in giriş yüzünün dışında kalır. R1'in Y'si C1 kol tabanının altında kalır.
+- Çizimdeki çıkış borusu 5.79 değil, CFD'nin tam değeri 1.25 × 4.63 = 5.7875 m'dir; kilit testi bu 2.5 mm'lik farkı yakaladı.
+
+**İş akışı:**
+1. Serbest bölgede bir değişiklik: Python prototipi → makro → kilit testi ve ön kontroller → SolidWorks → log sayıları bu dokümana → commit.
+2. Donmuş bir bloğa dokunan değişiklik: önce `cyclone.bas`, CFD yeniden çözülür, sonra çizim. Kilit testi iki tarafı eşit tutar.
+
 ## Şematik parametreler (kaynaksız; yalnız yerleşim için)
+
+İki satır ("donmuş (CFD)") CFD domenlerinin ölçüleridir ve kilit testine bağlıdır; diğer bütün satırlar serbest bölgededir.
 
 | Parametre | Değer | Ne belirler |
 |---|---|---|
-| `C4_VF_S`, `C4_OUT_RISE`, `C4_OUT_R`, `C4_OUT_RUN`, `C4_IN_H`, `C4_IN_W`, `C4_TONGUE`, `C1_VF_S` | 3.90, 5.79, 4.63, 4.63, 3.40, 2.912, 0.05, 2.16 m | C2–C4 C4'ün CFD domeninin aynısı ([cyclone_C4.md](preheater/cyclone_C4.md), `cyclone.bas`, S 3.90): vorteks bulucu çatıdan 3.90 m aşağı (kesikli); gaz çıkış borusu (Ø4.63) çatının 5.79 m üstüne çıkar, 90°'lik dirsek (eksende R 4.63, duvarları yay) ve 4.63 m yatay bacak; giriş 3.40 m derinliğinde bir volüt: 2.912 m genişliğinde düz kanal ve gövdeden 0.05 m (dil) dışarıda başlayan yarım tur Arşimet sarmalı. Kesitte volüt çatının altında bir bant olarak görünür; sarmal riserın karşı tarafında gövdeden ~1.5 m taşar. Çıkışın yatay yönü CFD'de riserın ters tarafınadır; çizimde bir sonraki siklona döner (siklonun çıkışını kendi ekseni etrafında döndürmek; akış aynı, kullanıcı kararı 13 Ekim 2026). C1'in vorteks bulucusu çatıdan 2.16 m aşağı. C5 bunların hepsinin 6.50/6.30 ile büyütülmüş kopyasıdır (`Kc`): vorteks bulucu Ø4.777, 4.02 m; çıkış borusu 5.97 m, dirsek R 4.777; volüt 3.508 m. Volütü kaz boynunun ters tarafındadır (kullanıcı kararı 14 Ekim 2026) |
+| **donmuş (CFD):** `C4_VF_S`, `C4_OUT_RISE`, `C4_OUT_R`, `C4_OUT_RUN`, `C4_IN_H`, `C4_IN_W`, `C4_TONGUE`, `C4_IN_L`, `C1_VF_S` | 3.90, 5.7875, 4.63, 4.63, 3.40, 2.912, 0.05, 3.0, 2.16 m | C2–C4 C4'ün CFD domeninin aynısı ([cyclone_C4.md](preheater/cyclone_C4.md), `cyclone.bas`, S 3.90): vorteks bulucu çatıdan 3.90 m aşağı (kesikli); gaz çıkış borusu (Ø4.63) çatının 5.79 m üstüne çıkar, 90°'lik dirsek (eksende R 4.63, duvarları yay) ve 4.63 m yatay bacak; giriş 3.40 m derinliğinde bir volüt: 2.912 m genişliğinde düz kanal ve gövdeden 0.05 m (dil) dışarıda başlayan yarım tur Arşimet sarmalı. Kesitte volüt çatının altında bir bant olarak görünür; sarmal riserın karşı tarafında gövdeden ~1.5 m taşar. Çıkışın yatay yönü CFD'de riserın ters tarafınadır; çizimde bir sonraki siklona döner (siklonun çıkışını kendi ekseni etrafında döndürmek; akış aynı, kullanıcı kararı 13 Ekim 2026). C1'in vorteks bulucusu çatıdan 2.16 m aşağı. C5 bunların hepsinin 6.50/6.30 ile büyütülmüş kopyasıdır (`Kc`): vorteks bulucu Ø4.777, 4.02 m; çıkış borusu 5.97 m, dirsek R 4.777; volüt 3.508 m. Volütü kaz boynunun ters tarafındadır (kullanıcı kararı 14 Ekim 2026) |
 | `STAGE_GAP` | 4.0 m | C1'in toz çıkışının C2'nin stub'ının en az bu kadar üstünde olması (R1'in Y'si C1'i zaten daha yukarı koyar). C2–C4'ün kotu artık bu paydan değil, alttaki kademenin CFD çıkışından gelir: her siklonun çatısı, alttakinin CFD dirseğinin üstü hizasındadır. 14 Ekim 2026'ya kadar C3 ve C2 bu kadar dirseğin üstündeydi; bu, CFD borusuyla dirsek arasına 4.87 m düz boru sokuyordu (CFD domeni bozuluyordu), kaldırıldı ve kule 14.6 m kısaldı (kullanıcı kararı) |
 | `ZIG_DX` | 20.0 m | Hattın dış kolonunun (C4, C2) iç kolonundan (C5, C3) uzaklığı. C5 / C4 / C3'ün dirseği ile daralan yatay bacağı buna sığmalı; ön kontrol bunu zorlar. 11 m idi |
-| `C1_RISER_X` … `C1_OUT_R` | CFD | Her C1, kendi CFD domeniyle aynı ([cyclone_C1.md](preheater/cyclone_C1.md), [riser_R1.md](preheater/riser_R1.md)); yükseklikler toz çıkışından: Ø2.171 riser kolu C1 ekseninden 6.843 m uzakta, 0.885'ten (domen tabanı) 8.385'e dik; 95°'lik, R 2.171 dirsek (CFD'deki gibi yuvarlak: duvarları eş merkezli iki yay); 1.5 m geçiş ve 5° aşağı eğimli 2.16 m'lik giriş kanalı gövdeye; farin oluğu 0.6 × 0.6, 60°, kol duvarını 5.385'te keser ve 1.0 m dışarı çıkar; gaz çıkışı çatının üstünde 3.0 m Ø2.40 boru, kolun ters tarafına R 3.6 m 180° dirsek (yuvarlak, iki yay) ve 3.0 m aşağı inen bacak |
+| **donmuş (CFD):** `C1_RISER_X` … `C1_OUT_R` | CFD | Her C1, kendi CFD domeniyle aynı ([cyclone_C1.md](preheater/cyclone_C1.md), [riser_R1.md](preheater/riser_R1.md)); yükseklikler toz çıkışından: Ø2.171 riser kolu C1 ekseninden 6.843 m uzakta, 0.885'ten (domen tabanı) 8.385'e dik; 95°'lik, R 2.171 dirsek (CFD'deki gibi yuvarlak: duvarları eş merkezli iki yay); 1.5 m geçiş ve 5° aşağı eğimli 2.16 m'lik giriş kanalı gövdeye; farin oluğu 0.6 × 0.6, 60°, kol duvarını 5.385'te keser ve 1.0 m dışarı çıkar; gaz çıkışı çatının üstünde 3.0 m Ø2.40 boru, kolun ters tarafına R 3.6 m 180° dirsek (yuvarlak, iki yay) ve 3.0 m aşağı inen bacak |
 | `R1_LEG_ON` | 1.55 m | C2'nin çıkış bacağının, CFD'nin 4.63 m'sinden sonra R1'in dirseğine kadar uzandığı yol. R1'i ve ikiz C1'leri, C2'nin üstündeki C1'in farini öbürününkine R2'nin dirseğinin üstünden katılabilecek yere koyar |
 | `R1_BRANCH_HALF` | 2.75 m | R1'in Y'sinden çıkan iki kolun R1 ekseninden uzaklığı; ikiz C1'ler eksenden 9.593 m uzakta. İki farin oluğu kolların arasında birbirine bakar, ön kontrol birbirine değmemelerini zorlar |
 | `GN_TO_C5_GAP` | 1.0 m | Kaz boynu inişi ile C5 gövdesi arasındaki boşluk. İniş, C5'in giriş kotunda bu boşluğu yatay geçerek gövdeye girer |

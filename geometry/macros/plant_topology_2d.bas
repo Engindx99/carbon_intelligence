@@ -69,16 +69,19 @@ Const C5_HIN As Double = 3.5079     ' its volute inlet's height; a gooseneck leg
 ' down from the roof; the gas outlet pipe (D_x) 5.79 m (1.25 D_x) up over it, a 90 deg bend
 ' (centreline R 1.0 D_x, its walls arcs) and a 4.63 m (1.0 D_x) level leg, the riser going on
 ' from its end; the inlet a volute 3.40 m high under the roof, a 2.912 m wide duct and a half
-' turn of Archimedean spiral 0.05 m (the tongue) off the barrel. In the plant the C4 and C3
-' outlet pipes are R3 and R2 themselves: straight up past the CFD's 5.79 m to the next
-' cyclone's roof, the bend there, the leg level on into its inlet
+' turn of Archimedean spiral 0.05 m (the tongue) off the barrel, fed by a straight duct 3.0 m
+' from the barrel's tangent plane. In the plant C5..C3's outlet pipes are R4..R2 themselves:
+' the CFD's 5.79 m, its bend, its leg level on into the next cyclone's inlet. The domain is
+' frozen between its faces -- the inlet duct's end, 3.0 m from the axis, and the leg's end,
+' 9.26 m from it -- and tests/test_plant_topology_cfd_lock.py holds these to cyclone.bas
 Const C4_VF_S    As Double = 3.9
-Const C4_OUT_RISE As Double = 5.79
+Const C4_OUT_RISE As Double = 5.7875   ' 1.25 D_x
 Const C4_OUT_R   As Double = 4.63
 Const C4_OUT_RUN As Double = 4.63
 Const C4_IN_H    As Double = 3.4
 Const C4_IN_W    As Double = 2.912
 Const C4_TONGUE  As Double = 0.05
+Const C4_IN_L    As Double = 3#       ' the inlet duct's length from the barrel's tangent plane: its face this far from the axis
 Const C1_VF_S    As Double = 2.16     ' C1's vortex finder, down from the roof (C1 CFD)
 
 ' Risers [m] -- HFC2500 (published), catalog.md; R_k carries the gas
@@ -464,9 +467,21 @@ Private Sub PreChecks()
         End If
     Next k
     If C4_IN_H > C4_VD Then Fail "the C4 inlet is taller than its outlet pipe, which runs into it."
-    If ZIG_DX - 2# * OutR(5) - CycR(4) < (C5_VD - C4_IN_H) + 0.5 Then
-        Fail "an outlet leg does not reach the next cyclone past its bend. Raise ZIG_DX."
-    End If
+    ' The CFD domains' faces: R4..R2's leg runs straight past the outlet
+    ' face of C5..C3 (2 R from its axis) and tapers onto the 3.40 m
+    ' inlet only outside the next cyclone's inlet face (C4_IN_L from its
+    ' axis); R1's elbow starts past C2's outlet face; the gooseneck
+    ' meets C5 outside its inlet face
+    For k = 5 To 3 Step -1
+        If ZIG_DX - CycR(k - 1) - (2# * StubR(k) - C4_IN_H) < 2# * OutR(k) + 0.5 Then
+            Fail "R" & (k - 1) & " tapers inside the CFD outlet leg of C" & k & ". Raise ZIG_DX."
+        End If
+        If CycR(k - 1) < Kc(k - 1) * C4_IN_L Then
+            Fail "R" & (k - 1) & " tapers inside the CFD inlet duct of C" & (k - 1) & "."
+        End If
+    Next k
+    If dR1 - 0.5 * RiserD(1) < 2# * C4_OUT_R - 0.001 Then Fail "R1's elbow starts inside C2's CFD outlet leg. Raise R1_LEG_ON."
+    If CycR(5) < Kc(5) * C4_IN_L Then Fail "the gooseneck runs into C5's CFD inlet duct."
     ' The C5s clear of the calciner; the gooseneck rises clear of each other
     If xInner - r5 <= rCalc Then Fail "the C5s run into the calciner."
     If rNeck >= rCalc Then Fail "the gooseneck neck is wider than the calciner roof."
