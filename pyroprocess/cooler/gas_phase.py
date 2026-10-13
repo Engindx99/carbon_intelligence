@@ -53,6 +53,65 @@ def cooler_air_cells(cooler, state):
 
 
 # ======================================================
+# THROUGH-BED GAS->SOLID COEFFICIENT
+#
+# The cell's gas row is a well-mixed balance: the air leaves at
+# the cell temperature Tg and exchanges K_gs (Tg - Ts) with the
+# bed. That gives the cell an effectiveness NTU / (1 + NTU).
+# But the air does not mix inside the bed: it crosses it once,
+# bottom to top, past clinker whose temperature is uniform
+# across the cell (the bed moves along the grate, not up). That
+# is a stream past an isothermal surface, effectiveness
+# 1 - exp(-NTU) (Incropera & DeWitt, Fundamentals of Heat and
+# Mass Transfer, sec. 11.3, C_r = 0).
+#
+# MEASURED on the FLS cooler scenario (Svensen et al. 2024,
+# arXiv:2409.09076 sec. IV: 53.06 kg/s clinker at 1723 K, air
+# 40.89 / 18.56 / 8 x 16.24 kg/s): NTU ~5.3 per cell, so the
+# well-mixed row gave 0.84 where the bed gives 0.995, and
+# secondary air came out 1212 K against the paper's 1362 K.
+#
+# The row keeps its well-mixed form and takes the coefficient
+# that makes it exact: with K_eff V = C (exp(NTU) - 1),
+# K_eff V / (C + K_eff V) = 1 - exp(-NTU). The same coefficient
+# goes into the solid row, so whatever the gas gains the bed
+# loses, to the last bit.
+#
+# NTU_CAP: past NTU 20 the effectiveness is 1 to 2e-9, i.e.
+# under 1e-5 K on a 1500 K approach; exp() would only push the
+# matrix condition up (exp(20) C ~ 1e12 already) for nothing.
+# ======================================================
+NTU_CAP = 20.0
+
+
+def through_bed_hv_gs(cooler, m_air_cells, Tg, V_cell, a_gs):
+
+    a_gs = np.broadcast_to(np.asarray(a_gs, dtype=float), (cooler.N,))
+    V_cell = np.broadcast_to(np.asarray(V_cell, dtype=float), (cooler.N,))
+
+    C = np.asarray(m_air_cells, dtype=float) * np.asarray(
+        cp_gas(np.asarray(Tg, dtype=float)),
+        dtype=float,
+    )
+
+    KV = cooler.hv_gs * a_gs * V_cell
+
+    # No air through a cell: no stream to rate, the bed sees
+    # the plain film coefficient.
+    has_air = C > 0.0
+
+    NTU = np.where(has_air, KV / np.where(has_air, C, 1.0), 0.0)
+
+    KV_eff = np.where(
+        has_air,
+        C * np.expm1(np.minimum(NTU, NTU_CAP)),
+        KV,
+    )
+
+    return KV_eff / (a_gs * V_cell)
+
+
+# ======================================================
 # GAS PHASE ENERGY BALANCE ROWS
 #
 # Moved from the gas block inside Cooler.thermal_step()

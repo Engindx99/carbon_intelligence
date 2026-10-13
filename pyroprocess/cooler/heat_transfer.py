@@ -150,7 +150,8 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # HEAT TRANSFER COEFFICIENTS
     # ======================================================
 
-    K_gs = cooler.hv_gs * a_gs
+    # K_gs is rated per cell inside the Picard loop: the air
+    # crosses the bed once (gas_phase.through_bed_hv_gs).
     K_gw = cooler.hv_gw * a_gw
     K_ws = cooler.hv_ws * a_ws
 
@@ -256,11 +257,21 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
         # Existing heat-transfer model
         # --------------------------------------------------
 
+        hv_gs = gas_phase.through_bed_hv_gs(
+            cooler,
+            m_air_cells,
+            Tg_iter,
+            V_cell,
+            a_gs,
+        )
+
+        K_gs = hv_gs * a_gs
+
         q_gs, q_gw, q_ws = heat_transfer(
             Tg=Tg_iter,
             Ts=Ts_iter,
             Tw=Tw_iter,
-            hv_gs=cooler.hv_gs,
+            hv_gs=hv_gs,
             hv_gw=cooler.hv_gw,
             hv_ws=cooler.hv_ws,
             a_gs=a_gs,
@@ -472,11 +483,13 @@ def thermal_step(cooler, Tg, Ts, Tw, state):
     # FINAL HEAT TRANSFER
     # ======================================================
 
+    # The coefficient the last assembled matrix used, so the
+    # booked Q_gs is the exchange the rows actually carried.
     q_gs, q_gw, q_ws = heat_transfer(
         Tg=Tg_ss,
         Ts=Ts_ss,
         Tw=Tw_ss,
-        hv_gs=cooler.hv_gs,
+        hv_gs=hv_gs,
         hv_gw=cooler.hv_gw,
         hv_ws=cooler.hv_ws,
         a_gs=a_gs,
