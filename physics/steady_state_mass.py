@@ -35,6 +35,7 @@ class SteadyStateMassFlow:
     m_dot_s_preheater: float = 0.0
     m_dot_s_calciner_in: float = 0.0
     m_dot_s_calciner_out: float = 0.0
+    m_dot_s_C5_dust: float = 0.0
     m_dot_s_transition_in: float = 0.0
     m_dot_s_transition: float = 0.0
     m_dot_s_burning: float = 0.0
@@ -168,6 +169,7 @@ class SteadyStateMassFlow:
         m_dot_tertiary_air=0.0,
         m_dot_H2O_generated=0.0,
         m_dot_fuel_calciner=0.0,
+        c5_separation_efficiency=1.0,
     ):
         """
         Calcination transfers CO2 mass from solid phase to gas
@@ -192,8 +194,19 @@ class SteadyStateMassFlow:
             - self.m_dot_H2O_generated_calciner
         )
 
+        # C5 (pyroprocess/precalciner/c5_cyclone) sends eta of
+        # the calciner's outlet into the kiln and lets the rest
+        # up into C4, whose underflow returns it to the calciner
+        # (already in m_dot_s_calciner_in).
+        eta = float(c5_separation_efficiency)
+
         self.m_dot_s_transition_in = (
+            eta * self.m_dot_s_calciner_out
+        )
+
+        self.m_dot_s_C5_dust = (
             self.m_dot_s_calciner_out
+            - self.m_dot_s_transition_in
         )
 
         self.m_dot_g_calciner = (

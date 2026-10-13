@@ -1151,12 +1151,12 @@ def thermal_step(
     # profiles is not the product of their extrapolations.
     #
     # The outlet face is also C5's: the calciner gas carries
-    # the meal up the gooseneck into C5, which drops it into
-    # the kiln inlet and sends the gas on to C4 (Stage 1 of the
-    # preheater). For now C5 is an ideal, adiabatic separator,
-    # so its outlets are these fluxes unchanged; its escaping
-    # dust (configs calciner.c5_separation_efficiency) and its
-    # volume and wall are the next steps.
+    # the meal up the gooseneck into C5, which drops eta of it
+    # into the kiln inlet and lets the rest up with the gas into
+    # C4 (Stage 1 of the preheater), whose underflow brings it
+    # back here (c5_cyclone). The calciner's own outlet is the
+    # whole face; C5 splits it by mass, adiabatically for now
+    # (its volume and wall are the next step).
     # ======================================================
 
     state.Hgas_calciner_out = float(Hg_out)
@@ -1164,6 +1164,18 @@ def thermal_step(
 
     state.m_dot_g_calciner_in = float(m_dot_g_in)
     state.m_dot_s_calciner_out = float(m_s_out_face)
+
+    eta_C5 = float(calciner.c5_separation_efficiency)
+
+    # Down into the kiln inlet chamber: the transition's inlet.
+    state.Hsolid_C5_underflow = eta_C5 * float(Hs_out)
+    state.m_dot_s_C5_underflow = eta_C5 * float(m_s_out_face)
+
+    # Up into C4 with the gas, at the outlet temperature.
+    state.Hsolid_C5_dust = float(Hs_out) - state.Hsolid_C5_underflow
+    state.m_dot_s_C5_dust = (
+        float(m_s_out_face) - state.m_dot_s_C5_underflow
+    )
 
     state.m_dot_s_calciner_cells = m_s_out_cells.copy()
     state.m_dot_g_calciner_cells = m_g_out_cells.copy()

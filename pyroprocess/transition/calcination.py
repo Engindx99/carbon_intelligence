@@ -2,6 +2,7 @@ import numpy as np
 
 from chemistry import parcels
 from chemistry.phases import get_cell_solid_flow
+from pyroprocess.precalciner import c5_cyclone
 
 
 # ======================================================
@@ -86,7 +87,10 @@ def resolve_transition_calcination(transition, state, Ts, u_s):
     dz = transition.dz
     eps = transition.eps
 
-    m_dot_CaCO3_transition_in = getattr(
+    # C5's underflow share of the calciner's CaCO3 outflow.
+    m_dot_CaCO3_transition_in = c5_cyclone.separation_efficiency(
+        state
+    ) * getattr(
         state,
         "m_dot_CaCO3_out_calciner",
         0.0,
@@ -278,7 +282,11 @@ def calciner_discharge(state, dt):
 
     solids = state.material_flows["calciner"].solids
 
-    flow = get_cell_solid_flow(solids, solids.CaCO3.size - 1)
+    # C5's underflow: the share it does not let up into C4.
+    flow = c5_cyclone.underflow(
+        get_cell_solid_flow(solids, solids.CaCO3.size - 1),
+        state,
+    )
 
     return [({name: value * dt for name, value in flow.items()}, dt)]
 

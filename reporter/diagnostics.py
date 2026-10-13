@@ -154,6 +154,15 @@ def _solid_build_flow(twin, zone):
          here is the symptom, not the cause.
     """
 
+    # The calciner hands the kiln only C5's underflow: C5 splits
+    # its outlet face by mass and lets the rest up into C4
+    # (pyroprocess/precalciner/c5_cyclone).
+    if zone == "calciner":
+        m_C5 = getattr(twin.state, "m_dot_s_C5_underflow", 0.0)
+
+        if m_C5 > 0.0:
+            return float(m_C5), "state.m_dot_s_C5_underflow"
+
     cells = getattr(twin.state, f"m_dot_s_{zone}_cells", None)
 
     if cells is not None:

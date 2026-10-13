@@ -24,8 +24,9 @@ import main
 from physics.physics import h_solid
 
 
-def stage_mass_residuals(m_dot_s_in, m_dot_escape, vapor, eta, feed):
-    """S_i - (underflow from above + dust from below [+ feed + C1 dust])."""
+def stage_mass_residuals(m_dot_s_in, m_dot_escape, vapor, eta, feed, c5_dust=0.0):
+    """S_i - (underflow from above + dust from below [+ feed + C1 dust]);
+    Stage 1's dust from below is C5's."""
     N = len(m_dot_s_in)
     outflow = np.asarray(m_dot_s_in) - np.asarray(vapor)
     underflow = np.asarray(eta) * outflow
@@ -35,6 +36,8 @@ def stage_mass_residuals(m_dot_s_in, m_dot_escape, vapor, eta, feed):
         expected = feed + m_dot_escape[-1] if i == N - 1 else underflow[i + 1]
         if i > 0:
             expected += m_dot_escape[i - 1]
+        else:
+            expected += c5_dust
         residuals.append(m_dot_s_in[i] - expected)
 
     return np.array(residuals), underflow
@@ -112,6 +115,7 @@ class DustReturnTest(unittest.TestCase):
             vapor,
             ph.separation_efficiency,
             state.m_dot_s_preheater,
+            state.m_dot_s_C5_dust,
         )
 
         np.testing.assert_allclose(residuals, 0.0, atol=1e-9)
@@ -128,16 +132,57 @@ class DustReturnTest(unittest.TestCase):
         self.assertEqual(ph.m_dot_dust_return, ph.m_dot_dust_escape[-1])
         self.assertTrue(np.all(ph.m_dot_dust_escape > 0.0))
 
-    def test_solid_to_calciner_is_unchanged_by_separation(self):
+    def test_solid_to_calciner_is_the_dry_feed_plus_c5_dust(self):
+        """C1-C4's loops add no mass; C5's dust (the hot-meal loop)
+        comes back to the calciner through C4's underflow."""
         ph = self.twin.preheater
         state = self.twin.state
 
         vapor = state.material_flows["preheater"].gases.H2O
 
+        self.assertGreater(state.m_dot_s_C5_dust, 0.0)
         self.assertAlmostEqual(
             ph.m_dot_s_out,
-            state.m_dot_s_preheater - float(sum(vapor)),
+            state.m_dot_s_preheater - float(sum(vapor))
+            + state.m_dot_s_C5_dust,
+            places=9,
+        )
+
+    def test_c5_splits_the_calciner_outlet(self):
+        state = self.twin.state
+        eta = self.twin.calciner.c5_separation_efficiency
+
+        self.assertLess(eta, 1.0)
+        self.assertAlmostEqual(
+            state.m_dot_s_C5_dust / state.m_dot_s_calciner_out,
+            1.0 - eta,
             places=12,
+        )
+        self.assertAlmostEqual(
+            state.Hsolid_C5_dust / state.Hsolid_calciner_out,
+            1.0 - eta,
+            places=12,
+        )
+        self.assertAlmostEqual(
+            state.Hsolid_transition_in, state.Hsolid_C5_underflow,
+            places=3,
+        )
+
+    def test_c5_dust_enters_the_first_stage(self):
+        ph = self.twin.preheater
+
+        flows, _ = circulating_solid_flows(
+            np.ones(ph.N), np.zeros(ph.N), ph.separation_efficiency,
+            dust_into_first=0.5,
+        )
+        flows0, _ = circulating_solid_flows(
+            np.ones(ph.N), np.zeros(ph.N), ph.separation_efficiency,
+        )
+        # At steady state all of C5's dust comes back down out of
+        # Stage 1: its underflow grows by exactly the dust.
+        eta0 = ph.separation_efficiency[0]
+        self.assertAlmostEqual(
+            eta0 * (flows[0] - flows0[0]), 0.5, places=12
         )
 
     def test_dust_heat_loss(self):

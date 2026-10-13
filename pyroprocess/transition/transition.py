@@ -10,6 +10,7 @@ from chemistry.phases import copy_solid_phases
 from chemistry.phases import get_cell_solid_flow
 from chemistry.phases import set_cell_solid_flow
 from chemistry.calcination import CalcinationModel
+from pyroprocess.precalciner import c5_cyclone
 
 from . import gas_phase
 from . import solid_phase
@@ -223,8 +224,10 @@ class Transition:
             state.Hgas_burning_out
         )
 
+        # C5's underflow (precalciner/c5_cyclone): the calciner's
+        # outlet less the dust C5 lets up into C4.
         state.Hsolid_transition_in = (
-            state.Hsolid_calciner_out
+            state.Hsolid_C5_underflow
         )
 
         # ======================================================
@@ -380,9 +383,12 @@ class Transition:
             )
         else:
             self.chemistry.solid_flow_profile(
-                get_cell_solid_flow(
-                    calciner_solid_flows,
-                    calciner_solid_flows.CaCO3.size - 1,
+                c5_cyclone.underflow(
+                    get_cell_solid_flow(
+                        calciner_solid_flows,
+                        calciner_solid_flows.CaCO3.size - 1,
+                    ),
+                    state,
                 ),
                 state.m_dot_CaCO3_out_transition_cells,
                 state.material_flows["transition"].solids,

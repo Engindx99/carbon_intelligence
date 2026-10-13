@@ -22,6 +22,7 @@ from . import thermal_solver
 from . import raw_meal_inlet
 from . import energy_diagnostics
 from . import combustion
+from . import c5_cyclone
 
 
 def load_cfg(path):
@@ -54,6 +55,22 @@ class Calciner:
 
         # ================= NUMERICAL =================
         self.eps = 1e-9
+
+        # ================= C5 =================
+        # The outlet cyclone's separation efficiency
+        # (pyroprocess/precalciner/c5_cyclone.py). 1.0 = all the
+        # meal to the kiln, no hot-meal loop.
+        self.c5_separation_efficiency = float(
+            ((cfg or {}).get("calciner", {}) or {}).get(
+                "c5_separation_efficiency", 1.0
+            )
+        )
+
+        if not 0.0 < self.c5_separation_efficiency <= 1.0:
+            raise ValueError(
+                "c5_separation_efficiency must be in (0, 1], got "
+                f"{self.c5_separation_efficiency}"
+            )
 
         # ================= GEOMETRY =================
         # The vessel's own diameter, read the way the kiln reads its
@@ -300,6 +317,9 @@ class Calciner:
     # ======================================================
     def apply(self, state):
 
+        # C5's split, published for every reader (c5_cyclone).
+        state.C5_separation_efficiency = self.c5_separation_efficiency
+
 
 
         # ======================================================
@@ -524,6 +544,23 @@ class Calciner:
             calciner_inlet_flow = raw_meal_solid_flow(
                 state.m_dot_s_preheater
             )
+
+        # Plus C5's escaping dust, back through C4's underflow
+        # (c5_cyclone): the last solve's outlet share, the same
+        # flow state.m_dot_s_C5_dust puts into m_dot_s_calciner.
+        if self.c5_separation_efficiency < 1.0:
+            calciner_solid_flows = state.material_flows["calciner"].solids
+            dust = c5_cyclone.escaping_dust(
+                get_cell_solid_flow(
+                    calciner_solid_flows,
+                    calciner_solid_flows.CaCO3.size - 1,
+                ),
+                state,
+            )
+            calciner_inlet_flow = {
+                name: value + dust[name]
+                for name, value in calciner_inlet_flow.items()
+            }
 
         # ======================================================
         # OUTER STEADY-STATE ITERATION

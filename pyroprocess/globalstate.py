@@ -154,6 +154,14 @@ class GlobalState:
     Hsolid_calciner_in: float = 0.0
     Hsolid_calciner_out: float = 0.0
 
+    # C5, the calciner's outlet cyclone (precalciner/c5_cyclone):
+    # its underflow into the kiln and the dust it lets up into C4.
+    C5_separation_efficiency: float = 1.0
+    Hsolid_C5_underflow: float = 0.0
+    m_dot_s_C5_underflow: float = 0.0
+    Hsolid_C5_dust: float = 0.0
+    m_dot_s_C5_dust: float = 0.0
+
     Hsolid_preheater_in: float = 0.0
     Hsolid_preheater_out: float = 0.0
 

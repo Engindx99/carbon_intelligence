@@ -193,12 +193,14 @@ class Twin:
             f"{state.Hsolid_preheater_out - state.Hsolid_calciner_in:.12e} W"
         )
 
-        print("\n--- Calciner -> Transition ---")
+        print("\n--- Calciner -> C5 underflow -> Transition ---")
         print(f"Hsolid_calciner_out  = {state.Hsolid_calciner_out:.12e} W")
+        print(f"Hsolid_C5_dust       = {state.Hsolid_C5_dust:.12e} W")
+        print(f"Hsolid_C5_underflow  = {state.Hsolid_C5_underflow:.12e} W")
         print(f"Hsolid_transition_in  = {state.Hsolid_transition_in:.12e} W")
         print(
             f"Difference           = "
-            f"{state.Hsolid_calciner_out - state.Hsolid_transition_in:.12e} W"
+            f"{state.Hsolid_C5_underflow - state.Hsolid_transition_in:.12e} W"
         )
 
         print("\n--- Burning -> Cooler ---")
@@ -218,9 +220,17 @@ class Twin:
 
         assert np.isclose(
             state.Hsolid_transition_in,
-            state.Hsolid_calciner_out,
+            state.Hsolid_C5_underflow,
             rtol=1e-10,
             atol=1e-3,
+        )
+
+        # C5 splits the calciner's outlet, nothing more.
+        assert np.isclose(
+            state.Hsolid_C5_underflow + state.Hsolid_C5_dust,
+            state.Hsolid_calciner_out,
+            rtol=1e-12,
+            atol=1e-6,
         )
 
         assert np.isclose(
@@ -870,7 +880,7 @@ class Twin:
             ),
             abs(
                 self.state.Hsolid_transition_in
-                - self.state.Hsolid_calciner_out
+                - self.state.Hsolid_C5_underflow
             ),
         )
 
@@ -993,9 +1003,13 @@ class Twin:
             m_dot_H2O_evaporated
         )
 
+        # Plus the hot-meal loop: C5's escaping dust comes back
+        # through C4's underflow (precalciner/c5_cyclone), as the
+        # last calciner solve let it up.
         self.mass_flow.m_dot_s_calciner_in = (
             self.mass_flow.m_dot_s_preheater
             - m_dot_H2O_evaporated
+            + float(getattr(self.state, "m_dot_s_C5_dust", 0.0))
         )
 
         # ======================================================
@@ -1070,6 +1084,7 @@ class Twin:
             m_dot_tertiary_air=self.state.m_dot_tertiary_air,
             m_dot_H2O_generated=m_dot_H2O_generated_dehydroxylation,
             m_dot_fuel_calciner=self.mass_flow.m_dot_fuel_calciner,
+            c5_separation_efficiency=self.calciner.c5_separation_efficiency,
         )
 
         # ======================================================
@@ -1089,8 +1104,9 @@ class Twin:
             getattr(self.state, "Burning_mass_stored", 0.0)
         )
 
+        # C5's underflow, not the calciner's whole outlet.
         self.mass_flow.m_dot_s_transition = (
-            m_dot_s_calciner_out
+            self.mass_flow.m_dot_s_transition_in
             - self.mass_flow.m_dot_CO2_generated_transition
             - self.mass_flow.m_dot_stored_transition
         )
@@ -1743,10 +1759,18 @@ class Twin:
                     f"{self.state.Hsolid_preheater_out - self.state.Hsolid_calciner_in:.12e} W"
                 )
 
-                print("\n--- Calciner -> Transition (Solid) ---")
+                print("\n--- Calciner -> C5 underflow -> Transition (Solid) ---")
                 print(
                     f"Hsolid_calciner_out   = "
                     f"{self.state.Hsolid_calciner_out:.12e} W"
+                )
+                print(
+                    f"Hsolid_C5_dust        = "
+                    f"{self.state.Hsolid_C5_dust:.12e} W"
+                )
+                print(
+                    f"Hsolid_C5_underflow   = "
+                    f"{self.state.Hsolid_C5_underflow:.12e} W"
                 )
                 print(
                     f"Hsolid_transition_in  = "
@@ -1754,7 +1778,7 @@ class Twin:
                 )
                 print(
                     f"Solid handoff diff     = "
-                    f"{self.state.Hsolid_calciner_out - self.state.Hsolid_transition_in:.12e} W"
+                    f"{self.state.Hsolid_C5_underflow - self.state.Hsolid_transition_in:.12e} W"
                 )
 
                 print("\n--- Transition -> Burning (Solid) ---")

@@ -6,6 +6,7 @@ from physics.physics import h_gas
 from physics.gas_thermo import CO2_GAS
 from physics.gas_thermo import GasMixture
 from physics.gas_thermo import cell_species
+from pyroprocess.precalciner import c5_cyclone
 from physics.physics import h_solid
 from physics.physics import T_solid_from_h
 from physics.physics import outlet_face_value
@@ -351,7 +352,10 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # same conversion.
         # ==================================================
 
-        m_dot_CaCO3_transition_in = getattr(
+        # C5's underflow share of the calciner's CaCO3 outflow.
+        m_dot_CaCO3_transition_in = c5_cyclone.separation_efficiency(
+            state
+        ) * getattr(
             state,
             "m_dot_CaCO3_out_calciner",
             0.0,

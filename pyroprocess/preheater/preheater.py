@@ -505,6 +505,7 @@ class Preheater:
         state.Preheater_energy_balance = (
             state.Hgas_preheater_in
             + state.Hsolid_preheater_in
+            + state.Hsolid_C5_dust
             - state.Preheater_Q_sink
             - state.Hgas_preheater_out
             - state.Hsolid_preheater_out
