@@ -141,6 +141,15 @@ Const RM_L           As Double = 0.8      ' raw meal: a small-headed arrow along
 Const MEAL_ENTRY_UP  As Double = 1.5      ' meal enters a riser this far over its foot (R2..R4: over the roof, into the CFD outlet pipe) [m]
 Const MEAL_LINK_L    As Double = 1.5      ' a meal pipe, shown by its end: straight this long either side of its source's tag [m]
 Const MEAL_SIDE_L    As Double = 1#       ' a meal pipe's end into a wall comes this far out from it, then into it at the meal slope [m]
+Const MEAL_SIDE_DROP As Double = 1#       ' the far C1's meal falls straight this far before its slope over beside R2 [m]
+Const MEAL_JOIN_UP   As Double = 2#       ' the near C1's meal joins the far one's this far over where that turns into R2 [m]
+Const MEAL_OVER_DEG  As Double = 50#      ' C2 / C3's meal leaves its dust outlet at this slope, over the outlet bend under it [deg]
+Const MEAL_OVER_GAP  As Double = 0.3      ' ... at least this far clear of that bend's outer wall [m]
+Const C4_MEAL_DROP   As Double = 3#       ' C4 meal falls straight this far before turning towards the calciner. Its run on,
+                                          ' behind C5, is flatter than meal flows: a 2D projection, as the C5 meal's [m]
+Const C5_MEAL_DROP   As Double = 0.5      ' C5 meal falls straight this far before turning towards the inlet chamber [m]
+Const MEAL_BEND      As Double = 1#       ' a bend piece this long after a C4 / C5 meal's straight drop, halving its turn [m]
+Const CROSS_GAP      As Double = 0.5      ' a meal pipe is broken this far either side of an outline it passes behind [m]
 Const KILN_AXIS_Z    As Double = 10#      ' kiln inlet axis elevation [m]
 Const CHAMBER_MARGIN As Double = 1#       ' kiln inlet chamber and hood: a square this far round the kiln [m]
 Const COOLER_W       As Double = 4#       ' grate width [m], the FLS reference cooler's; the length follows from the area
@@ -228,6 +237,10 @@ Dim layerNames(LAYER_N - 1) As String
 Dim nLine(LAYER_N - 1) As Long, nArc(LAYER_N - 1) As Long, nNotes As Long
 Dim pxMin As Double, pxMax As Double, pyMin As Double, pyMax As Double
 Dim noteWarned As Boolean
+' Closed outlines a meal pipe may pass behind (every cyclone, the
+' tertiary air duct): their edges, kept for PathM, not drawn
+Dim bdXa(1 To 400) As Double, bdZa(1 To 400) As Double, bdXb(1 To 400) As Double, bdZb(1 To 400) As Double
+Dim nBd As Long
 
 Dim buildLog As String
 Dim phase As String
@@ -498,6 +511,8 @@ Private Sub PreChecks()
     ' The tertiary air duct runs under the C5s and over the chamber and kiln
     If zTA + rTA >= zDust(5) Then Fail "the tertiary air duct runs into the C5s."
     ' and under the C5 meal's straight drop
+    If zDust(5) - C5_MEAL_DROP <= zTA + rTA + 0.3 Then Fail "the C5 meal's straight drop ends in the tertiary air duct."
+    ' and over the kiln and the inlet chamber
     If zTA - rTA <= zThroat Or zTA - rTA <= kAz + 0.5 * KILN_D Then
         Fail "the tertiary air duct runs into the kiln or the inlet chamber."
     End If
@@ -566,6 +581,7 @@ Private Sub Build()
     swSkMgr.AddToDB = True
     swSkMgr.DisplayWhenAdded = False
     pxMin = 1E+30: pyMin = 1E+30: pxMax = -1E+30: pyMax = -1E+30
+    nBd = 0
 
     DrawPlant
     phase = "drawing the centre lines, elevations and grid"
@@ -657,7 +673,7 @@ Private Sub DrawPlant()
 
     Dim k As Long, s As Long, up As Long
     Dim sd As Double, xi As Double, xo As Double, xm As Double
-    Dim zx As Double, zc As Double, kOff As Double
+    Dim zx As Double, zc As Double, kOff As Double, xe As Double
     Dim kSh As Double, zTopCh As Double, zTopHd As Double
     Dim col(2 To 5) As Double
     Dim side As String
@@ -717,6 +733,11 @@ Private Sub DrawPlant()
         ' the twin C1 either side of R1, their branches between them
         Cyclone 1, xo - sd * (dR1 + dC1), sd, C1InletHalf()
         Cyclone 1, xo - sd * (dR1 - dC1), -sd, C1InletHalf()
+        For s = 5 To 2 Step -1
+            CycBody s, col(s)
+        Next s
+        CycBody 1, xo - sd * (dR1 + dC1)
+        CycBody 1, xo - sd * (dR1 - dC1)
         UseLayer L_HID
         For s = 5 To 2 Step -1
             VortexFinder s, col(s)
@@ -744,6 +765,7 @@ Private Sub DrawPlant()
     PathOut "gas: cooler -> hood (tertiary air)", Array(kBx + aCh, zCool0 + 0.5 * COOLER_H, kBx + aCh, zc)
     Duct "gas: hood -> tertiary air duct -> calciner", Array(kBx + aCh, zHood0 + 2# * aCh, _
          kBx + aCh, zTA, rCalc, zTA), TA_D, False
+    BodyM Array(rCalc, zTA - rTA, kBx + aCh + rTA, zTA - rTA, kBx + aCh + rTA, zTA + rTA, rCalc, zTA + rTA)
 
     For k = 0 To 1
         sd = 1# - 2# * k
@@ -783,19 +805,26 @@ Private Sub DrawPlant()
         '--- meal ---------------------------------------------------------
         phase = "drawing the meal path, string " & side
         UseLayer L_MEAL
-        ' Every meal pipe is shown by its end only, its source's tag in
-        ' a break (MealEnd): drawn whole, in 2D each would lie across the
-        ' ducts between (a cyclone just over the outlet bend under it,
-        ' the pipes running across the tower). Each cyclone feeds the
-        ' riser leaving the stage two below -- the CFD outlet pipe, on
-        ' the side away from its bend, low on it, where a plant feeds its
-        ' meal: both C1 into R2, C2 into R3, C3 into R4; C4 the calciner
-        ' through its wall, C5 the kiln inlet chamber through its roof.
-        MealLink "C1", side, col(3), 2, Sgn(col(3) - col(2))
-        MealLink "C2", side, col(4), 3, Sgn(col(4) - col(3))
-        MealLink "C3", side, col(5), 4, Sgn(col(5) - col(4))
-        MealEnd "C4", "meal: C4 " & side & " -> calciner", sd * rCalc, zFeed, sd, True
-        MealEnd "C5", "meal: C5 " & side & " -> kiln inlet chamber", sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh, sd, False
+        ' Each cyclone feeds the riser leaving the stage two below -- the
+        ' CFD outlet pipe, on the side away from its bend, low on it,
+        ' where a plant feeds its meal: both C1 into R2, C2 into R3, C3
+        ' into R4; C4 the calciner through its wall, C5 the kiln inlet
+        ' chamber through its roof. Each is drawn whole where there is
+        ' room, broken where it passes behind a cyclone or the tertiary
+        ' air duct (PathM). The near C1's would run through R1's elbow,
+        ' its Y and the far C1's branch: it joins the far one's beside
+        ' R2, shown by its end only, its source's tag in a break (MealEnd).
+        MealInto "C1", side, xo - sd * (dR1 + dC1), zDust(1), MEAL_SIDE_DROP, MEAL_SLOPE_DEG, col(3), 2, _
+                 Sgn(col(3) - col(2)), xe, zc
+        MealEnd "C1", "meal: C1 " & side & " near -> the far C1's pipe", xe, zc + MEAL_JOIN_UP, Sgn(col(3) - col(2)), True
+        MealInto "C2", side, col(2), zDust(2), 0#, MEAL_OVER_DEG, col(4), 3, Sgn(col(4) - col(3)), xe, zc
+        MealInto "C3", side, col(3), zDust(3), 0#, MEAL_OVER_DEG, col(5), 4, Sgn(col(5) - col(4)), xe, zc
+        BendEnd col(4), zDust(4) - C4_MEAL_DROP, sd * rCalc, zFeed, xe, zc
+        PathM "meal: C4 " & side & " -> calciner", Array(col(4), zDust(4), col(4), zDust(4) - C4_MEAL_DROP, _
+              xe, zc, sd * rCalc, zFeed)
+        BendEnd xi, zDust(5) - C5_MEAL_DROP, sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh, xe, zc
+        PathM "meal: C5 " & side & " -> kiln inlet chamber", Array(xi, zDust(5), xi, zDust(5) - C5_MEAL_DROP, _
+              xe, zc, sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh)
         UseLayer L_GAS
     Next k
 
@@ -1133,17 +1162,54 @@ Private Sub ArcM(ByVal cx As Double, ByVal cz As Double, ByVal r As Double, ByVa
 End Sub
 
 
-' The end of a meal pipe from cyclone src into R(k) (k = 2..4, the
-' CFD outlet pipe at xr): on the side sg away from its bend, into the
-' wall MEAL_ENTRY_UP over the roof.
-Private Sub MealLink(ByVal src As String, ByVal side As String, ByVal xr As Double, ByVal k As Long, _
-                     ByVal sg As Double)
-    Dim ze As Double
-    ze = RiserV0(k) + MEAL_ENTRY_UP
-    If ze + MEAL_SIDE_L * Tan(MEAL_SLOPE_DEG * PI / 180#) >= RiserBendZ(k) - 0.5 Then
-        Fail "meal " & src & " " & side & ": it would enter R" & k & " past its pipe."
+' A meal pipe from a dust outlet at (xs, zs) into R(k) (k = 2..4, the
+' CFD outlet pipe at xr), drawn whole: drop straight down, then at deg
+' out to MEAL_SIDE_L beside the wall on side sg (away from the pipe's
+' bend), down beside it and into it at the meal slope MEAL_ENTRY_UP
+' over the roof. Its slope out stays MEAL_OVER_GAP clear of the outer
+' wall of the bend over R(k)'s pipe (the full circle, so safe).
+' Returns the foot of its run beside the wall.
+Private Sub MealInto(ByVal src As String, ByVal side As String, ByVal xs As Double, ByVal zs As Double, _
+                     ByVal drop As Double, ByVal deg As Double, ByVal xr As Double, ByVal k As Long, _
+                     ByVal sg As Double, ByRef xpOut As Double, ByRef z3Out As Double)
+    Dim xw As Double, xp As Double, z1 As Double, z2 As Double, z3 As Double, ze As Double, tn As Double
+    Dim cx As Double, cz As Double, ro As Double, t As Double, dx As Double, dz As Double, what As String
+    what = "meal: " & src & " " & side & " -> R" & k
+    tn = Tan(MEAL_SLOPE_DEG * PI / 180#)
+    xw = xr + sg * 0.5 * RiserD(k): xp = xw + sg * MEAL_SIDE_L
+    z1 = zs - drop
+    z2 = z1 - Abs(xp - xs) * Tan(deg * PI / 180#)
+    ze = RiserV0(k) + MEAL_ENTRY_UP: z3 = ze + MEAL_SIDE_L * tn
+    If ze + MEAL_SIDE_L * tn >= RiserBendZ(k) - 0.5 Then Fail what & ": it would enter R" & k & " past its pipe."
+    If z2 <= z3 + 0.001 Then Fail what & ": the dust outlet is too low to reach R" & k & " at its slope."
+    ' the bend's centre and outer wall: C(k + 1)'s outlet turns away from sg
+    cx = xr - sg * OutR(k + 1): cz = RiserBendZ(k): ro = OutR(k + 1) + 0.5 * RiserD(k)
+    dx = xp - xs: dz = z2 - z1
+    t = ((cx - xs) * dx + (cz - z1) * dz) / (dx * dx + dz * dz)
+    t = Max2(0#, Min2(1#, t))
+    If Sqr((xs + t * dx - cx) ^ 2 + (z1 + t * dz - cz) ^ 2) - ro < MEAL_OVER_GAP Then
+        Fail what & ": its slope runs within " & Fmt(MEAL_OVER_GAP) & " m of the outlet bend under it. Lower MEAL_OVER_DEG."
     End If
-    MealEnd src, "meal: " & src & " " & side & " -> R" & k, xr + sg * 0.5 * RiserD(k), ze, sg, True
+    If drop > 0# Then
+        PathM what, Array(xs, zs, xs, z1, xp, z2, xp, z3, xw, ze)
+    Else
+        PathM what, Array(xs, zs, xp, z2, xp, z3, xw, ze)
+    End If
+    xpOut = xp: z3Out = z3
+End Sub
+
+' The end of a meal pipe's bend piece: from the foot (xs, zx) of its
+' straight drop, MEAL_BEND along the bisector of the turn from straight
+' down to the line on to its target (xt, zt).
+Private Sub BendEnd(ByVal xs As Double, ByVal zx As Double, ByVal xt As Double, ByVal zt As Double, _
+                    ByRef xb As Double, ByRef zb As Double)
+    Dim ux As Double, uz As Double, L As Double
+    ux = xt - xs: uz = zt - zx
+    L = Sqr(ux * ux + uz * uz)
+    ux = ux / L: uz = uz / L - 1#
+    L = Sqr(ux * ux + uz * uz)
+    xb = xs + MEAL_BEND * ux / L
+    zb = zx + MEAL_BEND * uz / L
 End Sub
 
 ' A meal pipe shown by its end only, reaching (xt, zt): straight down,
@@ -1278,6 +1344,99 @@ End Sub
 ' A path that leaves the drawing (or only marks a stream): one line,
 ' with the arrow's tip at its end, so no line runs on past the arrow;
 ' its head hd long on the sheet.
+' A closed outline a meal pipe may pass behind: its edges kept for
+' PathM, not drawn.
+Private Sub BodyM(pts As Variant)
+    Dim n As Long, i As Long, j As Long
+    n = (UBound(pts) + 1) \ 2
+    For i = 0 To n - 1
+        j = (i + 1) Mod n
+        If nBd >= UBound(bdXa) Then Fail "too many outlines for the meal crossing check."
+        nBd = nBd + 1
+        bdXa(nBd) = pts(2 * i): bdZa(nBd) = pts(2 * i + 1)
+        bdXb(nBd) = pts(2 * j): bdZb(nBd) = pts(2 * j + 1)
+    Next i
+End Sub
+
+' A cyclone's section, closed, for the crossing check: cone, barrel,
+' roof, its outlet pipe to its top
+Private Sub CycBody(ByVal s As Long, ByVal xc As Double)
+    Dim d As Double, hb As Double, hc As Double, vd As Double, dd As Double
+    CycDims s, d, hb, hc, vd, dd
+    BodyM Array(xc + 0.5 * dd, zDust(s), xc + 0.5 * d, zDust(s) + hc, xc + 0.5 * d, zRoof(s), _
+                xc + 0.5 * vd, zRoof(s), xc + 0.5 * vd, zTop(s), xc - 0.5 * vd, zTop(s), _
+                xc - 0.5 * vd, zRoof(s), xc - 0.5 * d, zRoof(s), xc - 0.5 * d, zDust(s) + hc, _
+                xc - 0.5 * dd, zDust(s))
+End Sub
+
+' A meal pipe along its axis, broken where it passes behind an outline
+' (BodyM): along the pipe every edge it crosses toggles it in / out;
+' the parts inside, and CROSS_GAP either side, are not drawn. Edges it
+' only starts or ends on (its dust outlet, the wall it enters) do not
+' count. The arrow rides on the longest part drawn.
+Private Sub PathM(ByVal what As String, pts As Variant)
+    Dim n As Long, i As Long, j As Long, m As Long, q As Long, nb As Long
+    Dim xa As Double, za As Double, dx As Double, dz As Double, L As Double
+    Dim ex As Double, ez As Double, den As Double, t As Double, u As Double, tg As Double
+    Dim t0 As Double, t1 As Double, bl As Double, bx As Double, bz As Double, bdx As Double, bdz As Double
+    Dim ts() As Double
+    Dim inBody As Boolean
+    n = (UBound(pts) + 1) \ 2
+    If n < 2 Then Fail what & " has fewer than two points."
+    bl = -1#
+    For i = 0 To n - 2
+        xa = pts(2 * i): za = pts(2 * i + 1)
+        dx = pts(2 * i + 2) - xa: dz = pts(2 * i + 3) - za
+        L = Sqr(dx * dx + dz * dz)
+        If L <= 0# Then Fail what & ": two points coincide."
+        ReDim ts(0 To nBd)
+        m = 0
+        For j = 1 To nBd
+            ex = bdXb(j) - bdXa(j): ez = bdZb(j) - bdZa(j)
+            den = dx * ez - dz * ex
+            If Abs(den) > 1E-12 Then
+                t = ((bdXa(j) - xa) * ez - (bdZa(j) - za) * ex) / den
+                u = ((bdXa(j) - xa) * dz - (bdZa(j) - za) * dx) / den
+                If t > 0.000001 And t < 0.999999 And u >= -0.000000001 And u <= 1.000000001 Then
+                    ts(m) = t: m = m + 1
+                End If
+            End If
+        Next j
+        For j = 1 To m - 1                    ' sort the crossings along the run
+            t = ts(j): q = j - 1
+            Do While q >= 0
+                If ts(q) <= t Then Exit Do
+                ts(q + 1) = ts(q): q = q - 1
+            Loop
+            ts(q + 1) = t
+        Next j
+        nb = nb + m \ 2
+        tg = CROSS_GAP / L
+        ' each crossing toggles in / out; the state carries on to the
+        ' next run. Draw the outside parts.
+        t0 = 0#
+        For j = 0 To m
+            If j < m Then t1 = ts(j) - tg Else t1 = 1#
+            If Not inBody And t1 > t0 + 0.000001 Then
+                LineM xa + t0 * dx, za + t0 * dz, xa + t1 * dx, za + t1 * dz
+                If (t1 - t0) * L > bl Then
+                    bl = (t1 - t0) * L
+                    bx = xa + 0.5 * (t0 + t1) * dx: bz = za + 0.5 * (t0 + t1) * dz
+                    bdx = dx / L: bdz = dz / L
+                End If
+            End If
+            If j < m Then
+                inBody = Not inBody
+                If Not inBody Then t0 = ts(j) + tg
+            End If
+        Next j
+    Next i
+    If inBody Then Fail what & " ends behind an outline."
+    If bl > 0# Then ArrowAt bx, bz, bdx, bdz
+    Note "-- " & what & IIf(nb > 0, " (broken behind " & nb & " outlines)", "")
+End Sub
+
+
 Private Sub PathOut(ByVal what As String, pts As Variant, Optional ByVal hd As Double = ARROW_L)
     Dim n As Long, i As Long
     Dim L As Double, ax As Double, az As Double
@@ -1498,14 +1657,18 @@ Private Sub DrawLegend()
     Call ArrowAt((x + 0.02 - 0.25 * ARROW_L - X0) * SHEET_SCALE, (y - Y0) * SHEET_SCALE, 1#, 0#, 0.5 * ARROW_L)
     UseLayer L_TEXT: LabelPH x + 0.0083, y + 0.001, "C2", CAP_H
     LabelP x + 0.025, y + 0.002, "meal pipe shown by its end only, its source in the break"
+    y = y - 0.012
+    UseLayer L_GAS:  LineP x + 0.008, y - 0.003, x + 0.008, y + 0.003: LineP x + 0.012, y - 0.003, x + 0.012, y + 0.003
+    UseLayer L_MEAL: LineP x, y, x + 0.005, y: LineP x + 0.015, y, x + 0.02, y
+    UseLayer L_TEXT: LabelP x + 0.025, y + 0.002, "meal pipe broken where it passes behind a duct"
 
     y = y - 0.02
     LabelP x, y, "NOTES"
     LabelP x, y - 0.006, "1. Elevations above ground, m; diameters internal, m."
     LabelP x, y - 0.012, "2. 5000 t/d: two identical 2500 t/d strings on one calciner and"
     LabelP x, y - 0.018, "   kiln; cyclones at the CFD sizes; see the equipment list."
-    LabelP x, y - 0.024, "3. Schematic: kiln inlet chamber size has no source; meal pipes"
-    LabelP x, y - 0.030, "   shown by their ends only, their runs lie across the ducts in 2D."
+    LabelP x, y - 0.024, "3. Schematic: kiln inlet chamber size has no source; C4 / C5 meal"
+    LabelP x, y - 0.030, "   pipes flatter than drawn in 3D; the near C1's shown by its end."
     LabelP x, y - 0.036, "4. Not a CFD input; one string is solved, the other is its copy."
 
     ' 10 m scale bar
