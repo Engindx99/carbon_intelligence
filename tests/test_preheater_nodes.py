@@ -1,4 +1,5 @@
 import json
+import os
 import unittest
 from pathlib import Path
 
@@ -106,6 +107,13 @@ class DefaultNodeCountTest(unittest.TestCase):
         self.assertEqual(cfg["preheater"]["nodes_per_stage"], 1)
 
 
+# Two full plants, one at 20 nodes per stage, ~35 min. Run it when
+# the node exchange or the preheater's physics changes:
+#   RUN_SLOW=1 python -m unittest tests.test_preheater_nodes
+@unittest.skipUnless(
+    os.environ.get("RUN_SLOW"),
+    "slow (two plants, one at 20 nodes); set RUN_SLOW=1",
+)
 class NodalPreheaterBalanceTest(unittest.TestCase):
     """20 co-current nodes per cyclone stage: the multi-node march,
     and the claim that one exact node already gives its answer."""
