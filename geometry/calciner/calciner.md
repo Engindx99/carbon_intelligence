@@ -18,6 +18,7 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 | Silindir boyu | 26.129 m | türetilmiş |
 | Tersiyer hava kanalı çapı | 2.4393 m | FLS oranıyla türetilmiş |
 | Farin besleme borusu çapı | 0.8485 m | literatür; Fidaros 2007 × √2 |
+| Yakıt borusu çapı | 0.2828 m | literatür; Fidaros 2007 × √2 |
 | **Ekipman hacmi (koni + silindir)** | 1009.71 m³ | türetilmiş |
 | **Duvar alanı (silindir + koni + tavan halkası)** | 635.96 m² | türetilmiş |
 <!-- END GENERATED -->
@@ -46,7 +47,7 @@ Fidaros ve diğ. 2007 farini **iki** Ø0.6 m borudan, yatayla 60° eğimle verir
 
 ## CFD Geometry
 
-Makro: [`geometry/macros/calciner.bas`](../macros/calciner.bas). Yapım adım adım ilerler. **Şu an kurulu olanlar**: gövde (1. adım), Y kaz boynu (2–4. adımlar) ve iki farin besleme borusu (5. adım). Henüz dışa aktarım yapılmaz.
+Makro: [`geometry/macros/calciner.bas`](../macros/calciner.bas). Yapım adım adım ilerler ve tamamdır (14 Ekim 2026): gövde, Y kaz boynu, iki farin borusu, teğetsel tersiyer hava kanalı ve iki yakıt borusu; sınır yüzleri boyanır, katı dışa aktarılır (`geometry/output/2500/calciner.{SLDPRT,step,stl}`; klasör adı makronun `LINE_KEY`'i, tesis 5000 t/d).
 
 Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0**.
 
@@ -62,10 +63,12 @@ Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0
 | 3a + dirsek +x | kol Ø3.5, başlangıç diski x = ±0.725; 180°, R 5.250, tepe z 46.317 | 1311.537 (+158.685, Pappus) |
 | 3b + dirsek −x | iki dirseğin ortak hacmi 10.346 (sayısal, 80³ nokta) | 1459.876 |
 | 4 + iki iniş | x = ±11.225, z 39.317 .. 18.130 → gas_outlet_1 (+x), gas_outlet_2 (−x) | 1867.565 (+2 × 203.845) |
-| 5 + iki farin borusu | Ø0.8485, eksenleri duvarı z 16.130'da keser | makro hesaplar (aşağıda) |
+| 5a / 5b + farin boruları ±x | Ø0.8485, 60°, eksenleri duvarı z 11.385'da keser; deliğin alt kenarı z 10.491, uç yüzleri (±3.870, 0, 12.252) | 1868.138 / 1868.711 (+0.5730 her biri) |
+| 6 + tersiyer hava | Ø2.4393, teğetsel, eksen y -2.101, z 8.271; üst kenarı z 9.491, yüzü x 6.370 | 1886.798 (+18.087) |
+| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1886.860 / **1886.923** (+0.0629 her biri) |
 <!-- END GENERATED -->
 
-Kollar x–z düzleminde ayna simetriktir; başlangıç diskleri boynun içinde, kendi tarafında boynun kenarına teğettir. Farin boruları ±x'te, y = 0 düzleminde, her inişin altındadır; eksenleri gövdeden dışarı doğru yükselir ve uç yüzleri `meal_feed_1` (+x), `meal_feed_2` (−x) olur. Boğazın boyu `THROAT_LEN_OVER_D` (modelleme parametresi).
+Kollar x–z düzleminde ayna simetriktir; başlangıç diskleri boynun içinde, kendi tarafında boynun kenarına teğettir. Tersiyer hava kanalı −y tarafında, +x'ten (başlık tarafı) gelir. Farin boruları ±x'te, y = 0 düzleminde; yakıt boruları ±y'de, x = 0 düzlemindedir. Hepsinin ekseni gövdeden dışarı doğru yükselir. Boğazın boyu `THROAT_LEN_OVER_D` (modelleme parametresi).
 
 Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü koninin ağzına değil, düz bir parçanın üstüne koymak için seçilmiş bir modelleme parametresidir.
 
@@ -76,42 +79,50 @@ Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü 
 - **Boylar modelleme parametresidir.** Yükseliş 1.25 × boyun çapı, dirsek yarıçapı 1.5 × kol çapı (C1 makrosunun oranları). İnişler gövdenin yanında, **gövdenin yarı yüksekliğine** kadar sarkar: boğazın üstünden gövde boyunun yarısı (`GN_OUTLET_AT_VESSEL_H`; kullanıcı kararı, 29 Eylül 2026). Böylece çıkış yüzü dirsekten uzakta, düzelmiş bir akışın üstünde durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
 - **Yön ölçülür, varsayılmaz.** Bir extrude yanlış yöne giderse ya gövde sayısı ya da hacim bunu söyler; bir dirsek yanlış dönerse hacim ve kutunun tepesi söyler. Bu durumda feature silinir ve diğer yön denenir.
 
-**Farin besleme boruları** (kullanıcı kararı, 29 Eylül 2026). Gövdenin iki yanında, kaz boynuyla aynı x–z düzleminde ±x'te, her inen borunun altında dururlar. Boru uçları (|x| ≤ 4.24) inen boruların iç duvarından (|x| = 9.475) uzaktadır; bunu bir ön kontrol zorlar.
-- **Ölçüler ve yön.** Eğim Fidaros 2007'den; çap onun Ø0.6'sı × √2 (her boru bir 2500 hattının farinini taşır). Her boru gövde eksenine bakar ve duvardan uzaklaştıkça yükselir, böylece farin ortaya doğru düşer.
-- **Yükseklik.** Boru eksenleri duvarı, kaz boynu çıkış yüzlerinin `FEED_BELOW_GN_OUT` altında keser (kotu tabloda). Borunun tamamı çıkış yüzlerinin altında kalır; en üst noktası z = 17.208'dir.
-- **Boy.** Boru gövde ekseninden başlar; başlangıç diski gövdenin içinde kalır ve birleşimde erir. Duvardan eksen boyunca `FEED_DEPTH` dışarı çıkar (C1 oluğu gibi). Uç yüzün tamamen dışarıda kalması için bu değer r·tan 60° = 0.73 m'yi aşmalıdır.
-- **Nasıl kurulur.** x = 0 düzlemindeki yarım kesit dikdörtgeni, kendi eksen kenarı etrafında tam tur döndürülür. Tam turun yanlış gidebileceği bir yönü yoktur; hangi tarafa düştüğünü ±x'te bulunan uç yüzü söyler.
-- **Hacim.** Gövde dışında kalan kısım boru başına πr²L − (1/cos θ)·2∫√(r²−a²)√(R²−a²) da = **0.57301 m³**. İntegral eliptiktir; makro a = r sin φ dönüşümüyle Simpson kuralıyla hesaplar. Bu hacim ~1869 m³'lük domenin ‰1'inin altında, yani toplam hacim kontrolü boruyu göremez. Bu yüzden her boru için ayrıca şunlar kontrol edilir: eklenen hacim %1 toleransla, uç yüzü beklenen tarafta bulunmalı ve alanı 0.5654 m² olmalı.
+**Tersiyer hava kanalı** (kullanıcı kararı, 14 Ekim 2026). Chen ve diğ.'nin 5000 t/d in-line kalsinatöründeki gibi tersiyer hava gövdenin en alt bölgesine teğetsel girer ve fırın gazıyla karışır.
+- **Yer.** Kanalın alt kenarı koninin tepesinde, dış duvarı gövde duvarıyla aynı hizada; her ikisi de 5 cm içeride (`TA_CONE_CLEARANCE`, `TA_WALL_RELIEF`). Yuvarlak bir kanal gövde duvarına tek noktada teğet olursa ya da alt kenarı koni–silindir dikişinin üstünden giderse, birleştirme bozuk bir kenar bırakır; `cyclone.bas` giriş kanalını tavandan aynı nedenle 5 cm aşağıda tutar.
+- **Domende** yalnız bir uç parçası var: x = 0'dan (gövdenin içinde) gövdenin x = R teğet düzleminin `TA_STUB_LEN` ötesine kadar. Uç yüzü `tertiary_air_inlet`. Kanalın geri kalanı (başlığa kadar) çizimde şematiktir.
+- **Hacim.** Gövde dışında kalan kısım πr²·x_uç − 2∫√(r²−(y−y_c)²)√(R²−y²) dy; makro ve `plant_geometry.py` aynı Simpson kuralıyla hesaplar. Yanlış yöne (−x) giden bir extrude aynı hacmi verir, bu yüzden yön x = +x_uç'taki yüzle anlaşılır.
 
-Planlanan adımlar:
+**Farin besleme boruları** (kullanıcı kararları, 29 Eylül ve 14 Ekim 2026). Gövdenin iki yanında, kaz boynuyla aynı x–z düzleminde ±x'te dururlar; uçları kaz boynu inişlerinden uzaktır, bunu bir ön kontrol zorlar.
+- **Yükseklik.** Farin tersiyer havanın hemen üstünden verilir (Chen ve diğ.: farin ve kömür aynı kotta, farklı yönlerden; US 10,974,992: ana farin girişi tersiyer hava girişinin üstünde). Her borunun duvardaki deliği kanalın üst kenarının `FEED_ABOVE_TA` üstünden başlar. 14 Ekim 2026'ya kadar borular kaz boynunun CFD çıkış yüzlerinin 2 m altındaydı; bu hiçbir tesis kuralından gelmiyordu.
+- **Ölçüler ve yön.** Eğim Fidaros 2007'den; çap onun Ø0.6'sı × √2 (her boru bir 2500 hattının farinini taşır). Her boru gövde eksenine bakar ve duvardan uzaklaştıkça yükselir, böylece farin ortaya doğru düşer.
+- **Boy.** Boru, duvarın bir boru çapı içinden başlar; başlangıç diski gövdenin içinde kalır ve birleşimde erir. (Eskiden eksenden başlıyordu; alçalan borunun başlangıcı o zaman koninin içine düşerdi.) Duvardan eksen boyunca `FEED_DEPTH` dışarı çıkar (C1 oluğu gibi). Uç yüzün tamamen dışarıda kalması için bu değer r·tan 60° = 0.73 m'yi aşmalıdır.
+- **Nasıl kurulur.** y = 0 düzlemindeki yarım kesit dikdörtgeni, kendi eksen kenarı etrafında tam tur döndürülür. Tam turun yanlış gidebileceği bir yönü yoktur; hangi tarafa düştüğünü ±x'te bulunan uç yüzü söyler.
+- **Hacim.** Gövde dışında kalan kısım boru başına πr²L − (1/cos θ)·(2∫√(r²−a²)√(R²−a²) da − ρ₀πr²), ρ₀ borunun başladığı yatay uzaklık (değeri CFD tablosunda). İntegral eliptiktir; makro a = r sin φ dönüşümüyle Simpson kuralıyla hesaplar. Bu hacim ~1887 m³'lük domenin ‰1'inin altında, yani toplam hacim kontrolü boruyu göremez. Bu yüzden her boru için ayrıca şunlar kontrol edilir: eklenen hacim %1 toleransla, uç yüzü beklenen tarafta bulunmalı ve alanı borunun kesiti olmalı.
+
+**Yakıt boruları** (kullanıcı kararı, 14 Ekim 2026). Fidaros 2007'nin iki Ø0.2 m kömür borusu, 30° eğimle; her biri bir hattın yakıtını taşıdığı için çap × √2 (farin borularıyla aynı kural). Farin borularıyla aynı kotta (eksenleri duvarı aynı yerde keser), onlara 90° açıyla ±y'de. Farin boruları gibi kurulur ve kontrol edilir.
+
+Yapım adımları:
 1. gövde (revolve)
 2. \+ boyun
 3. \+ iki 180° dirsek (3a: +x, 3b: −x)
 4. \+ iki iniş borusu
 5. \+ iki farin besleme borusu (5a: +x, 5b: −x)
-6. \+ tersiyer kanal (Ø2.439, teğetsel, dil ile)
-7. \+ yakıt portu
-8. sınır yüzü etiketleme ve export → `geometry/output/2500/calciner.*` (klasör adı makronun `LINE_KEY`'i; tesis 5000 t/d)
+6. \+ tersiyer hava kanalı (teğetsel, −y tarafında, +x'ten)
+7. \+ iki yakıt borusu (7a: +y, 7b: −y)
+8. sınır yüzlerinin boyanması ve dışa aktarma → `geometry/output/2500/calciner.*`
+
+`calciner_build.log` her çalıştırmada yazılır; `tests/test_plant_geometry.py` ölçüleri, adım hacimlerini ve sınır yüzü alanlarını oradan `plant_geometry.py` ile karşılaştırır.
 
 ## Boundary Faces
 
-| Sınır | Durum |
-|---|---|
-| `kiln_gas_inlet` | z = 0 diski, 7.695 m² (1. adımdan beri var, henüz boyanmıyor) |
-| `gas_outlet_1`, `gas_outlet_2` | +x ve −x'teki inişlerin aşağı bakan diskleri (kotu tabloda), her biri bir kol kesiti. Ayrı renkler, 8. adımda boyanır; x'in işaretiyle ayırt edilir. Her biri bir hattın C5'ini besler ([cyclone_C5.md](../preheater/cyclone_C5.md)); bağ bu yüzler üzerinden kurulur, C5 bu domene katılmaz |
-| `meal_feed_1`, `meal_feed_2` | +x ve −x'teki boruların eğik uç yüzleri, her biri 0.5654 m². Gaz için duvar, DPM için enjeksiyon yüzeyi (C1'deki gibi) |
-| `tertiary_air_inlet`, `fuel_inlet` | 6–8. adımlar |
+Her sınır yüzü düzlemi, normali ve üstündeki bir noktayla bulunur ve kendi rengine boyanır. AP214 STEP renkleri taşır; Fluent Meshing her renkten bir bölge yapar, bölgeler log'daki renk listesine göre adlandırılır. Kalan her yüz duvardır. Her sınırdan tam bir tane bulunmalı ve alanı kendi kesiti olmalı; makro bunu kontrol eder.
+
+| Sınır | Renk (RGB) | Ne |
+|---|---|---|
+| `kiln_gas_inlet` | yeşil (0.2, 0.7, 0.35) | boğazın altındaki z = 0 diski |
+| `gas_outlet_1`, `gas_outlet_2` | mavi (0.2, 0.45, 0.85), koyu mavi (0.1, 0.25, 0.55) | +x ve −x'teki inişlerin aşağı bakan diskleri, her biri bir kol kesiti. Her biri bir hattın C5'ini besler ([cyclone_C5.md](../preheater/cyclone_C5.md)); bağ bu yüzler üzerinden kurulur, C5 bu domene katılmaz |
+| `tertiary_air_inlet` | kırmızı (0.85, 0.25, 0.2) | tersiyer kanal parçasının x = x_uç'taki yüzü |
+| `meal_feed_1`, `meal_feed_2` | mor (0.6, 0.3, 0.7), koyu mor (0.4, 0.15, 0.5) | +x ve −x'teki farin borularının eğik uç yüzleri. Gaz için duvar, DPM için enjeksiyon yüzeyi (C1'deki gibi) |
+| `fuel_inlet_1`, `fuel_inlet_2` | turuncu (0.85, 0.55, 0.15), kahverengi (0.55, 0.35, 0.1) | +y ve −y'deki yakıt borularının eğik uç yüzleri; taşıma havası ve yakıt |
+| `wall` | gri (0.72, 0.72, 0.72) | geri kalan her yüz |
 
 ## Derived Properties
 
-Adım hacimleri CFD Geometry'deki tabloda (kapalı form; dirseklerin ortak hacmi sayısal; makro ‰1 ile doğrular). Farin borularını makro kendisi hesaplar (son çalıştırma):
+Adım hacimleri CFD Geometry'deki tabloda (kapalı form; dirseklerin ortak hacmi ve boruların gövde dışındaki hacmi sayısal integral; makro gövdeyi ‰1, küçük parçaların eklediği hacmi %1 ile doğrular).
 
-```
-5a + farin +x 1868.138 m³   (boru başına 0.57301; ayrıca %1 ile kontrol edilir)
-5b + farin −x 1868.711 m³
-```
-
-Kutu: x ±12.975, y ±3.370, z 0 … 46.317 (farin boruları kutuyu değiştirmez).
+Kutu: x ±(iniş + kol yarıçapı), y ±(yakıt borusu ucu), z 0 … dirseklerin tepesi; değerleri makro log'unda.
 
 Ekipman hacmi Geometrik Ölçüler'deki tabloda (2500 kalsinatörü 659.85 m³). Twin'in kalsinatör bölgesi bu gövdeyi, tesisin kaz boynunu ve iki C5'i tek bir kanal olarak çözer (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)).
 

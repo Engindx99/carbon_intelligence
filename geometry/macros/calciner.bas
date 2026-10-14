@@ -11,10 +11,10 @@ Attribute VB_Name = "calciner"
 ' gooseneck down towards C5. Nothing structural is modelled -- no
 ' shell, no refractory (CLAUDE.md rule 8).
 '
-' BUILD STATUS: throat + cone + vessel, the Y gooseneck and the two
-' meal feed pipes. The tertiary air duct, the fuel port, and the face
-' tagging with export follow; until then the macro builds and
-' verifies, and exports nothing.
+' BUILD STATUS: complete. Throat + cone + vessel, the Y gooseneck,
+' the two meal feed pipes, the tangential tertiary air duct and the
+' two fuel pipes; the boundary faces are coloured and the solid is
+' exported (STEP AP214, STL, SLDPRT).
 '
 ' Coordinates: calciner axis = z, the kiln gas inlet face (bottom of
 ' the throat) at z = 0.
@@ -57,10 +57,16 @@ Const D_GOOSENECK_SRC              As Double  = 3.5          ' each leg [publish
 Const GN_RISE_OVER_D               As Double  = 1.25         ' x neck D [model, preheater/gooseneck.md]
 Const GN_BEND_R_OVER_D             As Double  = 1.5          ' x leg D [model, preheater/gooseneck.md]
 Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.5          ' x H_VESSEL [model, preheater/gooseneck.md]
+Const D_TA                         As Double  = 2.4393       ' tertiary air duct [derived_from_reference, calciner/calciner.md]
+Const TA_CONE_CLEARANCE            As Double  = 0.05         ' its lower edge over the cone's top [model, calciner/calciner.md]
+Const TA_WALL_RELIEF               As Double  = 0.05         ' its outer wall inside the vessel's [model, calciner/calciner.md]
+Const TA_STUB_LEN                  As Double  = 3#           ' its face past the vessel's tangent plane [model, calciner/calciner.md]
+Const FEED_ABOVE_TA                As Double  = 1#           ' meal / fuel holes over the duct's top [model, calciner/calciner.md]
 Const D_FEED                       As Double  = 0.8485       ' [literature, calciner/calciner.md]
 Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizontal [literature, calciner/calciner.md]
-Const FEED_BELOW_GN_OUT            As Double  = 2#           ' [model, calciner/calciner.md]
-Const FEED_DEPTH                   As Double  = 1#           ' [model, calciner/calciner.md]
+Const FEED_DEPTH                   As Double  = 1#           ' meal and fuel pipes past the wall [model, calciner/calciner.md]
+Const D_FUEL                       As Double  = 0.2828       ' [literature, calciner/calciner.md]
+Const FUEL_SLOPE_DEG               As Double  = 30#          ' below the horizontal [literature, calciner/calciner.md]
 Const OVERLAP_N                    As Long    = 80           ' grid per axis, the bends' shared volume [plant_geometry.py]
 Const P_ATM                        As Double  = 101325#      ' Pa, the throat's gas [plant_geometry.py]
 Const R_GAS                        As Double  = 8.314462618  ' J/(mol K) [plant_geometry.py]
@@ -134,10 +140,22 @@ Const M_CO2                        As Double  = 0.0440095    ' kg/mol [plant_geo
 '    GN_BEND_R_OVER_D: bend centreline radius, x leg D
 '    GN_OUTLET_AT_VESSEL_H: outlet faces' height, fraction of H_VESSEL
 
+' Tertiary air (user decision, 14 Oct 2026). One duct of the derived
+' bore, entering at the bottom of the cylinder tangentially, as in a
+' 5000 t/d in-line calciner (Chen et al.): its lower edge on the top
+' of the cone, its outer wall on the vessel's. Each is kept a hair
+' clear -- a round duct whose wall touches the vessel's at a point, or
+' whose bottom runs along the cone/cylinder seam, leaves the boolean
+' a degenerate edge (cyclone.bas keeps its inlet off the roof for the
+' same reason). It comes in along +x, the hood's side, on the -y side
+' of the axis, and the domain keeps a stub of it, its face
+' TA_STUB_LEN past the vessel's tangent plane x = R.
+' -> D_TA, TA_CONE_CLEARANCE, TA_WALL_RELIEF, TA_STUB_LEN: in the generated block above
+
 ' Meal feed. Fidaros et al. 2007 feed the raw meal through two round
 ' 0.6 m pipes at 60 deg to the horizontal; here one on each side of
-' the vessel, at +x and -x, in the gooseneck's x-z plane below each
-' drop (user decision, 29 Sep 2026): each takes one string's C4 meal.
+' the vessel, at +x and -x, in the gooseneck's x-z plane (user
+' decision, 29 Sep 2026): each takes one string's C4 meal.
 ' That is twice the meal of Fidaros's calciner per pipe, so the area
 ' doubles at the same meal velocity: 0.6 x sqrt 2 = 0.8485 m. Each
 ' pipe points at the vessel axis and rises away from the wall, so the
@@ -146,14 +164,21 @@ Const M_CO2                        As Double  = 0.0440095    ' kg/mol [plant_geo
 '    D_FEED: [m], Fidaros 2007 x sqrt 2
 '    FEED_SLOPE_DEG: below the horizontal, Fidaros 2007
 
-' Modelling parameters -- NOT plant dimensions. Where the pipe axis
-' meets the wall, this far below the gooseneck outlet faces, so the
-' pipes sit a little below where the drops hang down to (user
-' decision, 29 Sep 2026); and how far each pipe runs out along its
-' axis past the wall, as C1's feed chute does.
-' -> FEED_BELOW_GN_OUT, FEED_DEPTH: in the generated block above
-'    FEED_BELOW_GN_OUT: [m]
-'    FEED_DEPTH: [m]
+' Fuel. Fidaros's two 0.2 m coal pipes at 30 deg, x sqrt 2 for a
+' string each, as the meal pipes; at +y and -y, 90 deg round from them.
+' -> D_FUEL, FUEL_SLOPE_DEG: in the generated block above
+
+' Modelling parameters -- NOT plant dimensions. Meal and fuel go in
+' just above the tertiary air (Chen et al.: at one height, in
+' different directions; US 10,974,992: the main meal inlet above the
+' tertiary air inlet; user decision, 14 Oct 2026): each meal pipe's
+' hole in the wall starts FEED_ABOVE_TA over the duct's top, and the
+' fuel pipes' axes meet the wall where the meal pipes' do. Each pipe
+' runs FEED_DEPTH out along its axis past the wall, as C1's feed
+' chute does, and starts one pipe diameter inside it. Until 14 Oct the
+' meal pipes hung 2 m below the gooseneck's CFD outlet faces, a place
+' no plant rule gave.
+' -> FEED_ABOVE_TA, FEED_DEPTH: in the generated block above
 
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
@@ -205,13 +230,24 @@ Dim xGnLeg As Double                        ' the drops' axes, x = +-this
 Dim zGnOut As Double                        ' the two gas outlet faces, z = this, facing down
 Dim zGnApex As Double                       ' highest point of the bends
 Dim xBoxMax As Double                       ' the domain's |x| extreme, the drops' outer walls
-Dim rFeed As Double                         ' feed pipe radius
-Dim fc As Double, fs As Double              ' cos, sin of the feed slope; axis e = (+-fc, 0, fs)
-Dim zFeed As Double                         ' where each feed pipe's axis meets the wall
-Dim zFeedStart As Double                    ' the pipes start on the vessel axis, here
-Dim lFeed As Double                         ' pipe length from its start
+Dim rTA As Double                           ' tertiary air duct radius
+Dim yTA As Double, zTA As Double            ' its axis, parallel to x, through (., yTA, zTA)
+Dim xTAEnd As Double                        ' its face, the tertiary_air_inlet, at x = this
+' The meal (+-x) and fuel (+-y) pipes. Each in its own vertical plane
+' through the vessel axis, along a horizontal "radial" rho out from the
+' axis: it starts at rho0, one pipe diameter inside the wall, rises
+' away from it at its slope (axis e = (c, s) in rho, z), meets the
+' wall at zFeed and ends FEED_DEPTH past it.
+Dim rFeed As Double, fc As Double, fs As Double
+Dim rhoFeed0 As Double, zFeedStart As Double, lFeed As Double
 Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the end face, the meal_feed, at x = +-xFeedEnd
 Dim xFeedMax As Double                      ' |x| of the end faces' outer edges
+Dim zFeed As Double                         ' where each meal and fuel pipe's axis meets the wall
+Dim rFuel As Double, uc As Double, us As Double
+Dim rhoFuel0 As Double, zFuelStart As Double, lFuel As Double
+Dim yFuelEnd As Double, zFuelEnd As Double  ' centre of the end face, the fuel_inlet, at y = +-yFuelEnd
+Dim yFuelMax As Double                      ' |y| of the end faces' outer edges
+Dim outName As String                       ' file name the solid is written under
 
 ' Sketch axis directions, measured at run time by CalibrateSketchAxes.
 Dim uSign As Double, vSign As Double
@@ -229,9 +265,18 @@ Dim vThroat As Double, vCone As Double, vCyl As Double, vVessel As Double
 Dim vGnPipes As Double, vGnBend As Double, vGnLegs As Double
 Dim vGnOverlap As Double                    ' what the two bends share, over the neck
 Dim vFeed As Double                         ' one feed pipe, the part outside the vessel
+Dim vTA As Double                           ' the tertiary air stub, the part outside the vessel
+Dim vFuel As Double                         ' one fuel pipe, the part outside the vessel
 Dim vStage1 As Double, vStage2 As Double, vStage3a As Double, vStage3b As Double
-Dim vStage4 As Double, vStage5a As Double
+Dim vStage4 As Double, vStage5a As Double, vStage5b As Double, vStage6 As Double
+Dim vStage7a As Double
 Dim vFinal As Double
+
+Dim exportPrefsTouched As Boolean
+Dim oldStepAP As Long, oldStlUnits As Long, oldStlQuality As Long
+Dim oldStepAppear As Boolean, oldStlBinary As Boolean
+Dim oldStlNoShift As Boolean, oldStlInfo As Boolean
+Dim oldStlDev As Double, oldStlAngle As Double
 
 Dim buildLog As String
 
@@ -267,11 +312,15 @@ Sub main()
     Build
     phase = "verifying the solid"
     Verify
+    phase = "tagging the boundary faces"
+    TagBoundaryFaces
+    phase = "exporting"
+    ExportFiles
 
     Restore
-    WriteLog CALCINER_NAME & " built and verified"
-    MsgBox CALCINER_NAME & " built and verified. Nothing is exported until the " & _
-           "boundary faces are tagged." & vbLf & vbLf & buildLog, vbInformation, "Calciner"
+    WriteLog CALCINER_NAME & " built, verified and exported"
+    MsgBox CALCINER_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, _
+           vbInformation, "Calciner"
     Exit Sub
 
 Failed:
@@ -345,29 +394,68 @@ Private Sub Derive()
         Fail "FEED_SLOPE_DEG is " & Fmt(FEED_SLOPE_DEG) & "; the feed pipes have to slope " & _
              "between the horizontal and the vertical."
     End If
+    If FUEL_SLOPE_DEG <= 0# Or FUEL_SLOPE_DEG >= 90# Then
+        Fail "FUEL_SLOPE_DEG is " & Fmt(FUEL_SLOPE_DEG) & "; the fuel pipes have to slope " & _
+             "between the horizontal and the vertical."
+    End If
+
+    ' Tertiary air: tangential at the bottom of the cylinder, its axis
+    ' parallel to x on the -y side, from x = 0 (inside the vessel) out
+    ' to its face. Every line of it along x leaves the vessel at
+    ' sqrt(R^2 - y^2), so what the merge keeps is the stub less the
+    ' vessel's half chord integrated over the disc.
+    rTA = 0.5 * D_TA
+    yTA = -(R - TA_WALL_RELIEF - rTA)
+    zTA = zConeTop + TA_CONE_CLEARANCE + rTA
+    xTAEnd = R + TA_STUB_LEN
+    vTA = PI * rTA * rTA * xTAEnd - ChordIntegral(rTA, yTA)
+
+    ' Meal pipes, their holes FEED_ABOVE_TA over the duct's top: the
+    ' hole reaches rFeed / cos below the axis on the pipe's mid-plane,
+    ' and its lower edge drops a little more towards the sides, where
+    ' the wall curves back.
     rFeed = 0.5 * D_FEED
     fc = Cos(FEED_SLOPE_DEG * PI / 180#)
     fs = Sin(FEED_SLOPE_DEG * PI / 180#)
-    zFeed = zGnOut - FEED_BELOW_GN_OUT
-    zFeedStart = zFeed - R * (fs / fc)
-    lFeed = R / fc + FEED_DEPTH
+    zFeed = zTA + rTA + FEED_ABOVE_TA + rFeed / fc + (R - Sqr(R * R - rFeed * rFeed)) * (fs / fc)
+    rhoFeed0 = R - D_FEED
+    zFeedStart = zFeed - (R - rhoFeed0) * (fs / fc)
+    lFeed = (R - rhoFeed0) / fc + FEED_DEPTH
     xFeedEnd = R + FEED_DEPTH * fc
     zFeedEnd = zFeed + FEED_DEPTH * fs
     xFeedMax = xFeedEnd + rFeed * fs
 
-    ' A line of the pipe at (a, b) in its section -- a across, along x,
-    ' b along the section's "up" -- leaves the vessel where its
-    ' horizontal reach s fc - b fs equals sqrt(R^2 - a^2). The b part
-    ' is odd across the section and cancels, as it does for C1's
-    ' chute, so what the merge keeps is the full pipe less the vessel
-    ' chord integrated over the disc and stretched by 1 / fc. That
-    ' integral is elliptic; FeedChordIntegral evaluates it.
-    vFeed = PI * rFeed * rFeed * lFeed - FeedChordIntegral() / fc
+    ' A line of the pipe at (a, b) in its section -- a across, b along
+    ' the section's "up" -- starts at radial rho0 - b s and leaves the
+    ' vessel at sqrt(R^2 - a^2): (sqrt(R^2 - a^2) - rho0 + b s) / c of
+    ' it lies inside. The b part is odd across the section and cancels,
+    ' as it does for C1's chute, so the merge keeps the full pipe less
+    ' the vessel chord past rho0, integrated over the disc and
+    ' stretched by 1 / c. That integral is elliptic; ChordIntegral
+    ' evaluates it.
+    vFeed = PI * rFeed * rFeed * lFeed - (ChordIntegral(rFeed, 0#) - rhoFeed0 * PI * rFeed * rFeed) / fc
+
+    ' Fuel pipes, at the meal pipes' height, the same way.
+    rFuel = 0.5 * D_FUEL
+    uc = Cos(FUEL_SLOPE_DEG * PI / 180#)
+    us = Sin(FUEL_SLOPE_DEG * PI / 180#)
+    rhoFuel0 = R - D_FUEL
+    zFuelStart = zFeed - (R - rhoFuel0) * (us / uc)
+    lFuel = (R - rhoFuel0) / uc + FEED_DEPTH
+    yFuelEnd = R + FEED_DEPTH * uc
+    zFuelEnd = zFeed + FEED_DEPTH * us
+    yFuelMax = yFuelEnd + rFuel * us
+    vFuel = PI * rFuel * rFuel * lFuel - (ChordIntegral(rFuel, 0#) - rhoFuel0 * PI * rFuel * rFuel) / uc
 
     vStage3b = vStage3a + vGnBend - vGnOverlap   ' + the -x bend, less what it shares with the +x one
     vStage4 = vStage3b + vGnLegs           ' + two drops to the outlet faces
     vStage5a = vStage4 + vFeed             ' + the +x meal feed pipe
-    vFinal = vStage5a + vFeed              ' + the -x meal feed pipe
+    vStage5b = vStage5a + vFeed            ' + the -x meal feed pipe
+    vStage6 = vStage5b + vTA               ' + the tertiary air duct
+    vStage7a = vStage6 + vFuel             ' + the +y fuel pipe
+    vFinal = vStage7a + vFuel              ' + the -y fuel pipe
+
+    outName = CALCINER_NAME
 
 End Sub
 
@@ -431,35 +519,61 @@ Private Sub PreChecks()
         Fail "the gooseneck drops' inner walls at |x| = " & Fmt(xGnLeg - rGn) & " m are not " & _
              "clear of the vessel (" & Fmt(R) & " m). Raise GN_BEND_R_OVER_D."
     End If
-    ' 8. the feed pipes. The end face has to lie wholly outside the
-    '    vessel, or part of the meal_feed face merges away: its edge
-    '    nearest the wall reaches in by rFeed * sin.
+    ' 8. the tertiary air duct: clear of the cone and of the vessel's
+    '    wall by its two hairs, inside the cylinder, out past the wall
+    If TA_CONE_CLEARANCE <= 0# Or TA_WALL_RELIEF <= 0# Then
+        Fail "TA_CONE_CLEARANCE and TA_WALL_RELIEF have to be positive: a duct touching the " & _
+             "cone's seam or the vessel's wall leaves the boolean a degenerate edge."
+    End If
+    If 2# * rTA + TA_WALL_RELIEF >= 2# * R Then
+        Fail "the tertiary air duct (D " & Fmt(D_TA) & " m) does not fit across the vessel."
+    End If
+    If zTA + rTA >= zRoof Then
+        Fail "the tertiary air duct reaches the roof."
+    End If
+    If TA_STUB_LEN <= 0# Then Fail "TA_STUB_LEN is " & Fmt(TA_STUB_LEN) & "; the duct's face would be inside the vessel."
+
+    ' 9. the meal and fuel pipes. Each end face has to lie wholly
+    '    outside the vessel, or part of it merges away: its edge
+    '    nearest the wall reaches in by r * sin.
     If FEED_DEPTH * fc <= rFeed * fs Then
-        Fail "the feed pipes' end faces reach back into the vessel; FEED_DEPTH must exceed " & _
+        Fail "the meal pipes' end faces reach back into the vessel; FEED_DEPTH must exceed " & _
              Fmt(rFeed * fs / fc) & " m at " & Fmt(FEED_SLOPE_DEG) & " deg."
     End If
-    ' The hole in the wall reaches rFeed / cos above and below zFeed on
-    ' the pipe's mid-plane, and the lower edge drops a little more
-    ' towards the sides, where the wall curves back.
-    If zFeed - rFeed / fc - (R - Sqr(R * R - rFeed * rFeed)) * (fs / fc) <= zConeTop Then
-        Fail "the feed pipes' holes in the wall reach down past the top of the cone at z = " & _
-             Fmt(zConeTop) & " m. Lower FEED_BELOW_GN_OUT."
+    If FEED_DEPTH * uc <= rFuel * us Then
+        Fail "the fuel pipes' end faces reach back into the vessel; FEED_DEPTH must exceed " & _
+             Fmt(rFuel * us / uc) & " m at " & Fmt(FUEL_SLOPE_DEG) & " deg."
     End If
-    ' The start disc sits on the vessel axis; it has to be clear of
-    ' the cone, or the closed-form volume counts a piece that is not
-    ' there.
+    If FEED_ABOVE_TA <= 0# Then
+        Fail "FEED_ABOVE_TA is " & Fmt(FEED_ABOVE_TA) & "; the meal pipes' holes would run into " & _
+             "the tertiary air duct."
+    End If
+    ' The fuel pipes meet the wall where the meal pipes do; their holes
+    ' have to clear the duct too.
+    If zFeed - rFuel / uc - (R - Sqr(R * R - rFuel * rFuel)) * (us / uc) <= zTA + rTA Then
+        Fail "the fuel pipes' holes reach down into the tertiary air duct."
+    End If
+    ' The start discs sit inside the vessel; they have to be over the
+    ' cone, or the closed-form volume counts a piece that is not there.
     If zFeedStart - rFeed * fc <= zConeTop Then
-        Fail "the feed pipes start at z = " & Fmt(zFeedStart - rFeed * fc) & " m on the axis, " & _
-             "inside the cone (top at z = " & Fmt(zConeTop) & " m)."
+        Fail "the meal pipes start at z = " & Fmt(zFeedStart - rFeed * fc) & " m, inside the " & _
+             "cone (top at z = " & Fmt(zConeTop) & " m)."
     End If
-    ' "A little below where the drops hang down to": the whole pipe.
+    If zFuelStart - rFuel * uc <= zConeTop Then
+        Fail "the fuel pipes start at z = " & Fmt(zFuelStart - rFuel * uc) & " m, inside the cone."
+    End If
+    ' The duct is on the -y side, from x = 0 out; the meal pipes are at
+    ' y = 0, the fuel pipes at x = 0. Clear of it in y and z.
+    If yTA + rTA >= -rFeed Then
+        Fail "the tertiary air duct reaches y = " & Fmt(yTA + rTA) & " m, into the +x meal pipe."
+    End If
+    ' Below the gooseneck's outlet faces and clear of its drops in x.
     If zFeedEnd + rFeed * fc >= zGnOut Then
-        Fail "the feed pipes reach up to z = " & Fmt(zFeedEnd + rFeed * fc) & " m, not below " & _
+        Fail "the meal pipes reach up to z = " & Fmt(zFeedEnd + rFeed * fc) & " m, not below " & _
              "the gooseneck outlet faces at z = " & Fmt(zGnOut) & " m."
     End If
-    ' Same plane as the drops, so clear of them in x as well.
     If xFeedMax >= xGnLeg - rGn Then
-        Fail "the feed pipes reach out to |x| = " & Fmt(xFeedMax) & " m, into the gooseneck " & _
+        Fail "the meal pipes reach out to |x| = " & Fmt(xFeedMax) & " m, into the gooseneck " & _
              "drops whose inner walls are at |x| = " & Fmt(xGnLeg - rGn) & " m."
     End If
 
@@ -479,9 +593,15 @@ Private Sub PreChecks()
          " m; 2 legs D " & Fmt(2# * rGn) & " m from x = +-" & Fmt(xGn) & " m, bend R " & _
          Fmt(rGnBend) & " m over 180 deg (sharing " & Fmt(vGnOverlap) & " m3), drop at x = +-" & _
          Fmt(xGnLeg) & " m to the outlet faces at z = " & Fmt(zGnOut) & " m"
+    Note "tertiary air: duct D " & Fmt(D_TA) & " m, tangential, axis at y = " & Fmt(yTA) & _
+         " m, z = " & Fmt(zTA) & " m, face at x = " & Fmt(xTAEnd) & " m, " & Fmt(vTA) & _
+         " m3 outside the vessel"
     Note "meal feed: 2 pipes D " & Fmt(D_FEED) & " m at " & Fmt(FEED_SLOPE_DEG) & _
          " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (+-" & _
          Fmt(xFeedEnd) & ", 0, " & Fmt(zFeedEnd) & "), " & Fmt(vFeed) & " m3 each outside the vessel"
+    Note "fuel: 2 pipes D " & Fmt(D_FUEL) & " m at " & Fmt(FUEL_SLOPE_DEG) & _
+         " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (0, +-" & _
+         Fmt(yFuelEnd) & ", " & Fmt(zFuelEnd) & "), " & Fmt(vFuel) & " m3 each outside the vessel"
     Note "vessel volume (cone + cylinder)   " & Fmt(vVessel) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
 End Sub
@@ -564,10 +684,26 @@ Private Sub Build()
     ' axis edge. A full turn has no direction to get wrong; the end
     ' face, found at +x or -x, says which side each landed on. The
     ' drops reach further out in x, so the box does not move.
-    AddFeedPipe planeY0, 1#, "5a + meal feed, +x"
+    AddPipe planeY0, 0, 1#, rFeed, fc, fs, rhoFeed0, zFeedStart, lFeed, xFeedEnd, zFeedEnd, _
+            vFeed, "meal_feed", "5a + meal feed, +x"
     CheckStage "5a + meal feed, +x", vStage5a, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
-    AddFeedPipe planeY0, -1#, "5b + meal feed, -x"
-    CheckStage "5b + meal feed, -x", vFinal, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    AddPipe planeY0, 0, -1#, rFeed, fc, fs, rhoFeed0, zFeedStart, lFeed, xFeedEnd, zFeedEnd, _
+            vFeed, "meal_feed", "5b + meal feed, -x"
+    CheckStage "5b + meal feed, -x", vStage5b, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+
+    '--- 6. the tertiary air duct, tangential, coming in along +x -----
+    AddTertiaryAir planeX0, "6  + tertiary air"
+    CheckStage "6  + tertiary air", vStage6, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+
+    '--- 7. the two fuel pipes, at +y and -y ---------------------------
+    ' As the meal pipes, in the x = 0 plane; they reach out past the
+    ' vessel in y, so the box grows there.
+    AddPipe planeX0, 1, 1#, rFuel, uc, us, rhoFuel0, zFuelStart, lFuel, yFuelEnd, zFuelEnd, _
+            vFuel, "fuel_inlet", "7a + fuel, +y"
+    CheckStage "7a + fuel, +y", vStage7a, -xBoxMax, -R, 0#, xBoxMax, yFuelMax, zGnApex
+    AddPipe planeX0, 1, -1#, rFuel, uc, us, rhoFuel0, zFuelStart, lFuel, yFuelEnd, zFuelEnd, _
+            vFuel, "fuel_inlet", "7b + fuel, -y"
+    CheckStage "7b + fuel, -y", vFinal, -xBoxMax, -yFuelMax, 0#, xBoxMax, yFuelMax, zGnApex
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -908,24 +1044,34 @@ Private Function GnBendOverlap() As Double
 End Function
 
 
-' One meal feed pipe, on side = +1 (+x) or -1 (-x).
+' One meal or fuel pipe. It lies in the vertical plane through the
+' vessel axis along model axis ax (0 = x, the meal pipes, drawn on the
+' y = 0 plane; 1 = y, the fuel pipes, on the x = 0 plane), on side +1
+' or -1 of it, and is drawn in "radial" rho along that axis and z.
 '
-' The pipe's half-section -- a rectangle in the plane y = 0 from its
-' axis out to rFeed along the section's "up" w = (-side fs, 0, fc) --
-' revolved a full turn about the axis edge. It starts on the vessel
-' axis, so its start disc is inside the vessel and dissolves in the
-' merge, and runs out through the wall to its end face.
+' The pipe's half-section -- a rectangle from its axis out to r along
+' the section's "up" w = (-s, c) in (rho, z) -- revolved a full turn
+' about the axis edge. It starts at rho0, one pipe diameter inside the
+' wall, so its start disc is inside the vessel and dissolves in the
+' merge, and runs out through the wall to its end face. A full turn
+' has no direction to get wrong; the end face, found where it has to
+' be, says which side it landed on.
 '
-' The volume it adds is under a cubic metre of ~1870, under VOL_TOL on the whole
-' body, so it is checked on its own: the volume ADDED, the end face
-' found where it has to be with the pipe's area.
-Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal stage As String)
+' What it adds is a cubic metre or less of ~1890, under VOL_TOL on
+' the whole body, so it is checked on its own: the volume ADDED, and
+' the end face found with the pipe's area.
+Private Sub AddPipe(pl As SldWorks.Feature, ByVal ax As Long, ByVal side As Double, _
+                    ByVal rp As Double, ByVal c As Double, ByVal s As Double, _
+                    ByVal rho0 As Double, ByVal z0 As Double, ByVal l As Double, _
+                    ByVal rhoEnd As Double, ByVal zEnd As Double, ByVal expected As Double, _
+                    ByVal what As String, ByVal stage As String)
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
     Dim axisSeg As SldWorks.SketchSegment
     Dim selData As SldWorks.SelectData
-    Dim px(3) As Double, pz(3) As Double
+    Dim pr(3) As Double, pz(3) As Double
+    Dim gx As Double, gy As Double
     Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
     Dim f As SldWorks.Feature
     Dim seg As SldWorks.SketchSegment
@@ -933,16 +1079,20 @@ Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal
     Dim face As SldWorks.Face2
     Dim i As Long, j As Long
 
-    uSign = uSignY: vSign = vSignY
+    If ax = 0 Then
+        uSign = uSignY: vSign = vSignY
+    Else
+        uSign = uSignX: vSign = vSignX
+    End If
     before = BodiesVolume()
 
-    px(0) = 0#:                              pz(0) = zFeedStart                  ' start, on the axis
-    px(1) = side * lFeed * fc:               pz(1) = zFeedStart + lFeed * fs     ' end, on the axis
-    px(2) = px(1) - side * rFeed * fs:       pz(2) = pz(1) + rFeed * fc          ' end, rFeed up
-    px(3) = px(0) - side * rFeed * fs:       pz(3) = pz(0) + rFeed * fc          ' start, rFeed up
+    pr(0) = rho0:                pz(0) = z0                 ' start, on the axis
+    pr(1) = rho0 + l * c:        pz(1) = z0 + l * s         ' end, on the axis
+    pr(2) = pr(1) - rp * s:      pz(2) = pz(1) + rp * c      ' end, r up
+    pr(3) = pr(0) - rp * s:      pz(3) = pz(0) + rp * c      ' start, r up
 
     swModel.ClearSelection2 True
-    planeY0.Select2 False, 0
+    pl.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
@@ -950,8 +1100,10 @@ Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal
 
     For i = 0 To 3
         j = (i + 1) Mod 4
-        G2S sk, px(i), 0#, pz(i), u0, v0
-        G2S sk, px(j), 0#, pz(j), u1, v1
+        RadialToModel ax, side * pr(i), gx, gy
+        G2S sk, gx, gy, pz(i), u0, v0
+        RadialToModel ax, side * pr(j), gx, gy
+        G2S sk, gx, gy, pz(j), u1, v1
         Set seg = swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#)
         If seg Is Nothing Then Fail "CreateLine failed at stage " & stage & "."
         If i = 0 Then Set axisSeg = seg          ' start -> end, the pipe's axis
@@ -976,40 +1128,67 @@ Private Sub AddFeedPipe(planeY0 As SldWorks.Feature, ByVal side As Double, ByVal
     If f Is Nothing Then Fail "FeatureRevolve2 failed at stage " & stage & "."
 
     added = BodiesVolume() - before
-    Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(vFeed) & ")"
-    If Abs(added - vFeed) > FEED_VOL_TOL * vFeed Then
-        Fail "stage " & stage & " added " & Fmt(added) & " m3 but should add " & Fmt(vFeed) & _
-             " m3 (" & Fmt(100# * (added - vFeed) / vFeed) & " %)."
+    Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(expected) & ")"
+    If Abs(added - expected) > FEED_VOL_TOL * expected Then
+        Fail "stage " & stage & " added " & Fmt(added) & " m3 but should add " & Fmt(expected) & _
+             " m3 (" & Fmt(100# * (added - expected) / expected) & " %)."
     End If
 
-    Set face = FeedEndFace(side)
+    Set face = PipeEndFace(Nothing, ax, side, c, s, rhoEnd, zEnd)
     If face Is Nothing Then
-        Fail "stage " & stage & ": no end face normal to the pipe at (" & _
-             Fmt(side * xFeedEnd) & ", 0, " & Fmt(zFeedEnd) & ")."
+        Fail "stage " & stage & ": no end face normal to the pipe at radial " & _
+             Fmt(side * rhoEnd) & ", z " & Fmt(zEnd) & "."
     End If
-    CheckArea "meal_feed end", face.GetArea, PI * rFeed * rFeed
+    CheckArea what & " end", face.GetArea, PI * rp * rp
 
 End Sub
 
 
-' The feed pipe's end face on the given side: the plane face normal
-' to the pipe axis (side fc, 0, fs) through its end centre. Nothing
-' else in the part is normal to that axis there.
-Private Function FeedEndFace(ByVal side As Double) As SldWorks.Face2
+' A point at radial rho along model axis ax (0 = x, 1 = y), in model x, y.
+Private Sub RadialToModel(ByVal ax As Long, ByVal rho As Double, ByRef gx As Double, ByRef gy As Double)
+    If ax = 0 Then
+        gx = rho: gy = 0#
+    Else
+        gx = 0#: gy = rho
+    End If
+End Sub
+
+
+' A pipe's end face: the plane face normal to its axis -- side * c
+' along model axis ax, s along z -- through its end centre, and on its
+' side of the vessel. A plane's root point can lie anywhere on it, so
+' the side is read off the face's box, not the plane: the +x and -x
+' pipes' end planes both cross x = 0, and a root point there passes
+' the through-the-centre test for either. Given a face, says whether
+' it is that one (returns it or Nothing); given none, searches the
+' body.
+Private Function PipeEndFace(ByVal cand As SldWorks.Face2, ByVal ax As Long, ByVal side As Double, _
+                             ByVal c As Double, ByVal s As Double, _
+                             ByVal rhoEnd As Double, ByVal zEnd As Double) As SldWorks.Face2
 
     Dim faces As Variant
+    Dim face As SldWorks.Face2
     Dim surf As SldWorks.Surface
     Dim p As Variant
-    Dim i As Long
+    Dim other As Long
+    Dim i As Long, n As Long
 
-    faces = TheBody("feed end face").GetFaces
-    For i = 0 To UBound(faces)
-        Set surf = faces(i).GetSurface
+    other = 1 - ax
+    If cand Is Nothing Then
+        faces = TheBody("pipe end face").GetFaces
+        n = UBound(faces)
+    Else
+        n = 0
+    End If
+    For i = 0 To n
+        If cand Is Nothing Then Set face = faces(i) Else Set face = cand
+        Set surf = face.GetSurface
         If surf.IsPlane Then
             p = surf.PlaneParams
-            If Abs(p(1)) < DIR_TOL And Abs(Abs(p(0) * side * fc + p(2) * fs) - 1#) < DIR_TOL Then
-                If Abs((p(3) - side * xFeedEnd) * side * fc + (p(5) - zFeedEnd) * fs) < 0.0001 Then
-                    Set FeedEndFace = faces(i)
+            If Abs(p(other)) < DIR_TOL And Abs(Abs(p(ax) * side * c + p(2) * s) - 1#) < DIR_TOL Then
+                If Abs((p(3 + ax) - side * rhoEnd) * side * c + (p(5) - zEnd) * s) < 0.0001 And _
+                   FaceCentre(face, ax) * side > 0# Then
+                    Set PipeEndFace = face
                     Exit Function
                 End If
             End If
@@ -1019,21 +1198,97 @@ Private Function FeedEndFace(ByVal side As Double) As SldWorks.Face2
 End Function
 
 
-' Integral over the feed pipe's section of the vessel's half chord
-' sqrt(R^2 - a^2), a across the section:
-'   2 int_{-r}^{r} sqrt(r^2 - a^2) sqrt(R^2 - a^2) da.
-' Elliptic, so evaluated: with a = r sin(phi) the integrand is smooth
-' and periodic and Simpson's rule on 400 panels is exact to rounding.
-Private Function FeedChordIntegral() As Double
+' The middle of a face's box along model axis ax (0 = x, 1 = y, 2 = z).
+Private Function FaceCentre(face As SldWorks.Face2, ByVal ax As Long) As Double
+    Dim b As Variant
+    b = face.GetBox
+    FaceCentre = 0.5 * (b(ax) + b(ax + 3))
+End Function
+
+
+' The tertiary air duct: a circle of radius rTA about (0, yTA, zTA) on
+' the x = 0 plane, extruded blind out to x = xTAEnd. Which way a blind
+' extrusion goes is not ours to choose, and the vessel is symmetric in
+' x, so the volume cannot tell the two apart: the face at +xTAEnd
+' says which way it went, and the other way is tried.
+Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim u0 As Double, v0 As Double
+    Dim f As SldWorks.Feature
+    Dim before As Double, added As Double
+    Dim k As Long
+
+    uSign = uSignX: vSign = vSignX
+    before = BodiesVolume()
+
+    swModel.ClearSelection2 True
+    planeX0.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
+    wRefSet = False
+    G2S sk, 0#, yTA, zTA, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rTA) Is Nothing Then
+        Fail "CreateCircleByRadius failed at stage " & stage & "."
+    End If
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondBlind, swEndCondBlind, _
+            xTAEnd, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            added = BodiesVolume() - before
+            If BodyCount() = 1 And Abs(added - vTA) <= FEED_VOL_TOL * vTA And HasPlaneFace(0, xTAEnd) Then
+                Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(vTA) & ")"
+                Exit Sub
+            End If
+            Note "stage " & stage & " extruded the wrong way (" & BodyCount() & " bodies, added " & _
+                 Fmt(added) & " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "stage " & stage & " could not be extruded out to x = " & Fmt(xTAEnd) & " m adding " & _
+         Fmt(vTA) & " m3 in either direction."
+
+End Sub
+
+
+' Integral over a pipe's section of the vessel's half chord: the disc
+' of radius r centred at c across the section,
+'   2 int sqrt(r^2 - (a - c)^2) sqrt(R^2 - a^2) da.
+' Elliptic, so evaluated: with a = c + r sin(phi) the integrand is
+' smooth and Simpson's rule on 400 panels is exact to rounding
+' (geometry/plant_geometry.py chord_integral, the same).
+Private Function ChordIntegral(ByVal rp As Double, ByVal cp As Double) As Double
 
     Const n As Long = 400
-    Dim h As Double, phi As Double, g As Double, w As Double, sum As Double
+    Dim h As Double, phi As Double, a As Double, g As Double, w As Double, sum As Double
     Dim k As Long
 
     h = PI / n
     For k = 0 To n
         phi = -0.5 * PI + k * h
-        g = 2# * rFeed * rFeed * Cos(phi) ^ 2 * Sqr(R * R - (rFeed * Sin(phi)) ^ 2)
+        a = cp + rp * Sin(phi)
+        g = 2# * rp * rp * Cos(phi) ^ 2 * Sqr(R * R - a * a)
         If k = 0 Or k = n Then
             w = 1#
         ElseIf (k Mod 2) = 1 Then
@@ -1043,7 +1298,7 @@ Private Function FeedChordIntegral() As Double
         End If
         sum = sum + w * g
     Next k
-    FeedChordIntegral = sum * h / 3#
+    ChordIntegral = sum * h / 3#
 
 End Function
 
@@ -1442,9 +1697,221 @@ Private Sub Verify()
 
     If Not HasPlaneFace(2, 0#) Then Fail "no kiln gas inlet face at z = 0."
     If Not HasPlaneFace(2, zRoof) Then Fail "no roof face at z = " & Fmt(zRoof) & " m."
+    If Not HasPlaneFace(0, xTAEnd) Then Fail "no tertiary air inlet face at x = " & Fmt(xTAEnd) & " m."
 
     Note "closed manifold solid: " & (UBound(edges) + 1) & " edges, each with two faces"
 
+End Sub
+
+
+'==================================================================
+' (g) Boundary faces.
+'
+' Face names are regenerated by every boolean, so the boundaries are
+' found by what they ARE: a plane, its normal and a point on it, read
+' analytically off the surface. Each gets its own colour; AP214
+' carries face colours and Fluent Meshing makes a zone of each, to be
+' named as the log lists them. Everything else is wall.
+'==================================================================
+Private Sub TagBoundaryFaces()
+
+    Dim body As SldWorks.Body2
+    Dim faces As Variant
+    Dim face As SldWorks.Face2
+    Dim surf As SldWorks.Surface
+    Dim p As Variant
+    Dim i As Long, k As Long
+    Dim n(8) As Long, a(8) As Double
+    Dim names As Variant, want As Variant
+    Dim e0 As Double, e1 As Double, e2 As Double
+
+    ' 0 kiln_gas_inlet, 1 / 2 gas_outlet_1 (+x) / _2 (-x), 3 tertiary_air_inlet,
+    ' 4 / 5 meal_feed_1 (+x) / _2 (-x), 6 / 7 fuel_inlet_1 (+y) / _2 (-y), 8 wall
+    names = Array("kiln_gas_inlet", "gas_outlet_1", "gas_outlet_2", "tertiary_air_inlet", _
+                  "meal_feed_1", "meal_feed_2", "fuel_inlet_1", "fuel_inlet_2", "wall")
+
+    Set body = TheBody("final")
+    faces = body.GetFaces
+
+    For i = 0 To UBound(faces)
+        Set face = faces(i)
+        Set surf = face.GetSurface
+        k = 8
+        If surf.IsPlane Then
+            p = surf.PlaneParams
+            e0 = p(0): e1 = p(1): e2 = p(2)
+            If Abs(e0) < DIR_TOL And Abs(e1) < DIR_TOL Then
+                If Abs(p(5)) < 0.0001 Then
+                    k = 0
+                ElseIf Abs(p(5) - zGnOut) < 0.0001 Then
+                    If FaceCentre(face, 0) > 0# Then
+                        k = 1
+                    Else
+                        k = 2
+                    End If
+                End If
+            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xTAEnd) < 0.0001 Then
+                k = 3
+            ElseIf Not PipeEndFace(face, 0, 1#, fc, fs, xFeedEnd, zFeedEnd) Is Nothing Then
+                k = 4
+            ElseIf Not PipeEndFace(face, 0, -1#, fc, fs, xFeedEnd, zFeedEnd) Is Nothing Then
+                k = 5
+            ElseIf Not PipeEndFace(face, 1, 1#, uc, us, yFuelEnd, zFuelEnd) Is Nothing Then
+                k = 6
+            ElseIf Not PipeEndFace(face, 1, -1#, uc, us, yFuelEnd, zFuelEnd) Is Nothing Then
+                k = 7
+            End If
+        End If
+        PaintZone face, k
+        n(k) = n(k) + 1
+        a(k) = a(k) + face.GetArea
+    Next i
+
+    ' Exactly one of each. Two would mean an end cap survived a merge
+    ' and blocks an opening; none, that a face merged away.
+    want = Array(PI * rThroat * rThroat, PI * rGn * rGn, PI * rGn * rGn, PI * rTA * rTA, _
+                 PI * rFeed * rFeed, PI * rFeed * rFeed, PI * rFuel * rFuel, PI * rFuel * rFuel)
+    For k = 0 To 7
+        If n(k) <> 1 Then Fail "found " & n(k) & " " & names(k) & " faces, expected 1."
+        CheckArea names(k), a(k), want(k)
+        Note "boundary " & names(k) & ": " & Fmt(a(k)) & " m2, colour " & ZoneColour(k)
+    Next k
+    Note "boundary wall: " & n(8) & " faces, " & Fmt(a(8)) & " m2"
+
+    swModel.ClearSelection2 True
+
+End Sub
+
+
+' The colour each zone is painted, RGB 0..1. Distinct enough to tell
+' apart in Fluent Meshing; the wall a neutral grey.
+Private Sub ZoneRGB(ByVal k As Long, ByRef r As Double, ByRef g As Double, ByRef b As Double)
+    Select Case k
+    Case 0: r = 0.2: g = 0.7: b = 0.35          ' kiln_gas_inlet, green
+    Case 1: r = 0.2: g = 0.45: b = 0.85         ' gas_outlet_1, blue
+    Case 2: r = 0.1: g = 0.25: b = 0.55         ' gas_outlet_2, dark blue
+    Case 3: r = 0.85: g = 0.25: b = 0.2         ' tertiary_air_inlet, red
+    Case 4: r = 0.6: g = 0.3: b = 0.7           ' meal_feed_1, purple
+    Case 5: r = 0.4: g = 0.15: b = 0.5          ' meal_feed_2, dark purple
+    Case 6: r = 0.85: g = 0.55: b = 0.15        ' fuel_inlet_1, orange
+    Case 7: r = 0.55: g = 0.35: b = 0.1         ' fuel_inlet_2, brown
+    Case Else: r = 0.72: g = 0.72: b = 0.72     ' wall, grey
+    End Select
+End Sub
+
+
+Private Function ZoneColour(ByVal k As Long) As String
+    Dim r As Double, g As Double, b As Double
+    ZoneRGB k, r, g, b
+    ZoneColour = "(" & Fmt(r) & ", " & Fmt(g) & ", " & Fmt(b) & ")"
+End Function
+
+
+Private Sub PaintZone(face As SldWorks.Face2, ByVal k As Long)
+    Dim r As Double, g As Double, b As Double
+    ZoneRGB k, r, g, b
+    Paint face, r, g, b
+End Sub
+
+
+' RGB, ambient, diffuse, specular, shininess, transparency, emission.
+' Copied from cyclone.bas, where the reasons are written out: set
+' through the property from a typed Double array (VBA's Array() is
+' read wrongly), read back and checked, because the colours are the
+' only thing carrying the boundary names into Fluent.
+Private Sub Paint(face As SldWorks.Face2, ByVal r As Double, ByVal g As Double, ByVal b As Double)
+
+    Dim m(8) As Double
+    Dim got As Variant
+
+    m(0) = r: m(1) = g: m(2) = b
+    m(3) = 1#        ' ambient
+    m(4) = 1#        ' diffuse
+    m(5) = 0.3       ' specular
+    m(6) = 0.3       ' shininess
+    m(7) = 0#        ' transparency
+    m(8) = 0#        ' emission
+
+    face.MaterialPropertyValues = m
+
+    got = face.MaterialPropertyValues
+    If IsEmpty(got) Then Fail "a face reports no colour after one was set on it."
+    If Abs(got(0) - r) > 0.01 Or Abs(got(1) - g) > 0.01 Or Abs(got(2) - b) > 0.01 Then
+        Fail "a face's colour came back as (" & Fmt(got(0)) & ", " & Fmt(got(1)) & ", " & _
+             Fmt(got(2)) & ") after being set to (" & Fmt(r) & ", " & Fmt(g) & ", " & _
+             Fmt(b) & "). The boundary names would not reach Fluent."
+    End If
+
+End Sub
+
+
+'==================================================================
+' (h) Export -- as cyclone.bas: STEP AP214 (it carries the face
+'     colours), binary STL in metres not shifted into positive space,
+'     and the SLDPRT.
+'==================================================================
+Private Sub ExportFiles()
+
+    Dim outDir As String
+
+    outDir = OUT_ROOT & LINE_KEY & "\"
+    EnsureDir OUT_ROOT
+    EnsureDir outDir
+
+    ' Application-wide export defaults: remembered, handed back in Restore.
+    oldStepAP = swApp.GetUserPreferenceIntegerValue(swStepAP)
+    oldStepAppear = swApp.GetUserPreferenceToggle(swStepExportAppearances)
+    oldStlUnits = swApp.GetUserPreferenceIntegerValue(swExportStlUnits)
+    oldStlBinary = swApp.GetUserPreferenceToggle(swSTLBinaryFormat)
+    oldStlNoShift = swApp.GetUserPreferenceToggle(swSTLDontTranslateToPositive)
+    oldStlInfo = swApp.GetUserPreferenceToggle(swSTLShowInfoOnSave)
+    oldStlQuality = swApp.GetUserPreferenceIntegerValue(swSTLQuality)
+    oldStlDev = swApp.GetUserPreferenceDoubleValue(swSTLDeviation)
+    oldStlAngle = swApp.GetUserPreferenceDoubleValue(swSTLAngleTolerance)
+    exportPrefsTouched = True
+
+    swApp.SetUserPreferenceIntegerValue swStepAP, 214
+    swApp.SetUserPreferenceToggle swStepExportAppearances, True
+
+    swApp.SetUserPreferenceIntegerValue swExportStlUnits, swMETER
+    swApp.SetUserPreferenceToggle swSTLBinaryFormat, True
+    swApp.SetUserPreferenceToggle swSTLDontTranslateToPositive, True
+    swApp.SetUserPreferenceToggle swSTLShowInfoOnSave, False
+    swApp.SetUserPreferenceIntegerValue swSTLQuality, swSTLQuality_Custom
+    swApp.SetUserPreferenceDoubleValue swSTLDeviation, 0.001        ' metres
+    swApp.SetUserPreferenceDoubleValue swSTLAngleTolerance, 0.1     ' radians
+
+    SaveOne outDir & outName & ".SLDPRT"
+    SaveOne outDir & outName & ".step"
+    SaveOne outDir & outName & ".stl"
+
+End Sub
+
+
+' A failed export returns without raising, so the outcome is read
+' from the error code and then from the disk (cyclone.bas: SolidWorks
+' 2026 writes the file and still returns False).
+Private Sub SaveOne(ByVal path As String)
+
+    Dim errs As Long, warns As Long
+
+    swModel.Extension.SaveAs path, swSaveAsCurrentVersion, swSaveAsOptions_Silent, _
+                            Nothing, errs, warns
+
+    If errs <> 0 Then
+        Fail "could not write " & path & " (error " & errs & ", warning " & warns & ")."
+    End If
+    If Dir(path) = "" Then
+        Fail "SolidWorks reported no error but " & path & " is not on disk."
+    End If
+
+    Note "wrote " & path
+
+End Sub
+
+
+Private Sub EnsureDir(ByVal path As String)
+    If Dir(path, vbDirectory) = "" Then MkDir path
 End Sub
 
 
@@ -1464,6 +1931,18 @@ Private Sub Restore()
         swApp.SetUserPreferenceToggle swPerformanceVerifyOnRebuild, oldVerify
         swApp.SetUserPreferenceToggle swInputDimValOnCreate, oldInputDim
         prefsTouched = False
+    End If
+    If exportPrefsTouched Then
+        swApp.SetUserPreferenceIntegerValue swStepAP, oldStepAP
+        swApp.SetUserPreferenceToggle swStepExportAppearances, oldStepAppear
+        swApp.SetUserPreferenceIntegerValue swExportStlUnits, oldStlUnits
+        swApp.SetUserPreferenceToggle swSTLBinaryFormat, oldStlBinary
+        swApp.SetUserPreferenceToggle swSTLDontTranslateToPositive, oldStlNoShift
+        swApp.SetUserPreferenceToggle swSTLShowInfoOnSave, oldStlInfo
+        swApp.SetUserPreferenceIntegerValue swSTLQuality, oldStlQuality
+        swApp.SetUserPreferenceDoubleValue swSTLDeviation, oldStlDev
+        swApp.SetUserPreferenceDoubleValue swSTLAngleTolerance, oldStlAngle
+        exportPrefsTouched = False
     End If
 End Sub
 

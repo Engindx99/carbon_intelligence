@@ -159,10 +159,16 @@ def calciner_bas(g):
         src("GN_RISE_OVER_D", gn["rise_over_D_neck"], "x neck D"),
         src("GN_BEND_R_OVER_D", gn["bend_R_over_D_leg"], "x leg D"),
         src("GN_OUTLET_AT_VESSEL_H", gn["end_at_vessel_H"], "x H_VESSEL"),
+        src("D_TA", c["D_tertiary_air"], "tertiary air duct"),
+        src("TA_CONE_CLEARANCE", c["tertiary_air_cone_clearance"], "its lower edge over the cone's top"),
+        src("TA_WALL_RELIEF", c["tertiary_air_wall_relief"], "its outer wall inside the vessel's"),
+        src("TA_STUB_LEN", c["tertiary_air_stub_length"], "its face past the vessel's tangent plane"),
+        src("FEED_ABOVE_TA", c["feed_above_tertiary_air"], "meal / fuel holes over the duct's top"),
         src("D_FEED", c["D_feed"]),
         src("FEED_SLOPE_DEG", g["cyclone_domain"]["meal_slope"], "below the horizontal"),
-        src("FEED_BELOW_GN_OUT", c["feed_below_gooseneck_end"]),
-        src("FEED_DEPTH", c["feed_depth"]),
+        src("FEED_DEPTH", c["feed_depth"], "meal and fuel pipes past the wall"),
+        src("D_FUEL", c["D_fuel"]),
+        src("FUEL_SLOPE_DEG", c["fuel_slope"], "below the horizontal"),
         Const("OVERLAP_N", pg.OVERLAP_N, "grid per axis, the bends' shared volume [plant_geometry.py]", "Long"),
         Const("P_ATM", pg.P_ATM, "Pa, the throat's gas [plant_geometry.py]"),
         Const("R_GAS", pg.R_GAS, "J/(mol K) [plant_geometry.py]"),
@@ -215,7 +221,8 @@ def drawing_bas(g):
         src("GN_RISE_OVER_D", gn["rise_over_D_neck"], "neck rise, x neck D"),
         src("GN_BEND_R_OVER_D", gn["bend_R_over_D_leg"], "bend centreline R, x leg D"),
         src("GN_OUT_AT_H", gn["end_at_vessel_H"], "CFD legs' end, x CALC_H"),
-        src("FEED_BELOW_GN_OUT", cal["feed_below_gooseneck_end"]),
+        der("CALC_TA_Z", pg.calciner_inlets(g)["tertiary_air"]["z"], "tertiary air axis over the throat's foot"),
+        der("CALC_FEED_Z", pg.calciner_inlets(g)["meal"]["z_wall"], "meal pipes' axes at the wall, over the throat's foot"),
         src("TA_D", cal["D_tertiary_air"], "tertiary air duct"),
         src("MEAL_SLOPE_DEG", d["meal_slope"]),
         src("KILN_D", k["D"]),
@@ -403,6 +410,7 @@ def _calciner_rows(g):
         row_der("Silindir boyu", cal["h_cylinder"], "m"),
         row_src("Tersiyer hava kanalı çapı", c["D_tertiary_air"]),
         row_src("Farin besleme borusu çapı", c["D_feed"], note="Fidaros 2007 × √2"),
+        row_src("Yakıt borusu çapı", c["D_fuel"], note="Fidaros 2007 × √2"),
         row_der("**Ekipman hacmi (koni + silindir)**", cal["vessel_volume"], "m³", 2),
         row_der("**Duvar alanı (silindir + koni + tavan halkası)**", cal["vessel_wall_area"], "m²", 2),
     ]
@@ -535,10 +543,12 @@ def _calciner_cfd(g):
     v_neck = math.pi * (0.5 * gn["D_neck"]) ** 2 * gn["rise"]
     v_bend = math.pi * rl * rl * math.pi * gn["bend_R"]
     v_leg = math.pi * rl * rl * gn["drop"]
-    z_feed = gn["z_end"] - pg.v(g["calciner"]["feed_below_gooseneck_end"])
     f = lambda x: f"{x:.3f}"
     steps = [cal["v_throat"] + cal["vessel_volume"]]
-    for dv in (v_neck, v_bend, v_bend - gn["bend_overlap"], 2.0 * v_leg):
+    ins = pg.calciner_inlets(g)
+    ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
+    for dv in (v_neck, v_bend, v_bend - gn["bend_overlap"], 2.0 * v_leg,
+               meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"]):
         steps.append(steps[-1] + dv)
     return [
         ("Boğaz", f"Ø{f(cal['D_throat'])}, z 0 .. {f(cal['z_throat_top'])}", f"{cal['v_throat']:.3f}"),
@@ -550,7 +560,14 @@ def _calciner_cfd(g):
         ("3a + dirsek +x", f"kol Ø{gn['D_leg']:g}, başlangıç diski x = ±{f(gn['x_leg_start'])}; 180°, R {f(gn['bend_R'])}, tepe z {f(gn['z_top'] + gn['bend_R'] + rl)}", f"{steps[2]:.3f} (+{v_bend:.3f}, Pappus)"),
         ("3b + dirsek −x", f"iki dirseğin ortak hacmi {gn['bend_overlap']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta)", f"{steps[3]:.3f}"),
         ("4 + iki iniş", f"x = ±{f(gn['x_leg'])}, z {f(gn['z_top'])} .. {f(gn['z_end'])} → gas_outlet_1 (+x), gas_outlet_2 (−x)", f"{steps[4]:.3f} (+2 × {v_leg:.3f})"),
-        ("5 + iki farin borusu", f"Ø{pg.v(g['calciner']['D_feed']):g}, eksenleri duvarı z {f(z_feed)}'da keser", "makro hesaplar (aşağıda)"),
+        ("5a / 5b + farin boruları ±x", f"Ø{meal['D']:g}, {meal['slope']:g}°, eksenleri duvarı z {f(meal['z_wall'])}'da keser; "
+         f"deliğin alt kenarı z {f(meal['hole_bottom'])}, uç yüzleri (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
+         f"{steps[5]:.3f} / {steps[6]:.3f} (+{meal['volume']:.4f} her biri)"),
+        ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, eksen y {f(ta['y'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
+         f"yüzü x {f(ta['x_end'])}", f"{steps[7]:.3f} (+{ta['volume']:.3f})"),
+        ("7a / 7b + yakıt boruları ±y", f"Ø{fuel['D']:g}, {fuel['slope']:g}°, eksenleri duvarı z {f(fuel['z_wall'])}'da keser; "
+         f"uç yüzleri (0, ±{f(fuel['end'][0])}, {f(fuel['end'][1])})",
+         f"{steps[8]:.3f} / **{steps[9]:.3f}** (+{fuel['volume']:.4f} her biri)"),
     ]
 
 

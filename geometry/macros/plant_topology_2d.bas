@@ -78,7 +78,8 @@ Const GN_D_SRC                     As Double  = 3.5          ' a gooseneck leg [
 Const GN_RISE_OVER_D               As Double  = 1.25         ' neck rise, x neck D [model, preheater/gooseneck.md]
 Const GN_BEND_R_OVER_D             As Double  = 1.5          ' bend centreline R, x leg D [model, preheater/gooseneck.md]
 Const GN_OUT_AT_H                  As Double  = 0.5          ' CFD legs' end, x CALC_H [model, preheater/gooseneck.md]
-Const FEED_BELOW_GN_OUT            As Double  = 2#           ' [model, calciner/calciner.md]
+Const CALC_TA_Z                    As Double  = 8.270908     ' tertiary air axis over the throat's foot [derived]
+Const CALC_FEED_Z                  As Double  = 11.385494    ' meal pipes' axes at the wall, over the throat's foot [derived]
 Const TA_D                         As Double  = 2.4393       ' tertiary air duct [derived_from_reference, calciner/calciner.md]
 Const MEAL_SLOPE_DEG               As Double  = 60#          ' [literature, calciner/calciner.md]
 Const KILN_D                       As Double  = 4.8          ' [published, kiln/kiln.md]
@@ -144,11 +145,11 @@ Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant
 ' -> R1_D: in the generated block above
 
 ' Calciner [m] -- calciner.bas / calciner.md, the 5000 t/d plant's (PF5000)
-' -> CALC_D, CALC_H, CALC_THROAT_D, CALC_CONE_DEG, GN_D_SRC, GN_OUT_AT_H, FEED_BELOW_GN_OUT, TA_D: in the generated block above
+' -> CALC_D, CALC_H, CALC_THROAT_D, CALC_CONE_DEG, GN_D_SRC, GN_OUT_AT_H, TA_D: in the generated block above;
+'    CALC_TA_Z, CALC_FEED_Z: the tertiary air duct and the meal pipes where calciner.bas builds them
 '    CALC_H: cone + cylinder
 '    GN_D_SRC: a Y gooseneck leg, one 2500 t/d string's published neck; the neck has both legs' area
 '    GN_OUT_AT_H: legs end at this fraction of CALC_H
-'    FEED_BELOW_GN_OUT: meal feed through the wall this far below the legs' ends
 '    TA_D: tertiary air duct, derived in calciner.md
 Const TA_BEND_R_OVER_D As Double = 1.5     ' its turn from the hood over to the calciner: a long-radius bend, centreline R
                                            ' this many D, as the gooseneck's (schematic; it has no CFD)
@@ -210,7 +211,6 @@ Const VENT_IN        As Double = 3#       ' cooler vent this far in from the coo
 Const VENT_UP        As Double = 4#       ' vent arrow drawn this far over the cooler roof [m]
 Const CLINKER_ON_GRATE As Double = 1#     ' clinker line this far over the cooler floor [m]
 Const TA_ARROW_LONG  As Double = 1.15     ' tertiary air arrow this many times the rise from the cooler's mid-height to the hood roof; it runs on up into its duct [-]
-Const FEED_LOWER     As Double = 3#       ' C4 meal drawn into the calciner this far below calciner.bas's feed [m]
 Const KILN_FLOW_OFF  As Double = 1#       ' kiln gas and material lines this far either side of the kiln axis [m]
 Const PRIMARY_AIR_L  As Double = 2#       ' primary air: a short arrow this long into the hood's front wall [m]
 Const SEC_AIR_DX     As Double = 1.5      ' secondary air rises from the cooler this far in from the kiln's end [m]
@@ -368,13 +368,14 @@ Private Sub Derive()
     xLeg = xGnStart + 2# * rGnBend
     zGnTop = zCalcRoof + GN_RISE_OVER_D * 2# * rNeck
     zLeg = zThroat + CALC_THROAT_D + GN_OUT_AT_H * CALC_H
-    zFeed = zLeg - FEED_BELOW_GN_OUT - FEED_LOWER
+    ' The C4 meal reaches the calciner where calciner.bas's meal pipes
+    ' meet its wall, just over the tertiary air duct
+    zFeed = zThroat + CALC_FEED_Z
 
-    ' The tertiary air duct from the hood to the calciner, its lower
-    ' edge on the top of the cone (schematic -- calciner.bas step 6
-    ' will set its own).
+    ' The tertiary air duct from the hood to the calciner, where
+    ' calciner.bas builds it: its lower edge on the top of the cone
     rTA = 0.5 * TA_D
-    zTA = zConeTop + rTA
+    zTA = zThroat + CALC_TA_Z
 
     ' Each string: C5 GN_TO_C5_GAP outboard of its leg, its roof where
     ' the leg ends -- unless that hangs it into the tertiary air duct:
@@ -555,7 +556,7 @@ Private Sub PreChecks()
         Fail "the gooseneck's turn into C5 does not fit GN_TO_C5_GAP. Lower GN_BEND_LEG."
     End If
     ' The C4 meal reaches the calciner's cylinder, over the cone
-    If zFeed <= zConeTop Then Fail "the C4 meal would reach the calciner below its cylinder. Lower FEED_LOWER."
+    If zFeed <= zTA + rTA Then Fail "the C4 meal would reach the calciner in its tertiary air duct."
     ' The tertiary air duct runs under the C5s and over the chamber and kiln
     If zTA + rTA >= zDust(5) Then Fail "the tertiary air duct runs into the C5s."
     ' and under the C5 meal's straight drop
@@ -745,9 +746,10 @@ Private Sub DrawPlant()
     Seg aCh, zTopCh, rThroat, zTopCh
     Seg -rThroat, zTopCh, -aCh, zTopCh
     ' calciner: no floor (the throat), the tertiary air port in its +x
-    ' wall over the cone, the two gooseneck rises in its roof
+    ' wall over the cone (the duct's hair of clearance under it is not
+    ' drawn: 0.2 mm on the sheet), the two gooseneck rises in its roof
     PolyM Array(rThroat, zThroat, rThroat, zThroat + CALC_THROAT_D, rCalc, zConeTop)
-    Seg rCalc, zConeTop + TA_D, rCalc, zCalcRoof
+    Seg rCalc, zTA + rTA, rCalc, zCalcRoof
     Seg rCalc, zCalcRoof, rNeck, zCalcRoof
     Seg -rNeck, zCalcRoof, -rCalc, zCalcRoof
     PolyM Array(-rCalc, zCalcRoof, -rCalc, zConeTop, -rThroat, zThroat + CALC_THROAT_D, -rThroat, zThroat)

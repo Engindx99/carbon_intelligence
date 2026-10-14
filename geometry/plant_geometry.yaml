@@ -123,10 +123,28 @@ calciner:
   throat_gas_x_CO2:    {value: 0.13,  unit: mol/mol, source: literature, doc: calciner/calciner.md}
   throat_velocity:     {value: 29.0, unit: m/s,   source: literature,   doc: calciner/calciner.md}
   throat_length_over_D: {value: 1.0, unit: "-",   source: model,        doc: calciner/calciner.md}
-  D_feed:              {value: 0.8485, unit: m,   source: literature,   doc: calciner/calciner.md}
-  feed_below_gooseneck_end: {value: 2.0, unit: m, source: model,        doc: calciner/calciner.md}
-  feed_depth:          {value: 1.0,  unit: m,     source: model,        doc: calciner/calciner.md}
   D_tertiary_air:      {value: 2.4393, unit: m,   source: derived_from_reference, doc: calciner/calciner.md}
+  # The tertiary air duct enters at the bottom of the cylinder,
+  # tangentially (Chen et al., a 5000 t/d in-line calciner; user
+  # decision, 14 Oct 2026): its lower edge on the top of the cone and
+  # its outer wall on the vessel's, each kept a hair clear so no two
+  # surfaces of the boolean touch (cyclone.bas's inlet roof clearance,
+  # the same reason). A stub of it, past the vessel's tangent plane.
+  tertiary_air_cone_clearance: {value: 0.05, unit: m, source: model,   doc: calciner/calciner.md}
+  tertiary_air_wall_relief: {value: 0.05, unit: m, source: model,      doc: calciner/calciner.md}
+  tertiary_air_stub_length: {value: 3.0, unit: m,  source: model,      doc: calciner/calciner.md}
+  # Meal and fuel just above the tertiary air (Chen et al.; the main
+  # meal inlet above the tertiary air inlet, US 10,974,992): each pipe's
+  # hole in the wall starts this far over the duct's top.
+  feed_above_tertiary_air: {value: 1.0, unit: m,  source: model,       doc: calciner/calciner.md}
+  D_feed:              {value: 0.8485, unit: m,   source: literature,   doc: calciner/calciner.md}
+  feed_depth:          {value: 1.0,  unit: m,     source: model,        doc: calciner/calciner.md}
+  # Fuel: Fidaros 2007's two 0.2 m coal pipes at 30 deg, x sqrt 2 for a
+  # string each (as the meal pipes); at the meal's height, 90 deg round
+  # from them (Chen et al.: coal and meal at one height, in different
+  # directions)
+  D_fuel:              {value: 0.2828, unit: m,   source: literature,   doc: calciner/calciner.md}
+  fuel_slope:          {value: 30.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
 
 gooseneck:
   D_leg:               {value: 3.5,  unit: m,     source: published,    doc: preheater/gooseneck.md}

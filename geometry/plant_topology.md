@@ -144,7 +144,6 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | `COOLER_W` / `COOLER_H` | Izgara genişliği ve gövde yüksekliği, FLS referans soğutucusunun (boy alandan çıkar: 29.9 m). Çizimde gövde 14 Ekim 2026'ya kadar 4.0 m'ydi; [cooler.md](cooler/cooler.md)'nin 3.0'ı tek kaynakta kaldı |
 | `COOLER_DROP` | Soğutucunun tepesinin, deşarjdaki fırın kabuğunun altında kaldığı mesafe |
 | `MEAL_INTO_CHAMBER` | C5 farininin giriş odası tavanına, odanın yan yüzünden bu kadar içeride indiği yer |
-| `FEED_LOWER` | C4 farininin kalsinatöre, `calciner.bas`'ın besleme kotunun (bacak uçlarının 2 m altı) bu kadar altından girmesi. Yalnız topoloji içindir; CFD besleme boruları yerinde kalır |
 | `KILN_FLOW_OFF` | Fırın içindeki gaz ve malzeme çizgilerinin fırın ekseninden dik uzaklığı: gaz üstte, malzeme altta. Fırın kabuğunun (±2.4 m) içinde kalmalı; ön kontrol bunu zorlar |
 | `PRIMARY_AIR_L` | Primer havayı yalnızca belirten kısa okun boyu; ok başlığın ön duvarında biter |
 | `SEC_AIR_DX` | Sekonder havanın soğutucudan, fırının ucundan bu kadar içeride yükseldiği yer |
@@ -199,7 +198,8 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `GN_RISE_OVER_D` | 1.25 | plant_geometry.yaml |
 | `GN_BEND_R_OVER_D` | 1.5 | plant_geometry.yaml |
 | `GN_OUT_AT_H` | 0.5 | plant_geometry.yaml |
-| `FEED_BELOW_GN_OUT` | 2 | plant_geometry.yaml |
+| `CALC_TA_Z` | 8.270908 | plant_geometry.yaml |
+| `CALC_FEED_Z` | 11.385494 | plant_geometry.yaml |
 | `TA_D` | 2.4393 | plant_geometry.yaml |
 | `MEAL_SLOPE_DEG` | 60 | plant_geometry.yaml |
 | `KILN_D` | 4.8 | plant_geometry.yaml |
@@ -250,7 +250,6 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `VENT_UP` | 4 | çizimin kendi Const'u |
 | `CLINKER_ON_GRATE` | 1 | çizimin kendi Const'u |
 | `TA_ARROW_LONG` | 1.15 | çizimin kendi Const'u |
-| `FEED_LOWER` | 3 | çizimin kendi Const'u |
 | `KILN_FLOW_OFF` | 1 | çizimin kendi Const'u |
 | `PRIMARY_AIR_L` | 2 | çizimin kendi Const'u |
 | `SEC_AIR_DX` | 1.5 | çizimin kendi Const'u |
@@ -280,18 +279,18 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Ne | Konum [m] |
 |---|---|
 | Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 13.400; taban rampası 40.5° |
-| Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.717, kol inişi x = ±11.225, C5 giriş kotu z 36.872 |
-| Tersiyer hava kanalı | eksen z 21.621 |
+| Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.717, kol inişi x = ±11.225, C5 giriş kotu z 36.922 |
+| Tersiyer hava kanalı | eksen z 21.671 |
 | İç kolon (C5, C3) | x = ±17.225 |
 | Dış kolon (C4, C2) | x = ±32.225 |
 | R1 | x = ±20.930 |
 | İkiz C1 | x = ±11.337 ve ±30.523 |
-| C5 toz çıkışı / çıkış borusu tepesi | z 24.591 / 46.743 |
-| C4 toz çıkışı / çıkış borusu tepesi | z 40.309 / 61.780 |
-| C3 toz çıkışı / çıkış borusu tepesi | z 55.125 / 76.596 |
-| C2 toz çıkışı / çıkış borusu tepesi | z 69.941 / 91.412 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 101.172 / 115.612 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 120.412 |
+| C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
+| C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
+| C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |
+| C2 toz çıkışı / çıkış borusu tepesi | z 69.991 / 91.462 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 101.222 / 115.662 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 120.462 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |
@@ -319,7 +318,7 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
   - 60° eğim, kalsinatör besleme borularının eğimidir (Fidaros 2007). Boru dik riser duvarıyla 30° yapar, yani farin duvara yatık, neredeyse teğet kayarak girer.
   - Tesislerde farin, riser'a alttaki siklonun hemen üstünden bu şekilde verilir.
 - Yakın C1 (hattın dış ucundaki, C2'nin üstündeki) → uzak C1'in hattı: toz çıkışından `MEAL_DROP` düşer, `MEAL_JOIN_DEG` ile C2'nin çıkış dirseği ve R1 dirseğinin arkasından geçer (kırık) ve uzak C1'in R2'nin yanında inen hattına katılır; R2'nin dirseğinden 5.5 m açıktır. İki C1'in farini tek boruyla R2'ye girer (kullanıcı kararı 14 Ekim 2026).
-- C4 → kalsinatör: `C4_MEAL_DROP` dik düşer, `MEAL_BEND`'lik dönüş parçası ve kalsinatör duvarına (`calciner.bas`'ın besleme kotunun `FEED_LOWER` altında) düz hat; C5'in konisinin arkasından geçer (kırık). Her hattın C4'ü kendi taraftaki besleme borusunu besler.
+- C4 → kalsinatör: `C4_MEAL_DROP` dik düşer, `MEAL_BEND`'lik dönüş parçası ve kalsinatör duvarına, `calciner.bas`'ın farin borularının duvarı kestiği kotta (`CALC_FEED_Z`, tersiyer kanalın hemen üstü; 14 Ekim 2026'ya kadar çizimde 3 m aşağıdaydı, `FEED_LOWER`) düz hat; C5'in konisinin arkasından geçer (kırık). Her hattın C4'ü kendi taraftaki besleme borusunu besler.
 - C5 → giriş odasının tavanı: `C5_MEAL_DROP` dik düşer, dönüş parçası ve tavana, kenarından `MEAL_INTO_CHAMBER` içeride düz hat; kalsinatör konisinin altından geçer. Sağ hattaki TA kanalının arkasından geçer (kırık), soldaki hiçbir şeyi kesmez.
 - Giriş odasında farin birikmez: düz taban yerine fırının alt dudağından odanın sol üst köşesine çıkan bir rampa var (açısı yerleşim tablosunda; Ø4.0 fırınla 39.8°'ydi). Bu, farinin yığılma açısı (~40°), yani kayabildiği sınır; makro 39°'nin altına izin vermez. İki C5'in farini rampaya düşer ve fırına kayar. Eski düz taban fırın ağzının 1 m altındaydı ve sol yarısı fırından 5 m uzak bir ölü bölgeydi
 - giriş odası → fırın → ızgaralı soğutucu (klinker): fırın ağzından başlar, fırın boyunca eksenin `KILN_FLOW_OFF` altında gazın tersine akar, başlıkta soğutucuya düşer ve ızgara boyunca ilerler. Fırın içindeki iki paralel ve ters oklu çizgi karşı akışı gösterir
@@ -329,7 +328,7 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
 - primer hava → ana brülör: yalnızca belirtilir; başlığın ön duvarına, fırın gazının (kırmızı) başladığı kotta dokunan kısa bir ok; çizgi okun ucunda biter
 - soğutucu → başlık (sekonder hava): başlığın altında soğutucudan yükselir ve fırının ucuna, fırın gazının başladığı noktaya girer. GAZ katmanında (kırmızı) çizilir, çünkü fırının içinde fırın gazı olarak devam eden akım odur. Fırının içinde ayrı çizilmez: fırın gazı, primer ve sekonder havanın brülörde yanmış hâlidir
 - Çizimde "primary air" başlığın dışında, primer hava hattının altında; "secondary air" fırının içinde, fırın gazı ile klinker çizgisinin arasında yazılıdır
-- soğutucu → başlık → tersiyer hava kanalı → kalsinatör (GAZ katmanında, kırmızı; sıcak hava): tersiyer hava soğutucudan başlığın içinden dik bir okla yükselir ve başlığın tepesindeki kanala girer; kanal dik yükselir, `TA_BEND_R_OVER_D` × D yarıçaplı dirsekle yatay döner. Kanal kalsinatöre koni tepesinde (kotu yerleşim tablosunda) girer. Bu kot şematiktir; kalsinatör CFD makrosunun 6. adımı (TA kanalı) kendi yerini belirleyecek.
+- soğutucu → başlık → tersiyer hava kanalı → kalsinatör (GAZ katmanında, kırmızı; sıcak hava): tersiyer hava soğutucudan başlığın içinden dik bir okla yükselir ve başlığın tepesindeki kanala girer; kanal dik yükselir, `TA_BEND_R_OVER_D` × D yarıçaplı dirsekle yatay döner. Kanal kalsinatöre koni tepesinde, `calciner.bas`'ın kurduğu kotta (`CALC_TA_Z`) girer; CFD'de teğetseldir, çizim onu yandan gösterir.
 - soğutucu → vent (fazla hava, GAZ katmanında, kırmızı; hâlâ sıcak): soğutucunun ucundan `VENT_IN` içeride tavanından dik bir okla çıkar, "to cooler vent" yazısına gider
 
 ## Doğrulama

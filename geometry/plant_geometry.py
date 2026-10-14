@@ -193,6 +193,77 @@ def calciner(g):
     }
 
 
+def chord_integral(r, R, centre=0.0, n=400):
+    """2 int sqrt(r^2 - (y - c)^2) sqrt(R^2 - y^2) dy over the disc of
+    radius r centred at y = c: a pipe's section times the vessel's
+    half chord, integrated across it. Elliptic; with y = c + r sin(phi)
+    the integrand is smooth and Simpson's rule on n panels is exact to
+    rounding (calciner.bas ChordIntegral, the same)."""
+    h = math.pi / n
+    total = 0.0
+    for k in range(n + 1):
+        phi = -0.5 * math.pi + k * h
+        y = centre + r * math.sin(phi)
+        f = 2.0 * r * r * math.cos(phi) ** 2 * math.sqrt(R * R - y * y)
+        w = 1.0 if k in (0, n) else (4.0 if k % 2 else 2.0)
+        total += w * f
+    return total * h / 3.0
+
+
+def calciner_pipe(R, r, slope_deg, z_wall, depth):
+    """A round pipe through the vessel wall, rising away from it at
+    slope_deg: its axis meets the wall at z_wall and runs depth on past
+    it; it starts one pipe diameter inside the wall, so its start disc
+    lies in the vessel and dissolves in the merge. The volume it adds
+    outside the vessel (the part across the section that is odd in the
+    section's "up" cancels, as for C1's chute), the hole's lowest
+    point, the start's and the end face's centres (radial, z)."""
+    c, s = math.cos(math.radians(slope_deg)), math.sin(math.radians(slope_deg))
+    rho0 = R - 2.0 * r
+    length = (R - rho0) / c + depth
+    return {
+        "D": 2.0 * r,
+        "slope": slope_deg,
+        "z_wall": z_wall,
+        "start": (rho0, z_wall - (R - rho0) * s / c),
+        "end": (R + depth * c, z_wall + depth * s),
+        "length": length,
+        "hole_bottom": z_wall - r / c - (R - math.sqrt(R * R - r * r)) * s / c,
+        "volume": math.pi * r * r * length - (chord_integral(r, R) - rho0 * math.pi * r * r) / c,
+        "end_area": math.pi * r * r,
+    }
+
+
+def calciner_inlets(g):
+    """The calciner's side inlets, z from the throat's foot as
+    calciner(): the tertiary air duct, tangential at the bottom of the
+    cylinder, coming in along +x on the -y side, a stub of it to its
+    face past the vessel's tangent plane; the two meal pipes (+-x) and
+    the two fuel pipes (+-y) just above it."""
+    c, cal = g["calciner"], calciner(g)
+    R = cal["R"]
+    r = 0.5 * v(c["D_tertiary_air"])
+    y_c = -(R - v(c["tertiary_air_wall_relief"]) - r)
+    z_c = cal["z_cone_top"] + v(c["tertiary_air_cone_clearance"]) + r
+    x_end = R + v(c["tertiary_air_stub_length"])
+    v_ta = math.pi * r * r * x_end - chord_integral(r, R, y_c)
+
+    rf = 0.5 * v(c["D_feed"])
+    slope = v(g["cyclone_domain"]["meal_slope"])
+    cf, sf = math.cos(math.radians(slope)), math.sin(math.radians(slope))
+    z_wall = (z_c + r + v(c["feed_above_tertiary_air"])
+              + rf / cf + (R - math.sqrt(R * R - rf * rf)) * sf / cf)
+    depth = v(c["feed_depth"])
+    return {
+        "tertiary_air": {
+            "D": 2.0 * r, "y": y_c, "z": z_c, "x_end": x_end,
+            "top": z_c + r, "volume": v_ta, "end_area": math.pi * r * r,
+        },
+        "meal": calciner_pipe(R, rf, slope, z_wall, depth),
+        "fuel": calciner_pipe(R, 0.5 * v(c["D_fuel"]), v(c["fuel_slope"]), z_wall, depth),
+    }
+
+
 def gooseneck_neck_radius(g):
     """One neck of both legs' area: leg D x sqrt 2, velocity kept."""
     return 0.5 * v(g["gooseneck"]["D_leg"]) * math.sqrt(2.0)
@@ -364,8 +435,9 @@ def layout(g):
     z_roof_cal = z0 + cal["z_roof"]
     z_gn_top = z0 + gn["z_top"]
     z_gn_end = z0 + gn["z_end"]                   # the CFD's outlet faces
-    r_ta = 0.5 * cal["D_tertiary_air"]
-    z_ta = z_cone_top + r_ta
+    ta = calciner_inlets(g)["tertiary_air"]
+    r_ta = 0.5 * ta["D"]
+    z_ta = z0 + ta["z"]
 
     r_leg = 0.5 * gn["D_leg"]
     x_inner = gn["x_leg"] + r_leg + v(L["gooseneck_to_c5_gap"]) + 0.5 * c[5]["D_barrel"]

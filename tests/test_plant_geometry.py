@@ -137,7 +137,10 @@ class TheMacrosAgreeWithTheSourceTest(unittest.TestCase):
             (pg.v(c["throat_gas_x_N2"]), "X_N2"), (pg.v(c["throat_gas_x_O2"]), "X_O2"),
             (pg.v(c["throat_gas_x_H2O"]), "X_H2O"), (pg.v(c["throat_gas_x_CO2"]), "X_CO2"),
             (pg.v(c["throat_velocity"]), "U_THROAT"), (pg.v(c["throat_length_over_D"]), "THROAT_LEN_OVER_D"),
-            (pg.v(c["D_feed"]), "D_FEED"), (pg.v(c["feed_below_gooseneck_end"]), "FEED_BELOW_GN_OUT"),
+            (pg.v(c["D_feed"]), "D_FEED"), (pg.v(c["feed_above_tertiary_air"]), "FEED_ABOVE_TA"),
+            (pg.v(c["D_tertiary_air"]), "D_TA"), (pg.v(c["D_fuel"]), "D_FUEL"), (pg.v(c["fuel_slope"]), "FUEL_SLOPE_DEG"),
+            (pg.v(c["tertiary_air_cone_clearance"]), "TA_CONE_CLEARANCE"),
+            (pg.v(c["tertiary_air_wall_relief"]), "TA_WALL_RELIEF"), (pg.v(c["tertiary_air_stub_length"]), "TA_STUB_LEN"),
             (pg.v(c["feed_depth"]), "FEED_DEPTH"), (pg.v(gn["D_leg"]), "D_GOOSENECK_SRC"),
             (pg.v(gn["rise_over_D_neck"]), "GN_RISE_OVER_D"), (pg.v(gn["bend_R_over_D_leg"]), "GN_BEND_R_OVER_D"),
             (pg.v(gn["end_at_vessel_H"]), "GN_OUTLET_AT_VESSEL_H"),
@@ -242,10 +245,16 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
         return [float(x.replace(",", ".")) for x in m.groups()]
 
     def test_the_build_succeeded(self):
-        self.assertIn("built and verified", self.log.splitlines()[0])
+        first = self.log.splitlines()[0]
+        self.assertTrue(first.startswith("calciner built"), first)
+        self.assertNotIn("ABORTED", first)
 
     def test_the_dimensions_and_elevations(self):
         cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
+        ins = pg.calciner_inlets(self.g)
+        ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
+        y_ta, z_ta, x_ta, v_ta = self.num(r"tertiary air: duct D # m, tangential, axis at y = # m, z = # m, "
+                                          r"face at x = # m, # m3")[1:]
         for got, want, what in (
             (self.num(r"throat D # m")[0], cal["D_throat"], "throat D"),
             (self.num(r"cone # deg, # m tall")[1], cal["h_cone"], "cone height"),
@@ -257,6 +266,18 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
             (self.num(r"sharing # m3")[0], gn["bend_overlap"], "bend overlap"),
             (self.num(r"drop at x = \+-# m")[0], gn["x_leg"], "drop x"),
             (self.num(r"outlet faces at z = # m")[0], gn["z_end"], "outlet faces z"),
+            (y_ta, ta["y"], "tertiary air y"),
+            (z_ta, ta["z"], "tertiary air z"),
+            (x_ta, ta["x_end"], "tertiary air face x"),
+            (v_ta, ta["volume"], "tertiary air volume"),
+            (self.num(r"meal feed: 2 pipes D # m at # deg, axes meet the wall at z = # m")[2],
+             meal["z_wall"], "meal at the wall"),
+            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[0], meal["end"][0], "meal end x"),
+            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[1], meal["end"][1], "meal end z"),
+            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[2], meal["volume"], "meal volume"),
+            (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[0], fuel["end"][0], "fuel end y"),
+            (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[1], fuel["end"][1], "fuel end z"),
+            (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[2], fuel["volume"], "fuel volume"),
             (self.num(r"vessel volume \(cone \+ cylinder\)\s+# m3")[0], cal["vessel_volume"], "vessel"),
         ):
             with self.subTest(what):
@@ -264,8 +285,10 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
 
     def test_the_measured_stages(self):
         """Each build step's volume as SolidWorks measured it, to the
-        macro's own VOL_TOL (0.1 %), against the closed forms here."""
+        macro's own VOL_TOL (0.1 %), against the closed forms here; the
+        small pieces' ADDED volumes to its 1 %."""
         cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
+        ins = pg.calciner_inlets(self.g)
         rl = 0.5 * gn["D_leg"]
         v_neck = math.pi * (0.5 * gn["D_neck"]) ** 2 * gn["rise"]
         v_bend = math.pi * rl * rl * math.pi * gn["bend_R"]
@@ -275,11 +298,35 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
         steps["3b"] = steps["3a"] + v_bend - gn["bend_overlap"]
         steps["4 "] = steps["3b"] + 2.0 * math.pi * rl * rl * gn["drop"]
         self.assertAlmostEqual(steps["4 "], cal["v_throat"] + cal["vessel_volume"] + gn["volume"], places=6)
+        added = {"5a": ins["meal"]["volume"], "5b": ins["meal"]["volume"], "6 ": ins["tertiary_air"]["volume"],
+                 "7a": ins["fuel"]["volume"], "7b": ins["fuel"]["volume"]}
+        for tag, dv in added.items():
+            steps[tag] = list(steps.values())[-1] + dv
         for tag, want in steps.items():
             got, expected = self.num(rf"stage {re.escape(tag)}[^:\n]*: # m3 \(expected #\)")
             with self.subTest(stage=tag.strip()):
                 self.assertAlmostEqual(expected, want, delta=1e-5 * want)
                 self.assertAlmostEqual(got, want, delta=1e-3 * want)
+        for tag, dv in added.items():
+            got, expected = self.num(rf"stage {re.escape(tag)}[^:\n]*: added # m3 \(expected #\)")
+            with self.subTest(added=tag.strip()):
+                self.assertAlmostEqual(expected, dv, delta=1e-5 * max(1.0, dv))
+                self.assertAlmostEqual(got, dv, delta=1e-2 * dv)
+
+    def test_the_boundary_faces(self):
+        """Each named face found once, with the area of what it is."""
+        cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
+        ins = pg.calciner_inlets(self.g)
+        disc = lambda d: math.pi * 0.25 * d * d
+        for name, want in (
+            ("kiln_gas_inlet", disc(cal["D_throat"])),
+            ("gas_outlet_1", disc(gn["D_leg"])), ("gas_outlet_2", disc(gn["D_leg"])),
+            ("tertiary_air_inlet", ins["tertiary_air"]["end_area"]),
+            ("meal_feed_1", ins["meal"]["end_area"]), ("meal_feed_2", ins["meal"]["end_area"]),
+            ("fuel_inlet_1", ins["fuel"]["end_area"]), ("fuel_inlet_2", ins["fuel"]["end_area"]),
+        ):
+            with self.subTest(name):
+                self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], want, delta=2e-3 * want)
 
 
 class TheGasPathsAreTheDecisionsTest(unittest.TestCase):

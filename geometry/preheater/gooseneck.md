@@ -18,9 +18,9 @@ Kolun çapı yayınlanmıştır: bir 2500 t/d hattının boynu. Tesiste **her ko
 | CFD: iniş (gövdenin yarı yüksekliğine) | 21.187 m | türetilmiş |
 | CFD: hacim | 833.77 m³ | türetilmiş |
 | CFD: duvar alanı | 924.85 m² | türetilmiş |
-| Tesis: kol boyu (iniş + 45° + C5 girişine yatay) | 17.570 m | türetilmiş |
-| **Tesis: hacim (iki kol)** | 764.16 m³ | türetilmiş |
-| **Tesis: duvar alanı (iki kol)** | 845.30 m² | türetilmiş |
+| Tesis: kol boyu (iniş + 45° + C5 girişine yatay) | 17.520 m | türetilmiş |
+| **Tesis: hacim (iki kol)** | 763.20 m³ | türetilmiş |
+| **Tesis: duvar alanı (iki kol)** | 844.20 m² | türetilmiş |
 <!-- END GENERATED -->
 
 **Tesis ve CFD** (kullanıcı kararı, 14 Ekim 2026). Tesiste kollar C5 girişlerine kadar iner: iniş, 45°'lik bir parça ve C5 gövdesine yatay bir bacak (çizim, [plant_topology.md](../plant_topology.md)). Twin bu hacmi kullanır. Kalsinatör CFD'si kolları gövdenin yarı yüksekliğinde keser (`end_at_vessel_H`, bir CFD sınır seçimi); "CFD" satırları o domenindir.
