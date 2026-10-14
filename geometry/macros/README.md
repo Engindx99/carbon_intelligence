@@ -100,7 +100,7 @@ seçilirse boy ±0.22 m belirsiz kalır; ağırlık merkezi datumu ayrıca hacim
 tam yapar. Bu bir tesis ölçüsü olduğundan `twin_cfg.yaml`'daki
 `inlet_extension_over_D` C1 için kullanılmaz.
 
-**Çıkış kaz boynu** — Çıkış borusu çatının üstünde `OUTLET_EXT_OVER_VORTEX_D = 1.25` (3.0 m; 29 Eylül'de kaz boynu tesisteki gibi çatıya yakın dursun diye 2.5'ten yarıya indirildi)
+**Çıkış kaz boynu** — Çıkış borusu çatının üstünde `OUTLET_EXT_OVER_VORTEX_D = 1.25` (3.0 m; 29 Eylül'de kaz boynu tesisteki gibi çatıya yakın dursun diye 2.5'ten yarıya indirildi; oran artık siklon başına `SelectCyclone`'da, C4 / C5'te 1.70, 14 Ekim 2026)
 düz yükselir, sonra **180°'lik bir dirsekle** (merkez çizgisi yarıçapı `ELBOW_R_OVER_VORTEX_D = 1.5`
 → 3.6 m, eksen (+3.6, y, 14.44)) +x yönüne dönüp aşağı iner ve `OUTLET_DOWN_OVER_VORTEX_D` kadar (yükselişe eşit, 3.0 m; bacakları eşit
 düz bir U) düz iner. `gas_outlet` bu borunun ucundaki, aşağı bakan yatay disktir (x = 7.2, z = 11.44). Bu yüz çatıyla aynı düzlemde ama x'te gövdenin dışında; etiketleme onu yüzün x alt sınırıyla (> R) ayırır.

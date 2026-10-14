@@ -52,7 +52,7 @@ def _cases(text, consts):
         ):
             if value in ("True", "False"):
                 continue
-            vals[key] = _number(value, consts)
+            vals[key] = _number(value, {**consts, **vals})
         out[name] = vals
     return out
 
@@ -88,7 +88,7 @@ class CfdLock(unittest.TestCase):
         self.same(d["C4_IN_W"], c["W_INLET"], "C4 inlet width")
         self.same(d["C4_TONGUE"], cc["INLET_TONGUE"], "C4 volute tongue")
         self.same(d["C4_IN_L"], cc["L_INLET"], "C4 inlet duct length")
-        self.same(d["C4_OUT_RISE"], cc["OUTLET_EXT_OVER_VORTEX_D"] * c["D_VORTEX"],
+        self.same(d["C4_OUT_RISE"], c["OUTLET_EXT_OVER_VORTEX_D"] * c["D_VORTEX"],
                   "C4 outlet pipe rise")
         self.same(d["C4_OUT_R"], c["ELBOW_R_OVER_VORTEX_D"] * c["D_VORTEX"],
                   "C4 outlet bend radius")
@@ -104,8 +104,8 @@ class CfdLock(unittest.TestCase):
         for key in ("H_BARREL", "H_CONE", "L_VORTEX", "D_VORTEX", "D_DUST",
                     "H_INLET", "W_INLET"):
             self.same(c5[key], k * c4[key], f"cyclone.bas C5 {key} = C4 x {k:.4f}")
-        for key in ("ELBOW_R_OVER_VORTEX_D", "OUTLET_DOWN_OVER_VORTEX_D",
-                    "OUTLET_TURN_DEG"):
+        for key in ("OUTLET_EXT_OVER_VORTEX_D", "ELBOW_R_OVER_VORTEX_D",
+                    "OUTLET_DOWN_OVER_VORTEX_D", "OUTLET_TURN_DEG"):
             self.assertEqual(c5[key], c4[key], key)
 
     def test_c1_domain(self):
@@ -114,7 +114,7 @@ class CfdLock(unittest.TestCase):
         self.same(d["C1_VF_S"], c["L_VORTEX"], "C1 vortex finder immersion")
         self.same(d["C1_DUCT_H"], c["H_INLET"], "C1 inlet duct height")
         self.same(d["C1_BEND_DEG"], 90.0 + c["INLET_SLOPE_DEG"], "C1 branch bend")
-        self.same(d["C1_OUT_RISE"], cc["OUTLET_EXT_OVER_VORTEX_D"] * c["D_VORTEX"],
+        self.same(d["C1_OUT_RISE"], c["OUTLET_EXT_OVER_VORTEX_D"] * c["D_VORTEX"],
                   "C1 outlet pipe rise")
         self.same(d["C1_OUT_R"], c["ELBOW_R_OVER_VORTEX_D"] * c["D_VORTEX"],
                   "C1 outlet bend radius")

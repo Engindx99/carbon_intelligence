@@ -86,7 +86,9 @@ Dim BOI_RADIUS As Double                 ' mesh sizing cylinder about the cyclon
 ' taller than a plant's, and it was halved to 1.25 (3.0 m) so the
 ' gooseneck sits close over the roof as in the plant (user decision,
 ' 29 Sep 2026). The bend, not the rise, is what breaks the swirl.
-Const OUTLET_EXT_OVER_VORTEX_D As Double = 1.25   ' straight rise above roof, x vortex D
+' C1: 1.25; C4 / C5: 1.70 (see there). Per cyclone, set in
+' SelectCyclone.
+Dim OUTLET_EXT_OVER_VORTEX_D As Double   ' straight rise above roof, x vortex D
 
 ' The outlet gooseneck: the pipe section swept through 180 deg about
 ' a horizontal axis, turning the flow from +z over the top and down,
@@ -583,6 +585,7 @@ Private Sub SelectCyclone()
         INLET_SLOPE_DEG = 5#
         VOLUTE_ON = False
         OUTLET_TURN_DEG = 180#
+        OUTLET_EXT_OVER_VORTEX_D = 1.25
         ELBOW_R_OVER_VORTEX_D = 1.5
         OUTLET_DOWN_OVER_VORTEX_D = OUTLET_EXT_OVER_VORTEX_D
         RISER_ON = True
@@ -644,8 +647,17 @@ Private Sub SelectCyclone()
         ' 666 m3). A 1.0 D bend -- the ratio C1's riser bend uses --
         ' still breaks the swirl, and a 1.0 D run keeps the outlet
         ' face a diameter clear of it (user decision, 4 Oct 2026).
-        ' The rise above the roof stays at 1.25 D: that is C1's
-        ' backflow measurement.
+        '
+        ' The rise above the roof, 1.70 D (7.87 m), not C1's 1.25 D.
+        ' In the plant this outlet is the R3 riser and the cyclone two
+        ' stages up stands on its bend: at 1.25 D (5.79 m) C2 sat only
+        ' 0.9 m over it, and its meal pipe had no room to come down
+        ' clear of the bend before turning into R3. 1.70 D gives 2.9 m
+        ' (geometry/plant_topology.md; user decision, 14 Oct 2026). A
+        ' longer straight pipe before the bend only lets the swirl decay
+        ' a little more; the bend still breaks it. Changing it means the
+        ' C4 CFD is solved again.
+        OUTLET_EXT_OVER_VORTEX_D = 1.7
         ELBOW_R_OVER_VORTEX_D = 1#
         OUTLET_DOWN_OVER_VORTEX_D = 1#
         RISER_ON = False
@@ -681,6 +693,7 @@ Private Sub SelectCyclone()
 
         ' C5's gas goes on to the R4 riser, as C4's goes to R3.
         OUTLET_TURN_DEG = 90#
+        OUTLET_EXT_OVER_VORTEX_D = 1.7
         ELBOW_R_OVER_VORTEX_D = 1#
         OUTLET_DOWN_OVER_VORTEX_D = 1#
         RISER_ON = False
