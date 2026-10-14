@@ -178,7 +178,71 @@ Yapım adımları:
   - Twin'in kalsinatöre giren gazı ~80 kg/s'dir; CFD'de literatür akışlarıyla 116.4 kg/s girer.
   - CFD'de yakıttan ve kalsinasyondan gelen CO₂ da yoktur; bu, gaz hacmini ~%20–25 eksik bırakır.
 - CFD'deki gövde süresi (2.55 s) 2–5 s bandındadır.
-- Kalsinatörün gaz-yalnız basınç kaybı 181 Pa'dır (twin'de henüz kullanılmıyor).
+- Kalsinatörün gaz-yalnız basınç kaybı 181 Pa'dır. Euler sayısı olarak (10.07, gövdenin yüzeysel hızıyla) twin'in diagnostics raporuna girer (D15, `configs/twin_cfg.yaml` → `pressure`). Fiziğe geri beslenmez.
+
+### Twin akışlarıyla, CO₂ ve ısı kaynaklı (15 Ekim 2026)
+
+Kullanıcı kararı: ikinci koşu twin'in referans durumunun akışlarıyla yapılır. Böylece sonuç twin'le birebir karşılaştırılabilir. Değerler `C:\Users\engin\calciner\twin\twin_bc.py` ile twin'in durumundan türetilir.
+
+**Girişler ve kaynaklar:**
+- Fırın gazı 35.91 kg/s, 1332.7 K, twin'in bileşimiyle (CO₂ kütlece %31.8). Tersiyer hava 44.18 kg/s, 1253.4 K.
+- Gövde, twin'in eşit hacimli hücrelerinin ikişerli gruplarına denk gelen dört yükseklik bandına bölündü:
+
+  | Bant | z [m] | Hacim, CFD / twin [m³] |
+  |---|---|---|
+  | 1 | 3.13–11.55 | 239.3 / 239.5 |
+  | 2 | 11.55–18.26 | 239.2 / 239.5 |
+  | 3 | 18.26–24.97 | 239.3 / 239.5 |
+  | 4 | 24.97–33.13 | 290.8 / 291.2 |
+
+  Bölme Fluent'te silindir cell register'larıyla ve `sep-cell-zone-mark` ile yapıldı.
+- Her banda kendi kaynakları, birim hacim başına sabit:
+  - **Kalsinasyon:** twin'in hücre başına gaz kütlesi artışı (CO₂ + bağlı su). Gövdede 23.42 kg/s; en çok altta.
+  - **Yakıt:** twin yakıtı girişte bir anda yakar. Burada gövdeye düzgün dağıtıldı, twin'in yakıt ısısını dağıttığı gibi: +3.17 kg/s yakıt, −8.60 O₂, +10.64 CO₂, +1.13 H₂O (kg/s).
+  - **Enerji:** twin'in hücre başına gaz entalpisi artışı, toplam +10.85 MW. En alt bantta eksidir (−3.47 MW), çünkü gaz orada soğuk farine ısı verir.
+- Fluent tür kaynaklarını 298.15 K'de sayar ([Ansys forum](https://innovationspace.ansys.com/forum/?p=296723)). Twin'in duyulur entalpileri de aynı kuralla sayar; bu yüzden enerji kaynağı doğrudan H_çıkış − H_giriş'tir. Doğrulama: boyundaki gaz **1132.4 K**, twin'in gövde sonu sıcaklığı 1132 K.
+- Kaz boynundaki kalsinasyon (2.23 kg/s) bu domende yoktur.
+- Çıkışlar eşit akışlı, her biri 53.35 kg/s. Kütle dengesi kapanır: 80.10 + 26.60 = 106.69 kg/s.
+
+**Gaz sonucu** (920 iterasyon, steady, salınım yok):
+
+| Büyüklük | Twin akışları | Literatür akışları |
+|---|---|---|
+| Toplam basınç kaybı | **149 Pa** (D15'in öngörüsü 151 Pa) | 181 Pa |
+| Bölünmeyi tutan fark (çıkış 1 − 2) | 36.8 Pa | 45.7 Pa |
+| Statik basınç, çıkışlara göre (fırın gazı / tersiyer hava) | +40.3 / +134.3 Pa | −15.6 / +199.8 Pa |
+| Çıkış sıcaklıkları (1 / 2) | 1130.5 / 1134.6 K | 1197 / 1222 K |
+| CO₂ kütle kesri (1 / 2) | 0.421 / 0.432 | 0.094 / 0.111 |
+| v_max | 42.5 m/s | 52 m/s |
+
+- Euler ölçeklemesi tutar: D15 twin'in akışlarında 151 Pa öngördü, CFD 149 Pa verdi.
+- Twin akışlarında iki hattın gazı neredeyse aynıdır (4 K).
+
+**Farin kalma süresi** (aynı DPM kurulumu):
+
+| Tane boyu | Gövde, ortalama [s] | %10 | %90 | Hat 1'e giden pay |
+|---|---|---|---|---|
+| 4–30 µm | 2.94–3.00 | 2.3–2.5 | 3.5–3.6 | 0.40–0.52 |
+| 53 µm | 2.78 | 2.05 | 3.62 | 0.38 |
+| 94 µm | 3.09 | 2.90 | 3.29 | **0.03** |
+| 172 µm | 3.77 | 3.50 | 4.00 | **0.02** |
+| **Hepsi, kütle ağırlıklı** | **2.98** | 2.31 | 3.61 | **0.35** |
+
+- Fırına düşen farin yoktur. İri parsellerin %2.5'i (kütlenin ~%0.5'i) −y'deki yakıt borusunun ölü cebinde takılır; gerçekte oradan yakıt jeti çıkar. Bu parseller istatistiğin dışındadır.
+  - Bu yakıt yüzlerinin parçacık koşulu "escape" kalmıştı, çünkü yüzler önce giriş olarak tanımlanmıştı. Burada "reflect" yapıldı.
+- Literatür akışlarındaki uzun kuyruk (172 µm, 36 s'ye kadar) burada yoktur. Dağılım dardır: %90'ı 3.6 s içinde geçer.
+
+**Twin'le karşılaştırma:**
+
+| | Süre |
+|---|---|
+| CFD, gazın gövdenin tamamındaki düz akış süresi (gaz kütlesi 339.0 kg / bant bant kütle akışı) | **3.56 s** |
+| Twin, gövdenin tamamındaki transit (8.24 s × gövde payı 0.4216) | **3.48 s** (−%2) |
+| CFD, farinin besleme ağzından (z 10.8 m) boyna kalma süresi | **2.98 s** |
+
+- **Twin'in gaz taşınımı doğru:** gövde için %2 içinde tutar.
+- **Farinin süresinde twin %17 uzundur.** Neden: twin farini gövdenin dibinden verir, gerçek besleme ise tersiyer kanalın 1 m üstündedir (z 10.8 m). Farin gövdenin alt ~%27'sini görmez.
+- **İki hattın farin yükü eşit değildir.** Girdap iri taneleri neredeyse tamamen hat 2'ye (−x) taşır. Toplamda farinin **%35'i hat 1'e, %65'i hat 2'ye** gider. Twin iki özdeş hat varsayar (her biri yarı yük). Bu, C5'lerin yükünü ve hatların ısı dengesini etkiler. Bu sonuç tek yönlü bir hesaptır: yüklemenin gazı etkilemesi yok.
 
 Dosyalar (repo dışında, `C:\Users\engin\calciner`):
 - `calciner.msh`, `calciner.wbpj`, `calciner_poly.cas.h5`
@@ -188,6 +252,11 @@ Dosyalar (repo dışında, `C:\Users\engin\calciner`):
 - `calc_dpm.cas.h5`: DPM, `neckp` düzlemi
 - `make_inj.py` ve `d004…d172.inj`: enjeksiyonlar, `plant_geometry`'den
 - `rt_stats.py`, `gas_outlet_1/2.dpm`, `neckp.dpm`, `dpm_summary.txt`
+- Twin akışları:
+  - `twin\twin_bc.py`, `cal.pkl` ve `sp.pkl` (twin'in durumu), `twin_bc.pkl`
+  - `calc_twin.*` ve `twin.out`
+  - `calc_twin_dpm.cas.h5`
+  - `twin\dpm\*.dpm` ve `rt_stats.py`
 
 ## Boundary Faces
 
