@@ -1473,6 +1473,98 @@ def gas_pressure_losses(twin):
     }
 
 
+
+# ======================================================
+# D16  CALCINER ENERGY BUDGET
+# ======================================================
+
+# What an ILC runs at (calciner.md): apparent calcination of the
+# meal entering the kiln and the riser's gas outlet temperature.
+ILC_CALCINATION_BAND = (0.90, 0.95)
+ILC_OUTLET_T_BAND = (1123.0, 1173.0)
+
+
+def calciner_energy_budget(twin):
+    """
+    The calciner zone's energy terms as the solver booked them
+    (pyroprocess/precalciner/energy_diagnostics.py), with the two
+    inlet gases apart, and what decides the zone's calcination:
+    the outlet's CO2 back-pressure and its equilibrium temperature.
+
+    `extra_heat_W` is the reaction heat alone that would lift the
+    meal entering the kiln to the low end of the ILC band, at the
+    calciner fuel's own released heat per kg: a LOWER bound, since
+    the gas and meal leaving would also have to be hotter.
+
+    Read-only, a report.
+    """
+
+    state = twin.state
+
+    def g(name):
+        return float(getattr(state, name, 0.0))
+
+    if not hasattr(state, "Hgas_transition_out"):
+        return None
+
+    terms_in = [
+        ("kiln gas", g("Hgas_transition_out")),
+        ("tertiary air", g("Hgas_cooler_tertiary")),
+        ("fuel", g("Q_calciner")),
+        ("meal in", g("Hsolid_calciner_in")),
+    ]
+    terms_out = [
+        ("calcination", g("Calcination_Q_sink")),
+        ("dehydroxylation", g("Dehydroxylation_Q_sink")),
+        ("wall loss", g("Wall_loss_calciner")),
+        ("gas out", g("Hgas_calciner_out")),
+        ("meal out", g("Hsolid_calciner_out")),
+        ("stored", g("Calciner_stored_energy_change")),
+    ]
+    residual = (
+        sum(v for _, v in terms_in) - sum(v for _, v in terms_out)
+    )
+
+    model = CalcinationModel()
+    p_cells = getattr(state, "Calciner_p_CO2_cells", None)
+    p_out = (
+        float(np.asarray(p_cells, dtype=float)[-1])
+        if p_cells is not None
+        else float(model.co2_partial_pressure)
+    )
+    T_eq = model.equilibrium_temperature(p_out)
+    Tg_out = float(np.asarray(state.Tg_calciner, dtype=float)[-1])
+
+    solids = state.material_flows["calciner"].solids
+    CaCO3 = float(solids.CaCO3[-1])
+    CaCO3_eq = CaCO3 + float(solids.CaO[-1]) / model.CaO_ratio
+    calcination = 1.0 - CaCO3 / CaCO3_eq if CaCO3_eq > 0.0 else 0.0
+
+    target = ILC_CALCINATION_BAND[0]
+    extra_CaCO3 = max(0.0, CaCO3 - (1.0 - target) * CaCO3_eq)
+    extra_heat = extra_CaCO3 * model.deltaH
+
+    m_fuel = g("m_dot_fuel_calciner")
+    heat_per_kg = g("Q_calciner") / m_fuel if m_fuel > 0.0 else 0.0
+    m_fuel_total = m_fuel + g("m_dot_fuel_kiln")
+
+    return {
+        "terms_in": terms_in,
+        "terms_out": terms_out,
+        "residual_W": residual,
+        "p_CO2_out": p_out,
+        "T_eq_out": T_eq,
+        "Tg_out": Tg_out,
+        "calcination": calcination,
+        "target": target,
+        "extra_heat_W": extra_heat,
+        "extra_fuel": extra_heat / heat_per_kg if heat_per_kg > 0.0 else 0.0,
+        "T_kiln_gas": float(np.asarray(state.Tg_transition, dtype=float)[0]),
+        "T_tertiary": g("Tg_tertiary_air"),
+        "fuel_share": m_fuel / m_fuel_total if m_fuel_total > 0.0 else 0.0,
+    }
+
+
 def report(twin):
 
     out = []
@@ -1826,6 +1918,37 @@ def report(twin):
             " not here, so the"
         )
         w("  power is these losses' share of the fan's work, not its duty.")
+
+    # ---------- D16 ----------
+    budget = calciner_energy_budget(twin)
+
+    if budget is not None:
+        w("\n-- D16  calciner energy budget (a report) --")
+        for side, terms in (("IN ", budget["terms_in"]), ("OUT", budget["terms_out"])):
+            for name, value in terms:
+                w(f"  {side} {name:16s} {value / 1e6:9.2f} MW")
+        w(f"      {'residual':16s} {budget['residual_W']:9.2e} W")
+        lo, hi = ILC_CALCINATION_BAND
+        tlo, thi = ILC_OUTLET_T_BAND
+        w(
+            f"  calcination of the meal to the kiln {budget['calcination'] * 100:5.1f} %"
+            f"   (ILC {lo * 100:.0f}-{hi * 100:.0f} %)"
+        )
+        w(
+            f"  gas outlet {budget['Tg_out']:7.1f} K   (ILC {tlo:.0f}-{thi:.0f} K);"
+            f" p_CO2 {budget['p_CO2_out']:.3f} atm -> T_eq {budget['T_eq_out']:7.1f} K,"
+            f" margin {budget['Tg_out'] - budget['T_eq_out']:+.1f} K"
+        )
+        w(
+            f"  to {budget['target'] * 100:.0f} %: >= {budget['extra_heat_W'] / 1e6:.1f} MW"
+            f" of reaction heat, {budget['extra_fuel']:.2f} kg/s of calciner fuel"
+            " (the hotter outlet not included)"
+        )
+        w(
+            f"  kiln gas in {budget['T_kiln_gas']:7.1f} K, tertiary air"
+            f" {budget['T_tertiary']:7.1f} K, calciner fuel share"
+            f" {budget['fuel_share'] * 100:.0f} %"
+        )
 
     w("\n================================================================\n")
 

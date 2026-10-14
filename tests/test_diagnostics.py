@@ -2,6 +2,7 @@ import unittest
 
 import numpy as np
 
+from physics.gas_thermo import mole_fraction
 from pyroprocess.burning.gas_phase import kiln_inlet_gas
 from reporter import diagnostics
 from tests.twin_harness import run_twin
@@ -289,6 +290,28 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             1e-3,
             f"gas balance from published cells off by {residual:.3e} W",
         )
+
+    def test_calciner_budget_closes_like_the_solver(self):
+
+        budget = diagnostics.calciner_energy_budget(self.twin)
+
+        self.assertIsNotNone(budget)
+        # The terms are the solver's own, inlet gases split apart:
+        # they close to what its balance closed to, up to the
+        # summation order on ~250 MW.
+        energy_in = sum(v for _, v in budget["terms_in"])
+        self.assertAlmostEqual(
+            budget["residual_W"],
+            float(self.state.Calciner_energy_balance),
+            delta=1e-9 * energy_in,
+        )
+        # The outlet rates against its own gas.
+        self.assertAlmostEqual(
+            budget["p_CO2_out"],
+            mole_fraction(self.state.Calciner_gas_species_out, "CO2"),
+            places=9,
+        )
+        self.assertGreaterEqual(budget["Tg_out"], budget["T_eq_out"] - 1.0)
 
     def test_fuel_cells_sum_to_total_heat_release(self):
 
