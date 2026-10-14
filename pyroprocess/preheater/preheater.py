@@ -155,7 +155,7 @@ class Preheater:
         if stage_cfg is None or len(stage_cfg) != N:
             raise ValueError(
                 f"preheater.stages must list the {N} stages' fluid "
-                "volumes (configs/twin_cfg.yaml)"
+                "volumes (geometry/plant_geometry.yaml)"
             )
 
         strings = int(preheater_cfg.get("strings", 1))
@@ -171,12 +171,14 @@ class Preheater:
             A = n_cyc * float(st["cyclone_wall_area"])
             H = float(st["cyclone_height"])
 
-            if "riser_diameter" in st:
-                D_r = float(st["riser_diameter"])
-                L_r = float(st["riser_length"])
-                V += np.pi * D_r**2 / 4.0 * L_r
-                A += np.pi * D_r * L_r
-                H = max(H, L_r)
+            # The riser below the cyclone, its volume and wall area
+            # derived from the plant's geometry (geometry/
+            # plant_geometry.py: R2-R4 the CFD outlet pipes, R1 C2's
+            # outlet, R1 and the twin branches); the external film
+            # takes the taller of riser and cyclone.
+            V += float(st["riser_volume"])
+            A += float(st["riser_wall_area"])
+            H = max(H, float(st["riser_height"]))
 
             V_stage[i] = strings * V
             A_stage[i] = strings * A

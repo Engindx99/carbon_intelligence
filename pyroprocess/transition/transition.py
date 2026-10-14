@@ -23,10 +23,10 @@ class Transition:
     def __init__(self, N=5, L=25.0, cfg=None):
 
         if cfg is None:
-            import yaml
+            # the config with the plant's geometry put in (one source)
+            from geometry import plant_geometry
 
-            with open("configs/twin_cfg.yaml") as handle:
-                cfg = yaml.safe_load(handle)
+            cfg = plant_geometry.load_config("configs/twin_cfg.yaml")
 
         self.N = N
         self.L = L
@@ -43,7 +43,7 @@ class Transition:
 
         # ================= GEOMETRY =================
         # Same bore as the burning zone -- it is the same tube.
-        self.D = float(cfg.get("kiln", {}).get("diameter", 4.2))
+        self.D = float(cfg["kiln"]["diameter"])  # geometry/plant_geometry.yaml
         self.A_cross = np.pi * self.D**2 / 4.0
         self.V_total = self.A_cross * self.L
         self.V_cell = self.V_total / self.N

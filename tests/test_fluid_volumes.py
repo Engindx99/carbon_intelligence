@@ -1,14 +1,14 @@
 """Every zone of the twin computes over its equipment's fluid volume
-(geometry/fluid_volumes.md).
+(geometry/fluid_volumes.md), the volume its one geometry source gives.
 
-Each documented volume below is re-derived here from the dimensions
-in its geometry doc, not read back from the model, and the zone's
-own cells must add up to it. Rows the twin does not meet yet are
-marked expectedFailure: they are the plan's open steps, and an
-unexpected success is the signal to remove the mark.
+The volumes and wall areas are derived in geometry/plant_geometry.py
+from geometry/plant_geometry.yaml (single-source rule, user decision
+13-14 Oct 2026); the zones' own cells must add up to them. The
+derivations themselves are held to the documented figures in
+tests/test_plant_geometry.py.
 
-The plant is two identical 2500 t/d strings solved as one string
-at the total flow, so per-string equipment counts twice.
+The plant is two identical 2500 t/d strings solved as one string at
+the total flow, so per-string equipment counts twice.
 """
 
 import math
@@ -17,87 +17,46 @@ import unittest
 import numpy as np
 
 import main
+from geometry import plant_geometry as pg
 from tests.twin_harness import REPO_ROOT
 
 
-STRINGS = 2
+G = pg.load()
+STRINGS = pg.v(G["plant"]["strings"])
+
+# Twin stage i (0-based) is C(4 - i) with the riser below it: R4..R2
+# the CFD outlet pipes of C5..C3, R1 C2's outlet, R1 and the twin
+# branches (user decision, 14 Oct 2026).
+RISER = {k: pg.stage_riser(G, k) for k in (2, 3, 4)}
+RISER[1] = pg.r1_path(G)
+CYCLONE = {s: pg.cyclone(G, f"C{s}") for s in range(1, 6)}
+
+PREHEATER_STAGES = [
+    STRINGS * (RISER[c]["volume"] + CYCLONE[c]["per_string"] * CYCLONE[c]["volume"])
+    for c in (4, 3, 2, 1)
+]
+PREHEATER_WALLS = [
+    STRINGS * (RISER[c]["wall_area"] + CYCLONE[c]["per_string"] * CYCLONE[c]["wet_area"])
+    for c in (4, 3, 2, 1)
+]
+
+# The calciner zone: vessel, the gooseneck to the C5 inlets, the C5s
+C5_ALL = STRINGS * CYCLONE[5]["per_string"] * CYCLONE[5]["volume"]
+CALCINER = pg.calciner(G)["vessel_volume"]
+GOOSENECK = pg.gooseneck_plant(G)["volume"]
+
+KILN = pg.kiln(G)
+COOLER_BOX = pg.cooler(G)["box_volume"]
+
+RTOL = 1e-3
 
 
 def _cylinder(D, L):
     return math.pi * D**2 / 4.0 * L
 
 
-def _cyclone(D, h_body, h_cone, D_dust):
-    """Body + cone (frustum down to the dust outlet)."""
-    R, r = D / 2.0, D_dust / 2.0
-    return math.pi * R**2 * h_body + math.pi * h_cone / 3.0 * (
-        R**2 + R * r + r**2
-    )
-
-
-# geometry/preheater/riser_R*.md: published bore x FLS h_tot
-RISER = {
-    1: _cylinder(3.07, 21.38),
-    2: _cylinder(3.35, 19.38),
-    3: _cylinder(3.45, 20.37),
-    4: _cylinder(3.60, 19.87),
-}
-
-# geometry/preheater/cyclone_C*.md, body + cone. C2-C4 on the CFD
-# body (h = D, user decision 13 Oct 2026), C5 = C4 x 6.50/6.30.
-CYCLONE = {
-    1: _cyclone(4.32, 6.79, 4.65, 0.40),
-    2: _cyclone(6.30, 6.30, 7.30, 0.81),
-    3: _cyclone(6.30, 6.30, 7.30, 0.81),
-    4: _cyclone(6.30, 6.30, 7.30, 0.81),
-    5: _cyclone(6.50, 6.50, 7.532, 0.836),
-}
-CYCLONES_PER_STRING = {1: 2, 2: 1, 3: 1, 4: 1, 5: 1}
-
-# Twin stage i (0-based) is C(4 - i), fed by the riser below it.
-# C5 is the calciner's outlet cyclone, fed by the gooseneck: both
-# belong to the calciner zone.
-PREHEATER_STAGES = [
-    STRINGS * (
-        RISER.get(c, 0.0) + CYCLONES_PER_STRING[c] * CYCLONE[c]
-    )
-    for c in (4, 3, 2, 1)
-]
-C5_PAIR = STRINGS * CYCLONES_PER_STRING[5] * CYCLONE[5]
-
-# geometry/calciner/calciner.md: 65 deg cone + cylinder
-CALCINER = 1009.71
-# geometry/preheater/gooseneck.md
-GOOSENECK = 833.768
-
-# geometry/kiln/kiln.md
-KILN_D, KILN_L = 4.8, 74.0
-# geometry/cooler/cooler.md
-COOLER_BOX = 29.90 * 4.0 * 3.0
-
-RTOL = 1e-3
-
-
 def _cfg():
     return main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
-
-
-class TheDocumentedVolumesTest(unittest.TestCase):
-    """The re-derivations agree with the numbers the docs print."""
-
-    def test_the_cyclone_docs(self):
-        self.assertAlmostEqual(CYCLONE[1], 124.54, delta=0.01)
-        self.assertAlmostEqual(CYCLONE[4], 283.2, delta=0.1)
-        self.assertAlmostEqual(CYCLONE[5], 311.0, delta=0.1)
-
-    def test_the_preheater_stages(self):
-        self.assertAlmostEqual(C5_PAIR, 622.0, delta=0.5)
-        self.assertAlmostEqual(PREHEATER_STAGES[0], 970.9, delta=0.5)
-        self.assertAlmostEqual(PREHEATER_STAGES[3], 814.7, delta=0.5)
-        self.assertAlmostEqual(sum(PREHEATER_STAGES), 3640.9, delta=0.5)
-
-    def test_the_tube(self):
-        self.assertAlmostEqual(_cylinder(KILN_D, KILN_L), 1339.07, delta=0.01)
 
 
 class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
@@ -123,13 +82,13 @@ class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
 
         self.assertAlmostEqual(
             self._volume(transition, self.N),
-            _cylinder(KILN_D, L_t),
-            delta=RTOL * _cylinder(KILN_D, L_t),
+            _cylinder(KILN["D"], L_t),
+            delta=RTOL * _cylinder(KILN["D"], L_t),
         )
         self.assertAlmostEqual(
             self._volume(transition, self.N) + self._volume(burning, self.N),
-            _cylinder(KILN_D, KILN_L),
-            delta=RTOL * _cylinder(KILN_D, KILN_L),
+            KILN["volume"],
+            delta=RTOL * KILN["volume"],
         )
 
     def test_the_cooler_casing(self):
@@ -149,14 +108,18 @@ class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
         for i, (twin, doc) in enumerate(zip(V, PREHEATER_STAGES)):
             with self.subTest(stage=i + 1):
                 self.assertAlmostEqual(twin, doc, delta=RTOL * doc)
+        A = np.broadcast_to(np.asarray(preheater.A_wall_cell, dtype=float), V.shape)
+        for i, (twin, doc) in enumerate(zip(A, PREHEATER_WALLS)):
+            with self.subTest(stage_wall=i + 1):
+                self.assertAlmostEqual(twin, doc, delta=RTOL * doc)
 
     def test_the_calciner_and_gooseneck(self):
         calciner = main.Calciner(
             N=self.N, L=self.cfg["calciner"]["length"], cfg=self.cfg
         )
         # The calciner zone runs from its inlet through the
-        # gooseneck to the C5 pair, its outlet cyclones.
-        doc = CALCINER + GOOSENECK + C5_PAIR
+        # gooseneck to the C5s, its outlet cyclones.
+        doc = CALCINER + GOOSENECK + C5_ALL
         cells = np.size(calciner.V_cell) if np.ndim(calciner.V_cell) else self.N
         self.assertAlmostEqual(
             self._volume(calciner, cells),

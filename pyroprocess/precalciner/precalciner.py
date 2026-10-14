@@ -1,5 +1,4 @@
 import numpy as np
-import yaml
 
 from physics.gas_thermo import GasMixture
 from physics.physics import h_gas
@@ -26,8 +25,10 @@ from . import c5_cyclone
 
 
 def load_cfg(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    # the config with the plant's geometry put in (one source)
+    from geometry import plant_geometry
+
+    return plant_geometry.load_config(path)
 
 
 class Calciner:
@@ -78,7 +79,7 @@ class Calciner:
         # PF5000 calciner (geometry/calciner/calciner.md). It used to
         # be a literal 4.2 shared by accident with the preheater and
         # cooler placeholders.
-        self.D = float((cfg or {}).get("calciner", {}).get("diameter", 4.2))
+        self.D = float(cfg["calciner"]["diameter"])  # geometry/plant_geometry.yaml
 
         # The vessel's height: the external film's characteristic
         # length, whatever the zone's equivalent length below.

@@ -3,7 +3,6 @@ import math
 import numpy as np
 
 from physics.gas_thermo import GasMixture
-import yaml
 
 from physics.physics import h_gas
 from physics.physics import h_solid
@@ -21,8 +20,10 @@ from . import heat_transfer
 
 
 def load_cfg(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    # the config with the plant's geometry put in (one source)
+    from geometry import plant_geometry
+
+    return plant_geometry.load_config(path)
 
 
 class Burning:
@@ -80,7 +81,7 @@ class Burning:
         # than each carrying a literal. The other three zones keep
         # their own 4.2: a cyclone string, a riser and a grate are
         # not this tube and must not follow it when it changes.
-        self.D = float(cfg.get("kiln", {}).get("diameter", 4.2))
+        self.D = float(cfg["kiln"]["diameter"])  # geometry/plant_geometry.yaml
 
         self.A_cross, self.V_total, self.V_cell = kiln_geometry(
             D=self.D,

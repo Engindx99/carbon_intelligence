@@ -504,3 +504,102 @@ def gooseneck_plant(g):
         "volume": gn["volume"] - cfd_legs + 2.0 * leg["volume"],
         "wall_area": gn["wall_area"] - cfd_legs_area + 2.0 * leg["wall_area"],
     }
+
+
+# ======================================================================
+# The twin's geometry (main.load_cfg puts it into the config)
+# ======================================================================
+# The config keys that are geometry: they come from here and must not
+# be written in configs/twin_cfg.yaml.
+TWIN_KEYS = {
+    "kiln": ("length", "diameter"),
+    "transition": ("length",),
+    "motion": ("inclination_pct",),
+    "calciner": ("length", "diameter", "zone_segments"),
+    "preheater": ("strings", "stages"),
+    "cooler": ("length", "width", "casing_height"),
+}
+
+
+def twin_sections(g=None):
+    """The config keys of TWIN_KEYS, derived from the source.
+
+    preheater.stages, in the twin's gas order (Stage 1 = C4 ... C1):
+    each the riser below the cyclone plus the cyclone, per string --
+    R4..R2 the CFD outlet pipes of C5..C3, R1 C2's outlet, R1 and the
+    twin branches. calciner.zone_segments: the vessel (the fuel burns
+    there), the gooseneck to the C5 inlets, the C5s (all strings)."""
+
+    g = g or load()
+    k, cal, coo, L = kiln(g), calciner(g), cooler(g), layout(g)
+    strings = v(g["plant"]["strings"])
+
+    stages = []
+    for s in (4, 3, 2, 1):
+        c = cyclone(g, f"C{s}")
+        if s == 1:
+            r = r1_path(g)
+            br = c1_branch(g)
+            h = L["z_dust"][1] + br["z_bend"] - L["z_roof"][2]
+        else:
+            r = stage_riser(g, s)
+            below = cyclone(g, f"C{s + 1}")
+            h = below["outlet_rise"] + below["outlet_bend_R"] + 0.5 * below["D_vortex"]
+        stages.append({
+            "cyclone": f"C{s}",
+            "cyclones_per_string": c["per_string"],
+            "cyclone_volume": c["volume"],
+            "cyclone_wall_area": c["wet_area"],
+            "cyclone_height": c["height"],
+            "riser_volume": r["volume"],
+            "riser_wall_area": r["wall_area"],
+            "riser_height": h,
+        })
+
+    c5 = cyclone(g, "C5")
+    gp = gooseneck_plant(g)
+    n5 = strings * c5["per_string"]
+
+    return {
+        "kiln": {"length": k["L"], "diameter": k["D"]},
+        "transition": {"length": k["transition_L"]},
+        "motion": {"inclination_pct": k["slope"]},
+        "calciner": {
+            "length": cal["H"],
+            "diameter": cal["D"],
+            "zone_segments": [
+                {"name": "vessel", "volume": cal["vessel_volume"],
+                 "wall_area": cal["vessel_wall_area"], "fuel": True},
+                {"name": "gooseneck", "volume": gp["volume"], "wall_area": gp["wall_area"]},
+                {"name": "C5", "volume": n5 * c5["volume"], "wall_area": n5 * c5["wet_area"]},
+            ],
+        },
+        "preheater": {"strings": strings, "stages": stages},
+        "cooler": {"length": coo["length"], "width": coo["width"],
+                   "casing_height": coo["casing_height"]},
+    }
+
+
+def apply_to_config(cfg, g=None):
+    """Put the twin's geometry into a loaded config, in place. A
+    geometry key already written in the config is an error: the
+    single source would have two values."""
+    for section, keys in TWIN_KEYS.items():
+        for key in keys:
+            if key in (cfg.get(section) or {}):
+                raise ValueError(
+                    f"configs: {section}.{key} is geometry; it comes from "
+                    "geometry/plant_geometry.yaml and must not be written in the config"
+                )
+    for section, values in twin_sections(g).items():
+        if cfg.get(section) is None:
+            cfg[section] = {}
+        cfg[section].update(values)
+    return cfg
+
+
+def load_config(path):
+    """A twin config file with the plant's geometry put in."""
+    with open(path, encoding="utf-8") as handle:
+        cfg = yaml.safe_load(handle)
+    return apply_to_config(cfg)

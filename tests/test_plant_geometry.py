@@ -219,3 +219,29 @@ class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
         self.assertLess(L["z_c5_inlet"], L["z_gooseneck_top"])
         self.assertGreater(gp["leg_length"], 0.0)
         self.assertGreater(gp["volume"], 0.0)
+
+
+class TheTwinReadsTheSourceTest(unittest.TestCase):
+    """Step 3: the twin's geometry comes from the source only."""
+
+    def test_the_config_writes_no_geometry(self):
+        import yaml
+
+        with open(REPO_ROOT / "configs" / "twin_cfg.yaml", encoding="utf-8") as handle:
+            raw = yaml.safe_load(handle)
+        for section, keys in pg.TWIN_KEYS.items():
+            for key in keys:
+                with self.subTest(key=f"{section}.{key}"):
+                    self.assertNotIn(key, raw.get(section) or {})
+
+    def test_a_second_value_is_refused(self):
+        with self.assertRaises(ValueError):
+            pg.apply_to_config({"kiln": {"diameter": 4.2}})
+
+    def test_the_loader_puts_it_in(self):
+        import main
+
+        cfg = main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
+        self.assertEqual(cfg["kiln"]["diameter"], pg.kiln(pg.load())["D"])
+        self.assertEqual(len(cfg["preheater"]["stages"]), 4)
+        self.assertEqual([z["name"] for z in cfg["calciner"]["zone_segments"]], ["vessel", "gooseneck", "C5"])

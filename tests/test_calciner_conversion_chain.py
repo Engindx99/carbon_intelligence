@@ -112,7 +112,11 @@ from physics.physics import residence_time
 from tests.twin_harness import REPO_ROOT
 
 
-FIXTURE = REPO_ROOT / "tests" / "data" / "twin_state_reference.json"
+# The twin's state when this diagnosis was made, frozen (commit
+# 92c79e0): the plant has moved on since (C5 to the calciner's outlet,
+# the calciner zone through the gooseneck, the geometry's one source),
+# so the live reference no longer holds the state the links describe.
+FIXTURE = REPO_ROOT / "tests" / "data" / "twin_state_reference_92c79e0.json"
 
 
 def _snapshot():
@@ -153,7 +157,11 @@ def _suspension_ntu(calciner, snapshot, cp_s):
 
 
 def _calciner():
+    """The calciner as the fixture's state had it: the bare 6.74 m x
+    30 m bore, no gooseneck or C5 in the zone."""
     cfg = main.load_cfg(REPO_ROOT / "configs" / "twin_cfg.yaml")
+    cfg["calciner"] = dict(cfg["calciner"], diameter=6.74)
+    cfg["calciner"].pop("zone_segments")
     return main.Calciner(
         N=cfg["plant"]["N"],
         L=cfg["calciner"]["length"],
@@ -386,9 +394,13 @@ class Link2TheContactAreaIsWrongAndItDoesNotMatterTest(unittest.TestCase):
         zone fixed this; the calciner did not."""
 
         c = self.calciner
+        # per cell since the zone carries its segments' walls; on the
+        # bare bore every cell's is the same
+        a_gw = float(np.mean(c.a_gw))
+        self.assertAlmostEqual(float(np.ptp(c.a_gw)), 0.0, places=12)
 
-        self.assertGreater(c.a_ws + c.a_gw, 4.0 / c.D)
-        self.assertAlmostEqual(c.a_ws + c.a_gw, 0.9407, delta=0.001)
+        self.assertGreater(c.a_ws + a_gw, 4.0 / c.D)
+        self.assertAlmostEqual(c.a_ws + a_gw, 0.9407, delta=0.001)
         self.assertAlmostEqual(4.0 / c.D, 0.59347, places=5)
 
 

@@ -59,6 +59,7 @@ from visualization.zone_profiles import (
     plot_global_temperature_profile,
 )
 from visualization.mass_flow_profiles import plot_mass_flow_profiles
+from geometry import plant_geometry
 
 import numpy as np
 import yaml
@@ -66,8 +67,9 @@ import yaml
 
 
 def load_cfg(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    """The twin config with the plant's geometry put in from its one
+    source, geometry/plant_geometry.yaml (plant_geometry.TWIN_KEYS)."""
+    return plant_geometry.load_config(path)
 
 
 class Twin:

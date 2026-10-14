@@ -44,6 +44,7 @@ import math
 import unittest
 
 import main
+from geometry import plant_geometry
 
 
 class TheTubeHasOneLengthTest(unittest.TestCase):
@@ -143,8 +144,10 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
         + cyclone volumes and the cooler a grate box, neither with
         a bore at all (geometry/fluid_volumes.md)."""
 
+        g = plant_geometry.load()
         self.assertAlmostEqual(
-            self._zone(main.Calciner, "calciner").D, 6.74
+            self._zone(main.Calciner, "calciner").D,
+            plant_geometry.v(g["calciner"]["D"]),
         )
 
         preheater = main.Preheater(
@@ -154,13 +157,21 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
         )
 
         self.assertFalse(hasattr(preheater, "D"))
-        self.assertAlmostEqual(preheater.V_total, 3640.87, delta=0.01)  # C1-C4
+        ph = plant_geometry.twin_sections(g)["preheater"]
+        V = ph["strings"] * sum(
+            st["cyclones_per_string"] * st["cyclone_volume"]
+            + st["riser_volume"]
+            for st in ph["stages"]
+        )
+        self.assertAlmostEqual(preheater.V_total, V, places=6)  # C1-C4
 
         cooler = self._zone(main.Cooler, "cooler")
 
         self.assertFalse(hasattr(cooler, "D"))
-        self.assertAlmostEqual(cooler.width, 4.0)
-        self.assertAlmostEqual(cooler.casing_height, 3.0)
+        self.assertAlmostEqual(cooler.width, plant_geometry.v(g["cooler"]["width"]))
+        self.assertAlmostEqual(
+            cooler.casing_height, plant_geometry.v(g["cooler"]["casing_height"])
+        )
 
     def test_changing_the_kiln_bore_moves_only_the_kiln(self):
 
@@ -179,7 +190,9 @@ class TheBoreBelongsToTheRotatingTubeTest(unittest.TestCase):
 
         self.assertAlmostEqual(burning.D, 4.0)
         self.assertAlmostEqual(transition.D, 4.0)
-        self.assertAlmostEqual(calciner.D, 6.74)
+        self.assertAlmostEqual(
+            calciner.D, plant_geometry.v(plant_geometry.load()["calciner"]["D"])
+        )
 
     def test_the_cross_section_follows_the_configured_bore(self):
         """Not just the attribute -- the geometry built from it."""

@@ -1,5 +1,4 @@
 import numpy as np
-import yaml
 
 from physics.shell import wall_stack
 from physics.physics import ZONE_HT_CONFIG
@@ -21,8 +20,10 @@ from . import heat_transfer
 
 
 def load_cfg(path):
-    with open(path, "r", encoding="utf-8") as f:
-        return yaml.safe_load(f)
+    # the config with the plant's geometry put in (one source)
+    from geometry import plant_geometry
+
+    return plant_geometry.load_config(path)
 
 
 class Cooler:
@@ -61,8 +62,9 @@ class Cooler:
         # flow makes it, h = m_dot / (rho_bulk w v) (bed_depth).
         cooler_cfg = (cfg or {}).get("cooler", {})
 
-        self.width = float(cooler_cfg.get("width", 4.0))
-        self.casing_height = float(cooler_cfg.get("casing_height", 3.0))
+        # geometry/plant_geometry.yaml
+        self.width = float(cooler_cfg["width"])
+        self.casing_height = float(cooler_cfg["casing_height"])
         self.grate_speed = float(cooler_cfg.get("grate_speed_m_s", 0.01854))
 
         self.epsilon_bed = float(cooler_cfg.get("bed_porosity", 0.4))
