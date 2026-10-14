@@ -43,7 +43,7 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 
 Kalsinatörden çıkan gaz (iki hat, 2 × 56 kg/s, ~1163 K): gövdede 10.0 m/s, kalma süresi ~3.0 s; boyunda ve kollarda 18.6 m/s.
 
-Fidaros ve diğ. 2007 farini **iki** Ø0.6 m borudan, yatayla 60° eğimle verir; kömürü iki Ø0.2 m borudan, 30° eğimle. Burada her boru bir hattın C4 farinini taşır. Farin boruları 5. adımda kuruldu, yakıt portu 7. adımda kurulacak.
+Fidaros ve diğ. 2007 farini **iki** Ø0.6 m borudan, yatayla 60° eğimle verir; kömürü iki Ø0.2 m borudan, 30° eğimle. Burada her boru bir hattın C4 farinini taşır. Farin boruları 5. adımda, yakıt boruları 7. adımda kurulur.
 
 ## CFD Geometry
 
@@ -104,6 +104,84 @@ Yapım adımları:
 8. sınır yüzlerinin boyanması ve dışa aktarma → `geometry/output/2500/calciner.*`
 
 `calciner_build.log` her çalıştırmada yazılır; `tests/test_plant_geometry.py` ölçüleri, adım hacimlerini ve sınır yüzü alanlarını oradan `plant_geometry.py` ile karşılaştırır.
+
+## Gaz-yalnız CFD ve farin kalma süresi (14 Ekim 2026)
+
+İlk koşu **tepkimesiz**dir (kullanıcı kararı): domene yalnız iki gaz girer. Yakıtın yanması ve kalsinasyonun CO₂'i yoktur; bunun etkisi sonuçta ayrıca düzeltilir.
+
+**Mesh:** Ansys Meshing tet. Named selection'ları ve boyutları `tools/calciner_named_selections.py`'nin ürettiği Mechanical betiği koyar: yüzleri merkez ve alanlarından bulur, çünkü Workbench STEP'in renklerini düşürür.
+- Boyutlar: genel 220 mm, yakıt boruları 40 mm, farin boruları 80 mm.
+- Inflation yok. Denendi: hücre sayısını Student düğüm sınırına taşıdı ve çarpıklığı 0.98'e çıkardı.
+- 797 952 tet → **159 973 poly hücre**, 894 661 düğüm. `improve-quality` sonrası en küçük orthogonal quality **0.199**.
+- En kötü hücreler boynun tepesinde (x ±2.46, z 39.27), kol disklerinin boyna teğet olduğu yerde. Gerekirse kökten çözümü tersiyer kanaldaki gibi 5 cm'lik bir paydır.
+- Fluent'te ölçülen hacim 1884.73 m³ (SolidWorks 1886.92). Sınır yüzlerinin alanları ve merkezleri kaynaktakilerle tutar.
+
+**Kurulum:**
+- Türbülans: SST k-ω + eğrilik düzeltmesi. Enerji açık.
+- Gaz: tür taşınımı (N₂, O₂, H₂O, CO₂; tepkime kapalı). CO₂ karışmanın izleyicisidir: fırın gazı payı = Y_CO₂ / 0.1914.
+- Özellikler: incompressible-ideal-gas; cp karışım kuralıyla (NASA polinomları); μ 4.6·10⁻⁵ kg/(m·s) ve k 0.076 W/(m·K), sabit.
+- Yerçekimi −z.
+- Girişler `plant_geometry.calciner_boundaries`'ten:
+  - fırın gazı 61.44 kg/s, 1323.15 K;
+  - tersiyer hava 54.925 kg/s, 1073.15 K, hava bileşimi;
+  - ikisinde de %5 türbülans yoğunluğu ve yüzün kendi hidrolik çapı.
+- Farin ve yakıt boruları adyabatik duvar.
+- Çözücü: steady Coupled, PRESTO!, ikinci derece. ~1000 iterasyonda salınmadan oturdu.
+
+**Çıkışlar eşit akışlı (kullanıcı kararı, 14 Ekim 2026).**
+- İki çıkış da 0 Pa iken teğetsel tersiyer havanın girdabı gazı **%56 / %44** böldü.
+- Bu bir sınır koşulu yapaylığıdır. Tesiste her kolun arkasında C5–C1 ve fan vardır; hat başına birkaç kPa'lık, akışın karesiyle artan bir direnç. Bu direnç, kalsinatörün içindeki birkaç on Pa'lık farkların yaratacağı dengesizliği ortadan kaldırır.
+- Bu yüzden iki çıkışa da hedef kütle akışı verildi: her birine toplamın yarısı, 58.18 kg/s.
+
+| Büyüklük | Değer |
+|---|---|
+| Bölünmeyi tutan basınç farkı (çıkış 1 − çıkış 2) | +23.7 − (−22.0) = **45.7 Pa** |
+| Toplam basınç kaybı (girişler → çıkışlar, kütle ağırlıklı) | **181 Pa** |
+| Fırın gazı girişi, statik, çıkışlara göre | −15.6 Pa |
+| Tersiyer hava girişi, statik, çıkışlara göre | +199.8 Pa |
+| Çıkış sıcaklıkları (1 / 2) | 1197 / 1222 K; karışım 1209 K |
+| Fırın gazı payı (1 / 2); tam karışmış 0.528 | 0.481 / 0.575 |
+| v_max | 52 m/s |
+
+- 45.7 Pa, hatların direnci yanında küçüktür; eşit bölünme varsayımı tutarlıdır.
+- Basınç enerjisinin çoğunu tersiyer hava jeti getirir (kanalda 35.9 m/s, dinamik basınç ~211 Pa). Jet gövdeyi pompalar, bu yüzden fırın gazı girişi çıkıştan aşağıdadır.
+- Karışma çıkışlarda tamamlanmaz. Hat 1 (+x, tersiyer kanalın ucu tarafı) daha çok tersiyer hava alır ve 24 K daha soğuktur. Yanmasız bir sonuçtur: gerçekte yakıt bu havada yanar.
+
+**Farin kalma süresi: tek yönlü DPM, donmuş gaz alanında.**
+- Enjeksiyon: her farin borusunun ağzında, duvarın 0.35 m içinde, boru kesitinde 24 noktalık bir disk. Hız borunun ekseni boyunca, aşağı ve içe doğru 3.5 m/s.
+  - Ağızdan enjekte edilir, borunun uç yüzünden değil: C1'de uç yüzden enjekte edilen farin ölü borunun içinde asılı kalmıştı.
+- Tane boyu: C1'in 7 boyu sınıfı (3.8–172 µm, kütle payları 10/10/20/20/20/15/5 %). Parçacık yoğunluğu 2700 kg/m³.
+- Türbülanslı saçılma: DRW, 10 deneme. Duvardan yansıma 0.8 / 0.8; boru duvarları 1.0, çünkü Fluent bu yüzlerde katsayı sormuyor.
+- Toplam 3360 parsel. Gövdedeki kalma süresi, parselin boyna (z = 34 m'deki düzlem) ilk varışıdır.
+- **Bütün parseller iki çıkıştan çıkar; boğazdan fırına düşen farin yoktur.**
+
+| Tane boyu | Kütle payı | Ortalama [s] | %10 | Medyan | %90 | En uzun | Hat 1'e giden pay |
+|---|---|---|---|---|---|---|---|
+| 4–30 µm | %60 | 2.25–2.34 | 1.4 | 2.3–2.5 | 2.8–3.0 | 3.4 | 0.51–0.58 |
+| 53 µm | %20 | 2.24 | 1.5 | 2.10 | 3.13 | 3.4 | 0.42 |
+| 94 µm | %15 | 2.56 | 2.3 | 2.55 | 2.81 | 2.9 | 0.23 |
+| 172 µm | %5 | 6.99 | 3.0 | 4.83 | 14.7 | 36 | 0.77 |
+| **Hepsi, kütle ağırlıklı** | | **2.55** | 1.48 | 2.43 | 3.03 | | 0.478 |
+
+- 94 µm'ye kadar farin gazla gider. Ortalamaları gazın düz akış süresine eşittir: 1009.7 m³ / 392.9 m³/s = 2.57 s. 4 µm'lik sınıf gazın kendi kalma süresi dağılımını verir: çekirdekteki hızlı akış yüzünden %10'u 1.4 s'de geçer.
+- 172 µm'lik iri sınıf gövdede döner: ortalama 7 s, en uzun 36 s.
+- Girdap iri taneleri hatlara farklı dağıtır. Toplamda %47.8 / %52.2.
+- Kaz boynu dahil, çıkışlara kadar ortalama 5.1 s; boyun ~2.6 s ekler.
+
+**Twin'e sonuç:**
+- Twin farinin gövdedeki geçişini düz akışla 2.03 s verir.
+- CFD'de yakıttan ve kalsinasyondan gelen CO₂ yoktur; bu gaz hacmini ~%20–25 eksik bırakır. Düzeltilince 2.55 s ~2.0–2.1 s olur.
+- Twin'in taşınım modeli (`physics.suspension_transport`) bu yüzden geçerlidir; değişiklik gerekmez. İki değer de 2–5 s bandındadır.
+- Kalsinatörün gaz-yalnız basınç kaybı 181 Pa'dır (twin'de henüz kullanılmıyor).
+
+Dosyalar (repo dışında, `C:\Users\engin\calciner`):
+- `calciner.msh`, `calciner.wbpj`, `calciner_poly.cas.h5`
+- `calc_setup.cas.h5`, `calc_settings.set`
+- `calc_steady.*` ve `steady.out`: iki çıkış 0 Pa
+- `calc_split.*` ve `split.out`: eşit akış
+- `calc_dpm.cas.h5`: DPM, `neckp` düzlemi
+- `make_inj.py` ve `d004…d172.inj`: enjeksiyonlar, `plant_geometry`'den
+- `rt_stats.py`, `gas_outlet_1/2.dpm`, `neckp.dpm`, `dpm_summary.txt`
 
 ## Boundary Faces
 
