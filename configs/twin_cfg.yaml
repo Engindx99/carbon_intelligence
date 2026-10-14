@@ -100,7 +100,16 @@ calciner:
   # geometry/preheater/cyclone_C5.md. Its escaping dust rises into C4
   # and comes back through C4's underflow
   # (pyroprocess/precalciner/c5_cyclone.py).
-  c5_separation_efficiency: 0.90
+  # The loaded MM lower bound (0.895-0.900 at an even split), less what
+  # the calciner's uneven meal split costs. The CFD at the twin's flows
+  # (one-way DPM, 15 Oct 2026, geometry/calciner/calciner.md) sends 35 %
+  # of the meal, mostly the fines, to string 1 and 65 %, nearly all the
+  # coarse, to string 2. That holds whichever pipe the meal came from.
+  # String 1's C5 then runs at c0 0.41 on fine meal (eta 0.81-0.82),
+  # string 2's at c0 0.77 on coarse (0.94): -0.0085 weighted
+  # (C:/Users/engin/c4/mm/c5_split.py; cyclone_C5.md). The twin still
+  # solves one string, so only this mean reaches it.
+  c5_separation_efficiency: 0.89
 
   # THE ZONE'S FLUID VOLUME (user decision, 13 Oct 2026): the calciner
   # zone runs from the vessel through the gooseneck to the C5s, gas and

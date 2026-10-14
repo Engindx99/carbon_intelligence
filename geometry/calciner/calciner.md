@@ -244,6 +244,29 @@ Kullanıcı kararı: ikinci koşu twin'in referans durumunun akışlarıyla yap�
 - **Farinin süresinde twin %17 uzundur.** Neden: twin farini gövdenin dibinden verir, gerçek besleme ise tersiyer kanalın 1 m üstündedir (z 10.8 m). Farin gövdenin alt ~%27'sini görmez.
 - **İki hattın farin yükü eşit değildir.** Girdap iri taneleri neredeyse tamamen hat 2'ye (−x) taşır. Toplamda farinin **%35'i hat 1'e, %65'i hat 2'ye** gider. Twin iki özdeş hat varsayar (her biri yarı yük). Bu, C5'lerin yükünü ve hatların ısı dengesini etkiler. Bu sonuç tek yönlü bir hesaptır: yüklemenin gazı etkilemesi yok.
 
+**Bölünme borudan bağımsız** (boru başına DPM, 15 Ekim 2026; her boyu sınıfı her boru için ayrı enjeksiyon, `twin\pipes\pipe_matrix.py`). Değerler, her borunun farininin hat 1'e giden payı:
+
+| Tane boyu | +x borusu | −x borusu |
+|---|---|---|
+| 4–8 µm | 0.46–0.50 | 0.40–0.42 |
+| 16 µm | 0.52 | 0.51 |
+| 30 µm | 0.41 | 0.39 |
+| 53 µm | 0.29 | 0.43 |
+| 94 µm | 0.03 | 0.03 |
+| 172 µm | 0.00 | 0.00 |
+| **Toplam** | **0.345** | **0.350** |
+
+- Gövde iki borunun farinini tamamen karıştırır; ardından girdap iri taneleri −x koluna gönderir. Dengesizlik besleme düzeninden değil, girdap ile Y kaz boynunun yöneliminden gelir. C4 farin borularındaki bir bölücü klape onu düzeltemez.
+- Hat 2'nin C4'ünün fazladan getirdiği farin de aynı oranla dağılır. Bu yüzden döngüde büyüme olmaz.
+- **Twin'e etkisi:** iki C5'in yüklemesi ve tane boyu dağılımı farklıdır. Ağırlıklı η 0.0085 düşer; twin'de C5 0.90 → 0.89 ([cyclone_C5.md](../preheater/cyclone_C5.md)).
+
+**Literatür:** çift hatlı, tek kalsinatörlü (Y kaz boynu) tesislerde kalsinatör çıkışındaki farin dengesizliğini ölçen bir kaynak bulunamadı (15 Ekim 2026). Bulunanlar dolaylı:
+- hat dengesi için gaz tarafında bölücü damperler ([UGESL](https://ugesl.com/products/industry/splitter-damper-for-cement-plants));
+- dengesizliği yakalamak için hatlar arasında sıcaklık ve fark basıncı izlemesi ([Endress+Hauser](https://www.us.endress.com/en/industry-expertise/mining-minerals-metals/preheater-optimization));
+- farinin kalsinatör seviyeleri arasında bölünmesi ([FLSmidth](https://www.flsmidth-cement.com/products/flsmidth-low-nox-calciner)).
+
+Tesis verisi bulunursa, iki C5'in alt akış sıcaklıkları ya da çıkış gazı sıcaklıkları bu bölünmeyi sınamanın yolu olur.
+
 Dosyalar (repo dışında, `C:\Users\engin\calciner`):
 - `calciner.msh`, `calciner.wbpj`, `calciner_poly.cas.h5`
 - `calc_setup.cas.h5`, `calc_settings.set`

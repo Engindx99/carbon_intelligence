@@ -79,6 +79,32 @@ Hesap tabanı, C4'teki gibi literatürden gelir:
 
 C5'ten kaçan toz, C2–C4'teki gibi gazla bir üst kademeye (C4) gider.
 
+## İki hattın C5'leri, eşit olmayan farin bölünmesinde (15 Ekim 2026)
+
+Kalsinatör CFD'si twin akışlarıyla çözüldü (tek yönlü DPM, [calciner.md](../calciner/calciner.md)). Sonuç: farinin %35'i hat 1'e, %65'i hat 2'ye gider. İri taneler neredeyse tamamen hat 2'ye gider; bölünme, farinin hangi borudan girdiğine bağlı değildir.
+
+Sonuç olarak her C5 yalnız farklı miktarda değil, farklı inceliğe sahip farin alır. MM, her hattın kendi dağılımıyla yeniden hesaplandı:
+- Dağılım DPM'in 7 sınıfının hatlara giden paylarından kurulur.
+- Sınır yükleme c₀L ∝ x₅₀/x_med, iç girdap verimi de bu dağılım üzerinden hesaplanır.
+- Katı döngüsü twin'in bugünkü η'larıyla kurulur: C1 0.97, C2–C4 0.96.
+- Betik: `C:\Users\engin\c4\mm\c5_split.py` (repo dışı).
+
+| | Hat 1 | Hat 2 | Ağırlıklı |
+|---|---|---|---|
+| Farin payı | 0.348 | 0.652 | |
+| c₀ | 0.41 | 0.77 | |
+| x_med | 20.0 µm | 39.1 µm | 30.0 µm (eşit) |
+| x₅₀ | 47–49 µm | 51–54 µm | |
+| Yüklü η (alt uç) | **0.81–0.82** | **0.94** | |
+| Ağırlıklı η, 7 sınıf | | | 0.896–0.900 (eşit bölünmede 0.904–0.909) |
+
+- **Ayrık dağılımın kayması:** 7 sınıflı ayrık dağılım, eşit bölünmede sürekli Rosin–Rammler'den 0.009 yüksek çıkar. Bu yüzden bölünmenin etkisi aynı dağılım içinde fark olarak alınır: **−0.0085**.
+- **Kontrol:** eşit bölünmede sürekli dağılımla bugünkü twin değeri geri gelir (0.895–0.900, iki α modu).
+- **Neden hat 1 bu kadar düşük:** ince ve az yüklü farin sınır yüklemeyi zayıflatır; c₀L/c₀ 0.18'e çıkar.
+- **Twin değeri** (kullanıcı kararı, 15 Ekim 2026): **η 0.89**. Seçim kuralı aynı: yüklü MM'nin alt ucu, bölünme farkı uygulanmış.
+  - Twin tek hat çözdüğü için iki C5'in farkı (ve hat 1'in C4'üne çıkan fazladan toz) twin'de yalnız bu ortalamayla görünür.
+  - Bölünme tek yönlü DPM'den gelir. Yüksek yüklemede farin gazı etkiler, bu yüzden gerçek ayrışma daha az olabilir.
+
 ## Derived Properties
 
 Gövde + koni hacmi ve ıslak alan Geometrik Ölçüler'deki tabloda (C4'ün CFD gövdesi × k³ ve × k²); iki hattın C5'leri bunun iki katı.
