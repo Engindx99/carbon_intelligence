@@ -293,7 +293,14 @@ Geometri S 3.90 ile aynı, yalnız çıkış borusu çatının üstünde 7.871 m
 **Twin'e giden değerler (S 3.90 bölümündekilerin yerine yalnız ΔP):**
 - **Gaz-yalnız ΔP:** Eu 11.54, yani 56 kg/s ve 1033 K'de 522.8 Pa.
 - **Yüklü siklon ΔP:** aynı MM oranıyla ~395 Pa (373–421).
-- **η %93** değişmedi. C5 C4'ün geometrik benzeri olduğu için Eu 11.54 C5'e de geçer.
+- C5 C4'ün geometrik benzeri olduğu için Eu 11.54 C5'e de geçer.
+
+**η: sınır yükleme + DPM iç girdabı (kullanıcı kararı, 14 Ekim 2026):**
+- %93, iç girdabın hiç toz tutmadığı varsayılan alt sınırdı. Sınır yüklemenin bıraktığı katı, c₀L/c₀ = 0.065–0.070 / 0.95 = 0.068–0.074, neredeyse seyreltiktir. Tek yönlü temiz gaz DPM'i (S 3.90) tam bu durumu çözer.
+- DPM'in beslemeyle ağırlıklı sonucu: %44.5 kaçan, %41.3 toz çıkışına inen, %14.2 domende kalan. Domende kalanlar oranla paylaşılınca iç girdap verimi 41.3 / 85.8 = **%48** (sınırlar %41 ve %56).
+- η = 1 − (c₀L/c₀)(1 − 0.48) = **0.962–0.965 → twin'e 0.96** (sınırlar 0.957–0.970). MM'nin kendi iç girdap verimiyle (%40) bulunan üst değer %95.2'ydi; DPM onu destekliyor.
+- Literatürdeki ara kademe bandı (%80–90) bunun altında; fark not edildi. DPM 1.25·D_x domeninde yapıldı; çıkış borusu ayırma bölgesinin dışında olduğu için 1.70·D_x'e geçer.
+- C5 (0.90) şimdilik değişmedi (kullanıcı kararı).
 
 Dosyalar (repo dışında, `C:\Users\engin\c4_rise170`):
 - `c4.msh`, `c4_settings.set`, `run.jou`, `restart.jou`

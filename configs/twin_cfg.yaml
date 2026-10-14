@@ -126,7 +126,12 @@ preheater:
   # its own 56 kg/s: geometry/preheater/cyclone_C4.md. Their dust rises
   # with the gas into the stage above: an internal loop that moves heat,
   # not plant mass. C4's underflow is the calciner's meal.
-  c2_c4_separation_efficiency: 0.93
+  # Not the lower bound (0.93) but limit loading plus the inner vortex
+  # from the S 3.90 clean-gas DPM (user decision, 14 Oct 2026): what
+  # limit loading leaves, c0L/c0 = 0.068-0.074, is near-dilute, and the
+  # DPM caught 48 % of it (in-domain parcels shared out as the rest):
+  # 1 - 0.071 x 0.52 = 0.96.
+  c2_c4_separation_efficiency: 0.96
   # C5 is the calciner's outlet cyclone, not a preheater stage:
   # `calciner.c5_separation_efficiency`.
   # THE STAGE FLUID VOLUMES (geometry/fluid_volumes.md; user decisions,

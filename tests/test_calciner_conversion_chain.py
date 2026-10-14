@@ -91,7 +91,7 @@ riser was then committed (a3be7ec), so the fixture is now the RISER
 state and the rotary one can no longer be rebuilt. Its numbers are
 kept as recorded constants (ROTARY below); everything read from the
 fixture is the committed riser. The fixture also carries the dust
-circulation (C1 eta 0.97, C2-C4 0.93, C5 0.90), and since the move
+circulation (C1 eta 0.97, C2-C4 0.96, C5 0.90), and since the move
 to 5000 t/d (meal 89.70 kg/s, calciner 6.74 x 30 m) the riser
 values below are that plant's.
 """
