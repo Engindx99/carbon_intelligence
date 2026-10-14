@@ -150,7 +150,6 @@ class EveryZoneComputesOverItsVolumeTest(unittest.TestCase):
             with self.subTest(stage=i + 1):
                 self.assertAlmostEqual(twin, doc, delta=RTOL * doc)
 
-    @unittest.expectedFailure  # plan step 3
     def test_the_calciner_and_gooseneck(self):
         calciner = main.Calciner(
             N=self.N, L=self.cfg["calciner"]["length"], cfg=self.cfg

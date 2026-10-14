@@ -233,9 +233,12 @@ def thermal_step(
 
         return h * a, a
 
+    # Per cell: a_gw follows each cell's own wall area
+    # (Calciner._resolve_zone_segments).
     K_gw = (
         hv_gw
-        * a_gw
+        * np.asarray(a_gw, dtype=float)
+        * np.ones(N)
     )
 
     K_ws = (
@@ -255,6 +258,9 @@ def thermal_step(
         calciner.shell,
         calciner.T_amb,
     )
+    # Each cell's own wall area (Calciner.wall_scale_cells):
+    # the shell was resolved on one equivalent bore cell.
+    R_total = np.asarray(R_total, dtype=float) / calciner.wall_scale_cells
 
     # ======================================================
     # REACTION DISTRIBUTION
@@ -477,6 +483,9 @@ def thermal_step(
             calciner.T_amb,
             T_shell_guess=T_shell,
         )
+        # Each cell's own wall area (Calciner.wall_scale_cells):
+        # the shell was resolved on one equivalent bore cell.
+        R_total = np.asarray(R_total, dtype=float) / calciner.wall_scale_cells
 
         # ==================================================
         # RADIATION
@@ -625,7 +634,7 @@ def thermal_step(
                 h_const_s_cells[i],
                 V_cell,
                 K_gs_cells[i],
-                K_gw,
+                K_gw[i],
                 radiation_gas_sink,
                 Tg_in,
                 Dg_face[p_gas],
@@ -689,7 +698,7 @@ def thermal_step(
             # ==================================================
 
             A[row, Tg_i] += (
-                V_cell * K_gw
+                V_cell * K_gw[i]
             )
 
             A[row, Ts_i] += (
@@ -697,7 +706,7 @@ def thermal_step(
             )
 
             A[row, Tw_i] += (
-                -V_cell * K_gw
+                -V_cell * K_gw[i]
                 -V_cell * K_ws
                 -1.0 / R_total[i]
             )
@@ -839,6 +848,9 @@ def thermal_step(
         calciner.T_amb,
         T_shell_guess=T_shell,
     )
+    # Each cell's own wall area (Calciner.wall_scale_cells):
+    # the shell was resolved on one equivalent bore cell.
+    R_total = np.asarray(R_total, dtype=float) / calciner.wall_scale_cells
 
     # Faz 6 shell state, published rather than reconstructed by
     # whoever reads it. The calciner runs an OUTER coupling loop

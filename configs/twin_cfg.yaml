@@ -94,10 +94,38 @@ calciner:
   # enters the calciner, the calciner gas carries the calcined meal
   # up the gooseneck into the two C5s, and C5 drops it into the kiln
   # inlet chamber. One per string, the CFD C4 x 6.50/6.30:
-  # geometry/preheater/cyclone_C5.md. NOT READ YET: C5 is an ideal
-  # separator for now (all meal to the kiln, adiabatic); its escaping
-  # dust (into C4) and its volume and wall come in the next steps.
+  # geometry/preheater/cyclone_C5.md. Its escaping dust rises into C4
+  # and comes back through C4's underflow
+  # (pyroprocess/precalciner/c5_cyclone.py).
   c5_separation_efficiency: 0.90
+
+  # THE ZONE'S FLUID VOLUME (user decision, 13 Oct 2026: exactly
+  # these volumes). The calciner zone runs from the vessel through
+  # the gooseneck to the C5 pair, gas and meal co-current all the
+  # way, so it is solved as ONE duct of the vessel's bore whose
+  # cells, equal in volume, carry these segments in gas order. Its
+  # equivalent length is the total volume over the bore's section
+  # (69.1 m); `length` above stays the vessel's height, the external
+  # film's characteristic length. Each cell takes the wall area of
+  # the segments it overlaps; the fuel burns in the vessel only.
+  #   vessel     geometry/calciner/calciner.md: cone + cylinder
+  #              1009.711 m3 (the throat, 24.085, is the kiln inlet's
+  #              side); wall = cylinder pi 6.74 x 26.129 + cone
+  #              frustum (R 3.37, r 1.565, h 3.871) + the roof ring
+  #              outside the neck = 553.26 + 66.22 + 16.43 m2
+  #   gooseneck  geometry/preheater/gooseneck.md: 833.768 m3; wall
+  #              (not in the doc, derived from its sizes) = neck
+  #              pi 4.95 x 6.187 + two 180 deg bends (Pappus,
+  #              2 pi 1.75 x pi 5.25) + two descents pi 3.5 x 21.187
+  #              = 96.21 + 2 x 181.35 + 2 x 232.96 m2; the bends'
+  #              shared 10.346 m3 is out of the volume, its wall is
+  #              not out of the area (no closed form; small)
+  #   C5         geometry/preheater/cyclone_C5.md: 311.0 m3 and
+  #              240.7 m2 wetted area each, one per string, two
+  zone_segments:
+    - {name: vessel, volume: 1009.711, wall_area: 635.92, fuel: true}
+    - {name: gooseneck, volume: 833.768, wall_area: 924.85}
+    - {name: C5, volume: 622.0, wall_area: 481.4}
 
 preheater:
   # m, the zone's extent on the plant's axial coordinate only

@@ -974,7 +974,7 @@ def zone_ntu(twin):
                 "C_solid_kW_K": C_s / 1e3,
                 "NTU_solid": UA / C_s if C_s else float("nan"),
                 "wall_area_identity": (
-                    (float(a_ws) + float(a_gw)) * float(z.D) / 4.0
+                    (float(a_ws) + float(np.mean(a_gw))) * float(z.D) / 4.0
                     if (
                         a_ws is not None
                         and a_gw is not None
@@ -1318,6 +1318,13 @@ def shell_loss_split(twin):
         # cells (the preheater marches sub-volumes of a stage, so
         # its node count is not its stage count).
         area = float(sum(sh.A_outer_cell for sh in shells))
+
+        # The calciner zone's cells each carry their own wall
+        # (vessel, gooseneck, C5) on one equivalent bore shell.
+        scale = getattr(obj, "wall_scale_cells", None)
+
+        if scale is not None and getattr(obj, "stage_shells", None) is None:
+            area = float(shell.A_outer_cell * np.sum(scale))
 
         # Area-specific, referenced to the OUTER face: shell.R_cond
         # is per CELL, and the cells differ in length across zones

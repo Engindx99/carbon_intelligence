@@ -80,6 +80,14 @@ class Calciner:
         # cooler placeholders.
         self.D = float((cfg or {}).get("calciner", {}).get("diameter", 4.2))
 
+        # The vessel's height: the external film's characteristic
+        # length, whatever the zone's equivalent length below.
+        self.L_vessel = self.L
+
+        self._resolve_zone_segments(
+            (cfg or {}).get("calciner", {}).get("zone_segments")
+        )
+
         self.A_cross, self.V_total, self.V_cell = kiln_geometry(
             D=self.D,
             L=self.L,
@@ -105,10 +113,27 @@ class Calciner:
         )
 
         # ================= WALL GEOMETRY =================
+        # Each cell's own wall: the segments' areas it overlaps
+        # (_resolve_zone_segments), or the bore's on a bare
+        # cylinder. a_gw per cell follows.
         self.wall_perimeter = np.pi * self.D
-        self.A_wall = self.wall_perimeter * self.L
-        self.A_wall_cell = self.A_wall / self.N
+        self.A_wall_cell = np.asarray(
+            self.wall_area_cells
+            if self.wall_area_cells is not None
+            else np.full(self.N, self.wall_perimeter * self.L / self.N),
+            dtype=float,
+        )
+        self.A_wall = float(np.sum(self.A_wall_cell))
         self.a_gw = self.A_wall_cell / self.V_cell
+
+        # The shell below is resolved on the bore over one
+        # equivalent cell length; a cell whose real wall is larger
+        # or smaller scales its loss conductance with it. Both the
+        # cylindrical conduction and the external film go as 1/L
+        # at a fixed radius, so this is exact for the bore's radius.
+        self.wall_scale_cells = (
+            self.A_wall_cell / (self.wall_perimeter * self.L / self.N)
+        )
 
         # ================= REFRACTORY / SHELL =================
         #
@@ -124,7 +149,7 @@ class Calciner:
         self.refractory_thickness = self.wall_stack.thickness
 
         self.V_wall = self.A_wall * self.refractory_thickness
-        self.V_wall_cell = self.V_wall / self.N
+        self.V_wall_cell = self.A_wall_cell * self.refractory_thickness
 
         # The calciner is a VERTICAL vessel, so the external film
         # takes its height as the characteristic length. The
@@ -135,7 +160,7 @@ class Calciner:
         self.shell = self.wall_stack.geometry(
             r_inner=0.5 * self.D,
             L_cell=self.L / self.N,
-            L_char=self.L,
+            L_char=self.L_vessel,
         )
 
         # ================= EXTERNAL WALL =================
@@ -315,6 +340,61 @@ class Calciner:
     # ======================================================
     # STATE UPDATE
     # ======================================================
+    def _resolve_zone_segments(self, segments):
+        """
+        The zone as one duct of the vessel's bore through the
+        segments of configs `calciner.zone_segments` (vessel,
+        gooseneck, C5), in gas order. Cells are equal in volume;
+        each takes the wall area of the volume it overlaps in
+        each segment, and the share of its volume that burns
+        fuel. Sets L (equivalent length, total volume over the
+        bore's section), dz, wall_area_cells and fuel_share_cells.
+        Without segments: the bare cylinder of length L.
+        """
+
+        self.zone_segments = segments
+
+        if not segments:
+            self.wall_area_cells = None
+            self.fuel_share_cells = np.ones(self.N)
+            self.segment_volumes = None
+            return
+
+        volumes = np.array([float(s["volume"]) for s in segments])
+        walls = np.array([float(s["wall_area"]) for s in segments])
+        fuel = np.array([bool(s.get("fuel", False)) for s in segments])
+
+        if np.any(volumes <= 0.0) or np.any(walls <= 0.0):
+            raise ValueError(
+                "calciner.zone_segments: every volume and wall_area "
+                "must be > 0"
+            )
+
+        if not np.any(fuel):
+            raise ValueError(
+                "calciner.zone_segments: no segment burns the fuel"
+            )
+
+        self.segment_volumes = volumes
+        V_total = float(np.sum(volumes))
+
+        A_cross = np.pi * self.D**2 / 4.0
+        self.L = V_total / A_cross
+        self.dz = self.L / self.N
+
+        seg_edges = np.concatenate(([0.0], np.cumsum(volumes)))
+        cell_edges = np.linspace(0.0, V_total, self.N + 1)
+
+        # overlap[i, j]: volume of segment j inside cell i [m3]
+        lo = np.maximum(cell_edges[:-1, None], seg_edges[None, :-1])
+        hi = np.minimum(cell_edges[1:, None], seg_edges[None, 1:])
+        overlap = np.clip(hi - lo, 0.0, None)
+
+        self.wall_area_cells = overlap @ (walls / volumes)
+        self.fuel_share_cells = (
+            overlap @ fuel.astype(float)
+        ) / (V_total / self.N)
+
     def apply(self, state):
 
         # C5's split, published for every reader (c5_cyclone).
@@ -481,6 +561,7 @@ class Calciner:
         q_fuel_cells = combustion.axial_heat_distribution(
             self.N,
             Q_calciner,
+            fuel_share=self.fuel_share_cells,
         )
 
         state.Q_petcoke_calciner = float(Q_petcoke_calciner)

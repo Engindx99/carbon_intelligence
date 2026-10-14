@@ -20,9 +20,10 @@ the heat-release profile on injector placement. The axial shape is the
 same fixed, calibrated weight vector the other zones use.
 """
 
+import numpy as np
+
 from physics.physics import combustion_axial_distribution
 from physics.physics import fuel_heat_release
-from physics.physics import resample_axial_weights
 from physics.physics import ZONE_ENERGY_WEIGHTS
 
 
@@ -64,13 +65,32 @@ def fuel_heat_release_for(calciner, state):
 # it, because nothing ever burned here. It rises towards the
 # gas inlet, i.e. the fuel releases its heat low in the
 # vessel where the tertiary air enters.
+#
+# fuel_share[i] is the share of cell i's volume that burns fuel
+# (Calciner._resolve_zone_segments): the vessel, not the
+# gooseneck or C5. The profile is laid over the burning volume
+# alone, by its own coordinate, and each cell weighted by its
+# share; all ones is the old profile over the whole zone.
 # ======================================================
-def axial_heat_distribution(N, Q_calciner):
+def axial_heat_distribution(N, Q_calciner, fuel_share=None):
 
-    weights = resample_axial_weights(
-        ZONE_ENERGY_WEIGHTS["calciner"]["axial"],
-        N,
-    )
+    if fuel_share is None:
+        fuel_share = np.ones(N)
+
+    share = np.asarray(fuel_share, dtype=float)
+
+    if share.shape != (N,) or np.any(share < 0.0) or share.sum() <= 0.0:
+        raise ValueError("fuel_share must be N non-negative shares")
+
+    ref = np.asarray(ZONE_ENERGY_WEIGHTS["calciner"]["axial"], dtype=float)
+    x_ref = (np.arange(ref.size) + 0.5) / ref.size
+
+    # Each cell's burning volume, centred on the burning volume's
+    # own coordinate in [0, 1].
+    x = (np.cumsum(share) - 0.5 * share) / share.sum()
+
+    weights = share * np.interp(x, x_ref, ref)
+    weights = weights / weights.sum()
 
     return combustion_axial_distribution(
         Q_total=Q_calciner,
