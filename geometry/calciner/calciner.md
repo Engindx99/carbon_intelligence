@@ -277,7 +277,7 @@ Adım hacimleri CFD Geometry'deki tabloda (kapalı form; dirseklerin ortak hacmi
 
 Kutu: x ±(iniş + kol yarıçapı), y ±(yakıt borusu ucu), z 0 … dirseklerin tepesi; değerleri makro log'unda.
 
-Ekipman hacmi Geometrik Ölçüler'deki tabloda (2500 kalsinatörü 659.85 m³). Twin'in kalsinatör bölgesi bu gövdeyi, tesisin kaz boynunu ve iki C5'i tek bir kanal olarak çözer (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)).
+Ekipman hacmi Geometrik Ölçüler'deki tabloda (2500 kalsinatörü 659.85 m³). Twin'in kalsinatör bölgesi gövdenin farin girişinden tavana kadar olan kısmını, tesisin kaz boynunu ve iki C5'i tek bir kanal olarak çözer (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)). Farin girişinin altında yalnız fırın gazı ve tersiyer hava karışır; farin de yakıt da yoktur. Bu kısmın duvarı gövde segmentine eklenir. Bu düzenleme 15 Ekim 2026'dan beri böyle (`plant_geometry.calciner_above_feed`; twin akışlarıyla yapılan CFD koşusu, yukarıda).
 
 ## Kaynaklar
 

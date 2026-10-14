@@ -17,7 +17,7 @@ Kademe numaraları twin'in gaz sırasıdır (kademe 1 = C4). Ön ısıtıcı sat
 | Ön ısıtıcı, kademe 2 | R3 + 1 C3 (×2) | 753.06 + 566.49 = **1319.55** |
 | Ön ısıtıcı, kademe 3 | R2 + 1 C2 (×2) | 753.06 + 566.49 = **1319.55** |
 | Ön ısıtıcı, kademe 4 | R1 + 2 C1 (×2) | 1054.35 + 498.16 = **1552.52** |
-| Kalsinatör bölgesi | kalsinatör gövdesi (koni + silindir; yakıt burada) | **1009.71** |
+| Kalsinatör bölgesi | kalsinatör gövdesi, farin girişinden tavana (yakıt burada) | **775.91** |
 | Kalsinatör bölgesi | kaz boynu, C5 girişlerine kadar | **763.20** |
 | Kalsinatör bölgesi | C5 (×2) | **622.17** |
 | Geçiş | fırının arka 30.83 m'si | **557.89** |
@@ -28,7 +28,7 @@ Kademe numaraları twin'in gaz sırasıdır (kademe 1 = C4). Ön ısıtıcı sat
 - **Siklon:** gövde + koni ([cyclone_C1.md](preheater/cyclone_C1.md) … [cyclone_C5.md](preheater/cyclone_C5.md)). C2–C4 C4'ün CFD gövdesiyle, C5 onun × 6.50 / 6.30'u; C1 hatta iki tane.
 - **Riser:** R2–R4 alttaki siklonun CFD çıkış borusudur: çatının üstündeki yükseliş, 90° dirsek ve üstteki siklona yatay bacak, vorteks bulucu çapında. R1, C2'nin çıkış borusu, R1'in Y'ye kadar dik kısmı ve ikiz C1 kolları ([riser_R1.md](preheater/riser_R1.md) … [riser_R4.md](preheater/riser_R4.md); kullanıcı kararı, 14 Ekim 2026). 13–14 Ekim 2026 arasında twin yayınlanmış riser çaplarıyla FLS boylarını kullanıyordu (R1–R4 158–202 m³); onlar bu tesisin değil.
 - **Twin kademesi** = alttaki riser'daki eş akımlı alışveriş + siklon (`pyroprocess/preheater/heat_transfer.py`).
-- **Kalsinatör bölgesi** tek bir kanaldır (`calciner.zone_segments`): gövde (yakıt burada yanar), C5 girişlerine kadar kaz boynu ve iki C5. C5'i riser değil kaz boynu kolu besler. Kalsinatör CFD'si kaz boynunu gövdenin yarı yüksekliğinde keser (833.77 m³); tesisin ve twin'in kaz boynu C5 girişine kadar iner ([gooseneck.md](preheater/gooseneck.md)).
+- **Kalsinatör bölgesi** tek bir kanaldır (`calciner.zone_segments`): gövdenin farin girişinden yukarısı (yakıt burada yanar; alttaki gaz-yalnız kısmın duvarı da buna eklenir), C5 girişlerine kadar kaz boynu ve iki C5. C5'i riser değil kaz boynu kolu besler. Kalsinatör CFD'si kaz boynunu gövdenin yarı yüksekliğinde keser (833.77 m³); tesisin ve twin'in kaz boynu C5 girişine kadar iner ([gooseneck.md](preheater/gooseneck.md)).
 - **Soğutucu:** alışverişler yatak hacminde (w · h · dz), gövde duvarı ızgara kutusunun.
 
 ## Hacmi olmayan ekipman (kaynak yok)

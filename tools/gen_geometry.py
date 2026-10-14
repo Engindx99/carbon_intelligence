@@ -453,7 +453,7 @@ def _fluid_volume_rows(g):
                      f"{riser} + {st['cyclones_per_string']} {st['cyclone']} (×{n})",
                      f"{ris:.2f} + {cyc:.2f} = **{cyc + ris:.2f}**"))
     for seg in t["calciner"]["zone_segments"]:
-        label = {"vessel": "kalsinatör gövdesi (koni + silindir; yakıt burada)",
+        label = {"vessel": "kalsinatör gövdesi, farin girişinden tavana (yakıt burada)",
                  "gooseneck": "kaz boynu, C5 girişlerine kadar",
                  "C5": f"C5 (×{n})"}[seg["name"]]
         rows.append(("Kalsinatör bölgesi", label, f"**{seg['volume']:.2f}**"))

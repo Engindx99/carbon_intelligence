@@ -40,9 +40,10 @@ PREHEATER_WALLS = [
     for c in (4, 3, 2, 1)
 ]
 
-# The calciner zone: vessel, the gooseneck to the C5 inlets, the C5s
+# The calciner zone: the vessel above the meal feed, the gooseneck to the
+# C5 inlets, the C5s
 C5_ALL = STRINGS * CYCLONE[5]["per_string"] * CYCLONE[5]["volume"]
-CALCINER = pg.calciner(G)["vessel_volume"]
+CALCINER = pg.calciner_above_feed(G)["volume"]
 GOOSENECK = pg.gooseneck_plant(G)["volume"]
 
 KILN = pg.kiln(G)

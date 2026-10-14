@@ -264,6 +264,25 @@ def calciner_inlets(g):
     }
 
 
+def calciner_above_feed(g):
+    """The vessel the twin's calciner zone starts in: from the meal's
+    entry (the meal pipe's axis at the wall) to the roof. Below it the
+    kiln gas and the tertiary air only mix; neither meal nor fuel is
+    there (the fuel pipes are at the meal's height), and the CFD
+    (calciner.md, twin-flow run) carries the meal from that height.
+    The wall is the whole vessel's: the gas below the feed loses through
+    its wall too, and the zone has nowhere else to put it."""
+    cal = calciner(g)
+    z = calciner_inlets(g)["meal"]["z_wall"]
+    if not cal["z_cone_top"] <= z < cal["z_roof"]:
+        raise ValueError(f"meal feed at z {z} m is not in the cylinder")
+    return {
+        "z_feed": z,
+        "volume": math.pi * cal["R"] ** 2 * (cal["z_roof"] - z),
+        "wall_area": cal["vessel_wall_area"],
+    }
+
+
 def _gas_stream(c, prefix):
     """A literature gas stream: mass flow, temperature, mole and mass
     fractions, molar mass and density (ideal gas at one atmosphere)."""
@@ -652,8 +671,9 @@ def twin_sections(g=None):
     preheater.stages, in the twin's gas order (Stage 1 = C4 ... C1):
     each the riser below the cyclone plus the cyclone, per string --
     R4..R2 the CFD outlet pipes of C5..C3, R1 C2's outlet, R1 and the
-    twin branches. calciner.zone_segments: the vessel (the fuel burns
-    there), the gooseneck to the C5 inlets, the C5s (all strings)."""
+    twin branches. calciner.zone_segments: the vessel above the meal's
+    entry (calciner_above_feed; the fuel burns there), the gooseneck to
+    the C5 inlets, the C5s (all strings)."""
 
     g = g or load()
     k, cal, coo, L = kiln(g), calciner(g), cooler(g), layout(g)
@@ -683,6 +703,7 @@ def twin_sections(g=None):
 
     c5 = cyclone(g, "C5")
     gp = gooseneck_plant(g)
+    vf = calciner_above_feed(g)
     n5 = strings * c5["per_string"]
 
     return {
@@ -693,8 +714,8 @@ def twin_sections(g=None):
             "length": cal["H"],
             "diameter": cal["D"],
             "zone_segments": [
-                {"name": "vessel", "volume": cal["vessel_volume"],
-                 "wall_area": cal["vessel_wall_area"], "fuel": True},
+                {"name": "vessel", "volume": vf["volume"],
+                 "wall_area": vf["wall_area"], "fuel": True},
                 {"name": "gooseneck", "volume": gp["volume"], "wall_area": gp["wall_area"]},
                 {"name": "C5", "volume": n5 * c5["volume"], "wall_area": n5 * c5["wet_area"]},
             ],
