@@ -1,0 +1,157 @@
+# THE plant's geometry: every PRIMARY dimension, written here once.
+#
+# Single-source rule (user decision, 13-14 Oct 2026): a dimension is
+# written in this file and nowhere else. Volumes, areas, heights,
+# elevations and ratios times diameters are DERIVED, in
+# geometry/plant_geometry.py, and never written here. The twin
+# (main.load_cfg), the SolidWorks macros (generated Const blocks) and
+# the equipment docs (generated table blocks) all read from there;
+# tools/gen_geometry.py writes the copies and checks them.
+#
+# Every entry: value, unit, source, doc.
+#   source  published              a vendor or catalogue figure (HFC2500, PF5000)
+#           derived_from_reference a published figure x an FLS reference ratio
+#           literature             a literature value (named in doc)
+#           cfd_decision           a user decision for the CFD, departing from the catalogue
+#           model                  a modelling parameter, not a plant dimension (a CFD face, a split)
+#           schematic              no source; it only lays the plant out
+#   doc     the equipment document (under geometry/) that gives the reason
+#
+# SI units. The plant is two identical 2500 t/d strings, 5000 t/d in all
+# (user decision, 12 Oct 2026); per-string equipment is given once.
+
+plant:
+  strings: {value: 2, unit: "-", source: cfd_decision, doc: catalog.md}
+
+# ---------------------------------------------------------------------
+# Cyclones. C1 and C4 are the two CFD domains (geometry/macros/cyclone.bas
+# builds them from these). C2 = C3 = C4. C5 = C4 x scale, nothing of its
+# own. Heights are from the dust outlet; the outlet pipe's lengths are
+# ratios of the vortex finder diameter.
+# ---------------------------------------------------------------------
+cyclones:
+  C1:
+    per_string:        {value: 2,    unit: "-",   source: published,    doc: preheater/cyclone_C1.md}
+    D_barrel:          {value: 4.32, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    H_barrel:          {value: 6.79, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    H_cone:            {value: 4.65, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    L_vortex:          {value: 2.16, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    D_vortex:          {value: 2.4,  unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    D_dust:            {value: 0.4,  unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    W_inlet:           {value: 0.86, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    H_inlet:           {value: 2.16, unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
+    inlet_slope:       {value: 5.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C1.md}
+    volute:            {value: false, unit: "-",  source: cfd_decision, doc: preheater/cyclone_C1.md}
+    outlet_turn:       {value: 180.0, unit: deg,  source: cfd_decision, doc: preheater/cyclone_C1.md}
+    outlet_rise_over_Dx: {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
+    outlet_bend_R_over_Dx: {value: 1.5, unit: "-", source: model,       doc: preheater/cyclone_C1.md}
+    outlet_run_over_Dx:  {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
+    boi_radius:        {value: 0.8,  unit: m,     source: model,        doc: preheater/cyclone_C1.md}
+  C4:
+    per_string:        {value: 1,    unit: "-",   source: published,    doc: preheater/cyclone_C4.md}
+    D_barrel:          {value: 6.3,  unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    H_barrel:          {value: 6.3,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
+    H_cone:            {value: 7.3,  unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    L_vortex:          {value: 3.9,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
+    D_vortex:          {value: 4.63, unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    D_dust:            {value: 0.81, unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    W_inlet:           {value: 2.912, unit: m,    source: cfd_decision, doc: preheater/cyclone_C4.md}
+    H_inlet:           {value: 3.4,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
+    inlet_slope:       {value: 0.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
+    volute:            {value: true, unit: "-",   source: cfd_decision, doc: preheater/cyclone_C4.md}
+    outlet_turn:       {value: 90.0, unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
+    outlet_rise_over_Dx: {value: 1.7, unit: "-",  source: cfd_decision, doc: preheater/cyclone_C4.md}
+    outlet_bend_R_over_Dx: {value: 1.0, unit: "-", source: model,       doc: preheater/cyclone_C4.md}
+    outlet_run_over_Dx:  {value: 1.0, unit: "-",  source: model,        doc: preheater/cyclone_C4.md}
+    boi_radius:        {value: 1.5,  unit: m,     source: model,        doc: preheater/cyclone_C4.md}
+  C2: {same_as: C4, per_string: {value: 1, unit: "-", source: published, doc: preheater/cyclone_C2.md}}
+  C3: {same_as: C4, per_string: {value: 1, unit: "-", source: published, doc: preheater/cyclone_C3.md}}
+  C5:
+    scaled_from: C4
+    # its published D 6.50 over C4's 6.30: every length of the C4 domain
+    # scales, so C4's Euler number and volute swirl carry over
+    D_barrel_published: {value: 6.5, unit: m,     source: published,    doc: preheater/cyclone_C5.md}
+    per_string:        {value: 1,    unit: "-",   source: published,    doc: preheater/cyclone_C5.md}
+    boi_radius:        {value: 1.55, unit: m,     source: model,        doc: preheater/cyclone_C5.md}
+
+# Parts of the cyclone CFD domains that are not per cyclone
+# (geometry/macros/cyclone.bas)
+cyclone_domain:
+  vortex_wall:         {value: 0.08, unit: m,     source: model,        doc: preheater/cyclone_C1.md}
+  inlet_duct_length:   {value: 3.0,  unit: m,     source: model,        doc: preheater/cyclone_C4.md}
+  inlet_roof_clearance: {value: 0.05, unit: m,    source: model,        doc: preheater/cyclone_C1.md}
+  inlet_tangent_relief: {value: 0.0, unit: m,     source: model,        doc: preheater/cyclone_C1.md}
+  volute_tongue:       {value: 0.05, unit: m,     source: model,        doc: preheater/cyclone_C4.md}
+  volute_overlap:      {value: 0.1,  unit: m,     source: model,        doc: preheater/cyclone_C4.md}
+  # C1's own riser branch: half of R1's area each, R1 below the twin
+  c1_riser_area_share: {value: 0.5,  unit: "-",   source: cfd_decision, doc: preheater/riser_R1.md}
+  c1_riser_transition: {value: 1.5,  unit: m,     source: model,        doc: preheater/riser_R1.md}
+  c1_riser_bend_R_over_D: {value: 1.0, unit: "-", source: model,        doc: preheater/riser_R1.md}
+  c1_riser_above_feed: {value: 3.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
+  c1_riser_below_feed: {value: 4.5,  unit: m,     source: model,        doc: preheater/riser_R1.md}
+  c1_feed_width:       {value: 0.6,  unit: m,     source: literature,   doc: preheater/riser_R1.md}
+  c1_feed_height:      {value: 0.6,  unit: m,     source: literature,   doc: preheater/riser_R1.md}
+  c1_feed_depth:       {value: 1.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
+  meal_slope:          {value: 60.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
+
+# ---------------------------------------------------------------------
+# Risers: the gas from C(k+1) up to C(k). Published bores x FLS lengths.
+# (User decision 14 Oct 2026: R2-R4 become the CFD outlet pipes of C3-C5;
+# applied in step 2 of the single-source plan.)
+# ---------------------------------------------------------------------
+risers:
+  R1: {D: {value: 3.07, unit: m, source: published, doc: preheater/riser_R1.md}, L: {value: 21.38, unit: m, source: derived_from_reference, doc: preheater/riser_R1.md}}
+  R2: {D: {value: 3.35, unit: m, source: published, doc: preheater/riser_R2.md}, L: {value: 19.38, unit: m, source: derived_from_reference, doc: preheater/riser_R2.md}}
+  R3: {D: {value: 3.45, unit: m, source: published, doc: preheater/riser_R3.md}, L: {value: 20.37, unit: m, source: derived_from_reference, doc: preheater/riser_R3.md}}
+  R4: {D: {value: 3.60, unit: m, source: published, doc: preheater/riser_R4.md}, L: {value: 19.87, unit: m, source: derived_from_reference, doc: preheater/riser_R4.md}}
+
+# ---------------------------------------------------------------------
+# Calciner (ILC), PF5000, and its Y gooseneck
+# ---------------------------------------------------------------------
+calciner:
+  D_shell:             {value: 7.2,  unit: m,     source: published,    doc: calciner/calciner.md}
+  # the effective bore: the shell x FLS calciner_eff_over_shell 3.08 / 3.29
+  # (catalog.md) = 6.740426, set at 0.1 mm as the CFD solid was built
+  D:                   {value: 6.7404, unit: m,   source: derived_from_reference, doc: calciner/calciner.md}
+  H:                   {value: 30.0, unit: m,     source: published,    doc: calciner/calciner.md}
+  cone_angle:          {value: 65.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
+  # the throat is sized from a literature kiln-gas flow at a literature velocity
+  throat_gas_flow:     {value: 61.44444444, unit: kg/s, source: literature, doc: calciner/calciner.md}
+  throat_gas_T:        {value: 1323.15, unit: K,  source: literature,   doc: calciner/calciner.md}
+  throat_gas_x_N2:     {value: 0.744, unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  throat_gas_x_O2:     {value: 0.076, unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  throat_gas_x_H2O:    {value: 0.05,  unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  throat_gas_x_CO2:    {value: 0.13,  unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  throat_velocity:     {value: 29.0, unit: m/s,   source: literature,   doc: calciner/calciner.md}
+  throat_length_over_D: {value: 1.0, unit: "-",   source: model,        doc: calciner/calciner.md}
+  D_feed:              {value: 0.8485, unit: m,   source: literature,   doc: calciner/calciner.md}
+  feed_below_gooseneck_end: {value: 2.0, unit: m, source: model,        doc: calciner/calciner.md}
+  feed_depth:          {value: 1.0,  unit: m,     source: model,        doc: calciner/calciner.md}
+  D_tertiary_air:      {value: 2.4393, unit: m,   source: derived_from_reference, doc: calciner/calciner.md}
+
+gooseneck:
+  D_leg:               {value: 3.5,  unit: m,     source: published,    doc: preheater/gooseneck.md}
+  rise_over_D_neck:    {value: 1.25, unit: "-",   source: model,        doc: preheater/gooseneck.md}
+  bend_R_over_D_leg:   {value: 1.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
+  # the CFD's outlet faces: the legs end at this fraction of the vessel
+  # height (calciner.bas). (User decision 14 Oct 2026: the plant's legs
+  # run on to the C5 inlet; applied in step 2.)
+  end_at_vessel_H:     {value: 0.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
+
+# ---------------------------------------------------------------------
+# Rotary kiln, PF5000
+# ---------------------------------------------------------------------
+kiln:
+  D:                   {value: 4.8,  unit: m,     source: published,    doc: kiln/kiln.md}
+  L:                   {value: 74.0, unit: m,     source: published,    doc: kiln/kiln.md}
+  slope:               {value: 3.0,  unit: "%",   source: published,    doc: kiln/kiln.md}
+  # the back end the twin's transition zone solves (25/60 of the tube)
+  transition_L:        {value: 30.83, unit: m,    source: model,        doc: kiln/kiln.md}
+
+# ---------------------------------------------------------------------
+# Grate cooler: PF5000 grate area, FLS reference cooler width and height
+# ---------------------------------------------------------------------
+cooler:
+  grate_area:          {value: 119.6, unit: m2,   source: published,    doc: cooler/cooler.md}
+  width:               {value: 4.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
+  casing_height:       {value: 3.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
