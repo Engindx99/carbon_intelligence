@@ -54,7 +54,7 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 - **Kalsinatör:** bir ILC. Tepesindeki Y kaz boynu iki hattın C5'lerini besler.
 - **Fırın, soğutucu, başlık ve tersiyer hava kanalı:** birer tane.
 
-**Ölçek kuralı** (kullanıcı kararı, 12 Ekim 2026): her hat tek başına bir 2500 t/d hattıdır, iki hat birlikte **5000 t/d**. Hattın siklonları CFD'si çözülen ölçülerdedir, riser'ları yayınlanmış 2500 ölçüsündedir. İkinci hat birincinin kopyasıdır; ayrı CFD gerekmez. Bu kural 5 Ekim 2026'daki "her hat gazın yarısını taşır, ölçüler × 1/√2" kuralının yerini aldı.
+**Ölçek kuralı** (kullanıcı kararı, 12 Ekim 2026): her hat tek başına bir 2500 t/d hattıdır, iki hat birlikte **5000 t/d**. Hattın siklonları CFD'si çözülen ölçülerdedir. R1 yayınlanmış 2500 ölçüsündedir; R2–R4 alttaki siklonun CFD çıkış borusudur (kullanıcı kararı, 14 Ekim 2026). İkinci hat birincinin kopyasıdır; ayrı CFD gerekmez. Bu kural 5 Ekim 2026'daki "her hat gazın yarısını taşır, ölçüler × 1/√2" kuralının yerini aldı.
 
 | Ekipman | Ölçü | Kaynak |
 |---|---|---|
@@ -64,14 +64,18 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | R1 (hat başına) | Ø3.07 | catalog.md (HFC2500) |
 | R2 / R3 / R4 (hat başına) | Ø4.63 / 4.63 / 4.777 | C3 / C4 / C5'in CFD çıkış borusu; yayınlanmış Ø3.35 / 3.45 / 3.60 çizilmez |
 | Kalsinatör | Ø6.74, 30.0 m (koni dahil), boğaz Ø3.130, koni 65° | calciner.md (PF5000) |
-| Kaz boynu | Y: boyun Ø4.95, 2 kol × Ø3.50, kalsinatörün yarı yüksekliğinde biter | calciner.md, gooseneck.md |
+| Kaz boynu | Y: boyun Ø4.95, 2 kol × Ø3.50, her kol C5 girişine iner (kalsinatör CFD'si kolları gövdenin yarı yüksekliğinde keser) | calciner.md, gooseneck.md |
 | Tersiyer hava kanalı | Ø2.439 (türetilmiş) | calciner.md |
 | Fırın | Ø4.8 × 74 m, %3 eğim | kiln.md (PF5000) |
 | Soğutucu | ızgara alanı 119.6 m² | cooler.md (PF5000) |
 
 Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den, ya da onun ölçülerinden türetilmiş ([calciner.md](calciner/calciner.md), [kiln.md](kiln/kiln.md), [cooler.md](cooler/cooler.md); 12 Ekim 2026). Giriş odası ve başlık şematiktir, fırının çevresinde bir paydır. Twin 5000 t/d beslemesiyle çalışır; hangi ekipmanı hangi akış hacmiyle hesapladığı [fluid_volumes.md](fluid_volumes.md)'dedir.
 
-Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüleri kullanır; çizim onlardan ayrılmaz.
+**Tek kaynak** (kullanıcı kararı, 13–14 Ekim 2026). Her ana ölçü yalnız `geometry/plant_geometry.yaml`'da, kaynağıyla (yayınlanmış, FLS oranı, literatür, CFD kararı, modelleme, şematik) bir kez yazılıdır. Türetilen her şey (hacim, alan, kot, boru boyu) `geometry/plant_geometry.py`'dedir; bu çizimin `Derive`'ındaki yerleşim, R1–R4 ve kaz boynu da orada Python'a taşındı. Kopyalar üretilir:
+- `tools/gen_geometry.py`, `cyclone.bas`, `calciner.bas` ve `plant_topology_2d.bas`'ın başındaki `BEGIN GENERATED … END GENERATED` Const bloklarını ve ekipman dokümanlarındaki tabloları yazar. Bloklar elle düzenlenmez.
+- Twin geometriyi `main.load_cfg` ile oradan alır; `configs/twin_cfg.yaml` geometri yazmaz ([fluid_volumes.md](fluid_volumes.md)).
+- Bir ölçüyü değiştirmek: yaml → `python3 tools/gen_geometry.py` → makroyu SolidWorks'te yeniden çalıştır. Değişen ölçü bir CFD domeninin içindeyse önce CFD yeniden çözülür (aşağıda).
+- `tests/test_geometry_single_source.py` blokların güncel olduğunu; `tests/test_plant_geometry.py` Python yerleşiminin son build log'unun kotlarıyla aynı olduğunu denetler.
 
 ## CFD domenleri ve serbest bölge
 
@@ -97,7 +101,7 @@ Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüle
 **Farin girişi:** C1–C3'ün farini R2–R4'e, yani C3–C5'in CFD çıkış borusuna, çatının 1.5 m üstünden girer; bu domenin içidir. CFD gaz-only olduğu ve farin yükü analitik hesaplandığı için çözümü bozmaz. İleride yüklü (DDPM) bir CFD yapılırsa giriş yeri domenin içinde modellenmelidir.
 
 **Kilit:**
-- `tests/test_plant_topology_cfd_lock.py` iki makroyu metin olarak okur. Çizimdeki her domen ölçüsünün `cyclone.bas`'taki `SelectCyclone` değerlerine 1 mm içinde eşit olduğunu doğrular; C5 için ayrıca C4 × 1.0317 olduğunu. Biri öbürü olmadan değişirse test hangi ölçünün kaydığını yazarak düşer (`python3 -m unittest tests.test_plant_topology_cfd_lock`).
+- `tests/test_plant_topology_cfd_lock.py` iki makroyu metin olarak okur. Const'lar artık aynı kaynaktan üretildiği için bu ikinci bir güvencedir. Çizimdeki her domen ölçüsünün `cyclone.bas`'taki `SelectCyclone` değerlerine 1 mm içinde eşit olduğunu doğrular; C5 için ayrıca C4 × 1.0317 olduğunu. Biri öbürü olmadan değişirse test hangi ölçünün kaydığını yazarak düşer (`python3 -m unittest tests.test_plant_topology_cfd_lock`).
 - Makronun ön kontrolleri yüzleri korur: R4–R2'nin daralması alttaki siklonun çıkış yüzünden sonra başlar ve üsttekinin giriş yüzünün dışında biter; R1'in dirseği C2'nin çıkış yüzünden sonra başlar; kaz boynu C5'in giriş yüzünün dışında kalır. R1'in Y'si C1 kol tabanının altında kalır.
 - Çizimdeki çıkış borusu 5.79 değil, CFD'nin tam değeri 1.25 × 4.63 = 5.7875 m'ydi; kilit testi bu 2.5 mm'lik farkı yakaladı.
 - **C4 / C5 çıkış borusu 1.25·VD'den 1.70·VD'ye (5.79 → 7.87 m; kullanıcı kararı 14 Ekim 2026).** 1.25'te C2 ve C3 altlarındaki CFD dirseğinin yalnız 0.9 m üstündeydi; farin hatları dirseğe yapışmadan inemiyordu. Bu donmuş bir bloktur, iş akışına göre değişti: önce çizim denendi, sonra `cyclone.bas`'ta `OUTLET_EXT_OVER_VORTEX_D` siklon başına oldu (C1 1.25, C4 ve C5 1.70), kilit testi ikisini eşitler. C4 CFD'si bu domende yeniden çözüldü (14 Ekim 2026): statik ΔP 522.8 Pa, Eu 11.54 (1.25'li domende 515.5 Pa, 11.38; +%1.4); bkz. [cyclone_C4.md](preheater/cyclone_C4.md). Kule 112.02'den 120.41 m'ye uzadı.
@@ -108,7 +112,7 @@ Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüle
 
 ## Şematik parametreler (kaynaksız; yalnız yerleşim için)
 
-İki satır ("donmuş (CFD)") CFD domenlerinin ölçüleridir ve kilit testine bağlıdır; diğer bütün satırlar serbest bölgededir.
+İki satır ("donmuş (CFD)") CFD domenlerinin ölçüleridir ve kilit testine bağlıdır; diğer bütün satırlar serbest bölgededir. Makrodaki üretilen bloktan gelenlerin (CFD satırları, `STAGE_GAP`, `ZIG_DX`, `R1_*`, `GN_*`, `C5_OVER_TA`, `KILN_AXIS_Z`, `CHAMBER_MARGIN`, `COOLER_*`) değeri `plant_geometry.yaml`'da değiştirilir; diğerleri yalnız çizimin kendi Const'larıdır.
 
 | Parametre | Değer | Ne belirler |
 |---|---|---|
@@ -134,7 +138,7 @@ Siklon CFD dokümanları (`cyclone_C1–C5.md`) ve `cyclone.bas` aynı ölçüle
 | `RM_L` | 0.8 m | Ham farin okunun her oluğun ucundan dışarı uzadığı boy; ok başı diğerlerinin yarısı (2 mm) |
 | `KILN_AXIS_Z` | 10.0 m | Fırın giriş ekseninin kotu |
 | `CHAMBER_MARGIN` | 1.0 m | Giriş odası ve başlık: fırının çevresinde bu payla bir kare. Şematiktir; [kiln_inlet_chamber.md](kiln/kiln_inlet_chamber.md)'de ölçü yok |
-| `COOLER_W` / `COOLER_H` | 4.0 / 4.0 m | Izgara genişliği, FLS referans soğutucusunun (boy alandan çıkar: 29.9 m), ve soğutucu gövde yüksekliği |
+| `COOLER_W` / `COOLER_H` | 4.0 / 3.0 m | Izgara genişliği ve gövde yüksekliği, FLS referans soğutucusunun (boy alandan çıkar: 29.9 m). Çizimde gövde 14 Ekim 2026'ya kadar 4.0 m'ydi; [cooler.md](cooler/cooler.md)'nin 3.0'ı tek kaynakta kaldı |
 | `COOLER_DROP` | 1.0 m | Soğutucunun tepesinin, deşarjdaki fırın kabuğunun altında kaldığı mesafe |
 | `MEAL_INTO_CHAMBER` | 1.0 m | C5 farininin giriş odası tavanına, odanın yan yüzünden bu kadar içeride indiği yer |
 | `FEED_LOWER` | 3.0 m | C4 farininin kalsinatöre, `calciner.bas`'ın besleme kotunun (bacak uçlarının 2 m altı) bu kadar altından girmesi. Yalnız topoloji içindir; CFD besleme boruları yerinde kalır |

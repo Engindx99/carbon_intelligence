@@ -13,6 +13,8 @@ akışkan hacmini kuran, kendini doğrulayan ve dışa aktaran makrolar.
 `calciner.bas` aynı yoldan çalıştırılır (makro adı ör. `calciner.swp`) ve `cyclone.bas`'ın doğrulanmış
 yardımcılarını kendi içinde kopya olarak taşır; iki makro birbirinden bağımsızdır.
 
+**Ölçüler makroda yazılmaz.** Her makronun başında `' BEGIN GENERATED (tools/gen_geometry.py)` ile `' END GENERATED` arasında bir Const bloğu var; `tools/gen_geometry.py` onu `geometry/plant_geometry.yaml`'dan (tesisin tek ölçü kaynağı) yazar. Bloğu elle düzenleme: ölçüyü yaml'da değiştir, `python3 tools/gen_geometry.py` çalıştır, makroyu SolidWorks'e yeniden import et. `python3 tools/gen_geometry.py --check` bayat bir blok bulursa hata verir (`tests/test_geometry_single_source.py` de).
+
 Kaynak `.bas` olarak tutulur: VBA modülünün düz metin biçimi, `git diff` ile okunabilir.
 SolidWorks'ün ürettiği `.swp` ikili bir dosyadır, depoya girmez.
 
@@ -30,8 +32,8 @@ Yeni bir parça açmaya gerek yok; makro kendi parçasını oluşturur.
 
 ## Başka bir siklon üretmek
 
-Dosyanın başında `CYCLONE_NAME`'i seç: `"C1"`, `"C4"` ya da `"C5"`. Her siklonun ölçüleri ve kendine
-özgü modelleme seçimleri `SelectCyclone` yordamında, gerekçeleriyle birlikte duruyor; geri kalan
+Dosyanın başında `CYCLONE_NAME`'i seç: `"C1"`, `"C4"` ya da `"C5"`. Her siklonun ölçüleri üretilen
+bloktadır (`C1_*`, `C4_*`, `C5_*`); `SelectCyclone` onları seçer ve kendine özgü modelleme seçimlerinin gerekçelerini taşır; geri kalan
 her koordinat bunlardan hesaplanır. Bütün hatların bütün kademeleri
 [`geometry/catalog.md`](../catalog.md) içinde:
 `D, barrel_h, cone_h, vortex_len, vortex_D, dust_D, inlet_w, inlet_h`.
