@@ -227,7 +227,9 @@ class CommittedKinetics(CalcinationModel):
         self.T_start = 1073.0
         self.T_end = 1300.0
 
-    def reaction_rate(self, T):
+    def reaction_rate(self, T, p_CO2=None):
+        # The window law has no CO2 back-pressure; p_CO2 is
+        # accepted for the interface and ignored.
         window = np.clip(
             (np.asarray(T, dtype=float) - self.T_start)
             / (self.T_end - self.T_start),

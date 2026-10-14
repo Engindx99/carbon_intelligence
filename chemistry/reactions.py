@@ -141,6 +141,7 @@ class ChemistryModel:
         commit_phases=True,
         m_dot_CaCO3_in=None,
         m_dot_BoundH2O_in=None,
+        gas_in=None,
     ):
 
         # Dehydroxylation runs first: it only touches Bound_H2O,
@@ -171,6 +172,11 @@ class ChemistryModel:
             u_s,
             m_dot_CaCO3_in=m_dot_CaCO3_in,
             commit_phases=commit_phases,
+            # gas_in: the gas entering the riser, so each cell
+            # rates against its own CO2 (CalcinationModel.apply).
+            # It needs the water dehydroxylation just released,
+            # which is why that runs first here as well.
+            gas_in=gas_in,
         )
 
         state.Calciner_Q_sink = (

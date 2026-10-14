@@ -337,6 +337,18 @@ def add(*flows):
     return {s: sum(float(f.get(s, 0.0)) for f in flows) for s in SPECIES}
 
 
+def mole_fraction(flows, species):
+    """Mole fraction of `species` in a species flow dict [-]."""
+
+    n = {s: float(flows.get(s, 0.0)) / MOLAR_MASS[s] for s in SPECIES}
+    total = sum(n.values())
+
+    if total <= 0.0:
+        raise ValueError("mole_fraction of an empty gas")
+
+    return n[species] / total
+
+
 def mixture(flows):
     """GasMixture of a species flow dict."""
 

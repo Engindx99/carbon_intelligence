@@ -644,6 +644,12 @@ class Calciner:
                 for name, value in calciner_inlet_flow.items()
             }
 
+        # The gas entering the riser: kiln gas, tertiary air and
+        # the calciner's burnt fuel. The kinetics rate each cell
+        # against the CO2 this gas carries plus what the meal
+        # releases on the way (CalcinationModel.apply).
+        calciner_gas_in = raw_meal_inlet.calciner_inlet_species(state)
+
         # ======================================================
         # OUTER STEADY-STATE ITERATION
         # ======================================================
@@ -671,6 +677,7 @@ class Calciner:
                 commit_phases=False,
                 m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
                 m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
+                gas_in=calciner_gas_in,
             )
 
             Q_reaction = float(
@@ -873,6 +880,7 @@ class Calciner:
             commit_phases=True,
             m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
             m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
+            gas_in=calciner_gas_in,
         )
 
         # ======================================================

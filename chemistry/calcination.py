@@ -6,6 +6,8 @@ from chemistry.base import ReactionBase
 from chemistry.phases import copy_solid_phases
 from chemistry.phases import set_cell_solid_flow
 from chemistry.composition import RAW_MEAL_COMPOSITION
+from physics.gas_thermo import MOLAR_MASS
+from physics.gas_thermo import SPECIES
 
 
 class CalcinationModel(ReactionBase):
@@ -90,16 +92,22 @@ class CalcinationModel(ReactionBase):
         # 1087.7 K, which brackets the 1073 K the fixed window
         # asserted.
         #
-        # THIS IS THE WEAK LINK IN THE MODULE, and it is a single
-        # representative number because the model carries no gas
-        # SPECIES balance -- it tracks CO2 generation per zone but
-        # not the composition of the stream flowing through a
-        # cell. Zone-local generation alone is NOT a substitute:
-        # measured, it gives the calciner 0.043 atm and a 998 K
-        # plateau, because each zone's gas also carries CO2 from
-        # the fuel and from upstream. When a real species balance
-        # exists this becomes a local quantity and this constant
-        # should be the first thing deleted.
+        # THE CALCINER NO LONGER USES IT (15 Oct 2026). The riser
+        # now has a gas species balance (calciner_inlet_species:
+        # kiln gas + tertiary air + burnt fuel), and apply() rates
+        # each cell against its OWN outlet gas -- that inlet plus
+        # every release up to and including the cell, the cell's
+        # own CO2 solved implicitly (cell_back_pressure). At the
+        # twin's flows that is 0.22 atm in the first cell and 0.33
+        # at the outlet, so the plateau sits at 1103 K, not the
+        # 1087.7 K this constant gave.
+        #
+        # It stays the representative value for the two
+        # counter-current kiln zones (transition, burning): their
+        # gas at a cell comes from the cells DOWNSTREAM of the
+        # solid march, so a local p there can only be lagged, and
+        # their parcel trains (parcels.advance_train) build a
+        # reactor from T alone. That is the next thing to delete.
         #
         # It matters: T_eq spans 1005 K at 0.05 atm to 1114 K at
         # 0.40 atm, and T_eq is what decides where calcination
@@ -107,6 +115,12 @@ class CalcinationModel(ReactionBase):
         # ======================================================
 
         self.co2_partial_pressure = 0.25    # atm
+
+        # Total pressure the calciner's local partial pressure is
+        # taken at [atm]. The riser runs a few kPa below
+        # atmospheric (the ID fan); that is ~5 % on p and is not
+        # resolved here.
+        self.total_pressure = 1.0           # atm
 
 
         # ======================================================
@@ -199,6 +213,77 @@ class CalcinationModel(ReactionBase):
         return self.dH_molar / denominator
 
     # ======================================================
+    # CO2 BACK-PRESSURE [atm] a rate is evaluated against
+    #
+    # p_CO2 is the cell's own CO2 partial pressure where the
+    # zone carries it (the calciner, apply below); None falls
+    # back to the representative co2_partial_pressure the
+    # counter-current kiln zones still use.
+    # ======================================================
+    def back_pressure(self, p_CO2=None):
+
+        if p_CO2 is None:
+            return float(self.co2_partial_pressure)
+
+        p = float(p_CO2)
+
+        if not math.isfinite(p) or p < 0.0:
+            raise ValueError(
+                f"CalcinationModel: p_CO2 must be >= 0 atm, got {p}"
+            )
+
+        return p
+
+    # ======================================================
+    # A MIXED CELL'S OWN BACK-PRESSURE [atm]
+    #
+    # The cell is rated against its outlet gas, and that gas
+    # holds the CO2 the cell itself releases: p depends on the
+    # extent and the extent on p. With r the CaCO3 reacted,
+    #
+    #   g(r) = m_in (1 - exp(-k(T, p(r)) tau)) - r
+    #
+    # is strictly decreasing (more CO2 -> a slower rate), with
+    # g(0) >= 0 and g(m_in) <= 0, so it has exactly one root.
+    # Bisection finds it without a starting guess; Newton would
+    # need one on a rate that switches off at T_eq.
+    #
+    # n_CO2_up, n_up: CO2 and total moles [mol/s] of the gas
+    # reaching the cell outlet before this cell's own CO2.
+    # ======================================================
+    def cell_back_pressure(self, m_in, T, tau, n_CO2_up, n_up):
+
+        P = float(self.total_pressure)
+        M = MOLAR_MASS["CO2"]
+
+        def p_of(r):
+            n_c = r * self.CO2_ratio / M
+            return P * (n_CO2_up + n_c) / (n_up + n_c)
+
+        if m_in <= 0.0 or tau <= 0.0:
+            return p_of(0.0)
+
+        def g(r):
+            k = float(self.reaction_rate(T, p_of(r)))
+            return m_in * (-math.expm1(-k * tau)) - r
+
+        lo, hi = 0.0, float(m_in)
+
+        if g(lo) <= 0.0:
+            return p_of(lo)
+
+        for _ in range(60):
+            mid = 0.5 * (lo + hi)
+            if g(mid) > 0.0:
+                lo = mid
+            else:
+                hi = mid
+            if hi - lo <= 1.0e-13 * m_in:
+                break
+
+        return p_of(0.5 * (lo + hi))
+
+    # ======================================================
     # TEMPERATURE AT WHICH THIS REACTION STOPS [K]
     #
     # Overrides ReactionBase.rate_vanishing_temperature, which
@@ -213,11 +298,16 @@ class CalcinationModel(ReactionBase):
     # endpoints lie on it. It is: at T = T_eq the driving force
     # is 1 - p/P_eq(T_eq) = 0 identically, so k = 0 and Q = 0.
     # ======================================================
-    def rate_vanishing_temperature(self):
+    def rate_vanishing_temperature(self, p_CO2=None):
 
-        return self.equilibrium_temperature(
-            self.co2_partial_pressure
-        )
+        p = self.back_pressure(p_CO2)
+
+        # A gas with no CO2 holds nothing back: the rate never
+        # vanishes, and reaction_heat_slope falls to the tangent.
+        if p <= 0.0:
+            return -math.inf
+
+        return self.equilibrium_temperature(p)
 
     # ======================================================
     # REACTION RATE [1/s]
@@ -247,9 +337,11 @@ class CalcinationModel(ReactionBase):
     # has one: the burning zone's Strang march evaluates this
     # once per cell per sweep.
     # ======================================================
-    def reaction_rate(self, T):
+    def reaction_rate(self, T, p_CO2=None):
 
         self.validate_parameters()
+
+        p = self.back_pressure(p_CO2)
 
         if isinstance(T, float):
 
@@ -260,7 +352,7 @@ class CalcinationModel(ReactionBase):
             )
 
             driving_force = 1.0 - (
-                self.co2_partial_pressure
+                p
                 / self.equilibrium_pressure(T_safe)
             )
 
@@ -288,7 +380,7 @@ class CalcinationModel(ReactionBase):
         )
 
         driving_force = np.clip(
-            1.0 - self.co2_partial_pressure / p_eq,
+            1.0 - p / p_eq,
             0.0,
             1.0,
         )
@@ -327,9 +419,11 @@ class CalcinationModel(ReactionBase):
     # p/P_eq -> 1 makes the second maximal. That is exactly where
     # the slope is needed.
     # ======================================================
-    def reaction_rate_derivative(self, T):
+    def reaction_rate_derivative(self, T, p_CO2=None):
 
         self.validate_parameters()
+
+        p = self.back_pressure(p_CO2)
 
         if isinstance(T, float):
 
@@ -338,7 +432,7 @@ class CalcinationModel(ReactionBase):
 
             p_eq = self.equilibrium_pressure(T)
 
-            ratio = self.co2_partial_pressure / p_eq
+            ratio = p / p_eq
 
             driving_force = 1.0 - ratio
 
@@ -375,7 +469,7 @@ class CalcinationModel(ReactionBase):
             / (self.R * T_safe)
         )
 
-        ratio = self.co2_partial_pressure / p_eq
+        ratio = p / p_eq
 
         driving_force = 1.0 - ratio
 
@@ -437,7 +531,8 @@ class CalcinationModel(ReactionBase):
     # is large only where k*tau ~ 1. Once a cell converts
     # everything it holds, Q saturates at m_in*deltaH and dQ/dTs
     # falls to zero -- measured at the literature rate with
-    # tau = 66 s: 6.8e5 W/K per kg/s at the 1088 K plateau,
+    # tau = 66 s (at the representative 0.25 atm): 6.8e5 W/K
+    # per kg/s at the 1088 K plateau,
     # 2.5e3 at 1100 K, 9.7 at 1110 K, and 4e-14 by 1150 K. So the
     # linearisation stabilises the NEIGHBOURHOOD of the solution,
     # which is where the converged plant sits, and offers nothing
@@ -501,6 +596,7 @@ class CalcinationModel(ReactionBase):
     u_s,
     m_dot_CaCO3_in=None,
     commit_phases=True,
+    gas_in=None,
 ):
 
         # ==================================================
@@ -584,6 +680,41 @@ class CalcinationModel(ReactionBase):
         reaction_heat_slope_cells = np.zeros(N)
 
         # ==================================================
+        # THE GAS EACH CELL RATES AGAINST
+        #
+        # gas_in [kg/s species dict]: the gas entering cell 0.
+        # The riser is co-current, so the gas in cell i holds
+        # gas_in plus everything cells 0..i release -- known
+        # for 0..i-1 by the time the march reaches i. Each cell
+        # is rated against its OWN outlet gas (a mixed cell),
+        # which contains the CO2 it releases itself; that makes
+        # the cell implicit in its own extent, solved below.
+        #
+        # None keeps the representative co2_partial_pressure.
+        # ==================================================
+
+        p_CO2_cells = np.full(N, float(self.co2_partial_pressure))
+
+        if gas_in is not None:
+
+            n_up = {
+                s: float(gas_in.get(s, 0.0)) / MOLAR_MASS[s]
+                for s in SPECIES
+            }
+
+            H2O_cells = np.asarray(
+                getattr(
+                    state,
+                    "m_dot_H2O_generated_cells",
+                    np.zeros(N),
+                ),
+                dtype=float,
+            )
+
+            if H2O_cells.shape != (N,):
+                H2O_cells = np.zeros(N)
+
+        # ==================================================
         # INITIAL CONDITION
         #
         # Solid flows from cell 0 -> cell N-1
@@ -617,12 +748,36 @@ class CalcinationModel(ReactionBase):
                 1.0,
             )
 
+            tau_i = float(dz / u_s)
+
+            # --------------------------------------------------
+            # LOCAL CO2 BACK-PRESSURE
+            # --------------------------------------------------
+
+            if gas_in is None:
+
+                p_i = None
+
+            else:
+
+                n_up["H2O"] += H2O_cells[i] / MOLAR_MASS["H2O"]
+
+                p_i = self.cell_back_pressure(
+                    m_in,
+                    T_i,
+                    tau_i,
+                    n_up["CO2"],
+                    sum(n_up.values()),
+                )
+
+                p_CO2_cells[i] = p_i
+
             # --------------------------------------------------
             # LOCAL KINETIC RATE
             # --------------------------------------------------
 
             k_i = float(
-                self.reaction_rate(T_i)
+                self.reaction_rate(T_i, p_i)
             )
 
             reaction_rate_cells[i] = k_i
@@ -706,9 +861,15 @@ class CalcinationModel(ReactionBase):
                 self.reaction_heat_slope(
                     m_in,
                     T_i,
-                    float(dz / u_s),
+                    tau_i,
+                    p_i,
                 )
             )
+
+            if gas_in is not None:
+                n_up["CO2"] += (
+                    m_reacted * self.CO2_ratio / MOLAR_MASS["CO2"]
+                )
 
             # --------------------------------------------------
             # NEXT CELL
@@ -1002,6 +1163,9 @@ class CalcinationModel(ReactionBase):
         state.Calcination_Q_slope_cells = (
             reaction_heat_slope_cells.copy()
         )
+
+        # The back-pressure each cell was rated against [atm].
+        state.Calciner_p_CO2_cells = p_CO2_cells.copy()
 
         # ==================================================
         # STEADY-STATE MASS BALANCE

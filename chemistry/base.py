@@ -331,7 +331,13 @@ class ReactionBase:
         available,
         T,
         dt,
+        p_CO2=None,
     ):
+
+        # p_CO2: the back-pressure a gas-gated subclass rates
+        # against (calcination). None keeps every other reaction's
+        # one-argument rate law, which knows nothing of it.
+        kw = {} if p_CO2 is None else {"p_CO2": p_CO2}
 
         if (
             isinstance(available, float)
@@ -342,8 +348,8 @@ class ReactionBase:
             if available <= 0.0 or dt <= 0.0:
                 return 0.0
 
-            rate = float(self.reaction_rate(T))
-            slope = self.reaction_rate_derivative(T)
+            rate = float(self.reaction_rate(T, **kw))
+            slope = self.reaction_rate_derivative(T, **kw)
 
             if slope <= 0.0:
                 return 0.0
@@ -359,9 +365,9 @@ class ReactionBase:
         available = np.asarray(available, dtype=float)
         dt = np.asarray(dt, dtype=float)
 
-        rate = np.asarray(self.reaction_rate(T), dtype=float)
+        rate = np.asarray(self.reaction_rate(T, **kw), dtype=float)
         slope = np.asarray(
-            self.reaction_rate_derivative(T),
+            self.reaction_rate_derivative(T, **kw),
             dtype=float,
         )
 
@@ -427,6 +433,9 @@ class ReactionBase:
     # saturated sink has no slope. Measured for calcination at
     # the literature rate with dt = 66 s, in W/K per kg/s:
     #
+    # (against the representative 0.25 atm; the calciner now
+    # rates against its local CO2, which moves the plateau to
+    # ~1103 K but not the shape)
     #   1088 K (plateau)  6.8e5
     #   1100 K            2.5e3
     #   1110 K            9.7
@@ -478,12 +487,19 @@ class ReactionBase:
         available,
         T,
         dt,
+        p_CO2=None,
     ):
+
+        # The chord and the tangent must see the SAME back-pressure
+        # as the rate they linearise, or T_vanish stops being an
+        # exact zero of it.
+        kw = {} if p_CO2 is None else {"p_CO2": p_CO2}
 
         tangent = self.reaction_heat_derivative(
             available,
             T,
             dt,
+            **kw,
         )
 
         T = float(T)
@@ -493,7 +509,7 @@ class ReactionBase:
         if available <= 0.0 or dt <= 0.0:
             return 0.0
 
-        T_vanish = self.rate_vanishing_temperature()
+        T_vanish = self.rate_vanishing_temperature(**kw)
 
         span = T - T_vanish
 
@@ -503,7 +519,7 @@ class ReactionBase:
         if span <= 0.0:
             return float(tangent)
 
-        rate = float(self.reaction_rate(T))
+        rate = float(self.reaction_rate(T, **kw))
 
         heat = (
             self.reacted_mass(available, rate, dt)
