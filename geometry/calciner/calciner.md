@@ -6,19 +6,26 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 
 ## Geometrik Ölçüler
 
-| Ölçü | Değer | Kaynak / türetme |
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
 |---|---|---|
-| Gövde (shell) çapı | 7.20 m | PF5000 (yayınlanmış) |
-| Efektif iç çap | **6.740 m** | 7.20 × FLS `calciner_eff_over_shell` = 3.08 / 3.29 (türetilmiş) |
-| Gövde boyu (koni + silindir) | **30.00 m** | PF5000 (yayınlanmış) |
-| Alt koni duvar açısı | 65° (yatayla) | Holcim StDC 2022, siklon konisi için en az 65°; kalsinatör konisine de uygulandı |
-| Alt koni yüksekliği | 3.871 m | (R − r_boğaz) · tan 65° |
-| Silindir boyu | 26.129 m | 30.00 − koni |
-| Boğaz çapı | 3.130 m | Literatür akışı / literatür hızı, aşağıda |
-| Tersiyer hava kanalı | 2.439 m, tek, teğetsel | Literatür akışı / literatür hızı, aşağıda (6. adımda kurulur) |
-| Kaz boynu kolu | 3.50 m, iki kol | yayınlanmış 2500 t/d boynu; her kol bir hattın gazını taşır ([gooseneck.md](../preheater/gooseneck.md)) |
-| Kaz boynu, ortak boyun | 4.950 m | 3.50 × √2: iki kolun toplam kesiti (kullanıcı kararı, 12 Ekim 2026) |
-| Farin besleme boruları | 2 × Ø0.849 m, yatayla 60° | Fidaros ve diğ. 2007 (Ø0.6) × √2: boru başına farin iki katı, hız korunur |
+| Gövde (shell) çapı | 7.2 m | yayınlanmış |
+| Efektif iç çap | 6.7404 m | FLS oranıyla türetilmiş; 7.20 × 3.08 / 3.29 |
+| Gövde boyu (koni + silindir) | 30 m | yayınlanmış |
+| Alt koni duvar açısı (yatayla) | 65 ° | literatür |
+| Boğaz çapı | 3.130 m | literatür akışı / literatür hızı |
+| Alt koni yüksekliği | 3.871 m | türetilmiş |
+| Silindir boyu | 26.129 m | türetilmiş |
+| Tersiyer hava kanalı çapı | 2.4393 m | FLS oranıyla türetilmiş |
+| Farin besleme borusu çapı | 0.8485 m | literatür; Fidaros 2007 × √2 |
+| **Ekipman hacmi (koni + silindir)** | 1009.71 m³ | türetilmiş |
+| **Duvar alanı (silindir + koni + tavan halkası)** | 635.96 m² | türetilmiş |
+<!-- END GENERATED -->
+- Efektif iç çap: gövde × FLS `calciner_eff_over_shell` = 3.08 / 3.29.
+- Alt koni açısı: Holcim StDC 2022 siklon konisi için en az 65° ister; kalsinatör konisine de uygulandı. Koni yüksekliği (R − r_boğaz) · tan 65°, silindir gövde boyunun kalanı.
+- Boğaz ve tersiyer kanal: literatür akışı / literatür hızı, aşağıda (tersiyer kanal 6. adımda kurulur; tek, teğetsel).
+- Kaz boynu: iki kol, her biri yayınlanmış 2500 t/d boynunun çapında; ortak boyun iki kolun toplam kesitinde ([gooseneck.md](../preheater/gooseneck.md); kullanıcı kararı, 12 Ekim 2026).
+- Farin besleme boruları: iki adet, yatayla 60°; Fidaros ve diğ. 2007 (Ø0.6) × √2: boru başına farin iki katı, hız korunur.
 
 **Boğaz ve tersiyer kanal türetmesi.** Bunlar için yayınlanmış bir ölçü ya da oran bulunamadı: FLS kalsinatörü düz bir silindir olarak verir (arXiv 2504.02886 Tablo 8, koni 0), bakılan CFD makaleleri de bu ölçüleri yazmaz. Bu yüzden her biri, literatürdeki bir akışın literatürdeki bir hıza bölünmesiyle bulunur. İdeal gaz ve 1 atm varsayılır. **İkizin akışları kullanılmaz**: ikiz henüz hazır değil; örneğin tersiyer havayı 575 K veriyor, tesislerde bu değer ~1100 K (kullanıcı kararı, 29 Eylül 2026). Literatür akışları 2500 t/d sınıfı bir hattındır; 5000 t/d'de ikiye katlanır.
 
@@ -112,7 +119,7 @@ gövde         1009.711 m³   (koni + silindir)
 
 Kutu: x ±12.975, y ±3.370, z 0 … 46.317 (farin boruları kutuyu değiştirmez).
 
-Ekipman hacmi: **1009.71 m³** (2500 kalsinatörü 659.85 m³). İkizin `calciner.length` değeri bu hacimden okunmaz ve değişmez.
+Ekipman hacmi Geometrik Ölçüler'deki tabloda (2500 kalsinatörü 659.85 m³). Twin'in kalsinatör bölgesi bu gövdeyi, tesisin kaz boynunu ve iki C5'i tek bir kanal olarak çözer (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)).
 
 ## Kaynaklar
 

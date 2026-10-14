@@ -7,8 +7,13 @@ it, so each holds a copy in a generated Const block between
     ' BEGIN GENERATED (tools/gen_geometry.py) ...
     ' END GENERATED
 
-which this script writes; nothing between the markers is edited by
-hand. Values the source gives are written as given (the CFD domains
+which this script writes, and the equipment documents a generated
+table between
+
+    <!-- BEGIN GENERATED (tools/gen_geometry.py) ... -->
+    <!-- END GENERATED -->
+
+Nothing between the markers is edited by hand. Values the source gives are written as given (the CFD domains
 are rebuilt bit for bit); values it derives (geometry/plant_geometry.py)
 at 1 um.
 
@@ -16,6 +21,7 @@ at 1 um.
     python3 tools/gen_geometry.py --check   # exit 1 if any is stale
 """
 
+import math
 import sys
 from pathlib import Path
 
@@ -248,20 +254,245 @@ TARGETS = {
 
 
 # ======================================================================
+# Documents: one table each
+# ======================================================================
+DOCS_DIR = ROOT / "geometry"
+MD_BEGIN = "<!-- BEGIN GENERATED (tools/gen_geometry.py)"
+MD_END = "<!-- END GENERATED -->"
+MD_HEADER = (
+    MD_BEGIN + " -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->\n"
+)
+SOURCE_TR = {
+    "published": "yayınlanmış",
+    "derived_from_reference": "FLS oranıyla türetilmiş",
+    "literature": "literatür",
+    "cfd_decision": "CFD kararı",
+    "model": "modelleme",
+    "schematic": "şematik",
+}
+UNITS = {"m": "m", "deg": "°", "%": "%", "m2": "m²", "-": "", "kg/s": "kg/s",
+         "K": "K", "m/s": "m/s", "mol/mol": "mol/mol"}
+
+
+def _num(x, digits):
+    if isinstance(x, bool):
+        return "var" if x else "yok"
+    return f"{x:.{digits}f}"
+
+
+def row_src(label, node, scale=1.0, unit=None, digits=None, note=""):
+    """A table row from a source entry."""
+    x = pg.v(node)
+    if not isinstance(x, bool):
+        x = scale * x
+    u = UNITS.get(unit or node["unit"], unit or node["unit"])
+    if digits is None:
+        text = _num(x, 0) if isinstance(x, bool) else repr(float(x)).removesuffix(".0")
+    else:
+        text = _num(x, digits)
+    tag = SOURCE_TR[node["source"]] + (f"; {note}" if note else "")
+    return (label, f"{text} {u}".strip(), tag)
+
+
+def row_der(label, x, unit, digits=3, note="türetilmiş"):
+    return (label, f"{_num(x, digits)} {unit}".strip(), note)
+
+
+def _cyclone_rows(g, name):
+    node = g["cyclones"][name]
+    base_name = node.get("same_as") or node.get("scaled_from") or name
+    base = g["cyclones"][base_name]
+    c = pg.cyclone(g, name)
+    scaled = "scaled_from" in node
+    labels = (
+        ("D_barrel", "Efektif iç çap D"), ("H_barrel", "Silindirik gövde yüksekliği"),
+        ("H_cone", "Koni yüksekliği"), ("L_vortex", "Vorteks bulucu daldırması S"),
+        ("D_vortex", "Vorteks bulucu çapı D_x"), ("D_dust", "Toz çıkışı çapı"),
+        ("W_inlet", "Giriş genişliği"), ("H_inlet", "Giriş yüksekliği"),
+    )
+    rows = [row_src("Hat başına adet", node["per_string"])]
+    for key, label in labels:
+        if scaled and key == "D_barrel":
+            rows.append(row_src(label, node["D_barrel_published"]))
+        elif scaled:
+            rows.append(row_der(label, c[key], "m", 4, f"C4 × {c['scale']:.6f}"))
+        else:
+            note = "" if base_name == name else f"{base_name} ile özdeş"
+            rows.append(row_src(label, base[key], note=note))
+    note = "" if base_name == name else f"{base_name} ile özdeş"
+    rows += [
+        row_src("Giriş eğimi", base["inlet_slope"], note=note),
+        row_src("Volüt", base["volute"], note=note),
+        row_src("Çıkış dönüşü", base["outlet_turn"], note=note),
+        row_der("Çıkış borusu yükselişi (çatının üstünde)", c["outlet_rise"], "m", 3,
+                f"{c['outlet_rise_over_Dx']:g} D_x"),
+        row_der("Çıkış dirseği merkez yarıçapı", c["outlet_bend_R"], "m", 3,
+                f"{c['outlet_bend_R_over_Dx']:g} D_x"),
+        row_der("Çıkış bacağı / inişi", c["outlet_run"], "m", 3,
+                f"{c['outlet_run_over_Dx']:g} D_x"),
+        row_der("Toplam yükseklik (gövde + koni)", c["height"], "m", 3),
+        row_der("**Ekipman hacmi (gövde + koni)**", c["volume"], "m³", 2),
+        row_der("**Islak alan (gövde + çatı halkası + koni)**", c["wet_area"], "m²", 2),
+    ]
+    return rows
+
+
+def _riser_rows(g, k):
+    if k == 1:
+        r = pg.r1_path(g)
+        p = r["parts"]
+        br = r["branch"]
+        rows = [
+            row_der("C2 çıkış borusu yükselişi (Ø{:.3f})".format(p[0]["D"]), p[0]["length"], "m"),
+            row_der("C2 çıkış dirseği, 90° yay", p[1]["length"], "m"),
+            row_der("C2 çıkış bacağı, R1 eksenine", p[2]["length"], "m"),
+            row_src("R1 iç çapı", g["risers"]["R1"]["D"]),
+            row_der("R1 dik boyu, Y'ye kadar", p[3]["length"], "m"),
+            row_der("İkiz C1 kolu çapı (R1 alanının yarısı)", br["D"], "m"),
+            row_der("Kol başına boy (dik + 95° dirsek + geçiş + kanal)", br["length"], "m"),
+            row_der("Kol sayısı", r["branches"], "", 0),
+        ]
+    else:
+        r = pg.stage_riser(g, k)
+        p = r["parts"]
+        rows = [
+            row_der(f"Çap (C{k + 1}'in vorteks bulucusu D_x)", p[0]["D"], "m"),
+            row_der(f"C{k + 1} çıkış borusu yükselişi", p[0]["length"], "m"),
+            row_der("90° dirsek, merkez yayı", p[1]["length"], "m"),
+            row_der(f"Bacak, C{k} gövdesine", p[2]["length"], "m"),
+            row_der("Toplam boy", sum(q["length"] for q in p), "m"),
+        ]
+    rows += [
+        row_der("**Ekipman hacmi (hat başına)**", r["volume"], "m³", 2),
+        row_der("**Duvar alanı (hat başına)**", r["wall_area"], "m²", 2),
+    ]
+    return rows
+
+
+def _gooseneck_rows(g):
+    gn, n, gp = pg.gooseneck(g), g["gooseneck"], pg.gooseneck_plant(g)
+    return [
+        row_src("Kol iç çapı", n["D_leg"]),
+        row_der("Ortak boyun çapı (kol × √2)", gn["D_neck"], "m"),
+        row_der("Boyun yükselişi", gn["rise"], "m", 3, f"{pg.v(n['rise_over_D_neck']):g} × boyun çapı; modelleme"),
+        row_der("180° dirsek merkez yarıçapı", gn["bend_R"], "m", 3, f"{pg.v(n['bend_R_over_D_leg']):g} × kol çapı; modelleme"),
+        row_der("İki dirseğin ortak hacmi", gn["bend_overlap"], "m³"),
+        row_der("CFD: iniş (gövdenin yarı yüksekliğine)", gn["drop"], "m"),
+        row_der("CFD: hacim", gn["volume"], "m³", 2),
+        row_der("CFD: duvar alanı", gn["wall_area"], "m²", 2),
+        row_der("Tesis: kol boyu (iniş + 45° + C5 girişine yatay)", gp["leg_length"], "m"),
+        row_der("**Tesis: hacim (iki kol)**", gp["volume"], "m³", 2),
+        row_der("**Tesis: duvar alanı (iki kol)**", gp["wall_area"], "m²", 2),
+    ]
+
+
+def _calciner_rows(g):
+    c, cal = g["calciner"], pg.calciner(g)
+    return [
+        row_src("Gövde (shell) çapı", c["D_shell"]),
+        row_src("Efektif iç çap", c["D"], note="7.20 × 3.08 / 3.29"),
+        row_src("Gövde boyu (koni + silindir)", c["H"]),
+        row_src("Alt koni duvar açısı (yatayla)", c["cone_angle"]),
+        row_der("Boğaz çapı", cal["D_throat"], "m", 3, "literatür akışı / literatür hızı"),
+        row_der("Alt koni yüksekliği", cal["h_cone"], "m"),
+        row_der("Silindir boyu", cal["h_cylinder"], "m"),
+        row_src("Tersiyer hava kanalı çapı", c["D_tertiary_air"]),
+        row_src("Farin besleme borusu çapı", c["D_feed"], note="Fidaros 2007 × √2"),
+        row_der("**Ekipman hacmi (koni + silindir)**", cal["vessel_volume"], "m³", 2),
+        row_der("**Duvar alanı (silindir + koni + tavan halkası)**", cal["vessel_wall_area"], "m²", 2),
+    ]
+
+
+def _kiln_rows(g):
+    k, kk = g["kiln"], pg.kiln(g)
+    return [
+        row_src("Efektif iç çap", k["D"]),
+        row_src("Boy", k["L"]),
+        row_src("Eğim", k["slope"]),
+        row_src("Geçiş bölgesi (arka uç)", k["transition_L"]),
+        row_der("Yanma bölgesi", kk["burning_L"], "m", 2),
+        row_der("**Ekipman hacmi**", kk["volume"], "m³", 2),
+        row_der("**Duvar alanı**", kk["wall_area"], "m²", 2),
+    ]
+
+
+def _cooler_rows(g):
+    c, cc = g["cooler"], pg.cooler(g)
+    return [
+        row_src("Izgara alanı", c["grate_area"]),
+        row_src("Izgara genişliği w", c["width"]),
+        row_der("Izgara boyu L", cc["length"], "m", 2, "alan / genişlik"),
+        row_src("Gövde yüksekliği H", c["casing_height"]),
+        row_der("**Gövde hacmi**", cc["box_volume"], "m³", 2),
+    ]
+
+
+def _fluid_volume_rows(g):
+    t = pg.twin_sections(g)
+    n = t["preheater"]["strings"]
+    rows = []
+    for i, st in enumerate(t["preheater"]["stages"], start=1):
+        cyc = n * st["cyclones_per_string"] * st["cyclone_volume"]
+        ris = n * st["riser_volume"]
+        k = int(st["cyclone"][1:])
+        riser = "R1" if k == 1 else f"R{k}"
+        rows.append((f"Ön ısıtıcı, kademe {i}",
+                     f"{riser} + {st['cyclones_per_string']} {st['cyclone']} (×{n})",
+                     f"{ris:.2f} + {cyc:.2f} = **{cyc + ris:.2f}**"))
+    for seg in t["calciner"]["zone_segments"]:
+        label = {"vessel": "kalsinatör gövdesi (koni + silindir; yakıt burada)",
+                 "gooseneck": "kaz boynu, C5 girişlerine kadar",
+                 "C5": f"C5 (×{n})"}[seg["name"]]
+        rows.append(("Kalsinatör bölgesi", label, f"**{seg['volume']:.2f}**"))
+    kk, cc = pg.kiln(g), pg.cooler(g)
+    a = 0.25 * math.pi * kk["D"] ** 2
+    rows.append(("Geçiş", f"fırının arka {kk['transition_L']:g} m'si", f"**{a * kk['transition_L']:.2f}**"))
+    rows.append(("Yanma", f"fırının ön {kk['burning_L']:.2f} m'si", f"**{a * kk['burning_L']:.2f}**"))
+    rows.append(("Soğutucu", "ızgara kutusu", f"**{cc['box_volume']:.2f}**"))
+    return rows
+
+
+DOCS = {
+    "preheater/cyclone_C1.md": lambda g: _cyclone_rows(g, "C1"),
+    "preheater/cyclone_C2.md": lambda g: _cyclone_rows(g, "C2"),
+    "preheater/cyclone_C3.md": lambda g: _cyclone_rows(g, "C3"),
+    "preheater/cyclone_C4.md": lambda g: _cyclone_rows(g, "C4"),
+    "preheater/cyclone_C5.md": lambda g: _cyclone_rows(g, "C5"),
+    "preheater/riser_R1.md": lambda g: _riser_rows(g, 1),
+    "preheater/riser_R2.md": lambda g: _riser_rows(g, 2),
+    "preheater/riser_R3.md": lambda g: _riser_rows(g, 3),
+    "preheater/riser_R4.md": lambda g: _riser_rows(g, 4),
+    "preheater/gooseneck.md": _gooseneck_rows,
+    "calciner/calciner.md": _calciner_rows,
+    "kiln/kiln.md": _kiln_rows,
+    "cooler/cooler.md": _cooler_rows,
+    "fluid_volumes.md": _fluid_volume_rows,
+}
+DOC_HEADS = {"fluid_volumes.md": ("Twin bölgesi", "Ekipman", "Hacim [m³]")}
+
+
+def md_block(name, rows):
+    head = DOC_HEADS.get(name, ("Ölçü", "Değer", "Kaynak"))
+    lines = [f"| {head[0]} | {head[1]} | {head[2]} |", "|---|---|---|"]
+    lines += [f"| {a} | {b} | {c} |" for a, b, c in rows]
+    return MD_HEADER + "\n".join(lines) + "\n" + MD_END
+
+
+# ======================================================================
 # Writing
 # ======================================================================
 def block(consts):
     return HEADER + "".join(c.line().rstrip() + "\n" for c in consts) + END
 
 
-def render(text, consts, name):
+def render(text, new_block, name, begin=BEGIN, end=END):
     """text with its generated block replaced (CRLF kept as found)."""
     nl = "\r\n" if "\r\n" in text else "\n"
     body = text.replace("\r\n", "\n")
-    i, j = body.find(BEGIN), body.find(END)
+    i, j = body.find(begin), body.find(end)
     if i < 0 or j < i:
-        raise SystemExit(f"{name}: no generated block ({BEGIN!r} ... {END!r})")
-    body = body[:i] + block(consts) + body[j + len(END):]
+        raise SystemExit(f"{name}: no generated block ({begin!r} ... {end!r})")
+    body = body[:i] + new_block + body[j + len(end):]
     return body.replace("\n", nl)
 
 
@@ -272,11 +503,19 @@ def run(check=False, g=None):
     for name, build in TARGETS.items():
         path = MACROS / name
         text = path.read_bytes().decode("latin-1")
-        new = render(text, build(g), name)
+        new = render(text, block(build(g)), name)
         if new != text:
-            stale.append(name)
+            stale.append(f"geometry/macros/{name}")
             if not check:
                 path.write_bytes(new.encode("latin-1"))
+    for name, build in DOCS.items():
+        path = DOCS_DIR / name
+        text = path.read_bytes().decode("utf-8")
+        new = render(text, md_block(name, build(g)), name, MD_BEGIN, MD_END)
+        if new != text:
+            stale.append(f"geometry/{name}")
+            if not check:
+                path.write_bytes(new.encode("utf-8"))
     return stale
 
 
@@ -284,7 +523,7 @@ def main(argv):
     check = "--check" in argv
     stale = run(check=check)
     for name in stale:
-        print(("stale: " if check else "wrote: ") + f"geometry/macros/{name}")
+        print(("stale: " if check else "wrote: ") + name)
     if check and stale:
         return 1
     if not stale:

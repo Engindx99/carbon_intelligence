@@ -1,28 +1,35 @@
 # Twin hacim defteri
 
-Twin'in her bölgesinin hangi akış hacmi üzerinden hesap yaptığı ve bu hacmin hangi dokümandan geldiği (kullanıcı, 13 Ekim 2026: "her ekipmanın gerçekten bir akış hacmi üzerinden hesaplama yaptığından emin olmalıyız"). `tests/test_fluid_volumes.py` bu tabloyu twin'e karşı denetler: her bölgenin hücre hacimlerinin toplamı dokümandaki "Ekipman hacmi"ne ‰1 içinde eşit olmalıdır.
+Twin'in her bölgesinin hangi akış hacmi üzerinden hesap yaptığı ve bu hacmin hangi dokümandan geldiği (kullanıcı, 13 Ekim 2026: "her ekipmanın gerçekten bir akış hacmi üzerinden hesaplama yaptığından emin olmalıyız").
+
+Bütün ölçüler tek kaynaktan gelir (kullanıcı kararı, 14 Ekim 2026): `geometry/plant_geometry.yaml` ana ölçüleri bir kez yazar, `geometry/plant_geometry.py` hacimleri ve alanları türetir, twin onları `main.load_cfg` ile alır. `configs/twin_cfg.yaml` geometri yazmaz; yazarsa yükleyici reddeder. `tests/test_fluid_volumes.py` her bölgenin hücre hacimleri toplamının buradaki hacme eşit olduğunu denetler.
 
 Tesis iki özdeş 2500 t/d hattıdır ([plant_topology.md](plant_topology.md)). Twin tek hattı toplam debiyle çözer, bu yüzden hat başına ekipmanların hacimleri ve duvar alanları ×2 alınır. Bu, toplanmış (lumped) bir modelde iki hattın tam eşdeğeridir.
 
 ## Bölgeler
 
-| Twin bölgesi | Ekipman | Doküman hacmi [m³] | Twin hacmi [m³] | Durum |
-|---|---|---|---|---|
-| Ön ısıtıcı, kademe 1 | C5 (×2) | 622.0 | 69.3 | ✘ Ø4.2 × 25 m yer tutucunun beşte biri |
-| Ön ısıtıcı, kademe 2 | R4 + C4 (×2) | 970.9 | 69.3 | ✘ |
-| Ön ısıtıcı, kademe 3 | R3 + C3 (×2) | 947.2 | 69.3 | ✘ |
-| Ön ısıtıcı, kademe 4 | R2 + C2 (×2) | 908.0 | 69.3 | ✘ |
-| Ön ısıtıcı, kademe 5 | R1 + 2 C1 (×2) | 814.7 | 69.3 | ✘ |
-| Kalsinatör | kalsinatör (koni + gövde) | 1009.71 | 1070.4 | ≈ Ø6.74 × 30 m silindir; koni yok |
-| — | kaz boynu (Y) | 833.77 | — | ✘ Twin'de yok |
-| Geçiş | fırının arka 30.83 m'si | 557.89 | 557.89 | ✔ |
-| Yanma | fırının ön 43.17 m'si | 781.19 | 781.19 | ✔ |
-| Soğutucu | ızgara kutusu | 358.80 (yatak ~48.9) | yatak w·h·dz | ✔ Alışverişler yatak hacminde, gövde duvarı kutunun |
+Kademe numaraları twin'in gaz sırasıdır (kademe 1 = C4). Ön ısıtıcı satırları riser + siklon.
 
-Kademe hacimleri:
-- Siklon: gövde + koni ([cyclone_C1.md](preheater/cyclone_C1.md) … [cyclone_C5.md](preheater/cyclone_C5.md)). C2–C4 CFD gövdesiyle 283.2 m³, C5 311.0 m³, C1 124.54 m³ ve hatta iki tane.
-- Riser: yayınlanmış çap × FLS boyu, düz silindir ([riser_R1.md](preheater/riser_R1.md) … [riser_R4.md](preheater/riser_R4.md)): R1 158.26, R2 170.82, R3 190.42, R4 202.25 m³.
-- Twin kademesi = alttaki riser'daki eş akımlı alışveriş + siklon (`pyroprocess/preheater/heat_transfer.py`). C5'i riser değil kaz boynu kolu besler; o hacim kalsinatör bölgesindedir.
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Twin bölgesi | Ekipman | Hacim [m³] |
+|---|---|---|
+| Ön ısıtıcı, kademe 1 | R4 + 1 C4 (×2) | 813.59 + 566.49 = **1380.08** |
+| Ön ısıtıcı, kademe 2 | R3 + 1 C3 (×2) | 753.06 + 566.49 = **1319.55** |
+| Ön ısıtıcı, kademe 3 | R2 + 1 C2 (×2) | 753.06 + 566.49 = **1319.55** |
+| Ön ısıtıcı, kademe 4 | R1 + 2 C1 (×2) | 1054.35 + 498.16 = **1552.52** |
+| Kalsinatör bölgesi | kalsinatör gövdesi (koni + silindir; yakıt burada) | **1009.71** |
+| Kalsinatör bölgesi | kaz boynu, C5 girişlerine kadar | **764.16** |
+| Kalsinatör bölgesi | C5 (×2) | **622.17** |
+| Geçiş | fırının arka 30.83 m'si | **557.89** |
+| Yanma | fırının ön 43.17 m'si | **781.19** |
+| Soğutucu | ızgara kutusu | **358.80** |
+<!-- END GENERATED -->
+
+- **Siklon:** gövde + koni ([cyclone_C1.md](preheater/cyclone_C1.md) … [cyclone_C5.md](preheater/cyclone_C5.md)). C2–C4 C4'ün CFD gövdesiyle, C5 onun × 6.50 / 6.30'u; C1 hatta iki tane.
+- **Riser:** R2–R4 alttaki siklonun CFD çıkış borusudur: çatının üstündeki yükseliş, 90° dirsek ve üstteki siklona yatay bacak, vorteks bulucu çapında. R1, C2'nin çıkış borusu, R1'in Y'ye kadar dik kısmı ve ikiz C1 kolları ([riser_R1.md](preheater/riser_R1.md) … [riser_R4.md](preheater/riser_R4.md); kullanıcı kararı, 14 Ekim 2026). 13–14 Ekim 2026 arasında twin yayınlanmış riser çaplarıyla FLS boylarını kullanıyordu (R1–R4 158–202 m³); onlar bu tesisin değil.
+- **Twin kademesi** = alttaki riser'daki eş akımlı alışveriş + siklon (`pyroprocess/preheater/heat_transfer.py`).
+- **Kalsinatör bölgesi** tek bir kanaldır (`calciner.zone_segments`): gövde (yakıt burada yanar), C5 girişlerine kadar kaz boynu ve iki C5. C5'i riser değil kaz boynu kolu besler. Kalsinatör CFD'si kaz boynunu gövdenin yarı yüksekliğinde keser (833.77 m³); tesisin ve twin'in kaz boynu C5 girişine kadar iner ([gooseneck.md](preheater/gooseneck.md)).
+- **Soğutucu:** alışverişler yatak hacminde (w · h · dz), gövde duvarı ızgara kutusunun.
 
 ## Hacmi olmayan ekipman (kaynak yok)
 

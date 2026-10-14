@@ -475,13 +475,16 @@ def r1_path(g):
     n = cyclone(g, "C1")["per_string"]
     branch = _pipe(br["D"], branch_up + bend + duct)
     branches = {"volume": n * branch["volume"], "wall_area": n * branch["wall_area"]}
-    return _sum(
+    out = _sum(
         _pipe(D2, c2["outlet_rise"]),
         _pipe(D2, 0.5 * math.pi * R2),
         _pipe(D2, L["d_r1"] - R2),
         _pipe(D1, up),
         branches,
     )
+    out["branch"] = branch
+    out["branches"] = n
+    return out
 
 
 def gooseneck_plant(g):

@@ -8,15 +8,28 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 
 **Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2, C3 ve C4 özdeş siklonlar; ölçüler C4'ünkiler. Bu kademenin katalog değerleri (D 6.30, gövde 3.22, koni 7.26, vorteks bulucu 4.62 / 3.15, toz çıkışı 0.84, giriş 1.26 × 9.46 m) [catalog.md](../catalog.md)'de duruyor; sapmanın gerekçesi orada.
 
-Efektif iç çap, D: 6.30 m — C4 ile özdeş (ara kademe standardı; C4'ün yayınlanmış HFC2500 değeri)
-Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 6.30 m ve volütlü giriş ([cyclone_C4.md](cyclone_C4.md))
-Koni yüksekliği: 7.30 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Vorteks bulucu çapı: 4.63 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 3.90 m ([cyclone_C4.md](cyclone_C4.md))
-Toz çıkışı çapı: 0.81 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Giriş genişliği: 1.27 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Giriş yüksekliği: 9.44 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Volüt geometrisi: TBD — 2500 hattı için kaynak yok
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Hat başına adet | 1 | yayınlanmış |
+| Efektif iç çap D | 6.3 m | yayınlanmış; C4 ile özdeş |
+| Silindirik gövde yüksekliği | 6.3 m | CFD kararı; C4 ile özdeş |
+| Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Vorteks bulucu daldırması S | 3.9 m | CFD kararı; C4 ile özdeş |
+| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Giriş genişliği | 2.912 m | CFD kararı; C4 ile özdeş |
+| Giriş yüksekliği | 3.4 m | CFD kararı; C4 ile özdeş |
+| Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
+| Volüt | var | CFD kararı; C4 ile özdeş |
+| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
+| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
+| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
+| **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+<!-- END GENERATED -->
 
 ## CFD Geometry
 
@@ -28,6 +41,4 @@ TBD (CFD_VIEW.pdf'te C3 için verilmemiş).
 
 ## Derived Properties
 
-Ekipman hacmi (gövde + koni): **283.2 m³** — C4 ile özdeş, CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog gövdesiyle 194.5 m³, bu kademenin kendi katalog ölçüleriyle 187.0 m³ idi.
-
-Islak alan (gövde + çatı halkası + koni): **226.1 m²** (C4 ile özdeş)
+Ekipman hacmi (gövde + koni) ve ıslak alan Geometrik Ölçüler'deki tabloda — C4 ile özdeş, CFD gövdesiyle (h = D; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog gövdesiyle 194.5 m³, bu kademenin kendi katalog ölçüleriyle 187.0 m³ idi.

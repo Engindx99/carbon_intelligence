@@ -8,15 +8,30 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 
 **Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2 ve C3 bu siklonla özdeş; ölçüler aşağıdaki C4 değerleri.
 
-Efektif iç çap, D: 6.30 m — HFC2500 (yayınlanmış)
-Silindirik gövde yüksekliği: 3.46 m — FLS oranı (türetilmiş); **CFD'de 6.30 m** (aşağıda, kullanıcı kararı)
-Koni yüksekliği: 7.30 m — FLS oranı (türetilmiş)
-Vorteks bulucu çapı: 4.63 m — FLS oranı (türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.17 m — FLS oranı (türetilmiş); **CFD'de 3.90 m** (aşağıda, kullanıcı kararı)
-Toz çıkışı çapı: 0.81 m — FLS oranı (türetilmiş)
-Giriş genişliği: 1.27 m — FLS oranı (türetilmiş)
-Giriş yüksekliği: 9.44 m — FLS oranı (türetilmiş)
-Volüt geometrisi: TBD — 2500 hattı için kaynak yok
+Yayınlanmış olan yalnız çap D'dir (HFC2500); koni, vorteks bulucu ve toz çıkışı D'den FLS oranlarıyla türetilir. CFD'de katalogdan üç sapma var, hepsi kullanıcı kararı ve aşağıda gerekçeli: gövde h = D (katalog 3.46 m), daldırma 3.90 m (katalog 3.17 m) ve volütlü giriş (katalog 1.27 × 9.44 m). Katalog değerleri [catalog.md](../catalog.md)'de.
+
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Hat başına adet | 1 | yayınlanmış |
+| Efektif iç çap D | 6.3 m | yayınlanmış |
+| Silindirik gövde yüksekliği | 6.3 m | CFD kararı |
+| Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş |
+| Vorteks bulucu daldırması S | 3.9 m | CFD kararı |
+| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş |
+| Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş |
+| Giriş genişliği | 2.912 m | CFD kararı |
+| Giriş yüksekliği | 3.4 m | CFD kararı |
+| Giriş eğimi | 0 ° | CFD kararı |
+| Volüt | var | CFD kararı |
+| Çıkış dönüşü | 90 ° | CFD kararı |
+| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
+| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
+| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
+| **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+<!-- END GENERATED -->
 
 ## CFD Geometry
 
@@ -36,10 +51,10 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 - FLS oranının 3.46 m'si (h/D 0.55) 3.17 m'lik daldırmayla vorteks bulucu ağzını koninin yalnız 0.29 m üstüne koyuyordu.
 - h/D 1.0 ile ağız koninin 3.13 m üstüne çıkıyordu; daldırma 3.90 m'ye inince 2.40 m üstünde (aşağıda).
 - Koni, vorteks bulucu çapı ve toz çıkışı katalogdaki gibi.
-- CFD gövdesinin hacmi 283.2 m³; katalog ölçüleriyle 194.5 m³'tü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı CFD gövdesinin hacmini ve ıslak alanını kullanır (aşağıda, Derived Properties).
+- CFD gövdesinin hacmi yukarıdaki tabloda; katalog ölçüleriyle 194.5 m³'tü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı CFD gövdesinin hacmini ve ıslak alanını kullanır (aşağıda, Derived Properties).
 
 **Çıkış:**
-- Vorteks bulucu çatının 5.79 m (1.25 D_x) üstüne uzar; bu, C1'deki geri akış ölçümünün oranı.
+- Vorteks bulucu çatının 1.25 D_x (5.79 m) üstüne uzuyordu, C1'deki geri akış ölçümünün oranı; 14 Ekim 2026'dan beri 1.70 D_x (aşağıda).
 - Ardından gelen 90° dirsek (merkez çizgisi yarıçapı 1.0 D_x = 4.63 m) gazı +x yönünde 4.63 m'lik (1.0 D_x) yatay bir bacağa çevirir. Gaz çıkış yüzü x = 9.26 m'de.
 - C4'ün gazı R3 riser'ına gider, fana değil; bu yüzden C1'deki kaz boynu yerine 90° dirsek var. Dirsek girdabı kırar.
 - C1'in oranları (1.5 D_x dirsek, 1.25 D_x bacak) Ø4.63 m'lik boruda çıkışı domenin yarısından fazlası yapıyordu (378 / 666 m³). 1.0 D_x, C1'in riser dirseğindeki oran (kullanıcı kararı, 4 Ekim 2026).
@@ -158,7 +173,7 @@ Betik C1'in yüklü sonuçlarını birebir veriyor: α 0.795, v_θCS 14.7 m/s, 2
 Gazın riser'daki kendi kaybı (dirsekler, sürtünme) CFD domeninde yok ve hesaplanmadı.
 
 **Twin'e giden değerler** (C1'deki gibi η'nin alt ucu):
-- η **%93.5**;
+- η **%93.5** (14 Ekim 2026'da 0.96'ya çıktı: sınır yükleme + DPM iç girdabı, aşağıda);
 - siklon ΔP **~360 Pa** (337–385);
 - R4'te farin kaynaklı ek kayıp ~124 Pa.
 
@@ -321,6 +336,4 @@ Mesh'teki named selection'lar C1'in adlarıyla gelmişti (`meal_feed` = giriş, 
 
 ## Derived Properties
 
-Ekipman hacmi (gövde + koni): **283.2 m³** — CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog ölçüleriyle (gövde 3.46 m) 194.5 m³'tü.
-
-Islak alan (gövde + çatı halkası + koni): **226.1 m²** — CFD gövdesiyle; katalog ölçüleriyle 169.9 m²'ydi.
+Ekipman hacmi (gövde + koni) ve ıslak alan Geometrik Ölçüler'deki tabloda — CFD gövdesiyle (h = D; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog ölçüleriyle (gövde 3.46 m) 194.5 m³ ve 169.9 m²'ydi.

@@ -2,7 +2,8 @@
 
 geometry/plant_geometry.yaml holds each dimension once (single-source
 rule, user decision 13-14 Oct 2026). The SolidWorks macros hold copies
-in generated Const blocks (tools/gen_geometry.py); none may be stale or
+in generated Const blocks, the equipment documents in generated
+tables (tools/gen_geometry.py); none may be stale or
 edited by hand, and none of the generated names may be written again
 outside its block.
 """

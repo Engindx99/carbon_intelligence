@@ -13,7 +13,7 @@ Güzergâh / dirsekler: TBD — Kaynak yok
 Klape konumu: TBD — Kaynak yok
 Varış noktasındaki giriş yüksekliği: TBD — Kaynak yok
 
-Arayüz: başlangıç yüzü siklonun toz çıkışıdır (Φ0.40 m, [cyclone_C1.md](cyclone_C1.md)). Bu değer siklonun ölçüsüdür, borunun çapı değildir.
+Arayüz: başlangıç yüzü siklonun toz çıkışıdır (çapı [cyclone_C1.md](cyclone_C1.md)'deki tabloda). Bu değer siklonun ölçüsüdür, borunun çapı değildir.
 
 ## CFD Geometry
 

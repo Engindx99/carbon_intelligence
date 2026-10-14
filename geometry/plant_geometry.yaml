@@ -33,12 +33,12 @@ cyclones:
   C1:
     per_string:        {value: 2,    unit: "-",   source: published,    doc: preheater/cyclone_C1.md}
     D_barrel:          {value: 4.32, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    H_barrel:          {value: 6.79, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    H_cone:            {value: 4.65, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    L_vortex:          {value: 2.16, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    D_vortex:          {value: 2.4,  unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    D_dust:            {value: 0.4,  unit: m,     source: published,    doc: preheater/cyclone_C1.md}
-    W_inlet:           {value: 0.86, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
+    H_barrel:          {value: 6.79, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    H_cone:            {value: 4.65, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    L_vortex:          {value: 2.16, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    D_vortex:          {value: 2.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    D_dust:            {value: 0.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    W_inlet:           {value: 0.86, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     H_inlet:           {value: 2.16, unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
     inlet_slope:       {value: 5.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C1.md}
     volute:            {value: false, unit: "-",  source: cfd_decision, doc: preheater/cyclone_C1.md}
@@ -51,10 +51,10 @@ cyclones:
     per_string:        {value: 1,    unit: "-",   source: published,    doc: preheater/cyclone_C4.md}
     D_barrel:          {value: 6.3,  unit: m,     source: published,    doc: preheater/cyclone_C4.md}
     H_barrel:          {value: 6.3,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
-    H_cone:            {value: 7.3,  unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    H_cone:            {value: 7.3,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
     L_vortex:          {value: 3.9,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
-    D_vortex:          {value: 4.63, unit: m,     source: published,    doc: preheater/cyclone_C4.md}
-    D_dust:            {value: 0.81, unit: m,     source: published,    doc: preheater/cyclone_C4.md}
+    D_vortex:          {value: 4.63, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
+    D_dust:            {value: 0.81, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
     W_inlet:           {value: 2.912, unit: m,    source: cfd_decision, doc: preheater/cyclone_C4.md}
     H_inlet:           {value: 3.4,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
     inlet_slope:       {value: 0.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}

@@ -12,19 +12,30 @@ C1, FLS'nin tek üst siklonundan çoklu C1'e aktarım varsayımını taşır; bu
 
 ## Geometrik Ölçüler
 
-Adet: 2
+Yayınlanmış olan yalnız çap D'dir (HFC2500); gövde, koni, vorteks bulucu, toz çıkışı ve giriş genişliği D'den FLS oranlarıyla türetilir ([catalog.md](../catalog.md)).
 
-Efektif iç çap, D: 4.32 m — HFC2500 (yayınlanmış)
-
-Silindirik gövde yüksekliği: 6.79 m — FLS oranı (türetilmiş)
-
-Koni yüksekliği: 4.65 m — FLS oranı (türetilmiş)
-
-Vorteks bulucu çapı: 2.40 m — FLS oranı (türetilmiş)
-
-Vorteks bulucu boyu (daldırma): 2.16 m — FLS oranı (türetilmiş)
-
-Toz çıkışı çapı: 0.40 m — FLS oranı (türetilmiş)
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Hat başına adet | 2 | yayınlanmış |
+| Efektif iç çap D | 4.32 m | yayınlanmış |
+| Silindirik gövde yüksekliği | 6.79 m | FLS oranıyla türetilmiş |
+| Koni yüksekliği | 4.65 m | FLS oranıyla türetilmiş |
+| Vorteks bulucu daldırması S | 2.16 m | FLS oranıyla türetilmiş |
+| Vorteks bulucu çapı D_x | 2.4 m | FLS oranıyla türetilmiş |
+| Toz çıkışı çapı | 0.4 m | FLS oranıyla türetilmiş |
+| Giriş genişliği | 0.86 m | FLS oranıyla türetilmiş |
+| Giriş yüksekliği | 2.16 m | CFD kararı |
+| Giriş eğimi | 5 ° | CFD kararı |
+| Volüt | yok | CFD kararı |
+| Çıkış dönüşü | 180 ° | CFD kararı |
+| Çıkış borusu yükselişi (çatının üstünde) | 3.000 m | 1.25 D_x |
+| Çıkış dirseği merkez yarıçapı | 3.600 m | 1.5 D_x |
+| Çıkış bacağı / inişi | 3.000 m | 1.25 D_x |
+| Toplam yükseklik (gövde + koni) | 11.440 m | türetilmiş |
+| **Ekipman hacmi (gövde + koni)** | 124.54 m³ | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 139.70 m² | türetilmiş |
+<!-- END GENERATED -->
 
 ### Farin Girişi
 
@@ -32,9 +43,7 @@ Giriş tipi: Teğetsel
 
 Giriş kesiti: Dikdörtgen, sabit kesit
 
-Giriş genişliği: 0.86 m — FLS oranı (türetilmiş)
-
-Giriş yüksekliği: 2.16 m — **kullanıcı kararı**, katalog değeri değil
+Giriş genişliği ve yüksekliği yukarıdaki tabloda. Yükseklik **kullanıcı kararı**, katalog değeri değil.
 
 FLS oranı 4.97 m veriyor (a/D = 1.15); giriş bilerek kısaltıldı. Gerekçe: yayınlanmış uzun giriş, gerçek makinede 270°'lik sarmal volütle beslendiği için anlamlıdır, bu model ise volütü bilerek kurmuyor. Volüt yerine düz teğetsel kanal konunca uzun giriş gerekçesini kaybediyor — 4.97 m'de açıklığın %61'i vorteks bulucu ağzının (z = 9.28) altında kalıyor ve oradan giren gaz halkayı atlayarak kısa devre yapabiliyor; giriş hızı da ~7 m/s'ye düşüyor, oysa preheater siklonları 15–20 m/s'de çalışır.
 
@@ -830,9 +839,7 @@ CFD 17.9 kg/s'de (sektör tipik değeri) çözüldü. Tesisin her hattı 2500 t/
 
 ## Derived Properties
 
-Ekipman hacmi (her biri): 124.54 m³ — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır
-
-Toplam yükseklik (gövde + koni): 11.44 m
+Ekipman hacmi (her biri), toplam yükseklik ve ıslak alan: Geometrik Ölçüler'deki tabloda. Kalma süresi, holdup ve benzeri fiziksel hesaplar ekipman hacmini kullanır.
 
 Koni duvarının yatayla açısı: 67.1° — farinin 40°'lik yığılma açısının üstünde
 
@@ -843,8 +850,6 @@ Giriş hidrolik çapı: 1.23 m
 Vorteks bulucu kesiti: 4.524 m²
 
 Toz çıkışı kesiti: 0.126 m²
-
-Islak alan (gövde + çatı halkası + koni): 139.7 m²
 
 Vorteks bulucunun dış yarıçapı ile kanalın iç duvarı arasındaki pay: 0.020 m (teğet payından etkilenmez — pay yalnızca dış duvarı kaydırır) — akışkan içinde bir darboğaz değil (aradaki bölge halkanın kendisi, serbest); kanalın vorteks bulucuyu kesmemesini garanti eden geometrik sınır
 

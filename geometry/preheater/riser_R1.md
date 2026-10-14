@@ -5,10 +5,22 @@ Bağlantı: C2 → C1 (CFD_VIEW.pdf: "Riserler R1–R4 (C2→C1 … C5→C4)").
 
 ## Geometrik Ölçüler
 
-Efektif iç çap: 3.07 m — HFC2500 (yayınlanmış)
-Boy: 21.38 m — FLS R1'in `h_tot`'u, arXiv 2504.02886 Tablo 8 (yayınlanmış; tesis riser'ının boyu yayınlanmamış, FLS'ninki aktarıldı)
-Şekil: düz silindir, tesisin yayınlanmış çapıyla (kullanıcı kararı, 13 Ekim 2026). FLS'de metin ile denklemler riser'ın uç konisinde çelişiyor (`c99b93a^:geometry/SOURCES.md`, "Açık belirsizlikler"). İki okuma `h_tot`'ta birleşir, koni yalnız FLS'nin kendi çaplarına aittir; aradaki hacim farkı ≤ %6. 21 Eylül 2026'daki "riser hacmi hesaplanmaz" kararının yerini bu karar aldı: twin'in ön ısıtıcı kademesi riser + siklon hacmiyle çalışır.
-Dirsek geometrisi: TBD — `LayoutParams` alanı tanımlı, değeri yok
+R1'in iç çapı yayınlanmıştır (HFC2500). Gaz yolu çizimdeki gibidir (kullanıcı kararı, 14 Ekim 2026; [plant_topology.md](../plant_topology.md)): C2'nin CFD çıkış borusu (yükseliş, 90° dirsek, R1 eksenine bacak), R1'in Y'ye kadar dik kısmı, sonra ikiz C1'lerin her birine bir kol (R1 alanının yarısı): dik kısım, 95° dirsek, geçiş ve giriş kanalı. Y'nin kendi kısa parçaları kolların boyuna katılır. FLS'nin `h_tot`'u (21.38 m) ile düz silindir okuması twin'de 13–14 Ekim 2026 arasında kullanıldı; bu tesisin değildir.
+
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| C2 çıkış borusu yükselişi (Ø4.630) | 7.871 m | türetilmiş |
+| C2 çıkış dirseği, 90° yay | 7.273 m | türetilmiş |
+| C2 çıkış bacağı, R1 eksenine | 6.665 m | türetilmiş |
+| R1 iç çapı | 3.07 m | yayınlanmış |
+| R1 dik boyu, Y'ye kadar | 2.815 m | türetilmiş |
+| İkiz C1 kolu çapı (R1 alanının yarısı) | 2.171 m | türetilmiş |
+| Kol başına boy (dik + 95° dirsek + geçiş + kanal) | 18.799 m | türetilmiş |
+| Kol sayısı | 2 | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 527.18 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 600.78 m² | türetilmiş |
+<!-- END GENERATED -->
 
 ## CFD Geometry
 
@@ -78,8 +90,7 @@ Durum"). Riser'ın yüklü ΔP'si 190 Pa.
 
 ## Derived Properties
 
-Ekipman hacmi: 158.26 m³ (π/4 · 3.07² · 21.38; hat başına bir riser)
-Duvar alanı: 206.20 m² (π · 3.07 · 21.38)
+Ekipman hacmi ve duvar alanı Geometrik Ölçüler'deki tabloda (hat başına).
 CFD domenindeki riser hacmi: dirsek 13.32 m³ + düz riser 27.76 m³ + geçiş ~4.2 m³ (loft, kesin
 değer makro log'unda) + oluk 0.370 m³ ≈ 45.6 m³ (C1 + riser domeni, kaz boyunlu çıkışla ≈ 250.2 m³;
 yatay stub ve 2.5 m'lik besleme altıyla 242.65 m³ idi)

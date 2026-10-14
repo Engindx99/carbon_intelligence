@@ -17,12 +17,20 @@ FLS soğutucusu, twin'in çapraz akış hücre yapısının da kaynağıdır (`p
 
 ## Geometrik Ölçüler
 
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Izgara alanı | 119.6 m² | yayınlanmış |
+| Izgara genişliği w | 4 m | literatür |
+| Izgara boyu L | 29.90 m | alan / genişlik |
+| Gövde yüksekliği H | 3 m | literatür |
+| **Gövde hacmi** | 358.80 m³ | türetilmiş |
+<!-- END GENERATED -->
+
+Izgara alanı PF5000'in; genişlik ve gövde yüksekliği (ızgaradan tavana, yatak ve üstündeki hava) FLS soğutucusunun; boy alan / genişlik (kullanıcı kararı, 13 Ekim 2026: alan tesisin, genişlik FLS'nin).
+
 | Ölçü | Değer | Kaynak / türetme |
 |---|---|---|
-| Izgara alanı | 119.6 m² | PF5000 (yayınlanmış) |
-| Izgara genişliği w | 4.0 m | FLS-cooler (yayınlanmış) |
-| Izgara boyu L | **29.90 m** | 119.6 / 4.0 (türetilmiş; kullanıcı kararı, 13 Ekim 2026: alan tesisin, genişlik FLS'nin) |
-| Gövde yüksekliği H | 3.0 m | FLS-cooler (yayınlanmış): ızgaradan tavana, yatak ve üstündeki hava |
 | Yatak gözenekliliği ε | 0.4 | FLS-cooler, kaynağının [3] değeri |
 | Klinker katı yoğunluğu ρ_s | 3178 kg/m³ | Tablo II, FLS klinker bileşiminde (%79.96 C3S, 9.76 C3A, 10.28 C4AF) kütle-ağırlıklı harmonik ortalama; C4AF için 3.7–3.9'un ortası 3.8 (türetilmiş) |
 | Yığın yoğunluğu ρ_b | 1907 kg/m³ | (1 − ε) ρ_s (türetilmiş) |
@@ -67,4 +75,4 @@ tasarım birikimi   1907 × 48.93        ≈  93.3 t klinker
 segment            2.990 × 4.0         =  11.96 m²
 ```
 
-Ekipman hacmi: **358.80 m³**.
+Ekipman hacmi (gövde hacmi) Geometrik Ölçüler'deki tabloda.

@@ -5,8 +5,25 @@ Bağlantı: kalsinatör tepesi → iki hattın C5'leri; her kol bir hattın C5'i
 
 ## Geometrik Ölçüler
 
-Efektif iç çap: 3.50 m — (P) yayınlanmış, bir 2500 t/d hattının boynu. Tesiste **her kol** bu çaptadır; her kol bir hattın bütün gazını taşır.
-Boy: TBD — Hiçbir kaynakta yok
+Kolun çapı yayınlanmıştır: bir 2500 t/d hattının boynu. Tesiste **her kol** bu çaptadır; her kol bir hattın bütün gazını taşır. Boylar yayınlanmamıştır.
+
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Kol iç çapı | 3.5 m | yayınlanmış |
+| Ortak boyun çapı (kol × √2) | 4.950 m | türetilmiş |
+| Boyun yükselişi | 6.187 m | 1.25 × boyun çapı; modelleme |
+| 180° dirsek merkez yarıçapı | 5.250 m | 1.5 × kol çapı; modelleme |
+| İki dirseğin ortak hacmi | 10.346 m³ | türetilmiş |
+| CFD: iniş (gövdenin yarı yüksekliğine) | 21.187 m | türetilmiş |
+| CFD: hacim | 833.77 m³ | türetilmiş |
+| CFD: duvar alanı | 924.85 m² | türetilmiş |
+| Tesis: kol boyu (iniş + 45° + C5 girişine yatay) | 17.570 m | türetilmiş |
+| **Tesis: hacim (iki kol)** | 764.16 m³ | türetilmiş |
+| **Tesis: duvar alanı (iki kol)** | 845.30 m² | türetilmiş |
+<!-- END GENERATED -->
+
+**Tesis ve CFD** (kullanıcı kararı, 14 Ekim 2026). Tesiste kollar C5 girişlerine kadar iner: iniş, 45°'lik bir parça ve C5 gövdesine yatay bir bacak (çizim, [plant_topology.md](../plant_topology.md)). Twin bu hacmi kullanır. Kalsinatör CFD'si kolları gövdenin yarı yüksekliğinde keser (`end_at_vessel_H`, bir CFD sınır seçimi); "CFD" satırları o domenindir.
 
 ## CFD Geometry
 
@@ -29,4 +46,4 @@ Boylar yayınlanmamıştır; yükseliş ve dirsek C1 makrosunun modelleme oranla
 
 ## Derived Properties
 
-Boyun 119.055 m³; iki dirsek 2 × 158.685 − 10.346 = 307.024 m³; iki iniş 407.689 m³. Toplam **833.768 m³**.
+CFD domeninde: boyun 119.055 m³; iki dirsek 2 × 158.685 − 10.346 = 307.024 m³; iki iniş 407.689 m³. Toplam **833.768 m³**.

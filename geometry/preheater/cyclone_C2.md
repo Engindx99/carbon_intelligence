@@ -9,54 +9,47 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 
 **Ara kademe standardı (kullanıcı kararı, 27 Eylül 2026):** C2, C3 ve C4 özdeş siklonlar; ölçüler C4'ünkiler. Bu kademenin katalog değerleri (D 6.10, gövde 3.67, koni 6.51, vorteks bulucu 4.35 / 3.05, toz çıkışı 0.80, giriş 1.23 × 8.71 m) [catalog.md](../catalog.md)'de duruyor; sapmanın gerekçesi orada.
 
-Efektif iç çap, D: 6.30 m — C4 ile özdeş (ara kademe standardı; C4'ün yayınlanmış HFC2500 değeri; C2'nin kendi yayınlanmış çapı 6.10 m)
-Silindirik gövde yüksekliği: 3.46 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 6.30 m ve volütlü giriş ([cyclone_C4.md](cyclone_C4.md))
-Koni yüksekliği: 7.30 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Vorteks bulucu çapı: 4.63 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Vorteks bulucu boyu (daldırma): 3.17 m — C4 ile özdeş (FLS oranı, türetilmiş); CFD'de C4 gibi 3.90 m ([cyclone_C4.md](cyclone_C4.md))
-Toz çıkışı çapı: 0.81 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Giriş genişliği: 1.27 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Giriş yüksekliği: 9.44 m — C4 ile özdeş (FLS oranı, türetilmiş)
-Volüt geometrisi: TBD — 2500 hattı için kaynak yok
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Hat başına adet | 1 | yayınlanmış |
+| Efektif iç çap D | 6.3 m | yayınlanmış; C4 ile özdeş |
+| Silindirik gövde yüksekliği | 6.3 m | CFD kararı; C4 ile özdeş |
+| Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Vorteks bulucu daldırması S | 3.9 m | CFD kararı; C4 ile özdeş |
+| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| Giriş genişliği | 2.912 m | CFD kararı; C4 ile özdeş |
+| Giriş yüksekliği | 3.4 m | CFD kararı; C4 ile özdeş |
+| Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
+| Volüt | var | CFD kararı; C4 ile özdeş |
+| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
+| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
+| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
+| **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+<!-- END GENERATED -->
 
 ## CFD Geometry
 
-Aşağıdaki koordinatlar ve hacim ayrımı (domen 273.1 m³) C2'nin **eski** katalog ölçülerine (D 6.10) aitti ve ara kademe standardıyla geçersiz oldu; kaldırıldı. Siklon makroyla C4 ölçüleriyle kurulunca doldurulacak: TBD.
+Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek kurulur: C2, C4'ün CFD domeniyle özdeştir ([cyclone_C4.md](cyclone_C4.md)) — volütlü giriş, h = D gövde, daldırma 3.90 m, 90° çıkış dirseği. Tesiste çıkış borusu R1'in başıdır ([riser_R1.md](riser_R1.md)).
 
-Ekipman hacmi (gövde + koni): 283.2 m³ (C4'ün CFD gövdesiyle özdeş; aşağıda)
-
-CFD domen hacmi, modelleme parametrelerine bağlı uzatmaları içerir; fiziksel hesapta kullanılmaz.
-
-CFD sınır varsayımları (config `geometry.cfd_boundary`; tesis ölçüsü değil, kaynakları yok, modelleme seçimi, kodda varsayılan değerleri yok):
-
-`inlet_extension_over_D`: 0.6 — Giriş yüzü eksenden 0.6 D uzakta. Eski ölçülerle en az 0.401 olmalıydı (yeni ölçülerle TBD), yoksa yüz gövdenin içinde kalır; kod bunu kontrol eder. Her +1 D için hacim artışı eski ölçülerle ≈ +65 m³ idi; yeni ölçülerle TBD.
-`outlet_extension_over_vortex_D`: 1.0 — Çıkış yüzü çatıdan 1 vorteks bulucu çapı yukarıda. Hacme en çok etki eden parametre: her +1 çap için ≈ +64.5 m³ eski ölçülerle; yeni vorteks bulucu çapıyla (4.63 m) ≈ +78 m³.
-`vortex_finder_wall_m`: C2 için **henüz seçilmedi**. Burada uzun süre 0.012 m yazılıydı ve config bugün 0.08 tutuyor; tek skaler iki dokümanda farklı değer iddia ediyordu. C1'de ölçülen kural şu: ağzın genişliği, mesh'in oraya koyacağı yerel yüzey boyutunun 3–4 katı olmalı ([cyclone_C1.md](cyclone_C1.md)). C2 makroyla kurulduğunda değer o ölçüte göre belirlenecek. 0.012 m'de hacme etki ~%0.2 idi.
-
-Modelleme sadeleştirmeleri:
-
-- Yayınlanmış 270°'lik volüt modellenmiyor; giriş düz, teğet bir kanal.
-- Giriş yüksekliği (9.44 m) gövdeden (3.46 m) uzun. Bu yüzden giriş kanalı koni bölgesine iniyor ve katalog ölçüleri düzeltilmeden olduğu gibi kuruluyor.
-- Farin borusu yok; toz çıkışı bir sınır yüzü.
-
-Hazır dosya: TBD. Eski `geometry/output/2500/C2.step` (273.1 m³) eski ölçülere aittir, kullanılmamalı. Katıyı kuran makro export öncesi hacmi kendisi kontrol eder ([macros/README.md](../macros/README.md)).
+Eski `geometry/output/2500/C2.step` (273.1 m³) eski katalog ölçülerine (D 6.10) aittir, kullanılmamalı. Eski `geometry.cfd_boundary` config bloğu 14 Ekim 2026'da silindi; sınır seçimleri `cyclone.bas`'tadır.
 
 ## Boundary Faces
 
-Giriş kanalının uç yüzü: giriş — konum TBD (C4 ölçüleriyle yeniden kurulacak)
-Çıkış borusunun üst yüzü: çıkış — konum TBD
+Giriş ve çıkış yüzleri: C4'teki gibi ([cyclone_C4.md](cyclone_C4.md))
 Toz çıkışı diski: toz çıkışı — z = 0
 Diğer bütün yüzler: duvar
 
 ## Derived Properties
 
-C4 ölçüleriyle (ara kademe standardı):
+C4 ile özdeş (ara kademe standardı). Ekipman hacmi, ıslak alan ve toplam yükseklik Geometrik Ölçüler'deki tabloda; CFD gövdesiyle (h = D; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır). Katalog gövdesiyle 194.5 m³ ve 169.9 m²'ydi.
 
-Toplam yükseklik (gövde + koni): 10.76 m
 Koni duvarının yatayla açısı: 69.4° — farinin 40°'lik yığılma açısının üstünde
-Giriş kesiti: 11.99 m²
-Giriş hidrolik çapı: 2.24 m
+Volüt giriş kesiti: 9.90 m² (3.40 × 2.912)
 Vorteks bulucu kesiti: 16.84 m²
 Toz çıkışı kesiti: 0.515 m²
-Islak alan (gövde + çatı halkası + koni): **226.1 m²** — CFD gövdesiyle (h = D = 6.30 m; kullanıcı kararı, 13 Ekim 2026: twin C2–C4'te C5 gibi CFD gövdesini kullanır); katalog gövdesiyle 169.9 m²'ydi
-Ekipman hacmi (gövde + koni): **283.2 m³** — kalma süresi, holdup ve benzeri fiziksel hesaplar bunu kullanır; katalog gövdesiyle 194.5 m³'tü
+

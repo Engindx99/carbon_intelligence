@@ -5,9 +5,18 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000; değerler `c99b93a^:geometry/ca
 
 ## Geometrik Ölçüler
 
-Efektif iç çap: 4.8 m
-Boy: 74 m
-Eğim: 3 %
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
+|---|---|---|
+| Efektif iç çap | 4.8 m | yayınlanmış |
+| Boy | 74 m | yayınlanmış |
+| Eğim | 3 % | yayınlanmış |
+| Geçiş bölgesi (arka uç) | 30.83 m | modelleme |
+| Yanma bölgesi | 43.17 m | türetilmiş |
+| **Ekipman hacmi** | 1339.07 m³ | türetilmiş |
+| **Duvar alanı** | 1115.89 m² | türetilmiş |
+<!-- END GENERATED -->
+
 Dönme hızı, min: 0.6 rpm
 Dönme hızı, max: 4.0 rpm
 
@@ -15,9 +24,8 @@ Dönme hızı, max: 4.0 rpm
 
 12 Ekim 2026'ya kadar bu doküman 2500 t/d hattının fırınını anlatıyordu: Jiangsu Pengfei 2500, Ø4.0 × 60 m, %3, 0.39–4.10 rpm.
 
-Twin bu ölçüleri okur (`configs/twin_cfg.yaml`, `kiln:` 74.0 m, Ø4.8; 12 Ekim 2026). Tüp iki bölgeye bölünür: geçiş 30.83 m, yanma 43.17 m (`transition.length`).
+Twin bu ölçüleri `geometry/plant_geometry.yaml`'dan okur (`main.load_cfg`; 14 Ekim 2026'ya kadar `configs/twin_cfg.yaml`'daydı). Tüp iki bölgeye bölünür: geçiş ve yanma (tabloda).
 
 ## Derived Properties
 
-Ekipman hacmi: **1339.07 m³** (π/4 · 4.8² · 74; geçiş 557.89 + yanma 781.19)
-Duvar alanı: 1115.89 m² (π · 4.8 · 74)
+Ekipman hacmi ve duvar alanı Geometrik Ölçüler'deki tabloda (π/4 · D² · L ve π · D · L).

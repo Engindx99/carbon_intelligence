@@ -11,16 +11,30 @@ Farin borusu: [meal_pipe_C5.md](meal_pipe_C5.md)
 - CFD'de çözülen C4 ise katalogdan üç noktada sapar: volüt giriş, h = D ve S/a 1.15 ([cyclone_C4.md](cyclone_C4.md)). Bu sapmalar C5'e de taşındı.
 - Böylece C5, CFD'si çözülen siklonla tam geometrik benzer olur. C4'ün Euler sayısı ve volütün girdap katsayısı (α) ölçeklemesiz taşınır; C5'e ayrı CFD gerekmez.
 
-| Ölçü | Katalog | **C5 (CFD C4 × 1.0317)** |
+Katalog C5'i (FLS oranları; [catalog.md](../catalog.md)): gövde 3.53, koni 7.43, daldırma 3.25, vorteks bulucu 4.74, toz çıkışı 0.83, giriş 1.30 × 9.59 m.
+
+<!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Ölçü | Değer | Kaynak |
 |---|---|---|
-| Efektif iç çap, D | 6.50 m — HFC2500 (yayınlanmış) | **6.50 m** |
-| Silindirik gövde yüksekliği | 3.53 m — FLS oranı | **6.50 m** (h = D) |
-| Koni yüksekliği | 7.43 m — FLS oranı | **7.532 m** |
-| Vorteks bulucu boyu (daldırma) | 3.25 m — FLS oranı | **4.024 m** (S/a 1.15) |
-| Vorteks bulucu çapı | 4.74 m — FLS oranı | **4.777 m** |
-| Toz çıkışı çapı | 0.83 m — FLS oranı | **0.836 m** |
-| Giriş genişliği | 1.30 m — FLS oranı | **3.004 m** (volüt) |
-| Giriş yüksekliği | 9.59 m — FLS oranı | **3.508 m** (volüt) |
+| Hat başına adet | 1 | yayınlanmış |
+| Efektif iç çap D | 6.5 m | yayınlanmış |
+| Silindirik gövde yüksekliği | 6.5000 m | C4 × 1.031746 |
+| Koni yüksekliği | 7.5317 m | C4 × 1.031746 |
+| Vorteks bulucu daldırması S | 4.0238 m | C4 × 1.031746 |
+| Vorteks bulucu çapı D_x | 4.7770 m | C4 × 1.031746 |
+| Toz çıkışı çapı | 0.8357 m | C4 × 1.031746 |
+| Giriş genişliği | 3.0044 m | C4 × 1.031746 |
+| Giriş yüksekliği | 3.5079 m | C4 × 1.031746 |
+| Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
+| Volüt | var | CFD kararı; C4 ile özdeş |
+| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 8.121 m | 1.7 D_x |
+| Çıkış dirseği merkez yarıçapı | 4.777 m | 1 D_x |
+| Çıkış bacağı / inişi | 4.777 m | 1 D_x |
+| Toplam yükseklik (gövde + koni) | 14.032 m | türetilmiş |
+| **Ekipman hacmi (gövde + koni)** | 311.09 m³ | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 240.71 m² | türetilmiş |
+<!-- END GENERATED -->
 
 Volüt giriş kesiti 10.54 m², C4'ün 9.90 m²'si × k². Katalogdaki yarık giriş gövde ile vorteks bulucu arasına sığmıyordu; C4'teki gibi basit bir volüt kurulur.
 
@@ -39,12 +53,12 @@ TBD (katı henüz kurulmadı).
 
 ## Basınç Düşüşü ve Ayırma (12 Ekim 2026)
 
-C4'ün CFD sonucu (Eu 11.38, S 3.90) ve yüklü Muschelknautz (MM) kalibrasyonu (α 0.913) aynen kullanılır. Betik: `C:\Users\engin\c4\mm\c5_loaded.py` (repo dışı).
+C4'ün CFD sonucu (Eu 11.38, S 3.90; 14 Ekim 2026'da 1.70·D_x çıkışla 11.54 oldu, ΔP'ler %1.4 artar) ve yüklü Muschelknautz (MM) kalibrasyonu (α 0.913) aynen kullanılır. Betik: `C:\Users\engin\c4\mm\c5_loaded.py` (repo dışı).
 
 Hesap tabanı, C4'teki gibi literatürden gelir:
 - C5'ten hattın bütün gazı geçer: 56 kg/s.
 - Kalsinatör çıkışı 1123–1193 K; ρ_g C4'ün 0.353 kg/m³ değerinden sıcaklıkla ölçeklenir. μ 4.5e-5 Pa·s.
-- Katı döngüsü: C1 η 0.96–0.97, C2–C4 η 0.93, kalsinatörde %90 kalsinasyon. C5'e 33.1 kg/s katı girer; c₀ 0.59.
+- Katı döngüsü (o günün twin değerleri; C2–C4 14 Ekim 2026'da 0.96'ya çıktı, [cyclone_C4.md](cyclone_C4.md)): C1 η 0.96–0.97, C2–C4 η 0.93, kalsinatörde %90 kalsinasyon. C5'e 33.1 kg/s katı girer; c₀ 0.59.
 - Tane boyu dağılımı C1 ve C4 ile aynı (Rosin-Rammler).
 
 | | 1123 K | 1163 K | 1193 K |
@@ -67,8 +81,6 @@ C5'ten kaçan toz, C2–C4'teki gibi gazla bir üst kademeye (C4) gider.
 
 ## Derived Properties
 
-Gövde + koni hacmi: **311.0 m³** (C4'ün CFD gövdesi 283.2 m³ × k³). İki hattın C5'leri toplam 622.1 m³.
+Gövde + koni hacmi ve ıslak alan Geometrik Ölçüler'deki tabloda (C4'ün CFD gövdesi × k³ ve × k²); iki hattın C5'leri bunun iki katı.
 
-Katalog ölçüleriyle tek C5 211.2 m³'tü; h = D gövde hacmi büyüttü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı bu hacmi kullanır.
-
-Islak alan (gövde + çatı halkası + koni): **240.7 m²** (C4'ün 226.1 m²'si × k²).
+Katalog ölçüleriyle tek C5 211.2 m³'tü; h = D gövde hacmi büyüttü. Twin bu hacmi kalsinatör bölgesinde kullanır (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)).
