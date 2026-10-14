@@ -124,6 +124,15 @@ calciner:
   throat_velocity:     {value: 29.0, unit: m/s,   source: literature,   doc: calciner/calciner.md}
   throat_length_over_D: {value: 1.0, unit: "-",   source: model,        doc: calciner/calciner.md}
   D_tertiary_air:      {value: 2.4393, unit: m,   source: derived_from_reference, doc: calciner/calciner.md}
+  # the literature flow it carries (Mikulcic 2012 TA + burner air, x 2;
+  # 800 C, Kahawalage 2017) at a literature velocity (Chanamai 2019):
+  # the duct above within 0.2 mm (it was sized at 54.92 kg/s), and the
+  # CFD's tertiary air inlet
+  tertiary_air_flow:   {value: 54.925, unit: kg/s, source: literature,  doc: calciner/calciner.md}
+  tertiary_air_T:      {value: 1073.15, unit: K,  source: literature,   doc: calciner/calciner.md}
+  tertiary_air_x_N2:   {value: 0.79, unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  tertiary_air_x_O2:   {value: 0.21, unit: mol/mol, source: literature, doc: calciner/calciner.md}
+  tertiary_air_velocity: {value: 35.87, unit: m/s, source: literature,  doc: calciner/calciner.md}
   # The tertiary air duct enters at the bottom of the cylinder,
   # tangentially (Chen et al., a 5000 t/d in-line calciner; user
   # decision, 14 Oct 2026): its lower edge on the top of the cone and

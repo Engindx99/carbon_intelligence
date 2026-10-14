@@ -67,6 +67,17 @@ class TheDerivedValuesAreTodaysTest(unittest.TestCase):
         self.near(c["vessel_volume"], 1009.711, 0.001)
         self.near(c["v_throat"], 24.085, 0.001)
 
+    def test_calciner_boundaries(self):
+        """The CFD's inlets: the doc's densities, mass fractions that sum
+        to one, and the duct its own flow sizes."""
+        b = pg.calciner_boundaries(self.g)
+        kiln, ta = b["kiln_gas_inlet"], b["tertiary_air_inlet"]
+        self.near(kiln["rho"], 0.2753, 1e-4)
+        self.near(ta["rho"], 0.3276, 1e-4)
+        for s in (kiln, ta):
+            self.near(sum(s["y"].values()), 1.0, 1e-12)
+        self.near(ta["D_sized"], ta["D_h"], 2e-4)
+
     def test_gooseneck(self):
         gn = pg.gooseneck(self.g)
         self.near(gn["D_neck"], 4.950, 0.001)

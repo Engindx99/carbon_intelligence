@@ -264,6 +264,36 @@ def calciner_inlets(g):
     }
 
 
+def _gas_stream(c, prefix):
+    """A literature gas stream: mass flow, temperature, mole and mass
+    fractions, molar mass and density (ideal gas at one atmosphere)."""
+    x = {s: v(c[f"{prefix}_x_{s}"]) for s in MOLAR_MASS if f"{prefix}_x_{s}" in c}
+    m_mol = sum(x[s] * MOLAR_MASS[s] for s in x)
+    T = v(c[f"{prefix}_T"])
+    return {
+        "flow": v(c[f"{prefix}_flow"]),
+        "T": T,
+        "x": x,
+        "y": {s: x[s] * MOLAR_MASS[s] / m_mol for s in x},
+        "M": m_mol,
+        "rho": P_ATM * m_mol / (R_GAS * T),
+    }
+
+
+def calciner_boundaries(g):
+    """The calciner CFD's two gas inlets, each at its literature flow:
+    the kiln gas through the throat, the tertiary air through its duct;
+    the hydraulic diameter is the inlet face's own."""
+    c, cal = g["calciner"], calciner(g)
+    kiln = _gas_stream(c, "throat_gas")
+    kiln["D_h"] = cal["D_throat"]
+    ta = _gas_stream(c, "tertiary_air")
+    ta["D_h"] = v(c["D_tertiary_air"])
+    # the duct the flow sizes at its velocity (the yaml's within 0.2 mm)
+    ta["D_sized"] = math.sqrt(4.0 * ta["flow"] / (ta["rho"] * math.pi * v(c["tertiary_air_velocity"])))
+    return {"kiln_gas_inlet": kiln, "tertiary_air_inlet": ta}
+
+
 def gooseneck_neck_radius(g):
     """One neck of both legs' area: leg D x sqrt 2, velocity kept."""
     return 0.5 * v(g["gooseneck"]["D_leg"]) * math.sqrt(2.0)
