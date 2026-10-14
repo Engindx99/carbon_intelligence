@@ -147,3 +147,75 @@ class TheMacrosAgreeWithTheSourceTest(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TheLayoutIsTheDrawingsTest(unittest.TestCase):
+    """Step 2: the drawing's layout and C1 branch, derived here."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.drw = _consts((MACROS / "plant_topology_2d.bas").read_text(encoding="latin-1"))
+
+    def test_c1_branch_is_the_cfd_domains(self):
+        br = pg.c1_branch(self.g)
+        for key, macro in (("x", "C1_RISER_X"), ("z_bend", "C1_BEND_Z"), ("z_feed", "C1_FEED_Z"),
+                           ("z_floor", "C1_RISER_Z0"), ("bend_R", "C1_BEND_R"), ("bend_deg", "C1_BEND_DEG")):
+            with self.subTest(key=key):
+                self.assertAlmostEqual(br[key], self.drw[macro], delta=TOL)
+
+    def test_layout_constants_are_the_drawings(self):
+        L = self.g["layout"]
+        for key, macro in (
+            ("kiln_axis_z", "KILN_AXIS_Z"), ("chamber_margin", "CHAMBER_MARGIN"),
+            ("c5_over_tertiary_air", "C5_OVER_TA"), ("gooseneck_to_c5_gap", "GN_TO_C5_GAP"),
+            ("gooseneck_turn_leg_over_D", "GN_BEND_LEG"), ("stage_gap", "STAGE_GAP"),
+            ("column_offset", "ZIG_DX"), ("r1_branch_half", "R1_BRANCH_HALF"),
+            ("r1_up_min", "R1_UP_MIN"), ("r1_leg_on", "R1_LEG_ON"), ("cooler_drop", "COOLER_DROP"),
+        ):
+            with self.subTest(key=key):
+                self.assertAlmostEqual(pg.v(L[key]), self.drw[macro], delta=TOL)
+
+    @unittest.skipUnless(
+        (REPO_ROOT / "geometry" / "output" / "2500" / "plant_topology_2d_build.log").is_file(),
+        "no SolidWorks build log here",
+    )
+    def test_elevations_are_the_last_drawn(self):
+        import re
+        log = (REPO_ROOT / "geometry" / "output" / "2500" / "plant_topology_2d_build.log").read_text(
+            encoding="latin-1").replace(",", ".")
+        z = [float(t) for t in re.search(
+            r"dust outlets C5 / C4 / C3 / C2 / C1 at z ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+)",
+            log).groups()]
+        tower = float(re.search(r"tower top ([\d.]+)", log).group(1))
+        L = pg.layout(self.g)
+        for s, want in zip((5, 4, 3, 2, 1), z):
+            with self.subTest(stage=s):
+                # the drawing's hand-typed C5 / C1 constants are rounded
+                # to 0.1 mm / 1 mm; step 4 generates them from here
+                self.assertAlmostEqual(L["z_dust"][s], want, delta=1e-3)
+        self.assertAlmostEqual(L["z_tower"], tower, delta=1e-3)
+
+
+class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
+    """User decisions, 14 Oct 2026: R2-R4 are the CFD outlet pipes,
+    the gooseneck legs run to the C5 inlet."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+
+    def test_r2_r4_are_the_outlet_pipes(self):
+        for k in (2, 3, 4):
+            r = pg.stage_riser(self.g, k)
+            c = pg.cyclone(self.g, f"C{k + 1}")
+            with self.subTest(riser=k):
+                self.assertTrue(all(p["D"] == c["D_vortex"] for p in r["parts"]))
+                self.assertAlmostEqual(r["parts"][0]["length"], c["outlet_rise"], places=12)
+                self.assertGreater(r["parts"][2]["length"], c["outlet_run"])   # past the CFD face
+
+    def test_the_gooseneck_reaches_c5(self):
+        gp, L = pg.gooseneck_plant(self.g), pg.layout(self.g)
+        self.assertLess(L["z_c5_inlet"], L["z_gooseneck_top"])
+        self.assertGreater(gp["leg_length"], 0.0)
+        self.assertGreater(gp["volume"], 0.0)

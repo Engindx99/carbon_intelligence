@@ -135,21 +135,6 @@ def cyclone(g, name):
 
 
 # ======================================================================
-# Risers
-# ======================================================================
-def riser(g, name):
-    """R(name) as a straight cylinder: D, L, volume, wall area."""
-    node = g["risers"][name]
-    D, L = v(node["D"]), v(node["L"])
-    return {
-        "D": D,
-        "L": L,
-        "volume": 0.25 * math.pi * D * D * L,
-        "wall_area": math.pi * D * L,
-    }
-
-
-# ======================================================================
 # Calciner and gooseneck
 # ======================================================================
 def throat_radius(g):
@@ -307,4 +292,215 @@ def cooler(g):
         "length": L,
         "grate_area": v(c["grate_area"]),
         "box_volume": w * L * h,
+    }
+
+
+# ======================================================================
+# C1's own riser branch (cyclone.bas Derive, the C1 case)
+# ======================================================================
+def c1_branch(g):
+    """C1's CFD riser branch, heights from its dust outlet and x from
+    its axis (the inlet duct towards -x): the branch D (half R1's
+    area), its bend radius, the bend's start (top of the straight
+    branch), the feed and the domain's floor, and the branch axis's
+    distance from the C1 axis."""
+
+    c = cyclone(g, "C1")
+    d = g["cyclone_domain"]
+    R = 0.5 * c["D_barrel"]
+    z_roof = c["height"]
+    y_inner = R - c["W_inlet"]
+    th = math.radians(c["inlet_slope"])
+    dx, dz = math.cos(th), -math.sin(th)
+    nx, nz = math.sin(th), math.cos(th)
+
+    reach = math.sqrt(R * R - y_inner * y_inner)
+    z_top0 = z_roof - v(d["inlet_roof_clearance"]) - reach * (nx / nz)
+    z_bot0 = z_top0 - c["H_inlet"] / nz
+    L_in = v(d["inlet_duct_length"])
+    ce_x = -L_in * dx
+    ce_z = 0.5 * (z_top0 + z_bot0) - L_in * dz
+
+    D_r1 = v(g["risers"]["R1"]["D"])
+    r = math.sqrt(v(d["c1_riser_area_share"]) * 0.25 * D_r1 * D_r1)
+    r_bend = v(d["c1_riser_bend_R_over_D"]) * 2.0 * r
+    trans = v(d["c1_riser_transition"])
+    g_x, g_z = ce_x - trans * dx, ce_z - trans * dz
+    x_axis = g_x - r_bend * nx
+    z_bend = g_z - r_bend * nz
+    z_feed = z_bend - v(d["c1_riser_above_feed"])
+    return {
+        "D": 2.0 * r,
+        "bend_R": r_bend,
+        "bend_deg": 90.0 + c["inlet_slope"],
+        "x": -(x_axis - r_bend),
+        "z_bend": z_bend,
+        "z_feed": z_feed,
+        "z_floor": z_feed - v(d["c1_riser_below_feed"]),
+        "inlet_face_x": -ce_x,
+        "transition": trans,
+    }
+
+
+# ======================================================================
+# Layout (plant_topology_2d.bas Derive): one string, x > 0 outboard
+# ======================================================================
+def layout(g):
+    """Where everything stands, z above ground, x from the calciner
+    axis on one string's side: the kiln inlet chamber, the calciner on
+    it, the tertiary air duct, C5 by the gooseneck leg, C4..C2 each
+    roof flush with the top of the outlet bend below it, R1 and the
+    twin C1 over C2."""
+
+    L = g["layout"]
+    cal, gn, kl = calciner(g), gooseneck(g), kiln(g)
+    c = {s: cyclone(g, f"C{s}") for s in range(1, 6)}
+    br = c1_branch(g)
+
+    a_ch = 0.5 * kl["D"] + v(L["chamber_margin"])
+    z_ch0 = v(L["kiln_axis_z"]) - a_ch
+    z0 = z_ch0 + 2.0 * a_ch                       # the calciner's throat foot on the chamber
+    z_cone_top = z0 + cal["z_cone_top"]
+    z_roof_cal = z0 + cal["z_roof"]
+    z_gn_top = z0 + gn["z_top"]
+    z_gn_end = z0 + gn["z_end"]                   # the CFD's outlet faces
+    r_ta = 0.5 * cal["D_tertiary_air"]
+    z_ta = z_cone_top + r_ta
+
+    r_leg = 0.5 * gn["D_leg"]
+    x_inner = gn["x_leg"] + r_leg + v(L["gooseneck_to_c5_gap"]) + 0.5 * c[5]["D_barrel"]
+    x_outer = x_inner + v(L["column_offset"])
+    col = {5: x_inner, 4: x_outer, 3: x_inner, 2: x_outer}
+
+    z_dust = {5: max(z_gn_end - c[5]["height"], z_ta + r_ta + v(L["c5_over_tertiary_air"]))}
+
+    def top(s):        # the outlet pipe's top, where its bend starts
+        return z_dust[s] + c[s]["height"] + c[s]["outlet_rise"]
+
+    for s in (4, 3, 2):
+        below = s + 1
+        z_dust[s] = top(below) + c[below]["outlet_bend_R"] + 0.5 * c[below]["D_vortex"] - c[s]["height"]
+
+    D_r1 = v(g["risers"]["R1"]["D"])
+    r, rb = 0.5 * D_r1, 0.5 * br["D"]
+    b = v(L["r1_branch_half"])
+    y_rise = b - rb + 2.0 * math.sqrt(2.0) * rb - r
+    z_leg_top = top(2) + c[2]["outlet_bend_R"] + 0.5 * c[2]["D_vortex"]
+    # C1 over C2's outlet pipe by the stage gap, or as high as R1's
+    # rise and Y ask before the C1 CFD branch's floor
+    z_dust[1] = max(
+        top(2) + v(L["stage_gap"]),
+        z_leg_top + v(L["r1_up_min"]) + y_rise - br["z_floor"],
+    )
+    d_r1 = c[2]["outlet_bend_R"] + c[2]["outlet_run"] + v(L["r1_leg_on"]) + r
+    d_c1 = br["x"] + b
+
+    return {
+        "a_chamber": a_ch,
+        "z_chamber_floor": z_ch0,
+        "z_calciner_throat": z0,
+        "z_calciner_cone_top": z_cone_top,
+        "z_calciner_roof": z_roof_cal,
+        "z_gooseneck_top": z_gn_top,
+        "z_gooseneck_cfd_end": z_gn_end,
+        "z_tertiary_air": z_ta,
+        "x_inner": x_inner,
+        "x_outer": x_outer,
+        "col": col,
+        "z_dust": z_dust,
+        "z_roof": {s: z_dust[s] + c[s]["height"] for s in z_dust},
+        "z_top": {s: top(s) for s in z_dust},
+        "z_c5_inlet": z_dust[5] + c[5]["height"] - r_leg,
+        "x_r1": x_outer - d_r1,
+        "d_r1": d_r1,
+        "d_c1": d_c1,
+        "x_c1": (x_outer - d_r1 - d_c1, x_outer - d_r1 + d_c1),
+        "z_r1_leg_top": z_leg_top,
+        "z_r1_split": z_dust[1] + br["z_floor"] - y_rise,
+        "z_tower": z_dust[1] + c[1]["height"] + c[1]["outlet_rise"] + c[1]["outlet_bend_R"] + 0.5 * c[1]["D_vortex"],
+    }
+
+
+# ======================================================================
+# The gas paths between the stages (user decisions, 14 Oct 2026)
+# ======================================================================
+def _pipe(D, length):
+    return {
+        "D": D,
+        "length": length,
+        "volume": 0.25 * math.pi * D * D * length,
+        "wall_area": math.pi * D * length,
+    }
+
+
+def _sum(*parts):
+    return {
+        "volume": sum(p["volume"] for p in parts),
+        "wall_area": sum(p["wall_area"] for p in parts),
+        "parts": parts,
+    }
+
+
+def stage_riser(g, k):
+    """R(k), k = 2..4: the gas from C(k+1) up to C(k) is C(k+1)'s CFD
+    outlet pipe itself -- its rise over the roof, its 90 deg bend and
+    the leg level on to C(k)'s barrel wall (the drawing; the published
+    Ø3.35-3.60 risers are not this plant's). At the pipe's bore all the
+    way; the 45 deg taper onto the inlet is left out (simple, small)."""
+    s = k + 1
+    c, up = cyclone(g, f"C{s}"), cyclone(g, f"C{k}")
+    D, R = c["D_vortex"], c["outlet_bend_R"]
+    leg = v(g["layout"]["column_offset"]) - R - 0.5 * up["D_barrel"]
+    return _sum(
+        _pipe(D, c["outlet_rise"]),
+        _pipe(D, 0.5 * math.pi * R),
+        _pipe(D, leg),
+    )
+
+
+def r1_path(g):
+    """R1, the gas from C2 up to the twin C1, per string: C2's CFD
+    outlet (rise, 90 deg bend, leg on to R1's axis), R1 straight up to
+    its Y, then each twin's branch (half R1's area) up to its bend,
+    the 95 deg bend, the transition and the inlet duct to the barrel.
+    The Y's own short pieces are taken as the branches' run."""
+    c2, br, L = cyclone(g, "C2"), c1_branch(g), layout(g)
+    D2, R2 = c2["D_vortex"], c2["outlet_bend_R"]
+    D1 = v(g["risers"]["R1"]["D"])
+    z_leg = L["z_top"][2] + R2
+    up = L["z_r1_split"] - z_leg
+    branch_up = (L["z_dust"][1] + br["z_bend"]) - L["z_r1_split"]
+    bend = math.radians(br["bend_deg"]) * br["bend_R"]
+    duct = br["transition"] + v(g["cyclone_domain"]["inlet_duct_length"])
+    n = cyclone(g, "C1")["per_string"]
+    branch = _pipe(br["D"], branch_up + bend + duct)
+    branches = {"volume": n * branch["volume"], "wall_area": n * branch["wall_area"]}
+    return _sum(
+        _pipe(D2, c2["outlet_rise"]),
+        _pipe(D2, 0.5 * math.pi * R2),
+        _pipe(D2, L["d_r1"] - R2),
+        _pipe(D1, up),
+        branches,
+    )
+
+
+def gooseneck_plant(g):
+    """The gooseneck as the plant has it (user decision, 14 Oct 2026):
+    the neck and bends as the CFD's, each leg on down to its C5's
+    inlet, a 45 deg piece and a level run into the barrel (the
+    drawing), not to the CFD's outlet faces at half the vessel's
+    height. Volume and wall area, both legs."""
+    gn, L, c5 = gooseneck(g), layout(g), cyclone(g, "C5")
+    D = gn["D_leg"]
+    t = v(g["layout"]["gooseneck_turn_leg_over_D"]) * D
+    down = L["z_gooseneck_top"] - (L["z_c5_inlet"] + t)
+    run = (L["x_inner"] - 0.5 * c5["D_barrel"]) - (gn["x_leg"] + t)
+    leg = _pipe(D, down + math.sqrt(2.0) * t + run)
+
+    cfd_legs = 2.0 * 0.25 * math.pi * D * D * gn["drop"]
+    cfd_legs_area = 2.0 * math.pi * D * gn["drop"]
+    return {
+        "leg_length": leg["length"],
+        "volume": gn["volume"] - cfd_legs + 2.0 * leg["volume"],
+        "wall_area": gn["wall_area"] - cfd_legs_area + 2.0 * leg["wall_area"],
     }

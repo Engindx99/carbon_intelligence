@@ -95,15 +95,14 @@ cyclone_domain:
   meal_slope:          {value: 60.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
 
 # ---------------------------------------------------------------------
-# Risers: the gas from C(k+1) up to C(k). Published bores x FLS lengths.
-# (User decision 14 Oct 2026: R2-R4 become the CFD outlet pipes of C3-C5;
-# applied in step 2 of the single-source plan.)
+# Risers: the gas from C(k+1) up to C(k). R2-R4 are C3-C5's CFD outlet
+# pipes themselves, rise + bend + leg (user decision, 14 Oct 2026; the
+# published Ø3.35-3.60 risers are not this plant's); only R1, from C2's
+# outlet up to the twin C1, has a bore of its own. The paths are
+# derived: plant_geometry.stage_riser / r1_path.
 # ---------------------------------------------------------------------
 risers:
-  R1: {D: {value: 3.07, unit: m, source: published, doc: preheater/riser_R1.md}, L: {value: 21.38, unit: m, source: derived_from_reference, doc: preheater/riser_R1.md}}
-  R2: {D: {value: 3.35, unit: m, source: published, doc: preheater/riser_R2.md}, L: {value: 19.38, unit: m, source: derived_from_reference, doc: preheater/riser_R2.md}}
-  R3: {D: {value: 3.45, unit: m, source: published, doc: preheater/riser_R3.md}, L: {value: 20.37, unit: m, source: derived_from_reference, doc: preheater/riser_R3.md}}
-  R4: {D: {value: 3.60, unit: m, source: published, doc: preheater/riser_R4.md}, L: {value: 19.87, unit: m, source: derived_from_reference, doc: preheater/riser_R4.md}}
+  R1: {D: {value: 3.07, unit: m, source: published, doc: preheater/riser_R1.md}}
 
 # ---------------------------------------------------------------------
 # Calciner (ILC), PF5000, and its Y gooseneck
@@ -134,8 +133,8 @@ gooseneck:
   rise_over_D_neck:    {value: 1.25, unit: "-",   source: model,        doc: preheater/gooseneck.md}
   bend_R_over_D_leg:   {value: 1.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
   # the CFD's outlet faces: the legs end at this fraction of the vessel
-  # height (calciner.bas). (User decision 14 Oct 2026: the plant's legs
-  # run on to the C5 inlet; applied in step 2.)
+  # height (calciner.bas). The plant's legs run on to the C5 inlet (user
+  # decision, 14 Oct 2026): plant_geometry.gooseneck_plant.
   end_at_vessel_H:     {value: 0.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
 
 # ---------------------------------------------------------------------
@@ -155,3 +154,22 @@ cooler:
   grate_area:          {value: 119.6, unit: m2,   source: published,    doc: cooler/cooler.md}
   width:               {value: 4.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
   casing_height:       {value: 3.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
+
+# ---------------------------------------------------------------------
+# Layout: where the equipment stands. No source gives any of it; it
+# only lays the plant out (geometry/plant_topology.md). Elevations of
+# the cyclones then follow from their CFD domains (each roof flush with
+# the top of the outlet bend below it).
+# ---------------------------------------------------------------------
+layout:
+  kiln_axis_z:         {value: 10.0, unit: m,     source: schematic,    doc: plant_topology.md}
+  chamber_margin:      {value: 1.0,  unit: m,     source: schematic,    doc: kiln/kiln_inlet_chamber.md}
+  c5_over_tertiary_air: {value: 1.75, unit: m,    source: schematic,    doc: plant_topology.md}
+  gooseneck_to_c5_gap: {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  gooseneck_turn_leg_over_D: {value: 0.5, unit: "-", source: schematic, doc: plant_topology.md}
+  stage_gap:           {value: 4.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  column_offset:       {value: 15.0, unit: m,     source: schematic,    doc: plant_topology.md}
+  r1_branch_half:      {value: 2.75, unit: m,     source: schematic,    doc: plant_topology.md}
+  r1_up_min:           {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
+  r1_leg_on:           {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
+  cooler_drop:         {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
