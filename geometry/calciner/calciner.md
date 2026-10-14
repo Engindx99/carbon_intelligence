@@ -302,6 +302,41 @@ Kutu: x ±(iniş + kol yarıçapı), y ±(yakıt borusu ucu), z 0 … dirsekleri
 
 Ekipman hacmi Geometrik Ölçüler'deki tabloda (2500 kalsinatörü 659.85 m³). Twin'in kalsinatör bölgesi gövdenin farin girişinden tavana kadar olan kısmını, tesisin kaz boynunu ve iki C5'i tek bir kanal olarak çözer (`calciner.zone_segments`, [fluid_volumes.md](../fluid_volumes.md)). Farin girişinin altında yalnız fırın gazı ve tersiyer hava karışır; farin de yakıt da yoktur. Bu kısmın duvarı gövde segmentine eklenir. Bu düzenleme 15 Ekim 2026'dan beri böyle (`plant_geometry.calciner_above_feed`; twin akışlarıyla yapılan CFD koşusu, yukarıda).
 
+## Twin'in çalışma düzeyi (15 Ekim 2026)
+
+Twin'in kalsinatörü ILC bandının altında çalışıyor. Tablo, yerel CO₂ basıncına geçişten (commit 4672add) sonraki durumu gösteriyor.
+
+| | Twin | ILC tipik |
+|---|---|---|
+| Fırına giren farinin kalsinasyonu | %83.3 | %90–95 |
+| Gaz çıkış sıcaklığı | 1102 K | 1123–1173 K |
+| Çıkışta p_CO₂ | 0.330 atm | — |
+| Kalsinatörün yakıt payı | %60 | %55–60 |
+
+**Sınırlayan denge, kinetik değil.**
+- Gaz, çıkışın yerel basıncındaki denge sıcaklığına (T_eq 1103 K) iniyor ve kalsinasyon orada duruyor.
+- Bu yüzden kalma süresi kalsinasyonu değiştirmiyor (farin girişi düzeltmesi: −5 g/s).
+- Önceden model sabit 0.25 atm kullanıyordu; bu, düzlüğü 1087.7 K'de tutuyordu ve kalsinasyonu %85.5 gösteriyordu.
+- Artık her hücre kendi çıkış gazının CO₂'sine karşı hesaplanıyor: fırın gazı + tersiyer hava + yanmış yakıt + o hücreye kadar salınan CO₂ (`CalcinationModel.cell_back_pressure`). p ilk hücrede 0.22, çıkışta 0.33.
+- Fırının ters akımlı bölgeleri hâlâ sabit 0.25 atm'de.
+
+**Enerji bütçesi** (tanılama D16, MW):
+
+| Giren | | Çıkan | |
+|---|---|---|---|
+| fırın gazı (1325 K) | 42.6 | kalsinasyon | 101.2 |
+| tersiyer hava (1237 K) | 45.2 | dehidroksilasyon | 0.04 |
+| yakıt (3.17 kg/s) | 101.6 | duvar kaybı | 1.6 |
+| farin (C4'ten) | 67.3 | gaz çıkışı | 97.5 |
+| | | farin çıkışı | 56.4 |
+
+- **%90 için gereken:** en az 9.1 MW ek reaksiyon ısısı, yaklaşık 0.28 kg/s kalsinatör yakıtı.
+  - Bu bir alt sınır. Çıkışın denge sıcaklığının üstüne, gerçek kalsinatörlerdeki 20–70 K'lik paya çıkması ayrıca ısı ister: kabaca 30 K başına 6 MW (gaz 109 kg/s, farin 70 kg/s).
+- **Girişlerin literatürle karşılaştırması:**
+  - Fırın gazı 1325 K, tipik değerin (1373–1473 K) 50–150 K altında. 36 kg/s gazda bu kabaca 2–7 MW eder.
+  - Tersiyer hava 1237 K, tipik 1123–1223 K bandının üst ucunda.
+- **Hangi düzeltmenin fiziksel olduğu ayrı bir karar.** Seçenekler: fırın gazının sıcaklığı, yakıt payı, toplam yakıt.
+
 ## Kaynaklar
 
 | Anahtar | Kaynak |
