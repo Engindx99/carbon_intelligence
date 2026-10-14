@@ -3,7 +3,6 @@ import numpy as np
 from physics.physics import h_solid
 from physics.kiln_closures import gas_density
 from physics.kiln_closures import suspension_gas_solid_coefficient
-from physics.physics import interfacial_areas
 from physics.physics import ZONE_HT_CONFIG
 from physics.shell import wall_stack
 
@@ -162,6 +161,7 @@ class Preheater:
 
         V_stage = np.empty(N)
         A_stage = np.empty(N)
+        A_cyclone = np.empty(N)
         H_stage = np.empty(N)
 
         for i, st in enumerate(stage_cfg):
@@ -169,6 +169,7 @@ class Preheater:
             n_cyc = int(st["cyclones_per_string"])
             V = n_cyc * float(st["cyclone_volume"])
             A = n_cyc * float(st["cyclone_wall_area"])
+            A_cyclone[i] = strings * A
             H = float(st["cyclone_height"])
 
             # The riser below the cyclone, its volume and wall area
@@ -210,22 +211,16 @@ class Preheater:
             calciner_cfg.get("particle_density_kg_m3", 2700.0)
         )
 
-        # GAS -> WALL and MEAL -> WALL stay on the old closure: the
-        # wall areas are the stage geometry above, and a_ws is a
-        # perimeter quantity the bore still stands in for (plan
-        # step 4, not this change).
-        self.bore_placeholder_D = 4.2
-        self.epsilon_bed = 0.35
-        self.k_interfacial = 1.0
-
-        (
-            _,
-            self.a_ws,
-        ) = interfacial_areas(
-            D=self.bore_placeholder_D,
-            epsilon_bed=self.epsilon_bed,
-            k_interfacial=self.k_interfacial,
-        )
+        # MEAL -> WALL: the cyclone's wall only. The swirl throws
+        # the meal onto the barrel and cone and it slides down them;
+        # in the riser it is suspended in the gas, whose wall that
+        # is. So a_ws is the stage's cyclone wetted area over its
+        # volume, from the same geometry as a_gw (the gas touches
+        # the whole wall). It replaces 6 (1 - 0.35) / 4.2, a packed
+        # bed's formula on a placeholder bore that no equipment had
+        # (user decision, 14 Oct 2026).
+        self.A_cyclone_cell = A_cyclone
+        self.a_ws = A_cyclone / V_stage
 
         # ================= REFRACTORY / SHELL =================
         #

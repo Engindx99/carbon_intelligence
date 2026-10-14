@@ -1014,6 +1014,7 @@ def solve_stage_node(
     V_cell = float(model.V_cell[i_stage]) * volume_fraction
     A_wall_cell = float(model.A_wall_cell[i_stage]) * volume_fraction
     a_gw = float(model.a_gw[i_stage])
+    a_ws = float(model.a_ws[i_stage])
     stage_shell = model.stage_shells[i_stage]
 
     # ==========================================================
@@ -1175,7 +1176,7 @@ def solve_stage_node(
 
         Kgs = h_gs * a_gs
         Kgw = (model.hv_gw + h_rad(Tg_bar, Tw)) * a_gw
-        Kws = (model.hv_ws + h_rad(Ts_bar, Tw)) * model.a_ws
+        Kws = (model.hv_ws + h_rad(Ts_bar, Tw)) * a_ws
 
         # Node means as an affine function of Tw:
         #   (Tg_m, Ts_m) = mean_0 + Tw * mean_1
