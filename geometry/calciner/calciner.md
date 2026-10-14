@@ -169,9 +169,15 @@ Yapım adımları:
 - Kaz boynu dahil, çıkışlara kadar ortalama 5.1 s; boyun ~2.6 s ekler.
 
 **Twin'e sonuç:**
-- Twin farinin gövdedeki geçişini düz akışla 2.03 s verir.
-- CFD'de yakıttan ve kalsinasyondan gelen CO₂ yoktur; bu gaz hacmini ~%20–25 eksik bırakır. Düzeltilince 2.55 s ~2.0–2.1 s olur.
-- Twin'in taşınım modeli (`physics.suspension_transport`) bu yüzden geçerlidir; değişiklik gerekmez. İki değer de 2–5 s bandındadır.
+- CFD twin'in **modelini** doğrular, sayısını değil.
+  - Twin farini gazla düz akışta taşır, eksi kendi ağırlığının yarattığı kayma (`physics.suspension_transport`).
+  - CFD'de kütlenin %95'i (≤ 94 µm) gazın düz akış süresinde geçer: 2.2–2.6 s, gazın süresi 2.57 s. Kayma yalnız %5'lik 172 µm sınıfında belirgindir.
+  - Bu yüzden taşınım modeli değişmez.
+- Süreler doğrudan karşılaştırılamaz, çünkü akışlar ve domen farklıdır:
+  - Twin'in kalsinatör bölgesi gövde + kaz boynu + C5'tir (2395 m³). Referans durumda bölgenin tamamı 8.24 s, gövdenin payı ~3.5 s. Twin hızı girişteki en soğuk gazın yoğunluğuyla hesaplar; bu süre bilerek bir üst sınırdır.
+  - Twin'in kalsinatöre giren gazı ~80 kg/s'dir; CFD'de literatür akışlarıyla 116.4 kg/s girer.
+  - CFD'de yakıttan ve kalsinasyondan gelen CO₂ da yoktur; bu, gaz hacmini ~%20–25 eksik bırakır.
+- CFD'deki gövde süresi (2.55 s) 2–5 s bandındadır.
 - Kalsinatörün gaz-yalnız basınç kaybı 181 Pa'dır (twin'de henüz kullanılmıyor).
 
 Dosyalar (repo dışında, `C:\Users\engin\calciner`):
