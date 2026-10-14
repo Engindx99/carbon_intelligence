@@ -6,6 +6,8 @@ and heights from them. Until the macros' Const blocks are generated
 from the source (step 4), the macros are held to it here.
 """
 
+import math
+import re
 import unittest
 
 from geometry import plant_geometry as pg
@@ -195,6 +197,69 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
                 # to 0.1 mm / 1 mm; step 4 generates them from here
                 self.assertAlmostEqual(L["z_dust"][s], want, delta=1e-3)
         self.assertAlmostEqual(L["z_tower"], tower, delta=1e-3)
+
+
+CALCINER_LOG = REPO_ROOT / "geometry" / "output" / "2500" / "calciner_build.log"
+
+
+@unittest.skipUnless(CALCINER_LOG.is_file(), "no SolidWorks calciner build log here")
+class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
+    """The last calciner.bas build (geometry/output/2500/
+    calciner_build.log, written by the macro) against
+    plant_geometry.calciner / gooseneck: the same formulas in VBA and
+    Python, the same values from the one source."""
+
+    NUM = r"(-?\d+(?:[.,]\d*)?)"
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = CALCINER_LOG.read_text(encoding="latin-1")
+        cls.g = pg.load()
+
+    def num(self, pattern):
+        m = re.search(pattern.replace("#", self.NUM), self.log)
+        self.assertIsNotNone(m, pattern)
+        return [float(x.replace(",", ".")) for x in m.groups()]
+
+    def test_the_build_succeeded(self):
+        self.assertIn("built and verified", self.log.splitlines()[0])
+
+    def test_the_dimensions_and_elevations(self):
+        cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
+        for got, want, what in (
+            (self.num(r"throat D # m")[0], cal["D_throat"], "throat D"),
+            (self.num(r"cone # deg, # m tall")[1], cal["h_cone"], "cone height"),
+            (self.num(r"cylinder D # m, z # \.\. # m")[2], cal["z_roof"], "roof"),
+            (self.num(r"neck D # m rising to z = # m")[0], gn["D_neck"], "neck D"),
+            (self.num(r"neck D # m rising to z = # m")[1], gn["z_top"], "neck top"),
+            (self.num(r"from x = \+-# m")[0], gn["x_leg_start"], "leg start"),
+            (self.num(r"bend R # m")[0], gn["bend_R"], "bend R"),
+            (self.num(r"sharing # m3")[0], gn["bend_overlap"], "bend overlap"),
+            (self.num(r"drop at x = \+-# m")[0], gn["x_leg"], "drop x"),
+            (self.num(r"outlet faces at z = # m")[0], gn["z_end"], "outlet faces z"),
+            (self.num(r"vessel volume \(cone \+ cylinder\)\s+# m3")[0], cal["vessel_volume"], "vessel"),
+        ):
+            with self.subTest(what):
+                self.assertAlmostEqual(got, want, delta=1e-5 * max(1.0, abs(want)))
+
+    def test_the_measured_stages(self):
+        """Each build step's volume as SolidWorks measured it, to the
+        macro's own VOL_TOL (0.1 %), against the closed forms here."""
+        cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
+        rl = 0.5 * gn["D_leg"]
+        v_neck = math.pi * (0.5 * gn["D_neck"]) ** 2 * gn["rise"]
+        v_bend = math.pi * rl * rl * math.pi * gn["bend_R"]
+        steps = {"1 ": cal["v_throat"] + cal["vessel_volume"]}
+        steps["2 "] = steps["1 "] + v_neck
+        steps["3a"] = steps["2 "] + v_bend
+        steps["3b"] = steps["3a"] + v_bend - gn["bend_overlap"]
+        steps["4 "] = steps["3b"] + 2.0 * math.pi * rl * rl * gn["drop"]
+        self.assertAlmostEqual(steps["4 "], cal["v_throat"] + cal["vessel_volume"] + gn["volume"], places=6)
+        for tag, want in steps.items():
+            got, expected = self.num(rf"stage {re.escape(tag)}[^:\n]*: # m3 \(expected #\)")
+            with self.subTest(stage=tag.strip()):
+                self.assertAlmostEqual(expected, want, delta=1e-5 * want)
+                self.assertAlmostEqual(got, want, delta=1e-3 * want)
 
 
 class TheGasPathsAreTheDecisionsTest(unittest.TestCase):

@@ -269,6 +269,7 @@ Sub main()
     Verify
 
     Restore
+    WriteLog CALCINER_NAME & " built and verified"
     MsgBox CALCINER_NAME & " built and verified. Nothing is exported until the " & _
            "boundary faces are tagged." & vbLf & vbLf & buildLog, vbInformation, "Calciner"
     Exit Sub
@@ -278,6 +279,7 @@ Failed:
     ' it resets the Err object and the reason would be lost.
     why = Err.Description
     Restore
+    WriteLog CALCINER_NAME & " ABORTED while " & phase & ": " & why
     MsgBox CALCINER_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
            "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Calciner"
 
@@ -1468,6 +1470,25 @@ End Sub
 
 Private Sub Fail(ByVal msg As String)
     Err.Raise vbObjectError + 1, "calciner", msg
+End Sub
+
+
+' The whole log, to a file: a message box shows about 1000 characters,
+' and tests/test_plant_geometry.py holds the solid to
+' geometry/plant_geometry.py through it. The first line is the outcome.
+Private Function LogPath() As String
+    LogPath = OUT_ROOT & LINE_KEY & "\calciner_build.log"
+End Function
+
+Private Sub WriteLog(ByVal outcome As String)
+    Dim fn As Integer
+    On Error Resume Next
+    If Dir(OUT_ROOT, vbDirectory) = "" Then MkDir OUT_ROOT
+    If Dir(OUT_ROOT & LINE_KEY, vbDirectory) = "" Then MkDir OUT_ROOT & LINE_KEY
+    fn = FreeFile
+    Open LogPath() For Output As #fn
+    Print #fn, outcome & vbLf & buildLog;
+    Close #fn
 End Sub
 
 
