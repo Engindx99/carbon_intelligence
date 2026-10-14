@@ -151,6 +151,27 @@ preheater:
   # C2's outlet, R1 and the twin branches. Per string, times `strings`.
   # `strings` and `stages` are derived: plant_geometry.twin_sections.
 
+pressure:
+  # GAS-ONLY pressure losses, a REPORT (diagnostics D15, user decision
+  # 14 Oct 2026): nothing feeds back into the solve. Each section's
+  # Euler number is its CFD's dP / (1/2 rho v^2), carried to the
+  # twin's flow and temperature at the same reference velocity.
+  # Loading lowers a cyclone's dP (loaded MM: C4 ~0.76x, C1 ~0.48x)
+  # and adds the risers' hold-up and acceleration; neither is here.
+  #
+  # Calciner + gooseneck to the CFD outlet faces: total-pressure loss
+  # 180.9 Pa over the vessel's superficial velocity of its outlet gas
+  # (392.9 m3/s at 1209 K on the 35.68 m2 bore, 1/2 rho v^2 17.96 Pa).
+  # Two inlets mix there, so the split between the kiln-gas and the
+  # tertiary-air paths depends on their flow ratio and does not carry
+  # (geometry/calciner/calciner.md, CFD section).
+  calciner_euler: 10.07
+  # Cyclones, static dP over the inlet duct's velocity: C1
+  # (geometry/preheater/cyclone_C1.md, plant flow), C4 with the 1.70 D_x
+  # outlet (cyclone_C4.md). C2, C3 and C5 are C4's geometric twins.
+  c1_euler: 6.35
+  c4_euler: 11.54
+
 cooler:
   # THE GRATE (geometry/cooler/cooler.md; user decision, 13 Oct
   # 2026). The fluid volume is a box, width x length x casing

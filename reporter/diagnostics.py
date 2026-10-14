@@ -1391,6 +1391,88 @@ def _solid_feed_species(twin):
 # ======================================================
 # REPORT
 # ======================================================
+
+# ======================================================
+# D15  GAS PRESSURE LOSSES (gas-only, from the CFDs)
+# ======================================================
+
+def gas_pressure_losses(twin):
+    """
+    Each section's gas-only pressure loss at the twin's flow and
+    temperature, from its CFD's Euler number (configs `pressure`):
+    dP = Eu * 1/2 rho v^2 at the CFD's reference velocity, the
+    vessel's superficial velocity for the calciner and the inlet
+    duct's for a cyclone. Per unit; the hydraulic power is dP times
+    the section's volume flow over every string, the work the fan
+    must make good for these losses alone.
+
+    Read-only, a report: pressure enters no balance of the twin.
+    NOT a fan duty: the kiln, the risers, the ducts, the filter and
+    the stack draft are not here, and the meal's load changes a
+    cyclone's dP and adds the risers' hold-up (configs `pressure`).
+    """
+
+    from geometry import plant_geometry as pg
+    from physics.kiln_closures import gas_density
+
+    cfg = twin.cfg.get("pressure")
+
+    if not cfg:
+        return None
+
+    g = pg.load()
+    state = twin.state
+    strings = int(twin.cfg["preheater"]["strings"])
+
+    rows = []
+
+    def row(name, units, m_unit, T, area, eu, kind):
+        rho = float(gas_density(T))
+        v = m_unit / (rho * area)
+        q = 0.5 * rho * v * v
+        dp = eu * q
+        rows.append({
+            "section": name, "units": units, "m_dot": m_unit, "T": T,
+            "v": v, "q": q, "euler": eu, "dP": dp, "kind": kind,
+            "power_W": dp * units * m_unit / rho,
+        })
+
+    # The calciner zone is vessel -> gooseneck -> C5 in equal-volume
+    # cells (zone_segments): the gas at the vessel's and the
+    # gooseneck's ends.
+    cal = twin.calciner
+    Tg = np.asarray(state.Tg_calciner, dtype=float)
+    edges = np.cumsum(cal.segment_volumes) / np.sum(cal.segment_volumes)
+    cell = lambda f: Tg[min(len(Tg) - 1, max(0, int(round(f * len(Tg))) - 1))]
+    m_cal = float(state.m_dot_g_calciner)
+
+    row("calciner", 1, m_cal, float(cell(edges[0])),
+        np.pi * pg.calciner(g)["R"] ** 2,
+        float(cfg["calciner_euler"]), "total")
+
+    def inlet(name):
+        c = pg.cyclone(g, name)
+        return c["W_inlet"] * c["H_inlet"], int(c["per_string"])
+
+    a5, n5 = inlet("C5")
+    row("C5", strings * n5, m_cal / (strings * n5), float(cell(edges[1])),
+        a5, float(cfg["c4_euler"]), "static")
+
+    # Stage 1..4 = C4..C1 (plant_geometry.twin_sections).
+    m_ph = float(state.m_dot_g_preheater)
+    for stage, name in zip(twin.preheater.stages, ("C4", "C3", "C2", "C1")):
+        a, n = inlet(name)
+        eu = cfg["c1_euler"] if name == "C1" else cfg["c4_euler"]
+        row(name, strings * n, m_ph / (strings * n),
+            float(stage.gas_inlet_temperature), a, float(eu), "static")
+
+    return {
+        "rows": rows,
+        "total_dP": sum(r["dP"] for r in rows),
+        "total_power_W": sum(r["power_W"] for r in rows),
+    }
+
+
 def report(twin):
 
     out = []
@@ -1714,6 +1796,36 @@ def report(twin):
             " geometry-to-throughput"
         )
         w("  mismatch, not a lining error. See D11 for the same signal.")
+
+    # ---------- D15 ----------
+    losses = gas_pressure_losses(twin)
+
+    if losses is not None:
+        w("\n-- D15  gas-only pressure losses (CFD Euler numbers; a report) --")
+        w(
+            f"  {'section':9s} {'units':>5s} {'kg/s each':>10s} {'T K':>8s} "
+            f"{'v m/s':>7s} {'q Pa':>7s} {'Eu':>6s} {'dP Pa':>8s} {'kW':>8s}"
+        )
+        for r in losses["rows"]:
+            w(
+                f"  {r['section']:9s} {r['units']:5d} {r['m_dot']:10.2f} "
+                f"{r['T']:8.1f} {r['v']:7.2f} {r['q']:7.2f} "
+                f"{r['euler']:6.2f} {r['dP']:8.1f} {r['power_W'] / 1e3:8.1f}"
+                f"   {r['kind']}"
+            )
+        w(
+            f"  {'SUM':9s} {'':5s} {'':10s} {'':8s} {'':7s} {'':7s} {'':6s} "
+            f"{losses['total_dP']:8.1f} {losses['total_power_W'] / 1e3:8.1f}"
+        )
+        w(
+            "  Gas only, in series along one string. Loading lowers a"
+            " cyclone's dP and adds"
+        )
+        w(
+            "  the risers' hold-up; the kiln, ducts, filter and stack are"
+            " not here, so the"
+        )
+        w("  power is these losses' share of the fan's work, not its duty.")
 
     w("\n================================================================\n")
 
