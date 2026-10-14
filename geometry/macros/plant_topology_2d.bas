@@ -41,28 +41,86 @@ Option Explicit
 
 Const LINE_KEY As String = "2500"
 
+' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
+' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
+' change the source and run: python3 tools/gen_geometry.py
+Const C1_D                         As Double  = 4.32         ' barrel D [published, preheater/cyclone_C1.md]
+Const C1_HB                        As Double  = 6.79         ' barrel height [published, preheater/cyclone_C1.md]
+Const C1_HC                        As Double  = 4.65         ' cone height [published, preheater/cyclone_C1.md]
+Const C1_VD                        As Double  = 2.4          ' vortex finder D [published, preheater/cyclone_C1.md]
+Const C1_DD                        As Double  = 0.4          ' dust outlet D [published, preheater/cyclone_C1.md]
+Const C4_D                         As Double  = 6.3          ' barrel D [published, preheater/cyclone_C4.md]
+Const C4_HB                        As Double  = 6.3          ' barrel height [cfd_decision, preheater/cyclone_C4.md]
+Const C4_HC                        As Double  = 7.3          ' cone height [published, preheater/cyclone_C4.md]
+Const C4_VD                        As Double  = 4.63         ' vortex finder D [published, preheater/cyclone_C4.md]
+Const C4_DD                        As Double  = 0.81         ' dust outlet D [published, preheater/cyclone_C4.md]
+Const C5_D                         As Double  = 6.5          ' barrel D [published, preheater/cyclone_C5.md]
+Const C5_HB                        As Double  = 6.5          ' barrel height, C4 x scale [derived]
+Const C5_HC                        As Double  = 7.531746     ' cone height, C4 x scale [derived]
+Const C5_VD                        As Double  = 4.776984     ' vortex finder D, C4 x scale [derived]
+Const C5_DD                        As Double  = 0.835714     ' dust outlet D, C4 x scale [derived]
+Const C5_HIN                       As Double  = 3.507937     ' volute inlet height, C4 x scale [derived]
+Const C4_VF_S                      As Double  = 3.9          ' vortex finder immersion [cfd_decision, preheater/cyclone_C4.md]
+Const C4_OUT_RISE                  As Double  = 7.871        ' outlet pipe rise over the roof [derived]
+Const C4_OUT_R                     As Double  = 4.63         ' outlet bend centreline R [derived]
+Const C4_OUT_RUN                   As Double  = 4.63         ' outlet leg [derived]
+Const C4_IN_H                      As Double  = 3.4          ' volute inlet height [cfd_decision, preheater/cyclone_C4.md]
+Const C4_IN_W                      As Double  = 2.912        ' volute inlet width [cfd_decision, preheater/cyclone_C4.md]
+Const C4_TONGUE                    As Double  = 0.05         ' [model, preheater/cyclone_C4.md]
+Const C4_IN_L                      As Double  = 3#           ' inlet duct face from the axis [model, preheater/cyclone_C4.md]
+Const C1_VF_S                      As Double  = 2.16         ' vortex finder immersion [published, preheater/cyclone_C1.md]
+Const R1_D                         As Double  = 3.07         ' [published, preheater/riser_R1.md]
+Const CALC_D                       As Double  = 6.7404       ' [derived_from_reference, calciner/calciner.md]
+Const CALC_H                       As Double  = 30#          ' cone + cylinder [published, calciner/calciner.md]
+Const CALC_THROAT_D                As Double  = 3.130077     ' throat D [derived]
+Const CALC_CONE_DEG                As Double  = 65#          ' [literature, calciner/calciner.md]
+Const GN_D_SRC                     As Double  = 3.5          ' a gooseneck leg [published, preheater/gooseneck.md]
+Const GN_RISE_OVER_D               As Double  = 1.25         ' neck rise, x neck D [model, preheater/gooseneck.md]
+Const GN_BEND_R_OVER_D             As Double  = 1.5          ' bend centreline R, x leg D [model, preheater/gooseneck.md]
+Const GN_OUT_AT_H                  As Double  = 0.5          ' CFD legs' end, x CALC_H [model, preheater/gooseneck.md]
+Const FEED_BELOW_GN_OUT            As Double  = 2#           ' [model, calciner/calciner.md]
+Const TA_D                         As Double  = 2.4393       ' tertiary air duct [derived_from_reference, calciner/calciner.md]
+Const MEAL_SLOPE_DEG               As Double  = 60#          ' [literature, calciner/calciner.md]
+Const KILN_D                       As Double  = 4.8          ' [published, kiln/kiln.md]
+Const KILN_L                       As Double  = 74#          ' [published, kiln/kiln.md]
+Const KILN_SLOPE                   As Double  = 0.03         ' slope / 100 [published, kiln/kiln.md]
+Const COOLER_AREA                  As Double  = 119.6        ' m2 [published, cooler/cooler.md]
+Const COOLER_W                     As Double  = 4#           ' grate width [literature, cooler/cooler.md]
+Const COOLER_H                     As Double  = 3#           ' casing height [literature, cooler/cooler.md]
+Const C1_RISER_X                   As Double  = 6.842893     ' C1 riser branch axis from the C1 axis [derived]
+Const C1_RISER_Z0                  As Double  = 0.884601     ' C1 CFD domain floor, over the dust outlet [derived]
+Const C1_BEND_Z                    As Double  = 8.384601     ' C1 branch bend start [derived]
+Const C1_BEND_R                    As Double  = 2.170818     ' C1 branch bend centreline R [derived]
+Const C1_BEND_DEG                  As Double  = 95#          ' C1 branch bend [derived]
+Const C1_TRANS_L                   As Double  = 1.5          ' round -> duct transition [model, preheater/riser_R1.md]
+Const C1_DUCT_H                    As Double  = 2.16         ' C1 inlet duct height [cfd_decision, preheater/cyclone_C1.md]
+Const C1_FEED_Z                    As Double  = 5.384601     ' C1 feed chute axis at the branch wall [derived]
+Const C1_FEED_L                    As Double  = 1#           ' C1 feed chute depth [model, preheater/riser_R1.md]
+Const C1_FEED_W                    As Double  = 0.6          ' C1 feed chute side [literature, preheater/riser_R1.md]
+Const C1_OUT_RISE                  As Double  = 3#           ' C1 outlet pipe rise [derived]
+Const C1_OUT_R                     As Double  = 3.6          ' C1 outlet 180 deg bend centreline R [derived]
+Const STAGE_GAP                    As Double  = 4#           ' [schematic, plant_topology.md]
+Const ZIG_DX                       As Double  = 15#          ' outer column outboard of the inner [schematic, plant_topology.md]
+Const C5_OVER_TA                   As Double  = 1.75         ' [schematic, plant_topology.md]
+Const GN_TO_C5_GAP                 As Double  = 1#           ' [schematic, plant_topology.md]
+Const GN_BEND_LEG                  As Double  = 0.5          ' x leg D [schematic, plant_topology.md]
+Const R1_BRANCH_HALF               As Double  = 2.75         ' [schematic, plant_topology.md]
+Const R1_UP_MIN                    As Double  = 0.5          ' [schematic, plant_topology.md]
+Const R1_LEG_ON                    As Double  = 0.5          ' [schematic, plant_topology.md]
+Const KILN_AXIS_Z                  As Double  = 10#          ' [schematic, plant_topology.md]
+Const CHAMBER_MARGIN               As Double  = 1#           ' [schematic, kiln/kiln_inlet_chamber.md]
+Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant_topology.md]
+' END GENERATED
+
 ' Cyclones [m]: D, barrel, cone, vortex finder D, dust outlet D --
 ' the CFD sizes, which every string uses as they are: C1 (cyclone_C1.md),
 ' C2 = C3 = C4 (cyclone_C4.md, catalog.md deviation), C5 the CFD C4
 ' x 6.50 / 6.30 (cyclone_C5.md).
-Const C1_D  As Double = 4.32
-Const C1_HB As Double = 6.79
-Const C1_HC As Double = 4.65
-Const C1_VD As Double = 2.4
-Const C1_DD As Double = 0.4
-Const C4_D  As Double = 6.3
+' -> C1_D, C1_HB, C1_HC, C1_VD, C1_DD, C4_D: in the generated block above
 ' The CFD barrel, h = D, not the catalogue's 3.46 m (cyclone_C4.md,
 ' catalog.md deviation, user decision 4 Oct 2026).
-Const C4_HB As Double = 6.3
-Const C4_HC As Double = 7.3
-Const C4_VD As Double = 4.63
-Const C4_DD As Double = 0.81
-Const C5_D  As Double = 6.5
-Const C5_HB As Double = 6.5
-Const C5_HC As Double = 7.5317
-Const C5_VD As Double = 4.777
-Const C5_DD As Double = 0.8357
-Const C5_HIN As Double = 3.5079     ' its volute inlet's height; a gooseneck leg runs into it
+' -> C4_HB, C4_HC, C4_VD, C4_DD, C5_D, C5_HB, C5_HC, C5_VD, C5_DD, C5_HIN: in the generated block above
+'    C5_HIN: its volute inlet's height; a gooseneck leg runs into it
 ' C5 is the C4 CFD domain x 6.50 / 6.30 throughout (see Kc): its vortex finder, volute and outlet
 ' pipe -- R4 itself, as C4 / C3's are R3 / R2
 ' C2-C4 as the C4 CFD domain (cyclone_C4.md, cyclone.bas, S 3.90): the vortex finder 3.90 m
@@ -74,72 +132,59 @@ Const C5_HIN As Double = 3.5079     ' its volute inlet's height; a gooseneck leg
 ' the CFD's 7.87 m, its bend, its leg level on into the next cyclone's inlet. The domain is
 ' frozen between its faces -- the inlet duct's end, 3.0 m from the axis, and the leg's end,
 ' 9.26 m from it -- and tests/test_plant_topology_cfd_lock.py holds these to cyclone.bas
-Const C4_VF_S    As Double = 3.9
-Const C4_OUT_RISE As Double = 7.871    ' 1.70 D_x. Was 1.25 (5.79 m): C2 / C3 stood just 0.9 m over the
-                                       ' outlet bend under them, no room for their meal pipes; +2.08 m gives
-                                       ' 2.9 m (user decision 14 Oct 2026; the C4 CFD is to be solved again)
-Const C4_OUT_R   As Double = 4.63
-Const C4_OUT_RUN As Double = 4.63
-Const C4_IN_H    As Double = 3.4
-Const C4_IN_W    As Double = 2.912
-Const C4_TONGUE  As Double = 0.05
-Const C4_IN_L    As Double = 3#       ' the inlet duct's length from the barrel's tangent plane: its face this far from the axis
-Const C1_VF_S    As Double = 2.16     ' C1's vortex finder, down from the roof (C1 CFD)
+' -> C4_VF_S, C4_OUT_RISE, C4_OUT_R, C4_OUT_RUN, C4_IN_H, C4_IN_W, C4_TONGUE, C4_IN_L, C1_VF_S: in the generated block above
+'    C4_OUT_RISE: 1.70 D_x. Was 1.25 (5.79 m): C2 / C3 stood just 0.9 m over the outlet bend under them, no room for their meal pipes; +2.08 m gives 2.9 m (user decision 14 Oct 2026; the C4 CFD solved again on it: 522.8 Pa, Eu 11.54)
+'    C4_IN_L: the inlet duct's length from the barrel's tangent plane: its face this far from the axis
+'    C1_VF_S: C1's vortex finder, down from the roof (C1 CFD)
 
 ' Risers [m] -- HFC2500 (published), catalog.md; R_k carries the gas
 ' from C(k+1) up to C(k). Each string has its own; R1 splits into
 ' the twin C1, each branch half its area. R2..R4 are the C3..C5 CFD
 ' outlet pipes (D_x), see RiserD.
-Const R1_D As Double = 3.07
+' -> R1_D: in the generated block above
 
 ' Calciner [m] -- calciner.bas / calciner.md, the 5000 t/d plant's (PF5000)
-Const CALC_D        As Double = 6.7404
-Const CALC_H        As Double = 30#        ' cone + cylinder
-Const CALC_THROAT_D As Double = 3.130088
-Const CALC_CONE_DEG As Double = 65#
-Const GN_D_SRC      As Double = 3.5        ' a Y gooseneck leg, one 2500 t/d string's published neck; the neck has both legs' area
-Const GN_OUT_AT_H   As Double = 0.5        ' legs end at this fraction of CALC_H
-Const FEED_BELOW_GN_OUT As Double = 2#     ' meal feed through the wall this far below the legs' ends
-Const TA_D          As Double = 2.4393     ' tertiary air duct, derived in calciner.md
+' -> CALC_D, CALC_H, CALC_THROAT_D, CALC_CONE_DEG, GN_D_SRC, GN_OUT_AT_H, FEED_BELOW_GN_OUT, TA_D: in the generated block above
+'    CALC_H: cone + cylinder
+'    GN_D_SRC: a Y gooseneck leg, one 2500 t/d string's published neck; the neck has both legs' area
+'    GN_OUT_AT_H: legs end at this fraction of CALC_H
+'    FEED_BELOW_GN_OUT: meal feed through the wall this far below the legs' ends
+'    TA_D: tertiary air duct, derived in calciner.md
 Const TA_BEND_R_OVER_D As Double = 1.5     ' its turn from the hood over to the calciner: a long-radius bend, centreline R
                                            ' this many D, as the gooseneck's (schematic; it has no CFD)
 
 ' Meal pipes end at the slope of the calciner feed pipes, Fidaros 2007
 ' (calciner.md): a chute at 60 deg meets an upright riser wall at
 ' 30 deg, sliding in along it.
-Const MEAL_SLOPE_DEG As Double = 60#
+' -> MEAL_SLOPE_DEG: in the generated block above
 
 ' Kiln [m] -- kiln.md (PF5000); cooler -- cooler.md, grate area [m2] (PF5000)
-Const KILN_D      As Double = 4.8
-Const KILN_L      As Double = 74#
-Const KILN_SLOPE  As Double = 0.03
-Const COOLER_AREA As Double = 119.6
+' -> KILN_D, KILN_L, KILN_SLOPE, COOLER_AREA: in the generated block above
 
 ' SCHEMATIC -- no source; they only lay the plant out.
-Const STAGE_GAP      As Double = 4#       ' C1's dust outlet at least this far over C2's stub [m] (R1's Y sets it higher).
-                                          ' C2..C4 stand where the outlet below (as its CFD) runs into them
-Const ZIG_DX         As Double = 15#      ' a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]: each
-                                          ' riser's leg past the CFD outlet face, its taper and 0.5 m (14.6 m for R4); was 20
-Const C5_OVER_TA     As Double = 1.75     ' the C5 dust outlets at least this far over the tertiary air duct [m]
-Const GN_TO_C5_GAP   As Double = 1#       ' a gooseneck drop to its C5 barrel; its inlet run spans it [m]
-Const GN_BEND_LEG    As Double = 0.5      ' the drop turns into C5 in two 45 deg steps: a 45 deg piece this many leg D across, then level [-]
+' -> STAGE_GAP, ZIG_DX, C5_OVER_TA, GN_TO_C5_GAP, GN_BEND_LEG: in the generated block above
+'    STAGE_GAP: C1's dust outlet at least this far over C2's stub [m] (R1's Y sets it higher). C2..C4 stand where the outlet below (as its CFD) runs into them
+'    ZIG_DX: a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]: each riser's leg past the CFD outlet face, its taper and 0.5 m (14.6 m for R4); was 20
+'    C5_OVER_TA: the C5 dust outlets at least this far over the tertiary air duct [m]
+'    GN_TO_C5_GAP: a gooseneck drop to its C5 barrel; its inlet run spans it [m]
+'    GN_BEND_LEG: the drop turns into C5 in two 45 deg steps: a 45 deg piece this many leg D across, then level [-]
 ' Each of the twin C1 as its CFD domain (cyclone_C1.md, riser_R1.md): heights over its dust outlet [m, deg]
-Const C1_RISER_X     As Double = 6.843    ' its own riser branch (D = R1's half area), its axis this far from the C1 axis
-Const C1_RISER_Z0    As Double = 0.885    ' the CFD domain's floor: the branch is straight from here ...
-Const C1_BEND_Z      As Double = 8.385    ' ... up to its bend
-Const C1_BEND_R      As Double = 2.171    ' bend centreline radius (1.0 D), its walls arcs
-Const C1_BEND_DEG    As Double = 95#      ' the bend: from straight up to the inlet duct's 5 deg down
-Const C1_TRANS_L     As Double = 1.5      ' round -> rectangular transition along the duct axis, then the duct into the barrel
-Const C1_DUCT_H      As Double = 2.16     ' inlet duct height (0.86 wide, tangential)
-Const C1_FEED_Z      As Double = 5.385    ' the meal chute's axis meets the branch wall here, on the side away from the C1
-Const C1_FEED_L      As Double = 1#       ' ... standing out this far along its axis, at MEAL_SLOPE_DEG
-Const C1_FEED_W      As Double = 0.6      ' ... 0.6 x 0.6 square
-Const C1_OUT_RISE    As Double = 3#       ' gas outlet pipe (D = C1_VD) straight up over the roof ...
-Const C1_OUT_R       As Double = 3.6      ' ... a 180 deg bend away from the branch, its walls arcs, and down as far as it rose
-Const R1_BRANCH_HALF As Double = 2.75     ' R1's Y: the twin's branches this far either side of R1's axis [m]
-Const R1_UP_MIN      As Double = 0.5      ' R1's wall on C2's side straight up at least this far over the leg before its Y; the C1 stage stands that high [m]
-Const R1_LEG_ON      As Double = 0.5      ' C2's outlet leg runs on this far past the CFD's 4.63 m into R1's elbow: the
-                                          ' two strings' far C1 outlet bends ~6 m apart over the calciner [m]
+' -> C1_RISER_X, C1_RISER_Z0, C1_BEND_Z, C1_BEND_R, C1_BEND_DEG, C1_TRANS_L, C1_DUCT_H, C1_FEED_Z, C1_FEED_L, C1_FEED_W, C1_OUT_RISE, C1_OUT_R, R1_BRANCH_HALF, R1_UP_MIN, R1_LEG_ON: in the generated block above
+'    C1_RISER_X: its own riser branch (D = R1's half area), its axis this far from the C1 axis
+'    C1_RISER_Z0: the CFD domain's floor: the branch is straight from here ...
+'    C1_BEND_Z: ... up to its bend
+'    C1_BEND_R: bend centreline radius (1.0 D), its walls arcs
+'    C1_BEND_DEG: the bend: from straight up to the inlet duct's 5 deg down
+'    C1_TRANS_L: round -> rectangular transition along the duct axis, then the duct into the barrel
+'    C1_DUCT_H: inlet duct height (0.86 wide, tangential)
+'    C1_FEED_Z: the meal chute's axis meets the branch wall here, on the side away from the C1
+'    C1_FEED_L: ... standing out this far along its axis, at MEAL_SLOPE_DEG
+'    C1_FEED_W: ... 0.6 x 0.6 square
+'    C1_OUT_RISE: gas outlet pipe (D = C1_VD) straight up over the roof ...
+'    C1_OUT_R: ... a 180 deg bend away from the branch, its walls arcs, and down as far as it rose
+'    R1_BRANCH_HALF: R1's Y: the twin's branches this far either side of R1's axis [m]
+'    R1_UP_MIN: R1's wall on C2's side straight up at least this far over the leg before its Y; the C1 stage stands that high [m]
+'    R1_LEG_ON: C2's outlet leg runs on this far past the CFD's 4.63 m into R1's elbow: the two strings' far C1 outlet bends ~6 m apart over the calciner [m]
 Const ID_FAN_L       As Double = 2.5      ' "to ID fan": an arrow this long down from each C1 outlet's leg [m]
 Const RM_L           As Double = 0.8      ' raw meal: a small-headed arrow along each chute's axis, from this far past its end [m]
 Const MEAL_ENTRY_UP  As Double = 1.5      ' meal enters a riser this far over its foot (R2..R4: over the roof, into the CFD outlet pipe) [m]
@@ -152,11 +197,12 @@ Const C4_MEAL_DROP   As Double = 3#       ' C4 meal falls straight this far befo
 Const C5_MEAL_DROP   As Double = 1#      ' C5 meal falls straight this far before turning towards the inlet chamber [m]
 Const MEAL_BEND      As Double = 1#       ' a bend piece this long after a C4 / C5 meal's straight drop, halving its turn [m]
 Const CROSS_GAP      As Double = 0.5      ' a meal pipe is broken this far either side of an outline it passes behind [m]
-Const KILN_AXIS_Z    As Double = 10#      ' kiln inlet axis elevation [m]
-Const CHAMBER_MARGIN As Double = 1#       ' kiln inlet chamber and hood: a square this far round the kiln [m]
-Const COOLER_W       As Double = 4#       ' grate width [m], the FLS reference cooler's; the length follows from the area
-Const COOLER_H       As Double = 4#       ' cooler casing height [m]
-Const COOLER_DROP    As Double = 1#       ' cooler top below the kiln shell at discharge [m]
+' -> KILN_AXIS_Z, CHAMBER_MARGIN, COOLER_W, COOLER_H, COOLER_DROP: in the generated block above
+'    KILN_AXIS_Z: kiln inlet axis elevation [m]
+'    CHAMBER_MARGIN: kiln inlet chamber and hood: a square this far round the kiln [m]
+'    COOLER_W: grate width [m], the FLS reference cooler's; the length follows from the area
+'    COOLER_H: cooler casing height [m]
+'    COOLER_DROP: cooler top below the kiln shell at discharge [m]
 Const MEAL_INTO_CHAMBER As Double = 1#    ' C5 meal lands this far in from the chamber's side [m]
 Const MIN_SEG        As Double = 0.05     ' a wall piece beside an opening shorter than this is left out [m]
 Const CLINKER_OUT_Z  As Double = 3.5      ' clinker transport drawn this far below ground [m]
@@ -318,9 +364,9 @@ Private Sub Derive()
     rGn = 0.5 * GN_D_SRC
     rNeck = rGn * Sqr(2#)
     xGnStart = rNeck - rGn
-    rGnBend = 1.5 * 2# * rGn
+    rGnBend = GN_BEND_R_OVER_D * 2# * rGn
     xLeg = xGnStart + 2# * rGnBend
-    zGnTop = zCalcRoof + 1.25 * 2# * rNeck
+    zGnTop = zCalcRoof + GN_RISE_OVER_D * 2# * rNeck
     zLeg = zThroat + CALC_THROAT_D + GN_OUT_AT_H * CALC_H
     zFeed = zLeg - FEED_BELOW_GN_OUT - FEED_LOWER
 

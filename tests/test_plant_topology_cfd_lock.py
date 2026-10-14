@@ -1,9 +1,10 @@
 """The plant drawing keeps every CFD domain exactly as solved.
 
 geometry/macros/plant_topology_2d.bas draws C1 as the C1 CFD domain,
-C2..C4 as the C4 one and C5 as its 6.50 / 6.30 copy; its constants are
-copied by hand from geometry/macros/cyclone.bas, which built the CFD
-solids. Both macros are read here as text and every dimension inside a
+C2..C4 as the C4 one and C5 as its 6.50 / 6.30 copy. Both macros take
+their constants from generated blocks (tools/gen_geometry.py, from
+geometry/plant_geometry.yaml); geometry/macros/cyclone.bas built the
+CFD solids. Both are read here as text and every dimension inside a
 domain -- between its inlet and outlet faces -- must agree, so neither
 can drift without the other (geometry/plant_topology.md, "CFD domenleri
 ve serbest bölge"). Everything outside the faces is the drawing's own
@@ -29,12 +30,12 @@ def _number(token, consts):
 
 
 def _consts(text):
-    """Every numeric module-level Const."""
+    """Every numeric (and Boolean) module-level Const."""
     out = {}
     for name, value in re.findall(
-        r"^Const\s+(\w+)\s+As\s+\w+\s*=\s*([-\d.]+)#?", text, re.M
+        r"^Const\s+(\w+)\s+As\s+\w+\s*=\s*([-\d.]+|True|False)#?", text, re.M
     ):
-        out[name] = float(value)
+        out[name] = value == "True" if value in ("True", "False") else float(value)
     return out
 
 

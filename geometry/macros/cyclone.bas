@@ -40,6 +40,72 @@ Option Explicit
 Const CYCLONE_NAME As String = "C1"      ' "C1", "C4" or "C5"
 Const LINE_KEY As String = "2500"
 
+' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
+' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
+' change the source and run: python3 tools/gen_geometry.py
+Const VORTEX_WALL                  As Double  = 0.08         ' [model, preheater/cyclone_C1.md]
+Const L_INLET                      As Double  = 3#           ' [model, preheater/cyclone_C4.md]
+Const INLET_ROOF_CLEARANCE         As Double  = 0.05         ' [model, preheater/cyclone_C1.md]
+Const INLET_TANGENT_RELIEF         As Double  = 0#           ' [model, preheater/cyclone_C1.md]
+Const INLET_TONGUE                 As Double  = 0.05         ' [model, preheater/cyclone_C4.md]
+Const VOLUTE_OVERLAP               As Double  = 0.1          ' [model, preheater/cyclone_C4.md]
+Const RISER_AREA_SHARE             As Double  = 0.5          ' [cfd_decision, preheater/riser_R1.md]
+Const RISER_TRANS_LEN              As Double  = 1.5          ' [model, preheater/riser_R1.md]
+Const RISER_BEND_R_OVER_D          As Double  = 1#           ' [model, preheater/riser_R1.md]
+Const RISER_ABOVE_FEED             As Double  = 3#           ' [model, preheater/riser_R1.md]
+Const RISER_BELOW_FEED             As Double  = 4.5          ' [model, preheater/riser_R1.md]
+Const FEED_W                       As Double  = 0.6          ' [literature, preheater/riser_R1.md]
+Const FEED_H                       As Double  = 0.6          ' [literature, preheater/riser_R1.md]
+Const FEED_DEPTH                   As Double  = 1#           ' [model, preheater/riser_R1.md]
+Const FEED_SLOPE_DEG               As Double  = 60#          ' [literature, calciner/calciner.md]
+Const D_RISER_SRC                  As Double  = 3.07         ' R1 inner D [published, preheater/riser_R1.md]
+Const C1_D_BARREL                  As Double  = 4.32         ' [published, preheater/cyclone_C1.md]
+Const C1_H_BARREL                  As Double  = 6.79         ' [published, preheater/cyclone_C1.md]
+Const C1_H_CONE                    As Double  = 4.65         ' [published, preheater/cyclone_C1.md]
+Const C1_L_VORTEX                  As Double  = 2.16         ' [published, preheater/cyclone_C1.md]
+Const C1_D_VORTEX                  As Double  = 2.4          ' [published, preheater/cyclone_C1.md]
+Const C1_D_DUST                    As Double  = 0.4          ' [published, preheater/cyclone_C1.md]
+Const C1_W_INLET                   As Double  = 0.86         ' [published, preheater/cyclone_C1.md]
+Const C1_H_INLET                   As Double  = 2.16         ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_INLET_SLOPE_DEG           As Double  = 5#           ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_VOLUTE_ON                 As Boolean = False        ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_OUTLET_TURN_DEG           As Double  = 180#         ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
+Const C1_ELBOW_R_OVER_VORTEX_D     As Double  = 1.5          ' [model, preheater/cyclone_C1.md]
+Const C1_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
+Const C1_BOI_RADIUS                As Double  = 0.8          ' [model, preheater/cyclone_C1.md]
+Const C4_D_BARREL                  As Double  = 6.3          ' [published, preheater/cyclone_C4.md]
+Const C4_H_BARREL                  As Double  = 6.3          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_H_CONE                    As Double  = 7.3          ' [published, preheater/cyclone_C4.md]
+Const C4_L_VORTEX                  As Double  = 3.9          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_D_VORTEX                  As Double  = 4.63         ' [published, preheater/cyclone_C4.md]
+Const C4_D_DUST                    As Double  = 0.81         ' [published, preheater/cyclone_C4.md]
+Const C4_W_INLET                   As Double  = 2.912        ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_H_INLET                   As Double  = 3.4          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_INLET_SLOPE_DEG           As Double  = 0#           ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_VOLUTE_ON                 As Boolean = True         ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_OUTLET_TURN_DEG           As Double  = 90#          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_ELBOW_R_OVER_VORTEX_D     As Double  = 1#           ' [model, preheater/cyclone_C4.md]
+Const C4_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1#           ' [model, preheater/cyclone_C4.md]
+Const C4_BOI_RADIUS                As Double  = 1.5          ' [model, preheater/cyclone_C4.md]
+Const C5_D_BARREL                  As Double  = 6.5          ' [published, preheater/cyclone_C5.md]
+Const C5_H_BARREL                  As Double  = 6.5          ' C4 x 1.031746 [derived]
+Const C5_H_CONE                    As Double  = 7.531746     ' C4 x 1.031746 [derived]
+Const C5_L_VORTEX                  As Double  = 4.02381      ' C4 x 1.031746 [derived]
+Const C5_D_VORTEX                  As Double  = 4.776984     ' C4 x 1.031746 [derived]
+Const C5_D_DUST                    As Double  = 0.835714     ' C4 x 1.031746 [derived]
+Const C5_W_INLET                   As Double  = 3.004444     ' C4 x 1.031746 [derived]
+Const C5_H_INLET                   As Double  = 3.507937     ' C4 x 1.031746 [derived]
+Const C5_INLET_SLOPE_DEG           As Double  = 0#           ' as C4
+Const C5_VOLUTE_ON                 As Boolean = True         ' as C4
+Const C5_OUTLET_TURN_DEG           As Double  = 90#          ' as C4
+Const C5_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' as C4
+Const C5_ELBOW_R_OVER_VORTEX_D     As Double  = 1#           ' as C4
+Const C5_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1#           ' as C4
+Const C5_BOI_RADIUS                As Double  = 1.55         ' [model, preheater/cyclone_C5.md]
+' END GENERATED
+
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
 ' dimensions [m] first, then the modelling choices that differ
 ' between the cyclones.
@@ -159,8 +225,8 @@ Dim OUTLET_DOWN_OVER_VORTEX_D As Double   ' straight drop or run, x vortex D
 ' preheater dip tube is heat resistant steel or SiC, often
 ' refractory lined, and 80 mm of it is ordinary. The 12 mm this
 ' started at was the least physical value of the three.
-Const VORTEX_WALL              As Double = 0.08
-Const L_INLET                  As Double = 3#     ' duct length from the barrel tangent plane [m]
+' -> VORTEX_WALL, L_INLET: in the generated block above
+'    L_INLET: duct length from the barrel tangent plane [m]
 
 ' How far the duct's highest point stays below the roof plate [m].
 ' The duct slopes down towards the cyclone, so it is highest at the
@@ -171,7 +237,7 @@ Const L_INLET                  As Double = 3#     ' duct length from the barrel 
 ' roof flat and the opening a clean hole in the shell. It cannot be
 ' zero: at zero the duct roof, the cyclone roof and the barrel all
 ' meet at one degenerate point.
-Const INLET_ROOF_CLEARANCE As Double = 0.05
+' -> INLET_ROOF_CLEARANCE: in the generated block above
 
 ' Superseded by INLET_TONGUE below, and kept at 0.
 '
@@ -188,7 +254,7 @@ Const INLET_ROOF_CLEARANCE As Double = 0.05
 ' that, so this stays at 0. Setting both is refused by PreChecks --
 ' the combination is not worked out and the volume term below
 ' assumes the outer wall is the barrel's own tangent plane.
-Const INLET_TANGENT_RELIEF As Double = 0#
+' -> INLET_TANGENT_RELIEF: in the generated block above
 
 ' Mesh sizing cylinder -- the body of influence, written out on its
 ' own as <name>_boi.step. NOT fluid geometry and NOT part of the
@@ -293,7 +359,7 @@ Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
 ' The surviving face is a ledge, not a converging gap, so it only
 ' has to take a few surface elements across it: 0.05 m is 2.5 at a
 ' 0.02 m face size and 4 at 0.0125 m.
-Const INLET_TONGUE As Double = 0.05
+' -> INLET_TONGUE: in the generated block above
 
 ' The volute (VOLUTE_ON), for cyclones whose published inlet is too
 ' wide to pass between the barrel and the vortex finder -- C4's is
@@ -322,7 +388,8 @@ Const INLET_TONGUE As Double = 0.05
 ' fluid area outside the barrel is closed form (the integral of
 ' (r^2 - R^2) / 2 over phi), and a spline through that many points of
 ' a smooth spiral is far inside VOL_TOL of it.
-Const VOLUTE_OVERLAP    As Double = 0.1     ' scroll's inner arc inside the barrel [m]
+' -> VOLUTE_OVERLAP: in the generated block above
+'    VOLUTE_OVERLAP: scroll's inner arc inside the barrel [m]
 Const VOLUTE_SPLINE_PTS As Long = 25        ' points along the half turn
 
 ' The riser in front of the inlet duct: the gas comes up a vertical
@@ -375,16 +442,17 @@ Const VOLUTE_SPLINE_PTS As Long = 25        ' points along the half turn
 ' Off, the macro builds the validated gas-only domain exactly as
 ' before and writes it under the old name. RISER_ON is per cyclone,
 ' set in SelectCyclone; the lengths below are C1's.
-Const D_RISER_SRC          As Double = 3.07  ' published R1 inner diameter [m], geometry/catalog.md
-Const RISER_AREA_SHARE      As Double = 0.5   ' the twin C1s share R1
-Const RISER_TRANS_LEN       As Double = 1.5   ' round-to-duct loft, along the duct axis [m]
-Const RISER_BEND_R_OVER_D   As Double = 1#    ' bend centreline radius, x riser diameter
-Const RISER_ABOVE_FEED      As Double = 3#    ' feed (chute axis at the wall) to bend start [m]
-Const RISER_BELOW_FEED      As Double = 4.5   ' riser gas inlet to feed [m]
-Const FEED_W                As Double = 0.6   ' feed chute section, along y [m]
-Const FEED_H                As Double = 0.6   ' feed chute section, normal to its axis in x-z [m]
-Const FEED_DEPTH            As Double = 1#    ' feed chute, along its axis beyond the riser wall [m]
-Const FEED_SLOPE_DEG        As Double = 60#   ' feed chute below the horizontal, rising away from the riser
+' -> D_RISER_SRC, RISER_AREA_SHARE, RISER_TRANS_LEN, RISER_BEND_R_OVER_D, RISER_ABOVE_FEED, RISER_BELOW_FEED, FEED_W, FEED_H, FEED_DEPTH, FEED_SLOPE_DEG: in the generated block above
+'    D_RISER_SRC: published R1 inner diameter [m], geometry/catalog.md
+'    RISER_AREA_SHARE: the twin C1s share R1
+'    RISER_TRANS_LEN: round-to-duct loft, along the duct axis [m]
+'    RISER_BEND_R_OVER_D: bend centreline radius, x riser diameter
+'    RISER_ABOVE_FEED: feed (chute axis at the wall) to bend start [m]
+'    RISER_BELOW_FEED: riser gas inlet to feed [m]
+'    FEED_W: feed chute section, along y [m]
+'    FEED_H: feed chute section, normal to its axis in x-z [m]
+'    FEED_DEPTH: feed chute, along its axis beyond the riser wall [m]
+'    FEED_SLOPE_DEG: feed chute below the horizontal, rising away from the riser
 
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
@@ -554,13 +622,13 @@ Private Sub SelectCyclone()
 
     Case "C1"
         ' geometry/preheater/cyclone_C1.md
-        D_BARREL = 4.32
-        H_BARREL = 6.79
-        H_CONE = 4.65
-        L_VORTEX = 2.16
-        D_VORTEX = 2.4
-        D_DUST = 0.4
-        W_INLET = 0.86
+        D_BARREL = C1_D_BARREL
+        H_BARREL = C1_H_BARREL
+        H_CONE = C1_H_CONE
+        L_VORTEX = C1_L_VORTEX
+        D_VORTEX = C1_D_VORTEX
+        D_DUST = C1_D_DUST
+        W_INLET = C1_W_INLET
 
         ' Inlet height, normal to the duct axis. NOT the catalogue value.
         '
@@ -580,21 +648,21 @@ Private Sub SelectCyclone()
         '
         ' Equipment volume is untouched, so the twin's residence time and
         ' hold-up are unaffected. See geometry/preheater/cyclone_C1.md.
-        H_INLET = 2.16
+        H_INLET = C1_H_INLET
 
-        INLET_SLOPE_DEG = 5#
-        VOLUTE_ON = False
-        OUTLET_TURN_DEG = 180#
-        OUTLET_EXT_OVER_VORTEX_D = 1.25
-        ELBOW_R_OVER_VORTEX_D = 1.5
-        OUTLET_DOWN_OVER_VORTEX_D = OUTLET_EXT_OVER_VORTEX_D
+        INLET_SLOPE_DEG = C1_INLET_SLOPE_DEG
+        VOLUTE_ON = C1_VOLUTE_ON
+        OUTLET_TURN_DEG = C1_OUTLET_TURN_DEG
+        OUTLET_EXT_OVER_VORTEX_D = C1_OUTLET_EXT_OVER_VORTEX_D
+        ELBOW_R_OVER_VORTEX_D = C1_ELBOW_R_OVER_VORTEX_D
+        OUTLET_DOWN_OVER_VORTEX_D = C1_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = True
-        BOI_RADIUS = 0.8
+        BOI_RADIUS = C1_BOI_RADIUS
 
     Case "C4"
         ' geometry/preheater/cyclone_C4.md -- also C2 and C3, which
         ' are identical to it (user decision, 27 Sep 2026).
-        D_BARREL = 6.3
+        D_BARREL = C4_D_BARREL
 
         ' Barrel height, NOT the catalogue value. The FLS ratio gives
         ' 3.46 m, h/D 0.55, which with the 3.17 m immersion put the
@@ -602,8 +670,8 @@ Private Sub SelectCyclone()
         ' cone. h = D (1.0, usual for preheater cyclones) lifts it to
         ' 3.13 m above; the cone, the finder and the dust outlet stay
         ' as catalogued (user decision, 4 Oct 2026).
-        H_BARREL = 6.3
-        H_CONE = 7.3
+        H_BARREL = C4_H_BARREL
+        H_CONE = C4_H_CONE
 
         ' Immersion, NOT the catalogue 3.17 m. Against the 3.40 m inlet
         ' that is S/a 0.93: the finder's rim sat 0.23 m above the inlet
@@ -613,9 +681,9 @@ Private Sub SelectCyclone()
         ' to 1.2 (Hoffmann & Stein). 3.90 m is S/a 1.15, the rim 0.5 m
         ' below the inlet floor and 2.4 m above the cone (user
         ' decision, 5 Oct 2026).
-        L_VORTEX = 3.9
-        D_VORTEX = 4.63
-        D_DUST = 0.81
+        L_VORTEX = C4_L_VORTEX
+        D_VORTEX = C4_D_VORTEX
+        D_DUST = C4_D_DUST
 
         ' Inlet, NOT the catalogue 1.27 x 9.44 m. That inlet is wider
         ' than the 0.84 m annulus between barrel and finder and taller
@@ -631,16 +699,16 @@ Private Sub SelectCyclone()
         ' with the longer barrel; the immersion above is set against
         ' it, so the whole opening lies above the finder's rim. The
         ' width keeps the area: 9.90 / 3.40 = 2.912 m.
-        H_INLET = 3.4
-        W_INLET = 2.912
+        H_INLET = C4_H_INLET
+        W_INLET = C4_W_INLET
 
-        INLET_SLOPE_DEG = 0#
-        VOLUTE_ON = True
+        INLET_SLOPE_DEG = C4_INLET_SLOPE_DEG
+        VOLUTE_ON = C4_VOLUTE_ON
 
         ' C4's gas goes on to the R3 riser, not down to a fan, so its
         ' outlet turns through 90 deg into a horizontal run. Either
         ' bend breaks the swirl, which is what the bend is for.
-        OUTLET_TURN_DEG = 90#
+        OUTLET_TURN_DEG = C4_OUTLET_TURN_DEG
 
         ' C1's 1.5 D bend and 1.25 D drop, scaled to this 4.63 m
         ' finder, made the outlet more than half the domain (378 of
@@ -657,15 +725,15 @@ Private Sub SelectCyclone()
         ' longer straight pipe before the bend only lets the swirl decay
         ' a little more; the bend still breaks it. Changing it means the
         ' C4 CFD is solved again.
-        OUTLET_EXT_OVER_VORTEX_D = 1.7
-        ELBOW_R_OVER_VORTEX_D = 1#
-        OUTLET_DOWN_OVER_VORTEX_D = 1#
+        OUTLET_EXT_OVER_VORTEX_D = C4_OUTLET_EXT_OVER_VORTEX_D
+        ELBOW_R_OVER_VORTEX_D = C4_ELBOW_R_OVER_VORTEX_D
+        OUTLET_DOWN_OVER_VORTEX_D = C4_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = False
 
         ' C1's measured core radius scaled with the finder diameter:
         ' 0.8 x 4.63 / 2.40 = 1.54 m, rounded down to stay inside
         ' the bore with the clearance PreChecks asks for.
-        BOI_RADIUS = 1.5
+        BOI_RADIUS = C4_BOI_RADIUS
 
     Case "C5"
         ' geometry/preheater/cyclone_C5.md -- one C5 per string; the
@@ -679,27 +747,27 @@ Private Sub SelectCyclone()
         ' D is the published 6.50 m; the catalogue C5's ratios were
         ' within 1-2 % of C4's, so this takes on C4's departures from
         ' them (h = D, S/a 1.15, volute) and nothing else.
-        D_BARREL = 6.5
-        H_BARREL = 6.5
-        H_CONE = 7.5317
-        L_VORTEX = 4.0238
-        D_VORTEX = 4.777
-        D_DUST = 0.8357
-        H_INLET = 3.5079
-        W_INLET = 3.0044
+        D_BARREL = C5_D_BARREL
+        H_BARREL = C5_H_BARREL
+        H_CONE = C5_H_CONE
+        L_VORTEX = C5_L_VORTEX
+        D_VORTEX = C5_D_VORTEX
+        D_DUST = C5_D_DUST
+        H_INLET = C5_H_INLET
+        W_INLET = C5_W_INLET
 
-        INLET_SLOPE_DEG = 0#
-        VOLUTE_ON = True
+        INLET_SLOPE_DEG = C5_INLET_SLOPE_DEG
+        VOLUTE_ON = C5_VOLUTE_ON
 
         ' C5's gas goes on to the R4 riser, as C4's goes to R3.
-        OUTLET_TURN_DEG = 90#
-        OUTLET_EXT_OVER_VORTEX_D = 1.7
-        ELBOW_R_OVER_VORTEX_D = 1#
-        OUTLET_DOWN_OVER_VORTEX_D = 1#
+        OUTLET_TURN_DEG = C5_OUTLET_TURN_DEG
+        OUTLET_EXT_OVER_VORTEX_D = C5_OUTLET_EXT_OVER_VORTEX_D
+        ELBOW_R_OVER_VORTEX_D = C5_ELBOW_R_OVER_VORTEX_D
+        OUTLET_DOWN_OVER_VORTEX_D = C5_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = False
 
         ' C4's 1.5 m x 1.0317.
-        BOI_RADIUS = 1.55
+        BOI_RADIUS = C5_BOI_RADIUS
 
     Case Else
         Fail "CYCLONE_NAME is " & CYCLONE_NAME & "; this macro knows C1, C4 and C5."

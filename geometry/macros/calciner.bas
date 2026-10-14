@@ -39,19 +39,45 @@ Option Explicit
 Const CALCINER_NAME As String = "calciner"
 Const LINE_KEY As String = "2500"
 
+' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
+' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
+' change the source and run: python3 tools/gen_geometry.py
+Const D_VESSEL                     As Double  = 6.7404       ' effective inner D [derived_from_reference, calciner/calciner.md]
+Const H_VESSEL                     As Double  = 30#          ' cone + cylinder [published, calciner/calciner.md]
+Const CONE_DEG                     As Double  = 65#          ' [literature, calciner/calciner.md]
+Const M_KILN_GAS                   As Double  = 61.44444444  ' kg/s [literature, calciner/calciner.md]
+Const T_KILN_GAS                   As Double  = 1323.15      ' K [literature, calciner/calciner.md]
+Const X_N2                         As Double  = 0.744        ' [literature, calciner/calciner.md]
+Const X_O2                         As Double  = 0.076        ' [literature, calciner/calciner.md]
+Const X_H2O                        As Double  = 0.05         ' [literature, calciner/calciner.md]
+Const X_CO2                        As Double  = 0.13         ' [literature, calciner/calciner.md]
+Const U_THROAT                     As Double  = 29#          ' m/s [literature, calciner/calciner.md]
+Const THROAT_LEN_OVER_D            As Double  = 1#           ' [model, calciner/calciner.md]
+Const D_GOOSENECK_SRC              As Double  = 3.5          ' each leg [published, preheater/gooseneck.md]
+Const GN_RISE_OVER_D               As Double  = 1.25         ' x neck D [model, preheater/gooseneck.md]
+Const GN_BEND_R_OVER_D             As Double  = 1.5          ' x leg D [model, preheater/gooseneck.md]
+Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.5          ' x H_VESSEL [model, preheater/gooseneck.md]
+Const D_FEED                       As Double  = 0.8485       ' [literature, calciner/calciner.md]
+Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizontal [literature, calciner/calciner.md]
+Const FEED_BELOW_GN_OUT            As Double  = 2#           ' [model, calciner/calciner.md]
+Const FEED_DEPTH                   As Double  = 1#           ' [model, calciner/calciner.md]
+Const OVERLAP_N                    As Long    = 80           ' grid per axis, the bends' shared volume [plant_geometry.py]
+' END GENERATED
+
 ' Vessel [m] -- geometry/calciner/calciner.md, geometry/catalog.md
 ' PF5000 publishes a 7.2 m shell and a 30.0 m vessel; the effective
 ' diameter is the shell x FLS calciner_eff_over_shell = 3.08 / 3.29,
 ' the rule geometry/catalog.md uses for every vendor shell. (The
 ' 2500 t/d line's calciner was 5.50 x 29.46 m, HFC2500.)
-Const D_VESSEL    As Double = 6.7404  ' effective inner diameter, PF5000 shell 7.2 x 3.08 / 3.29
-Const H_VESSEL    As Double = 30#     ' cone + cylinder, PF5000 (published)
+' -> D_VESSEL, H_VESSEL: in the generated block above
+'    D_VESSEL: effective inner diameter, PF5000 shell 7.2 x 3.08 / 3.29
+'    H_VESSEL: cone + cylinder, PF5000 (published)
 
 ' Bottom cone wall angle above the horizontal. Holcim StDC 2022 asks
 ' at least 65 deg of a cyclone cone so meal slides off it rather than
 ' building up; the calciner cone carries the same meal and gets the
 ' same rule. No source gives a calciner cone angle of its own.
-Const CONE_DEG    As Double = 65#
+' -> CONE_DEG: in the generated block above
 
 ' Throat. No source publishes a throat diameter, so it is sized from
 ' a literature flow at a literature velocity -- never from the twin,
@@ -67,18 +93,15 @@ Const CONE_DEG    As Double = 65#
 '                                   throat mean 28-30 m/s
 '
 ' Ideal gas at one atmosphere; the throat diameter follows in Derive.
-Const M_KILN_GAS  As Double = 61.44444444   ' 2 x 110 600 kg/h [kg/s]
-Const T_KILN_GAS  As Double = 1323.15       ' [K]
-Const X_N2        As Double = 0.744
-Const X_O2        As Double = 0.076
-Const X_H2O       As Double = 0.05
-Const X_CO2       As Double = 0.13
-Const U_THROAT    As Double = 29#           ' [m/s]
+' -> M_KILN_GAS, T_KILN_GAS, X_N2, X_O2, X_H2O, X_CO2, U_THROAT: in the generated block above
+'    M_KILN_GAS: 2 x 110 600 kg/h [kg/s]
+'    T_KILN_GAS: [K]
+'    U_THROAT: [m/s]
 
 ' Modelling parameter -- NOT a plant dimension. The kiln riser below
 ' the cone is cut off this far down, in throat diameters, so the gas
 ' inlet face sits on a straight run rather than on the cone's lip.
-Const THROAT_LEN_OVER_D As Double = 1#
+' -> THROAT_LEN_OVER_D: in the generated block above
 
 ' Y gooseneck (user decision, 12 Oct 2026). Each leg takes one
 ' string's gas to its C5: a 2500 t/d line's whole gas, so each leg is
@@ -90,7 +113,8 @@ Const THROAT_LEN_OVER_D As Double = 1#
 ' its rim on its own side, turn outward over a 180 deg bend and drop
 ' to their gas outlet faces. Where the legs' discs do not cover the
 ' neck's, its top is a flat ceiling.
-Const D_GOOSENECK_SRC      As Double = 3.5   ' published, one 2500 t/d line [m]: each leg
+' -> D_GOOSENECK_SRC: in the generated block above
+'    D_GOOSENECK_SRC: published, one 2500 t/d line [m]: each leg
 
 ' Modelling parameters -- NOT plant dimensions. No source gives the
 ' gooseneck's lengths. The rise and the bend are C1's (cyclone.bas),
@@ -99,9 +123,10 @@ Const D_GOOSENECK_SRC      As Double = 3.5   ' published, one 2500 t/d line [m]:
 ' height (user decision, 29 Sep 2026): the outlet faces sit at this
 ' fraction of the vessel (cone + cylinder) above its bottom, z =
 ' zThroatTop, far enough past the bend for the flow to straighten.
-Const GN_RISE_OVER_D        As Double = 1.25   ' the neck's straight rise above the roof, x neck D
-Const GN_BEND_R_OVER_D      As Double = 1.5    ' bend centreline radius, x leg D
-Const GN_OUTLET_AT_VESSEL_H As Double = 0.5    ' outlet faces' height, fraction of H_VESSEL
+' -> GN_RISE_OVER_D, GN_BEND_R_OVER_D, GN_OUTLET_AT_VESSEL_H: in the generated block above
+'    GN_RISE_OVER_D: the neck's straight rise above the roof, x neck D
+'    GN_BEND_R_OVER_D: bend centreline radius, x leg D
+'    GN_OUTLET_AT_VESSEL_H: outlet faces' height, fraction of H_VESSEL
 
 ' Meal feed. Fidaros et al. 2007 feed the raw meal through two round
 ' 0.6 m pipes at 60 deg to the horizontal; here one on each side of
@@ -111,23 +136,25 @@ Const GN_OUTLET_AT_VESSEL_H As Double = 0.5    ' outlet faces' height, fraction 
 ' doubles at the same meal velocity: 0.6 x sqrt 2 = 0.8485 m. Each
 ' pipe points at the vessel axis and rises away from the wall, so the
 ' meal falls in towards the middle.
-Const D_FEED         As Double = 0.8485 ' [m], Fidaros 2007 x sqrt 2
-Const FEED_SLOPE_DEG As Double = 60#    ' below the horizontal, Fidaros 2007
+' -> D_FEED, FEED_SLOPE_DEG: in the generated block above
+'    D_FEED: [m], Fidaros 2007 x sqrt 2
+'    FEED_SLOPE_DEG: below the horizontal, Fidaros 2007
 
 ' Modelling parameters -- NOT plant dimensions. Where the pipe axis
 ' meets the wall, this far below the gooseneck outlet faces, so the
 ' pipes sit a little below where the drops hang down to (user
 ' decision, 29 Sep 2026); and how far each pipe runs out along its
 ' axis past the wall, as C1's feed chute does.
-Const FEED_BELOW_GN_OUT As Double = 2#  ' [m]
-Const FEED_DEPTH        As Double = 1#  ' [m]
+' -> FEED_BELOW_GN_OUT, FEED_DEPTH: in the generated block above
+'    FEED_BELOW_GN_OUT: [m]
+'    FEED_DEPTH: [m]
 
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
 ' Grid points per axis for the volume the two gooseneck bends share
 ' (GnBendOverlap); its error is well under VOL_TOL on the body.
-Const OVERLAP_N As Long = 80
+' -> OVERLAP_N: in the generated block above
 
 ' Verification tolerances
 Const VOL_TOL  As Double = 0.001   ' relative, on every closed-form stage volume

@@ -83,8 +83,8 @@ class TheDerivedValuesAreTodaysTest(unittest.TestCase):
 
 
 class TheMacrosAgreeWithTheSourceTest(unittest.TestCase):
-    """Interim (until step 4 generates them): the CFD macros' values
-    are the source's."""
+    """The CFD macros' values, read back through their generated
+    blocks (tools/gen_geometry.py), are the source's."""
 
     @classmethod
     def setUpClass(cls):
