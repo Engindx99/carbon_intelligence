@@ -183,20 +183,40 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
         "no SolidWorks build log here",
     )
     def test_elevations_are_the_last_drawn(self):
-        import re
+        """The drawing takes its Consts from the generated block, so its
+        layout is this module's to the log's 1 um."""
         log = (REPO_ROOT / "geometry" / "output" / "2500" / "plant_topology_2d_build.log").read_text(
-            encoding="latin-1").replace(",", ".")
-        z = [float(t) for t in re.search(
-            r"dust outlets C5 / C4 / C3 / C2 / C1 at z ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+) / ([\d.]+)",
-            log).groups()]
-        tower = float(re.search(r"tower top ([\d.]+)", log).group(1))
+            encoding="latin-1")
+        n = r"(-?\d+(?:,\d+)?)"
+
+        def nums(pattern):
+            m = re.search(pattern.replace("#", n), log)
+            self.assertIsNotNone(m, pattern)
+            return [float(x.replace(",", ".")) for x in m.groups()]
+
         L = pg.layout(self.g)
-        for s, want in zip((5, 4, 3, 2, 1), z):
-            with self.subTest(stage=s):
-                # the drawing's hand-typed C5 / C1 constants are rounded
-                # to 0.1 mm / 1 mm; step 4 generates them from here
-                self.assertAlmostEqual(L["z_dust"][s], want, delta=1e-3)
-        self.assertAlmostEqual(L["z_tower"], tower, delta=1e-3)
+        z = nums(r"dust outlets C5 / C4 / C3 / C2 / C1 at z # / # / # / # / #")
+        checks = [(L["z_dust"][s], want, f"C{s} dust outlet") for s, want in zip((5, 4, 3, 2, 1), z)]
+        inner, outer = nums(r"inner column x \+-# .*?outer x \+-#")
+        c1a, c1b = nums(r"twin C1 at x \+-# and \+-#")
+        kx0, kz0, kx1, kz1 = nums(r"kiln: \(#, #\) -> \(#, #\)")
+        cx0, cx1, cz0, cz1 = nums(r"cooler x # \.\. #, z # \.\. #")
+        checks += [
+            (L["z_tower"], nums(r"tower top #")[0], "tower top"),
+            (L["x_inner"], inner, "inner column"),
+            (L["x_outer"], outer, "outer column"),
+            (L["x_c1"][0], c1a, "near C1"),
+            (L["x_c1"][1], c1b, "far C1"),
+            (L["a_chamber"], kx0, "kiln inlet x"),
+            (L["kiln_end"][0], kx1, "kiln end x"),
+            (L["kiln_end"][1], kz1, "kiln end z"),
+            (L["cooler_x"][1], cx1, "cooler end"),
+            (L["cooler_z"][0], cz0, "cooler floor"),
+            (L["cooler_z"][1], cz1, "cooler roof"),
+        ]
+        for got, want, what in checks:
+            with self.subTest(what):
+                self.assertAlmostEqual(got, want, delta=2e-6)
 
 
 CALCINER_LOG = REPO_ROOT / "geometry" / "output" / "2500" / "calciner_build.log"
