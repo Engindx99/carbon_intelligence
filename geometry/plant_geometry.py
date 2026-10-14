@@ -395,6 +395,19 @@ def layout(g):
     d_r1 = c[2]["outlet_bend_R"] + c[2]["outlet_run"] + v(L["r1_leg_on"]) + r
     d_c1 = br["x"] + b
 
+    # The kiln out of the chamber's +x side, falling at its slope; the
+    # cooler under its discharge, the hood (the chamber's mirror) on it
+    alpha = math.atan(0.01 * kl["slope"])
+    x_kiln_end = a_ch + kl["L"] * math.cos(alpha)
+    z_kiln_end = v(L["kiln_axis_z"]) - kl["L"] * math.sin(alpha)
+    co = cooler(g)
+    z_cooler = z_kiln_end - 0.5 * kl["D"] - v(L["cooler_drop"]) - co["casing_height"]
+    z_hood = z_kiln_end - a_ch
+    ramp = math.atan(
+        (z_ch0 + 2.0 * a_ch - v(L["kiln_axis_z"]) + 0.5 * kl["D"] / math.cos(alpha))
+        / (2.0 * a_ch)
+    )
+
     return {
         "a_chamber": a_ch,
         "z_chamber_floor": z_ch0,
@@ -418,6 +431,13 @@ def layout(g):
         "z_r1_leg_top": z_leg_top,
         "z_r1_split": z_dust[1] + br["z_floor"] - y_rise,
         "z_tower": z_dust[1] + c[1]["height"] + c[1]["outlet_rise"] + c[1]["outlet_bend_R"] + 0.5 * c[1]["D_vortex"],
+        "x_gooseneck_leg": gn["x_leg"],
+        "chamber_ramp_deg": math.degrees(ramp),
+        "kiln_end": (x_kiln_end, z_kiln_end),
+        "cooler_x": (x_kiln_end, x_kiln_end + co["length"]),
+        "cooler_z": (z_cooler, z_cooler + co["casing_height"]),
+        "hood_x": (x_kiln_end, x_kiln_end + 2.0 * a_ch),
+        "hood_z": (z_hood, z_hood + 2.0 * a_ch),
     }
 
 

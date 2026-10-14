@@ -47,10 +47,10 @@ Makro yok: soğutucu CFD'si henüz planlı değil, akış hacmi bu dokümanda ta
 Koordinatlar: **x** ızgara boyunca, sıcak uçta (başlığın altı, klinkerin düştüğü yer) **x = 0**; **y** genişlik, eksende y = 0; **z** ızgara düzleminden yukarı.
 
 ```
-gövde (akış hacmi)  kutu, x 0 .. 29.90, y ±2.00, z 0 .. 3.00
+gövde (akış hacmi)  kutu, x 0 .. L, y ±w/2, z 0 .. H   (L, w, H: Geometrik Ölçüler'deki tablo)
 klinker yatağı      kutunun alt dilimi, z 0 .. h (tasarımda h₀ = 0.409)
                     gözenekli bölge: ε 0.4, katı x yönünde v = 0.01854 m/s ile hareket eder
-hava boşluğu        z h .. 3.00
+hava boşluğu        z h .. H
 ```
 
 En basit yeterli hacim budur: ızgara plakaları, bölme (compartment) duvarları, kırıcı ve klinker düşme kanalı yoktur. Yatak ayrı bir gövde değil, kutunun içinde bir hücre bölgesidir (Fluent'te gözenekli bölge ya da hareketli yatak). Bölmeler yalnız taban yüzünün bölünmesiyle temsil edilir.
@@ -59,8 +59,8 @@ En basit yeterli hacim budur: ızgara plakaları, bölme (compartment) duvarlar�
 
 | Ad | Tip | Alan |
 |---|---|---|
-| `grate_air_1` … `grate_air_10` | mass-flow-inlet | Taban (z = 0), FLS'nin 10 segmentine bölünmüş: her biri 2.990 × 4.0 m = 11.96 m² |
-| `hood_opening` | pressure-outlet | Tavan (z = 3.0), sıcak uçtaki ilk iki segmentin üstü: x 0 .. 5.98, 23.92 m². FLS'de 1. segmentin havası fırına (sekonder), 2.'ninki tersiyere gider; ikisi de başlıktan çıkar |
+| `grate_air_1` … `grate_air_10` | mass-flow-inlet | Taban (z = 0), FLS'nin 10 segmentine bölünmüş: her biri L/10 × w |
+| `hood_opening` | pressure-outlet | Tavan (z = H), sıcak uçtaki ilk iki segmentin üstü: x 0 .. L/5. FLS'de 1. segmentin havası fırına (sekonder), 2.'ninki tersiyere gider; ikisi de başlıktan çıkar |
 | `vent_outlet` | pressure-outlet | TBD: yeri soğuk uçta tavan, ölçüsü için kaynak yok. Gerekirse kalsinatör boğazı gibi literatür debisi ÷ literatür hızıyla türetilir |
 | `wall` | wall | Geri kalan: iki yan duvar, iki uç duvar, tavanın açık olmayan kısmı |
 
@@ -69,10 +69,10 @@ Klinkerin giriş ve çıkış yüzleri yoktur: yatak bir bölgedir, katı hızı
 ## Derived Properties
 
 ```
-gövde hacmi        29.90 × 4.0 × 3.0   = 358.80 m³
-tasarım yatağı     29.90 × 4.0 × 0.409 =  48.93 m³
-tasarım birikimi   1907 × 48.93        ≈  93.3 t klinker
-segment            2.990 × 4.0         =  11.96 m²
+gövde hacmi        L × w × H           (Geometrik Ölçüler'deki tablo)
+tasarım yatağı     L × w × h₀          ≈  48.9 m³
+tasarım birikimi   ρ_b × L × w × h₀    ≈  93.3 t klinker
+segment            L/10 × w            ≈  12.0 m²
 ```
 
 Ekipman hacmi (gövde hacmi) Geometrik Ölçüler'deki tabloda.

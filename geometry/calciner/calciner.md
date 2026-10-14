@@ -50,33 +50,36 @@ Makro: [`geometry/macros/calciner.bas`](../macros/calciner.bas). Yapım adım ad
 
 Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0**.
 
-```
-boğaz      Ø3.130, z = 0 .. 3.130       (THROAT_LEN_OVER_D = 1.0, modelleme parametresi)
-koni       65°, z = 3.130 .. 7.001
-silindir   Ø6.740, z = 7.001 .. 33.130  (düz tavan)
-kaz boynu  boyun Ø4.950, eksende, z = 33.130 .. 39.317
-           2 kol × Ø3.50, x–z düzleminde ayna simetrik; başlangıç diskleri x = ±0.725
-           (boynun içinde, kendi tarafında boynun kenarına teğet)
-           180° dirsek, R = 5.25, tepe z = 46.317
-           iniş x = ±11.225, z = 39.317 .. 18.130 (gövdenin yarı yüksekliği) → gas_outlet_1 (+x), gas_outlet_2 (−x)
-farin      2 × Ø0.849, 60°, ±x'te (y = 0 düzleminde, her inişin altında), eksen gövdeden dışarı doğru yükselir:
-           eksenler duvarı z = 16.130'da keser (çıkış yüzlerinin 2.0 m altı)
-           uç yüzleri (±3.870, 0, 16.996) → meal_feed_1 (+x), meal_feed_2 (−x)
-```
+<!-- BEGIN GENERATED (tools/gen_geometry.py) cfd -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
+| Adım / parça | Konum [m] | Hacim [m³] |
+|---|---|---|
+| Boğaz | Ø3.130, z 0 .. 3.130 | 24.085 |
+| Koni | 65°, z 3.130 .. 7.001 | 77.357 |
+| Silindir (düz tavan) | Ø6.7404, z 7.001 .. 33.130 | 932.354 |
+| Gövde (koni + silindir) |  | **1009.711** |
+| 1 domen (boğaz + gövde) |  | 1033.797 |
+| 2 + boyun | Ø4.950, eksende, z 33.130 .. 39.317 | 1152.852 (+119.055) |
+| 3a + dirsek +x | kol Ø3.5, başlangıç diski x = ±0.725; 180°, R 5.250, tepe z 46.317 | 1311.537 (+158.685, Pappus) |
+| 3b + dirsek −x | iki dirseğin ortak hacmi 10.346 (sayısal, 80³ nokta) | 1459.876 |
+| 4 + iki iniş | x = ±11.225, z 39.317 .. 18.130 → gas_outlet_1 (+x), gas_outlet_2 (−x) | 1867.565 (+2 × 203.845) |
+| 5 + iki farin borusu | Ø0.8485, eksenleri duvarı z 16.130'da keser | makro hesaplar (aşağıda) |
+<!-- END GENERATED -->
+
+Kollar x–z düzleminde ayna simetriktir; başlangıç diskleri boynun içinde, kendi tarafında boynun kenarına teğettir. Farin boruları ±x'te, y = 0 düzleminde, her inişin altındadır; eksenleri gövdeden dışarı doğru yükselir ve uç yüzleri `meal_feed_1` (+x), `meal_feed_2` (−x) olur. Boğazın boyu `THROAT_LEN_OVER_D` (modelleme parametresi).
 
 Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü koninin ağzına değil, düz bir parçanın üstüne koymak için seçilmiş bir modelleme parametresidir.
 
 **Y kaz boynu** (kullanıcı kararı, 12 Ekim 2026). Her kol bir hattın C5'ine iner ve o hattın bütün gazını taşır; yayınlanmış 2500 t/d boynunun çapı (Ø3.50) bu yüzden her kola düşer.
 - **Neden tek boyun.** İki Ø3.50 boru Ø6.74'lük tavana yan yana sığmaz (7.0 > 6.74 m). Tavandan tek bir boyun çıkar; kesiti iki kolun toplamıdır (Ø4.95), hız korunur. 2500 kalsinatöründe bunun yerine iki kol tavandan ayrı çıkıyordu, her biri alanın yarısıyla (29 Eylül 2026).
-- **Ayrım.** Boynun tepesinde iki kol başlar. Her kolun başlangıç diski boynun içindedir ve kendi tarafında boynun kenarına teğettir: x = ±(r_boyun − r_kol) = ±0.725. İki disk ortada üst üste biner. Disklerin örtmediği yerde (boyun kesitinin ~%24'ü, ±y'de) boynun tepesi düz bir tavandır.
-- **Ortak hacim.** İki dirsek boyunun hemen üstünde, z = 39.317 .. ~42.96 arasında **10.346 m³** paylaşır. Kapalı biçimi yoktur; makro bunu 80³ noktalı orta nokta kuralıyla hesaplar (`GnBendOverlap`). Bağımsız bir Monte Carlo sağlaması 10.354 ± 0.010 m³ verdi.
-- **Boylar modelleme parametresidir.** Yükseliş 1.25 × boyun çapı, dirsek yarıçapı 1.5 × kol çapı (C1 makrosunun oranları). İnişler gövdenin yanında, **gövdenin yarı yüksekliğine** kadar sarkar: z = 3.130 + 30.00/2 = 18.130 (kullanıcı kararı, 29 Eylül 2026). Böylece çıkış yüzü dirsekten uzakta, düzelmiş bir akışın üstünde durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
+- **Ayrım.** Boynun tepesinde iki kol başlar. Her kolun başlangıç diski boynun içindedir ve kendi tarafında boynun kenarına teğettir: x = ±(r_boyun − r_kol) (tabloda). İki disk ortada üst üste biner. Disklerin örtmediği yerde (boyun kesitinin ~%24'ü, ±y'de) boynun tepesi düz bir tavandır.
+- **Ortak hacim.** İki dirsek boynun hemen üstünde bir hacmi paylaşır (tabloda). Kapalı biçimi yoktur; makro bunu 80³ noktalı orta nokta kuralıyla hesaplar (`GnBendOverlap`). Bağımsız bir Monte Carlo sağlaması 10.354 ± 0.010 m³ verdi.
+- **Boylar modelleme parametresidir.** Yükseliş 1.25 × boyun çapı, dirsek yarıçapı 1.5 × kol çapı (C1 makrosunun oranları). İnişler gövdenin yanında, **gövdenin yarı yüksekliğine** kadar sarkar: boğazın üstünden gövde boyunun yarısı (`GN_OUTLET_AT_VESSEL_H`; kullanıcı kararı, 29 Eylül 2026). Böylece çıkış yüzü dirsekten uzakta, düzelmiş bir akışın üstünde durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
 - **Yön ölçülür, varsayılmaz.** Bir extrude yanlış yöne giderse ya gövde sayısı ya da hacim bunu söyler; bir dirsek yanlış dönerse hacim ve kutunun tepesi söyler. Bu durumda feature silinir ve diğer yön denenir.
 
 **Farin besleme boruları** (kullanıcı kararı, 29 Eylül 2026). Gövdenin iki yanında, kaz boynuyla aynı x–z düzleminde ±x'te, her inen borunun altında dururlar. Boru uçları (|x| ≤ 4.24) inen boruların iç duvarından (|x| = 9.475) uzaktadır; bunu bir ön kontrol zorlar.
 - **Ölçüler ve yön.** Eğim Fidaros 2007'den; çap onun Ø0.6'sı × √2 (her boru bir 2500 hattının farinini taşır). Her boru gövde eksenine bakar ve duvardan uzaklaştıkça yükselir, böylece farin ortaya doğru düşer.
-- **Yükseklik.** Boru eksenleri duvarı, kaz boynu çıkış yüzlerinin `FEED_BELOW_GN_OUT = 2.0 m` altında keser: z = 16.130. Borunun tamamı çıkış yüzlerinin altında kalır; en üst noktası z = 17.208'dir.
-- **Boy.** Boru gövde ekseninden başlar; başlangıç diski gövdenin içinde kalır ve birleşimde erir. Duvardan eksen boyunca `FEED_DEPTH = 1.0 m` dışarı çıkar (C1 oluğu gibi). Uç yüzün tamamen dışarıda kalması için bu değer r·tan 60° = 0.73 m'yi aşmalıdır.
+- **Yükseklik.** Boru eksenleri duvarı, kaz boynu çıkış yüzlerinin `FEED_BELOW_GN_OUT` altında keser (kotu tabloda). Borunun tamamı çıkış yüzlerinin altında kalır; en üst noktası z = 17.208'dir.
+- **Boy.** Boru gövde ekseninden başlar; başlangıç diski gövdenin içinde kalır ve birleşimde erir. Duvardan eksen boyunca `FEED_DEPTH` dışarı çıkar (C1 oluğu gibi). Uç yüzün tamamen dışarıda kalması için bu değer r·tan 60° = 0.73 m'yi aşmalıdır.
 - **Nasıl kurulur.** x = 0 düzlemindeki yarım kesit dikdörtgeni, kendi eksen kenarı etrafında tam tur döndürülür. Tam turun yanlış gidebileceği bir yönü yoktur; hangi tarafa düştüğünü ±x'te bulunan uç yüzü söyler.
 - **Hacim.** Gövde dışında kalan kısım boru başına πr²L − (1/cos θ)·2∫√(r²−a²)√(R²−a²) da = **0.57301 m³**. İntegral eliptiktir; makro a = r sin φ dönüşümüyle Simpson kuralıyla hesaplar. Bu hacim ~1869 m³'lük domenin ‰1'inin altında, yani toplam hacim kontrolü boruyu göremez. Bu yüzden her boru için ayrıca şunlar kontrol edilir: eklenen hacim %1 toleransla, uç yüzü beklenen tarafta bulunmalı ve alanı 0.5654 m² olmalı.
 
@@ -95,24 +98,15 @@ Planlanan adımlar:
 | Sınır | Durum |
 |---|---|
 | `kiln_gas_inlet` | z = 0 diski, 7.695 m² (1. adımdan beri var, henüz boyanmıyor) |
-| `gas_outlet_1`, `gas_outlet_2` | +x ve −x'teki inişlerin aşağı bakan diskleri, z = 18.130, her biri 9.621 m². Ayrı renkler, 8. adımda boyanır; x'in işaretiyle ayırt edilir. Her biri bir hattın C5'ini besler ([cyclone_C5.md](../preheater/cyclone_C5.md)); bağ bu yüzler üzerinden kurulur, C5 bu domene katılmaz |
+| `gas_outlet_1`, `gas_outlet_2` | +x ve −x'teki inişlerin aşağı bakan diskleri (kotu tabloda), her biri bir kol kesiti. Ayrı renkler, 8. adımda boyanır; x'in işaretiyle ayırt edilir. Her biri bir hattın C5'ini besler ([cyclone_C5.md](../preheater/cyclone_C5.md)); bağ bu yüzler üzerinden kurulur, C5 bu domene katılmaz |
 | `meal_feed_1`, `meal_feed_2` | +x ve −x'teki boruların eğik uç yüzleri, her biri 0.5654 m². Gaz için duvar, DPM için enjeksiyon yüzeyi (C1'deki gibi) |
 | `tertiary_air_inlet`, `fuel_inlet` | 6–8. adımlar |
 
 ## Derived Properties
 
-Adım hacimleri (kapalı form; dirseklerin ortak hacmi sayısal; makro ‰1 ile doğrular):
+Adım hacimleri CFD Geometry'deki tabloda (kapalı form; dirseklerin ortak hacmi sayısal; makro ‰1 ile doğrular). Farin borularını makro kendisi hesaplar (son çalıştırma):
 
 ```
-boğaz           24.085 m³
-koni            77.357 m³
-silindir       932.354 m³
-gövde         1009.711 m³   (koni + silindir)
-1  domen      1033.797 m³
-2  + boyun    1152.852 m³   (119.055)
-3a + dirsek   1311.537 m³   (Pappus, her biri 158.685)
-3b + dirsek   1459.876 m³   (158.685 − ortak 10.346)
-4  + iniş     1867.565 m³   (2 · 203.845)
 5a + farin +x 1868.138 m³   (boru başına 0.57301; ayrıca %1 ile kontrol edilir)
 5b + farin −x 1868.711 m³
 ```

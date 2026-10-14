@@ -62,6 +62,12 @@ Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizon
 Const FEED_BELOW_GN_OUT            As Double  = 2#           ' [model, calciner/calciner.md]
 Const FEED_DEPTH                   As Double  = 1#           ' [model, calciner/calciner.md]
 Const OVERLAP_N                    As Long    = 80           ' grid per axis, the bends' shared volume [plant_geometry.py]
+Const P_ATM                        As Double  = 101325#      ' Pa, the throat's gas [plant_geometry.py]
+Const R_GAS                        As Double  = 8.314462618  ' J/(mol K) [plant_geometry.py]
+Const M_N2                         As Double  = 0.0280134    ' kg/mol [plant_geometry.py]
+Const M_O2                         As Double  = 0.0319988    ' kg/mol [plant_geometry.py]
+Const M_H2O                        As Double  = 0.01801528   ' kg/mol [plant_geometry.py]
+Const M_CO2                        As Double  = 0.0440095    ' kg/mol [plant_geometry.py]
 ' END GENERATED
 
 ' Vessel [m] -- geometry/calciner/calciner.md, geometry/catalog.md
@@ -166,8 +172,7 @@ Const BOX_TOL  As Double = 0.005   ' absolute [m]; GetBodyBox may overstate curv
 Const DIR_TOL  As Double = 0.000001
 Const PLANE_TOL As Double = 0.000001
 
-Const P_ATM    As Double = 101325#        ' [Pa]
-Const R_GAS    As Double = 8.314462618    ' [J/(mol K)]
+' -> P_ATM, R_GAS: in the generated block above
 Const PI As Double = 3.14159265358979
 
 '------------------------------------------------------------------
@@ -290,7 +295,7 @@ Private Sub Derive()
 
     ' Throat: literature flow over literature velocity. Molar masses
     ' in kg/mol.
-    mMol = X_N2 * 0.0280134 + X_O2 * 0.0319988 + X_H2O * 0.01801528 + X_CO2 * 0.0440095
+    mMol = X_N2 * M_N2 + X_O2 * M_O2 + X_H2O * M_H2O + X_CO2 * M_CO2
     rhoKiln = P_ATM * mMol / (R_GAS * T_KILN_GAS)
     qKiln = M_KILN_GAS / rhoKiln
     rThroat = Sqr(qKiln / (PI * U_THROAT))

@@ -22,6 +22,7 @@ at 1 um.
 """
 
 import math
+import re
 import sys
 from pathlib import Path
 
@@ -163,6 +164,10 @@ def calciner_bas(g):
         src("FEED_BELOW_GN_OUT", c["feed_below_gooseneck_end"]),
         src("FEED_DEPTH", c["feed_depth"]),
         Const("OVERLAP_N", pg.OVERLAP_N, "grid per axis, the bends' shared volume [plant_geometry.py]", "Long"),
+        Const("P_ATM", pg.P_ATM, "Pa, the throat's gas [plant_geometry.py]"),
+        Const("R_GAS", pg.R_GAS, "J/(mol K) [plant_geometry.py]"),
+    ] + [
+        Const(f"M_{s}", m, "kg/mol [plant_geometry.py]") for s, m in pg.MOLAR_MASS.items()
     ]
 
 
@@ -452,6 +457,124 @@ def _fluid_volume_rows(g):
     return rows
 
 
+def _topology_equipment(g):
+    c1, c4, c5 = (pg.cyclone(g, n) for n in ("C1", "C4", "C5"))
+    cal, gn, k, co = pg.calciner(g), pg.gooseneck(g), pg.kiln(g), pg.cooler(g)
+    return [
+        ("C1 (hat başına ikiz)", f"D {c1['D_barrel']:.2f}, gövde {c1['H_barrel']:.2f}", "cyclone_C1.md (CFD)"),
+        ("C2 = C3 = C4", f"D {c4['D_barrel']:.2f}, gövde {c4['H_barrel']:.2f} (h = D)", "cyclone_C4.md (CFD)"),
+        ("C5", f"D {c5['D_barrel']:.2f}, gövde {c5['H_barrel']:.2f} (CFD C4 × {c5['scale']:.4f})", "cyclone_C5.md"),
+        ("R1 (hat başına)", f"Ø{pg.v(g['risers']['R1']['D']):.2f}", "riser_R1.md (HFC2500)"),
+        ("R2 / R3 / R4 (hat başına)", " / ".join(f"Ø{pg.stage_riser(g, kk)['parts'][0]['D']:.3f}" for kk in (2, 3, 4)),
+         "C3 / C4 / C5'in CFD çıkış borusu (riser_R2–R4.md)"),
+        ("Kalsinatör", f"Ø{cal['D']:.4f}, {cal['H']:.1f} m (koni dahil), boğaz Ø{cal['D_throat']:.3f}, koni {pg.v(g['calciner']['cone_angle']):g}°",
+         "calciner.md (PF5000)"),
+        ("Kaz boynu", f"Y: boyun Ø{gn['D_neck']:.3f}, 2 kol × Ø{gn['D_leg']:.2f}, her kol C5 girişine iner", "gooseneck.md"),
+        ("Tersiyer hava kanalı", f"Ø{cal['D_tertiary_air']:.4f}", "calciner.md"),
+        ("Fırın", f"Ø{k['D']:g} × {k['L']:g} m, %{k['slope']:g} eğim", "kiln.md (PF5000)"),
+        ("Soğutucu", f"ızgara {co['grate_area']:g} m² = {co['width']:g} × {co['length']:.2f} m, gövde {co['casing_height']:g} m", "cooler.md (PF5000, FLS)"),
+    ]
+
+
+def _topology_cfd(g):
+    c1, c4, c5 = (pg.cyclone(g, n) for n in ("C1", "C4", "C5"))
+    d, br = g["cyclone_domain"], pg.c1_branch(g)
+    L_in = pg.v(d["inlet_duct_length"])
+
+    def mid(c, k=1.0):
+        return (f"gövde, VF {c['L_vortex']:.3f}, volüt ve {k * L_in:.2f} m giriş kanalı, "
+                f"{c['outlet_rise']:.3f} m ({c['outlet_rise_over_Dx']:g}·VD) çıkış borusu, "
+                f"R {c['outlet_bend_R']:.3f} 90° dirsek, {c['outlet_run']:.3f} m bacak")
+
+    def out(c):
+        return (f"bacağın ucu, eksenden {c['outlet_bend_R'] + c['outlet_run']:.3f} m, "
+                f"çatının {c['outlet_rise'] + c['outlet_bend_R']:.3f} m üstünde")
+    return [
+        ("C1 (×4)",
+         f"gövde, VF {c1['L_vortex']:.2f}, Ø{br['D']:.3f} kol, {br['bend_deg']:g}° R {br['bend_R']:.3f} dirsek, "
+         f"{br['transition']:g} m geçiş, {c1['inlet_slope']:g}° kanal, {pg.v(d['c1_feed_width']):g} m oluk; "
+         f"{c1['outlet_rise']:.2f} m çıkış borusu, R {c1['outlet_bend_R']:.2f} 180° dirsek, {c1['outlet_run']:.2f} m iniş",
+         f"kolun tabanı, toz çıkışının {br['z_floor']:.3f} m üstü",
+         f"inişin ucu, çatı kotunda, eksenden {2 * c1['outlet_bend_R']:.2f} m"),
+        ("C2–C4 (×6)", mid(c4), f"giriş kanalının ucu, eksenden {L_in:.2f} m (`C4_IN_L`)", out(c4)),
+        ("C5 (×2)", f"C2–C4'ün {c5['scale']:.4f} katı (CFD'si ayrıca çözülmez)",
+         f"eksenden {c5['scale'] * L_in:.2f} m", out(c5)),
+    ]
+
+
+def _topology_layout(g):
+    L = pg.layout(g)
+    f = lambda x: f"{x:.3f}"
+    xs = lambda a, b: f"{a:.3f} .. {b:.3f}"
+    rows = [
+        ("Fırın giriş odası", f"x = −{f(L['a_chamber'])} .. {f(L['a_chamber'])}, z {xs(L['z_chamber_floor'], L['z_calciner_throat'])}; taban rampası {L['chamber_ramp_deg']:.1f}°"),
+        ("Kalsinatör", f"z {xs(L['z_calciner_throat'], L['z_calciner_roof'])}; kaz boynu tepesi z {f(L['z_gooseneck_top'])}, kol inişi x = ±{f(L['x_gooseneck_leg'])}, C5 giriş kotu z {f(L['z_c5_inlet'])}"),
+        ("Tersiyer hava kanalı", f"eksen z {f(L['z_tertiary_air'])}"),
+        ("İç kolon (C5, C3)", f"x = ±{f(L['x_inner'])}"),
+        ("Dış kolon (C4, C2)", f"x = ±{f(L['x_outer'])}"),
+        ("R1", f"x = ±{f(L['x_r1'])}"),
+        ("İkiz C1", "x = ±" + " ve ±".join(f(x) for x in L["x_c1"])),
+    ]
+    rows += [(f"C{s} toz çıkışı / çıkış borusu tepesi", f"z {f(L['z_dust'][s])} / {f(L['z_top'][s])}") for s in (5, 4, 3, 2, 1)]
+    rows += [
+        ("Kule tepesi (C1 çıkış dirseklerinin tepesi)", f"z {f(L['z_tower'])}"),
+        ("Fırın", f"({f(L['a_chamber'])}, {f(pg.v(g['layout']['kiln_axis_z']))}) → ({f(L['kiln_end'][0])}, {f(L['kiln_end'][1])})"),
+        ("Soğutucu", f"x {xs(*L['cooler_x'])}, z {xs(*L['cooler_z'])}"),
+        ("Fırın başlığı", f"x {xs(*L['hood_x'])}, z {xs(*L['hood_z'])}"),
+    ]
+    return rows
+
+
+def _calciner_cfd(g):
+    """calciner.bas's domain: where each piece is (z from the throat's
+    foot) and the closed-form volume after each build step."""
+    cal, gn = pg.calciner(g), pg.gooseneck(g)
+    R, r, rl = cal["R"], cal["r_throat"], 0.5 * gn["D_leg"]
+    v_cyl = math.pi * R * R * cal["h_cylinder"]
+    v_cone = cal["vessel_volume"] - v_cyl
+    v_neck = math.pi * (0.5 * gn["D_neck"]) ** 2 * gn["rise"]
+    v_bend = math.pi * rl * rl * math.pi * gn["bend_R"]
+    v_leg = math.pi * rl * rl * gn["drop"]
+    z_feed = gn["z_end"] - pg.v(g["calciner"]["feed_below_gooseneck_end"])
+    f = lambda x: f"{x:.3f}"
+    steps = [cal["v_throat"] + cal["vessel_volume"]]
+    for dv in (v_neck, v_bend, v_bend - gn["bend_overlap"], 2.0 * v_leg):
+        steps.append(steps[-1] + dv)
+    return [
+        ("Boğaz", f"Ø{f(cal['D_throat'])}, z 0 .. {f(cal['z_throat_top'])}", f"{cal['v_throat']:.3f}"),
+        ("Koni", f"{pg.v(g['calciner']['cone_angle']):g}°, z {f(cal['z_throat_top'])} .. {f(cal['z_cone_top'])}", f"{v_cone:.3f}"),
+        ("Silindir (düz tavan)", f"Ø{cal['D']:.4f}, z {f(cal['z_cone_top'])} .. {f(cal['z_roof'])}", f"{v_cyl:.3f}"),
+        ("Gövde (koni + silindir)", "", f"**{cal['vessel_volume']:.3f}**"),
+        ("1 domen (boğaz + gövde)", "", f"{steps[0]:.3f}"),
+        ("2 + boyun", f"Ø{f(gn['D_neck'])}, eksende, z {f(cal['z_roof'])} .. {f(gn['z_top'])}", f"{steps[1]:.3f} (+{v_neck:.3f})"),
+        ("3a + dirsek +x", f"kol Ø{gn['D_leg']:g}, başlangıç diski x = ±{f(gn['x_leg_start'])}; 180°, R {f(gn['bend_R'])}, tepe z {f(gn['z_top'] + gn['bend_R'] + rl)}", f"{steps[2]:.3f} (+{v_bend:.3f}, Pappus)"),
+        ("3b + dirsek −x", f"iki dirseğin ortak hacmi {gn['bend_overlap']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta)", f"{steps[3]:.3f}"),
+        ("4 + iki iniş", f"x = ±{f(gn['x_leg'])}, z {f(gn['z_top'])} .. {f(gn['z_end'])} → gas_outlet_1 (+x), gas_outlet_2 (−x)", f"{steps[4]:.3f} (+2 × {v_leg:.3f})"),
+        ("5 + iki farin borusu", f"Ø{pg.v(g['calciner']['D_feed']):g}, eksenleri duvarı z {f(z_feed)}'da keser", "makro hesaplar (aşağıda)"),
+    ]
+
+
+def _drawing_consts():
+    """Every numeric Const of the drawing, in file order, and whether
+    the generated block (the source) or the drawing itself writes it."""
+    text = (MACROS / "plant_topology_2d.bas").read_text(encoding="latin-1")
+    i, j = text.index(BEGIN), text.index(END)
+    out = []
+    for m in re.finditer(r"^Const\s+(\w+)\s+As\s+(?:Double|Long)\s*=\s*([-\d.]+)#?", text, re.M):
+        if m.group(1) in ("PI",):
+            continue
+        out.append((m.group(1), float(m.group(2)), i < m.start() < j))
+    return out
+
+
+def _topology_params(g):
+    rows = []
+    for name, x, generated in _drawing_consts():
+        text = repr(x).removesuffix(".0")
+        rows.append((f"`{name}`", text, "plant_geometry.yaml" if generated else "çizimin kendi Const'u"))
+    return rows
+
+
 DOCS = {
     "preheater/cyclone_C1.md": lambda g: _cyclone_rows(g, "C1"),
     "preheater/cyclone_C2.md": lambda g: _cyclone_rows(g, "C2"),
@@ -467,15 +590,34 @@ DOCS = {
     "kiln/kiln.md": _kiln_rows,
     "cooler/cooler.md": _cooler_rows,
     "fluid_volumes.md": _fluid_volume_rows,
+    "calciner/calciner.md#cfd": _calciner_cfd,
+    "plant_topology.md#equipment": _topology_equipment,
+    "plant_topology.md#cfd": _topology_cfd,
+    "plant_topology.md#layout": _topology_layout,
+    "plant_topology.md#params": _topology_params,
 }
-DOC_HEADS = {"fluid_volumes.md": ("Twin bölgesi", "Ekipman", "Hacim [m³]")}
+DOC_HEADS = {
+    "fluid_volumes.md": ("Twin bölgesi", "Ekipman", "Hacim [m³]"),
+    "calciner/calciner.md#cfd": ("Adım / parça", "Konum [m]", "Hacim [m³]"),
+    "plant_topology.md#equipment": ("Ekipman", "Ölçü [m]", "Kaynak"),
+    "plant_topology.md#cfd": ("Blok", "Domen (donmuş)", "Giriş yüzü", "Çıkış yüzü"),
+    "plant_topology.md#layout": ("Ne", "Konum [m]"),
+    "plant_topology.md#params": ("Const", "Değer", "Nerede yazılı"),
+}
+
+
+def md_begin(name):
+    """A document's block marker; a document with several blocks names
+    each after '#' (plant_topology.md#layout)."""
+    tag = name.partition("#")[2]
+    return MD_BEGIN + (f" {tag}" if tag else "")
 
 
 def md_block(name, rows):
     head = DOC_HEADS.get(name, ("Ölçü", "Değer", "Kaynak"))
-    lines = [f"| {head[0]} | {head[1]} | {head[2]} |", "|---|---|---|"]
-    lines += [f"| {a} | {b} | {c} |" for a, b, c in rows]
-    return MD_HEADER + "\n".join(lines) + "\n" + MD_END
+    lines = ["| " + " | ".join(head) + " |", "|" + "---|" * len(head)]
+    lines += ["| " + " | ".join(r) + " |" for r in rows]
+    return (md_begin(name) + MD_HEADER[len(MD_BEGIN):] + "\n".join(lines) + "\n" + MD_END)
 
 
 # ======================================================================
@@ -489,7 +631,8 @@ def render(text, new_block, name, begin=BEGIN, end=END):
     """text with its generated block replaced (CRLF kept as found)."""
     nl = "\r\n" if "\r\n" in text else "\n"
     body = text.replace("\r\n", "\n")
-    i, j = body.find(begin), body.find(end)
+    i = body.find(begin)
+    j = body.find(end, i)
     if i < 0 or j < i:
         raise SystemExit(f"{name}: no generated block ({begin!r} ... {end!r})")
     body = body[:i] + new_block + body[j + len(end):]
@@ -509,9 +652,10 @@ def run(check=False, g=None):
             if not check:
                 path.write_bytes(new.encode("latin-1"))
     for name, build in DOCS.items():
-        path = DOCS_DIR / name
+        path = DOCS_DIR / name.partition("#")[0]
         text = path.read_bytes().decode("utf-8")
-        new = render(text, md_block(name, build(g)), name, MD_BEGIN, MD_END)
+        begin = md_begin(name) + (" " if "#" in name else " --")
+        new = render(text, md_block(name, build(g)), name, begin, MD_END)
         if new != text:
             stale.append(f"geometry/{name}")
             if not check:
