@@ -53,6 +53,8 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 
 CFD domeni (S 3.90) ≈ 672.7 m³: S 3.17'deki 673.6 m³ eksi uzayan vorteks bulucu duvarı 0.86 m³ (makro log'u kesin değeri verir).
 
+**Çıkış borusu 1.70·D_x (14 Ekim 2026):** çatının üstündeki düz boru 1.25·D_x'ten (5.79 m) 1.70·D_x'e (7.87 m) uzadı. İki hatlı tesis çiziminde C2 / C3 altlarındaki CFD dirseğinin yalnız 0.9 m üstündeydi; farin boruları sığmıyordu (kullanıcı kararı, [plant_topology.md](../plant_topology.md)). Domen 707.81 m³ (+35.08 m³, yalnız borunun uzaması). Çözümü aşağıda, "Gaz-yalnız CFD, çıkış borusu 1.70·D_x".
+
 ## Gaz-yalnız CFD (4–5 Ekim 2026, S 3.17 geometrisi)
 
 **Mesh:**
@@ -261,6 +263,43 @@ Dosyalar (repo dışında, `C:\Users\engin\c4_s390`):
 - `c4su-*.dat.h5` (otomatik kayıtlar; case `c4su-*.cas.h5` ile ve her biri için yeniden okunarak açılmalı)
 - `c4s_urans.out`
 - `dpm\`: `c4s_dpm_unst_end.*`, `unst\*.dpm` (örnek dosyaları)
+
+## Gaz-yalnız CFD, çıkış borusu 1.70·D_x (14 Ekim 2026)
+
+Geometri S 3.90 ile aynı, yalnız çıkış borusu çatının üstünde 7.871 m (1.70·D_x; önce 5.79 m). `cyclone.bas`'ta `OUTLET_EXT_OVER_VORTEX_D` artık siklon başına (C1 1.25, C4 / C5 1.70).
+
+**Mesh:** Ansys Meshing tet, global **155 mm** (150 mm Student düğüm sınırını aşardı), başka ayar yok.
+- 900 054 tet → **317 085 poly hücre**, 1 014 835 düğüm.
+- Min orthogonal quality **0.37**.
+- Fluent'te ölçülen hacim 707.16 m³ (SolidWorks 707.81). Yüz alanları 9.90 / 16.82 / 0.507 m².
+
+**Kurulum:** S 3.90 case'inin ayarları (`c4_settings.set`), aynı akış: Steady Coupled 350 iterasyon, sonra URANS 20 adım Δt 0.01 s ve 650 adım Δt 0.03 s, adım başına 20 iterasyon.
+- Steady: **486.8 Pa** (S 3.90 / 1.25·D_x: 484.1).
+- Koşu 14.7 s'de WSL bağlantısı koptuğu için durdu; 14.6 s'lik otomatik kayıttan devam ettirildi (devamın ilk adımları kopan koşuyla aynı).
+- Girdap ~5 s'de oturdu. Ortalama 5.0–19.7 s penceresinden, 491 adım, 36 periyot; SE 10 bloğun ortalamalarından.
+
+| Büyüklük | S 3.90, 1.25·D_x | **S 3.90, 1.70·D_x** |
+|---|---|---|
+| Statik ΔP (giriş − çıkış) | 515.5 Pa | **522.8 Pa** (SE 1.5; yarılar 521.2 / 524.3) |
+| Toplam basınç düşümü | 506.4 Pa | 511.3 Pa |
+| Euler sayısı | 11.38 | **11.54** |
+| Girdap salınımı | 2.44 Hz | 2.44 Hz |
+| v_max | 58.7 m/s | 61.3 m/s |
+
+- ΔP %1.4 arttı (+7.3 Pa). Beklenen yönde ve küçük: 2.08 m'lik ek düz boru girdabın dirsekten önce biraz daha sönmesine izin verir, borudaki sürtünme kaybı birkaç Pa. Mesh 150 → 155 mm değişti; farkın bir kısmı mesh olabilir.
+- Girdap frekansı aynı; siklonun iç akışı değişmedi.
+- Ortalama alan, DPM ve yüklü MM bu domende yeniden yapılmadı. Çıkış borusu ayırma bölgesinin dışında olduğu için S 3.90 sonuçları (koniye inen gaz, v_θCS, η) geçerli sayılır.
+
+**Twin'e giden değerler (S 3.90 bölümündekilerin yerine yalnız ΔP):**
+- **Gaz-yalnız ΔP:** Eu 11.54, yani 56 kg/s ve 1033 K'de 522.8 Pa.
+- **Yüklü siklon ΔP:** aynı MM oranıyla ~395 Pa (373–421).
+- **η %93** değişmedi. C5 C4'ün geometrik benzeri olduğu için Eu 11.54 C5'e de geçer.
+
+Dosyalar (repo dışında, `C:\Users\engin\c4_rise170`):
+- `c4.msh`, `c4_settings.set`, `run.jou`, `restart.jou`
+- `c4r_steady.*`, `c4r_urans.cas.h5` / `.dat.h5` (19.7 s)
+- `c4ru-1-00050…00500.dat.h5` (case `c4ru-1.cas.h5`), `c4ru2-2-00550…00650.dat.h5` (case `c4ru2-2.cas.h5`); her biri için case yeniden okunmalı
+- `c4r_urans.out` (adım ≤ 500) ve `c4r_urans2.out` (501–670)
 
 ## Boundary Faces
 
