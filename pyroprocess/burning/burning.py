@@ -427,6 +427,14 @@ class Burning:
             N_cells,
         )
 
+        # The whole reaction heat of the previous apply, already
+        # relaxed: the clinkering part is relaxed with the same
+        # weight as calcination's (see below).
+        Q_total_previous = _previous(
+            "Burning_Q_sink_cells",
+            N_cells,
+        )
+
         # Dynamic step: the zone's parcel train (chemistry/parcels.py)
         # instead of the steady march, with the same outputs.
         if heat_transfer.kiln_dynamic(state):
@@ -482,6 +490,19 @@ class Burning:
         # the other is what produced instability 2's predecessor,
         # a period-3 cycle between 917 K and 1662 K with the mass
         # residual already at 1e-14.
+        #
+        # The four CLINKERING heats carry the same weight too, for
+        # the same reason one step removed: belite is CaO-limited
+        # here, so it burns the CaO calcination releases in the
+        # same cell, and its exotherm moves with the calcination
+        # front. Relaxing the endotherm while the exotherm jumped
+        # to the new front put the two in different cell mixes
+        # every sweep. Measured 15 Oct 2026, once the clay water
+        # left in the preheater and 2.9 kg/s of CO2 reached this
+        # zone: an exact period-2 cycle, bed cell 7 at 1352 <->
+        # 1330 K, for 250 sweeps. With the whole reaction heat
+        # relaxed it converges in 115 sweeps, and w = 0.45 and
+        # 0.6 land on the same fixed point to 1e-10.
         # ======================================================
 
         w = self.calcination_relaxation
@@ -503,13 +524,16 @@ class Burning:
             + (1.0 - w) * Q_calc_previous
         )
 
-        # The four clinkering reactions are not relaxed, so their
-        # heat is taken out at the new value and the calcination
-        # term put back at the relaxed one.
+        # The whole per-cell reaction heat, calcination and the
+        # four clinkering reactions alike, at the same weight.
+        Q_total_new = np.asarray(
+            state.Burning_Q_sink_cells,
+            dtype=float,
+        )
+
         state.Burning_Q_sink_cells = (
-            np.asarray(state.Burning_Q_sink_cells, dtype=float)
-            - Q_calc_new
-            + Q_calc_relaxed
+            w * Q_total_new
+            + (1.0 - w) * Q_total_previous
         )
 
         state.Burning_Q_sink = float(
