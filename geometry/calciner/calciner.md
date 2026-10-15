@@ -332,15 +332,57 @@ Twin'in kalsinatörü ILC bandının altında çalışıyor. Tablo, yerel CO₂ 
 
 - **%90 için gereken:** en az 9.1 MW ek reaksiyon ısısı, yaklaşık 0.28 kg/s kalsinatör yakıtı.
   - Bu bir alt sınır. Çıkışın denge sıcaklığının üstüne, gerçek kalsinatörlerdeki 20–70 K'lik paya çıkması ayrıca ısı ister: kabaca 30 K başına 6 MW (gaz 109 kg/s, farin 70 kg/s).
-- **Girişlerin literatürle karşılaştırması:**
-  - Fırın gazı 1325 K, tipik değerin (1373–1473 K) 50–150 K altında. 36 kg/s gazda bu kabaca 2–7 MW eder.
-  - Tersiyer hava 1237 K, tipik 1123–1223 K bandının üst ucunda.
-- **Hangi düzeltmenin fiziksel olduğu ayrı bir karar.** Seçenekler: fırın gazının sıcaklığı, yakıt payı, toplam yakıt.
+- **Girişler:** aşağıdaki VDZ karşılaştırmasında. Önceki "fırın gazı tipik 1373–1473 K" ifadesi yanlıştı. Bandın üst ucu, FLS'nin ayarlanmış 1441 K'siydi; kaynaklı değerler VDZ 1351 K ve CEJ 2019 1373 K.
+
+### VDZ referans tesisine karşı (15 Ekim 2026)
+
+**Referans:** CEMCAP D3.2 rev 2'deki VDZ BAT tesisi (Tablo 3.1, 3.5, 3.7, 3.8, 3.9):
+- 3000 t/d, farin/klinker 1.6;
+- beş kademeli ön ısıtıcı, ILC ve tersiyer kanal.
+
+**Yöntem:**
+- VDZ akışlarının entalpisi twin'in kendi gaz özellikleriyle hesaplandı (298.15 K'den duyulur).
+- Twin'in klinkeri bağlı suyu çıkarılarak alındı: 56.90 kg/s.
+- Betik repo dışında, oturum scratchpad'inde: `vdz_compare.py`.
+
+| kJ/kg klinker | Twin | VDZ | Fark | MW |
+|---|---|---|---|---|
+| Fırın yakıtı | 1190 | 1149 | +41 | +2.3 |
+| Kalsinatör yakıtı | 1785 | 1877 | −92 | −5.2 |
+| Toplam (ısı tüketimi) | 2975 | 3026 | −51 | −2.9 |
+| Fırın gazı (0.643 / 0.491 kg/kg; 1325 / 1351 K) | 749 | 606 | +143 | +8.2 |
+| Tersiyer hava (0.776 / 0.750 kg/kg; 1237 / 1359 K) | 795 | 876 | −81 | −4.6 |
+| **Kalsinatöre gaz tarafından giren** | **3329** | **3359** | **−30** | **−1.7** |
+| Kalsinatör gaz çıkışı (1.915 / 1.812 kg/kg; 1102 / 1133 K) | 1713 | 1712 | +1 | +0.1 |
+
+| | Twin | VDZ |
+|---|---|---|
+| Kalsinatör çıkışında y_CO₂ | 0.330 | 0.332 |
+| Çıkışın T_eq'ten farkı | −1 K | +30 K |
+| Kalsinatöre giren farinin kalsinasyonu | %9.2 (yalnız C5 tozu) | %18 |
+| Fırına giren farinin kalsinasyonu | %83.3 | %95 |
+| Egzoz | 1.931 kg/kg, 574 K | 1.892 kg/kg, 587 K |
+| Fırının yakıt payı | 0.40 | 0.38 |
+
+**Sonuç: kalsinatöre giren ısı VDZ'ninkiyle neredeyse aynı (−1.7 MW).**
+- Twin'in fırın gazı daha soğuk ama daha fazla; tersiyer havası daha az ısı taşıyor. İkisi birbirini büyük ölçüde götürüyor.
+- Fark talep tarafında: VDZ'de farin kalsinatöre %18 kalsine giriyor, twin'de %9.2.
+  - Twin'in %9.2'si tamamen C5 tozu; ön ısıtıcıda kalsinasyon modeli yok (`apply_preheater` yalnız kurutma yapıyor).
+  - VDZ'nin %18'i C5 tozu olabilir (alt kademe η ≈ 0.8 bunu verir) ya da C4 borusunda gerçek bir ön kalsinasyon. Belge ayırmıyor.
+  - Bu ayrım kalsinatörün ne kadar iş yaptığını belirliyor: %9'luk fark ~0.11 kg CaCO₃/kg klinker, yani ~200 kJ/kg (~11 MW).
+
+**Bulunan iki tutarsızlık:**
+- **Bağlı su klinkerde kalıyor.**
+  - Twin'in klinkeri 58.73 kg/s, bunun 1.83 kg/s'si bağlı su.
+  - Dehidroksilasyon 0.04 kg/s salıyor; kil suyu 400–600 °C'de ön ısıtıcıda çıkmalı (zur Strassen ~110 kJ/kg klinker).
+  - Bu yüzden twin'in "2882 kJ/kg"ı gerçek klinkere bölününce 2975.
+- **Yakıt eski bir klinker potansiyeline göre kurulmuş.** `fuel.Fuel_rate_total` 5.29, 3100 kJ/kg'ı 54.63 kg/s'lik o günkü D11 klinker potansiyeline uygulayarak bulunmuş. Bugünkü gerçek klinker (bağlı su hariç) 56.90 kg/s.
 
 ## Kaynaklar
 
 | Anahtar | Kaynak |
 |---|---|
+| CEMCAP D3.2 | CEMCAP framework for comparative techno-economic analysis of CO2 capture from cement plants, D3.2 rev 2 (VDZ BAT reference plant), 2018 — <https://zenodo.org/records/1257112> |
 | Mikulčić 2012 | Mikulčić H. ve diğ., CFD analysis of a cement calciner for a cleaner cement production, Chem. Eng. Trans. 29 (2012) 1513–1518 — <https://www.aidic.it/cet/12/29/253.pdf> |
 | Kahawalage 2017 | Kahawalage A.C., Melaaen M.C., Tokheim L.-A., Numerical modelling of the calcination process in a cement kiln system, SIMS 58 (2017) — <https://ep.liu.se/ecp/138/011/ecp17138011.pdf> |
 | CPFD 2025 | CPFD modeling of an industrial oxy-fuel cement calciner, Energies 18 (2025) 6419 — <https://doi.org/10.3390/en18246419> |
