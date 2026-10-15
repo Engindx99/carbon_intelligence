@@ -378,11 +378,29 @@ Twin'in kalsinatörü ILC bandının altında çalışıyor. Tablo, yerel CO₂ 
   - Bu yüzden twin'in "2882 kJ/kg"ı gerçek klinkere bölününce 2975.
 - **Yakıt eski bir klinker potansiyeline göre kurulmuş.** `fuel.Fuel_rate_total` 5.29, 3100 kJ/kg'ı 54.63 kg/s'lik o günkü D11 klinker potansiyeline uygulayarak bulunmuş. Bugünkü gerçek klinker (bağlı su hariç) 56.90 kg/s.
 
+### Bağlı su düzeltildikten sonra (15 Ekim 2026, commit 2c95c26, b0baa52)
+
+**Ne değişti:**
+- Kil suyu artık ön ısıtıcıda çıkıyor: 1.52 kg/s ön ısıtıcıda, 0.35 kg/s kalsinatörde.
+- Kinetik Cheng ve diğ. 2021'den, entalpi oksit yolundan (3.84 MJ/kg su).
+- Klinkerde bağlı su kalmadı: klinker 56.90 kg/s, ısı tüketimi 2975 kJ/kg.
+
+**Etkisi:**
+- Reaksiyon ısısı (~7 MW) ön ısıtıcıdan çekiliyor; C4 farini 1018 K'den 981 K'ye soğuyor.
+- Kalsinatörün CO₂'si 24.99'dan 22.28 kg/s'ye, fırına giren farinin kalsinasyonu %83.3'ten %74.3'e düşüyor.
+- Fırın daha fazla kalsinasyon yapıyor; yanma bölgesinin yatak tepe sıcaklığı 1931 K'den 1755 K'ye iniyor.
+- Fırın gazı 1301 K, egzoz 562 K.
+- Bu, fiziksel olarak doğru bir kayıp. VDZ ile fark büyüdü (%74'e karşı %95). Yakıt tutarlılığı ve VDZ'nin %18'inin anlamı açık kararlar olarak duruyor.
+
+**Yakınsama:** bu durumda twin 2-döngüye girdi. Yanma bölgesinde kalsinasyon endotermi sönümleniyor, ona bağlı belit ekzotermi sönümlenmiyordu. Reaksiyon ısısının tamamı aynı ağırlıkla sönümlenince twin 115 taramada yakınsıyor; sabit nokta sönümleme ağırlığından bağımsız.
+
 ## Kaynaklar
 
 | Anahtar | Kaynak |
 |---|---|
 | CEMCAP D3.2 | CEMCAP framework for comparative techno-economic analysis of CO2 capture from cement plants, D3.2 rev 2 (VDZ BAT reference plant), 2018 — <https://zenodo.org/records/1257112> |
+| Cheng 2021 | Cheng S., Jiu S., Li H., Kinetics of dehydroxylation and decarburization of coal series kaolinite during calcination, Materials 14 (2021) 1493 — <https://doi.org/10.3390/ma14061493> |
+| Robie & Hemingway 1995 | Thermodynamic properties of minerals and related substances at 298.15 K and 1 bar, USGS Bull. 2131 |
 | Mikulčić 2012 | Mikulčić H. ve diğ., CFD analysis of a cement calciner for a cleaner cement production, Chem. Eng. Trans. 29 (2012) 1513–1518 — <https://www.aidic.it/cet/12/29/253.pdf> |
 | Kahawalage 2017 | Kahawalage A.C., Melaaen M.C., Tokheim L.-A., Numerical modelling of the calcination process in a cement kiln system, SIMS 58 (2017) — <https://ep.liu.se/ecp/138/011/ecp17138011.pdf> |
 | CPFD 2025 | CPFD modeling of an industrial oxy-fuel cement calciner, Energies 18 (2025) 6419 — <https://doi.org/10.3390/en18246419> |
