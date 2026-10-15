@@ -394,6 +394,29 @@ Twin'in kalsinatörü ILC bandının altında çalışıyor. Tablo, yerel CO₂ 
 
 **Yakınsama:** bu durumda twin 2-döngüye girdi. Yanma bölgesinde kalsinasyon endotermi sönümleniyor, ona bağlı belit ekzotermi sönümlenmiyordu. Reaksiyon ısısının tamamı aynı ağırlıkla sönümlenince twin 115 taramada yakınsıyor; sabit nokta sönümleme ağırlığından bağımsız.
 
+### Yakıt tutarlılığı ve fırın payı (15 Ekim 2026, commit 7e1be55)
+
+**Defter** (kJ/kg gerçek klinker, twin'e karşı VDZ, bağlı su düzeltmesinden sonra):
+- Kalsinatöre gaz tarafından giren ısıda tersiyer hava −184 ile fırın gazı +178 birbirini götürüyor; kalsinatör yakıtı −92.
+- Twin'in fırını daha fazla hava fazlasıyla çalışıyor: fırın girişinde O₂ %2.8, VDZ'de %1.5.
+
+**Hipotezler** (scratchpad koşuları):
+
+| | Kalsinasyon | Yakınsama | Yatak tepe sıcaklığı |
+|---|---|---|---|
+| Başlangıç | %74.3 | evet | 1755 K |
+| H1: fırın havası O₂ %1.5'e göre | ~%77 | hayır | 1902 K |
+| H2: 3100 kJ/kg gerçek klinkerde | %85.2 | evet | 2030 K |
+| H3: H1 + H2 | %84.1 | evet | 2037 K |
+| **H4: H2 + VDZ'nin fırın payı 0.380** | **%87.2** | evet | 2033 K |
+
+**Seçilen H4** (kullanıcı kararı):
+- `Fuel_rate_total` 5.513 kg/s: 3100 kJ/kg × 56.90 kg/s gerçek klinker.
+- `kiln_fraction` 0.380, VDZ'den.
+- Sonuç: kalsinatör çıkışı 1102 K; fırın gazı 1343 K (VDZ 1351); egzoz 572 K.
+
+**Açık kalan:** yanma bölgesindeki yatak 2033 K'ye ısınıyor (gerçek tesiste ~1723 K). Önceki 1755 K, fırının fazladan kalsinasyon yapmasının yan etkisiydi. %90'a 3.9 MW kalıyor.
+
 ## Kaynaklar
 
 | Anahtar | Kaynak |
