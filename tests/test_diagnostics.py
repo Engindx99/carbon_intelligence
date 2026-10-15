@@ -311,7 +311,11 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             mole_fraction(self.state.Calciner_gas_species_out, "CO2"),
             places=9,
         )
-        self.assertGreaterEqual(budget["Tg_out"], budget["T_eq_out"] - 1.0)
+        # Within a few K of the plateau: the model has no
+        # recarbonation, so once calcination stops the tail (the
+        # gooseneck, C5) can cool below T_eq by its wall loss --
+        # 1.95 K at the reference state (15 Oct 2026).
+        self.assertGreaterEqual(budget["Tg_out"], budget["T_eq_out"] - 5.0)
 
     def test_fuel_cells_sum_to_total_heat_release(self):
 
@@ -411,9 +415,13 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             )
 
             self.assertGreater(K.size, 1)
+            # A constant closure gives exactly 1. The transition's
+            # span depends on how hot the kiln runs: 1.17 once the
+            # clay water left in the preheater and the burning
+            # zone's bed peak fell from 1931 to 1755 K (15 Oct 2026).
             self.assertGreater(
                 float(K.max() / K.min()),
-                1.2,
+                1.1,
                 f"{zone} K_gs barely varies; closure may be constant",
             )
 
@@ -517,7 +525,13 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
 
         CO2_full = feed["CaCO3"] * M_CO2 / M_CaCO3
 
-        H2O_free = self.twin.state.m_dot_H2O_evaporated_preheater
+        # Free moisture only: the preheater's water to the gas
+        # also carries the clay water it dehydroxylates, which
+        # feed["Bound_H2O"] below already counts.
+        H2O_free = (
+            self.twin.state.m_dot_H2O_evaporated_preheater
+            - self.twin.state.m_dot_BoundH2O_reacted_preheater
+        )
 
         # Everything the feed loses on the way to clinker.
         lost = CO2_full + H2O_free + feed["Bound_H2O"]

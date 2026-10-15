@@ -45,7 +45,7 @@ def circulating_solid_flows(
     CYCLONE SEPARATION AND DUST CIRCULATION in thermal_step).
 
     m_dot_s_in: solid entering each stage without separation;
-    vapor: free moisture leaving each stage; separation_efficiency:
+    vapor: water leaving each stage (free moisture and clay water); separation_efficiency:
     eta per stage, index order; dust_into_first: dust coming up
     into Stage 1 from below (C5's, precalciner/c5_cyclone).
     Returns the solid entering each stage with the circulating
@@ -349,9 +349,9 @@ def thermal_step(
     #
     # At steady state the solid reaching the calciner is still
     # the fresh feed less its moisture: the loops add flow
-    # through the stages, not mass to the plant. The dust is dry
-    # (the feed's free moisture leaves in Stage 4) and carries no
-    # species change: it costs heat, not mass. Its heat is real:
+    # through the stages, not mass to the plant. The dust carries
+    # no species change (the free moisture leaves in Stage 4, the
+    # clay water in Stages 1-2): it costs heat, not mass. Its heat is real:
     # dust from a hotter stage reheats the cooler solid above,
     # and C1's dust leaves at the Stage 4 solid outlet
     # temperature and returns at the feed temperature.
@@ -972,7 +972,8 @@ def solve_stage(
 #
 # OPEN-SYSTEM STAGE (moisture evaporation):
 #     m_dot_g and m_dot_s are the gas and solid mass flows
-#     ENTERING the stage; m_dot_vapor [kg/s] of free moisture
+#     ENTERING the stage; m_dot_vapor [kg/s] of water (free
+#     moisture and clay water)
 #     leaves the solid and joins the gas inside it, so the
 #     outlet flows are m_dot_s - m_dot_vapor and
 #     m_dot_g + m_dot_vapor. The solid energy balance on the
@@ -1339,7 +1340,7 @@ def solve_stage_node(
     # books only if the water left at h_solid too. Rating it as
     # vapour here leaked 2.15 MW across the five stages (measured
     # 13 Oct 2026). The vapour's own Cp is therefore approximated
-    # by the bed's for the few kg/s of free moisture.
+    # by the bed's for the few kg/s of water (free and clay).
     H_vapor = m_dot_vapor * h_solid(Ts_out, T_ref)
 
     # Enthalpy of the solid stream actually leaving the stage.

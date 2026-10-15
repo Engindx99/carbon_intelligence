@@ -143,10 +143,15 @@ class DynamicStepTest(unittest.TestCase):
             any(abs(step["kiln_mass_stored"]) > 1e-6 for step in self.steps)
         )
 
+        # Bounded by the step's own flow tolerance (main.Twin.run:
+        # 1e-6 kg/s in a dynamic step): the residual is the C5 dust
+        # recycle's change between the sweep's two calciner passes,
+        # which the step stops resolving at that tolerance. It was
+        # 1e-9 of the inflow, tighter than the solver's stopping
+        # rule, and failed at 2.4e-7 kg/s (1.07e-9) once the clay
+        # water left in the preheater (15 Oct 2026).
         for step in self.steps:
-            self.assertLess(
-                abs(step["mass_residual"]), 1e-9 * step["mass_in"]
-            )
+            self.assertLess(abs(step["mass_residual"]), 1e-6)
 
     def test_the_grate_bed_stores_heat(self):
         # The cooler's clinker bed is a parcel train too: the hotter

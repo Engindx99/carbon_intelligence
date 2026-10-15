@@ -1,3 +1,5 @@
+import math
+
 import numpy as np
 
 from chemistry.base import ReactionBase
@@ -13,11 +15,58 @@ class DehydroxylationModel(ReactionBase):
         super().__init__()
 
         # ================= KINETICS =================
-        self.prefactor = 1.0e3
-        self.activation_energy = 1.20e5
+        #
+        # SOURCE: Cheng, Jiu, Li, Materials 14 (2021) 1493,
+        # doi:10.3390/ma14061493, Table 5 (TG-FTIR-MS on the
+        # released water itself): EA = 182.71 kJ/mol,
+        # log10 A = 9.44588 1/s, mechanism A2/3, i.e.
+        # g(alpha) = [-ln(1 - alpha)]^(3/2) = k t.
+        #
+        # The twin integrates every reaction as first order
+        # (reacted_mass: m (1 - exp(-k tau))). A2/3 reaches 90 %
+        # at k t = 2.3026^1.5 = 3.4945, first order at 2.3026, so
+        # the first-order rate with the SAME t90 is k * 0.6589:
+        # that factor is folded into the prefactor below. It is
+        # exact at 90 % and within a few per cent of the A2/3
+        # extent above 50 %.
+        #
+        # WHAT WAS WRONG. The previous pair (1e3 1/s, 120 kJ/mol,
+        # behind a 723-973 K window) had no source and gave
+        # k = 2e-3 1/s at 1100 K: 0.6 % of the clay water left in
+        # a 3 s calciner, and 1.83 of 1.87 kg/s of it reached the
+        # CLINKER. Against what clay does:
+        #
+        #   T [K]   k [1/s]   t90
+        #    800    0.0022    17 min
+        #    900    0.046     50 s
+        #   1000    0.52      4.4 s     (preheater bottom stage)
+        #   1073    2.4       0.97 s    (flash calcination, 800 C)
+        #   1173    13        0.17 s
+        #
+        # so the water leaves in the preheater's lower stages and
+        # the calciner -- not in the kiln.
+        self.prefactor = 10.0 ** 9.44588 / math.sqrt(math.log(10.0))
+        self.activation_energy = 1.8271e5
 
         # ================= THERMODYNAMICS =================
-        self.deltaH = 1.10e6
+        #
+        # J per kg of WATER released, to vapour at 298.15 K: the
+        # twin books the clay's oxides as separate species
+        # (composition.py), so the reaction is
+        #
+        #   Al2Si2O5(OH)4 -> Al2O3 + 2 SiO2 + 2 H2O(g)
+        #
+        # with the standard enthalpies of formation of Robie and
+        # Hemingway (USGS Bull. 2131, 1995): kaolinite -4119.6,
+        # corundum -1675.7, quartz -910.7, H2O(g) -241.8 kJ/mol,
+        # dH = +138.5 kJ/mol = 3.84 MJ per kg water. Moore's
+        # clinker thermochemistry gives the same reaction at
+        # +139.3 kJ/mol (cementkilns.co.uk/ckr_therm.html).
+        #
+        # Was 1.10e6, without a source. The metakaolin route
+        # (+425 kJ/mol) would be the heat to an AMORPHOUS
+        # intermediate; the twin's products are the oxides.
+        self.deltaH = 3.84e6
 
         # kg H2O released per kg of the reacting species.
         #
@@ -46,8 +95,95 @@ class DehydroxylationModel(ReactionBase):
         self.product_ratio = 1.0
 
         # ================= TEMPERATURE =================
+        #
+        # NOT USED by the rate any more (reaction_rate below is
+        # plain Arrhenius): the 723-973 K window was a stand-in
+        # for kinetics that were too slow to switch themselves
+        # off. Kept only because ReactionBase.validate_parameters
+        # requires a consistent pair.
         self.T_start = 723.0
         self.T_end = 973.0
+
+
+    # ======================================================
+    # RATE [1/s], PLAIN ARRHENIUS
+    #
+    # Overrides ReactionBase.reaction_rate, which gates the
+    # Arrhenius factor with temperature_window. The sourced
+    # kinetics need no gate: at the preheater's top stage
+    # (575 K) k is 5e-8 1/s.
+    # ======================================================
+    def reaction_rate(self, T):
+
+        self.validate_parameters()
+
+        if isinstance(T, float):
+            return self.prefactor * math.exp(
+                -self.activation_energy / (self.R * max(T, 1.0))
+            )
+
+        T_safe = np.maximum(np.asarray(T, dtype=float), 1.0)
+
+        return self.prefactor * np.exp(
+            -self.activation_energy / (self.R * T_safe)
+        )
+
+    # dk/dT of the rate above [1/(s K)].
+    def reaction_rate_derivative(self, T):
+
+        self.validate_parameters()
+
+        if isinstance(T, float):
+            if T <= 1.0:
+                return 0.0
+            return (
+                self.reaction_rate(T)
+                * self.activation_energy
+                / (self.R * T * T)
+            )
+
+        T = np.asarray(T, dtype=float)
+        T_safe = np.maximum(T, 1.0)
+
+        return np.where(
+            T > 1.0,
+            self.reaction_rate(T_safe)
+            * self.activation_energy
+            / (self.R * T_safe * T_safe),
+            0.0,
+        )
+
+    # Arrhenius alone never reaches an exact zero, so there is
+    # no chord anchor: reaction_heat_slope falls to the tangent.
+    def rate_vanishing_temperature(self):
+
+        return -math.inf
+
+
+    # ======================================================
+    # STEADY-STATE FLOW FORM
+    #
+    # Same interface as DryingModel.react_flow, so the
+    # preheater can march clay water out stage by stage
+    # (ChemistryModel.apply_preheater). Reduces
+    # flow["Bound_H2O"] in place and returns
+    # (heat_sink [W], H2O released to the gas [kg/s]).
+    # ======================================================
+    def react_flow(self, flow, T, tau, rate=None):
+
+        if rate is None:
+            rate = float(self.reaction_rate(T))
+
+        reacted = float(
+            self.reacted_mass(float(flow["Bound_H2O"]), rate, tau)
+        )
+
+        flow["Bound_H2O"] -= reacted
+
+        return (
+            float(self.heat_sink(reacted)),
+            reacted * self.product_ratio,
+        )
 
 
     # ======================================================

@@ -22,6 +22,7 @@ Three properties, in the order they matter:
      absorbing what it has; a heat-rich cell reaches the same
      fixed point the tangent would.
 """
+import math
 
 import sys
 import unittest
@@ -286,27 +287,27 @@ class SlopeChoiceTest(unittest.TestCase):
                 msg=f"expected the tangent at {T:.1f} K",
             )
 
-    def test_dehydroxylation_gets_the_same_device(self):
+    def test_dehydroxylation_falls_to_the_tangent(self):
         """
         The chord lives on ReactionBase and anchors on
-        rate_vanishing_temperature, which the window law supplies
-        as T_start. So a second reaction inherits it without
-        knowing anything about calcination's equilibrium.
+        rate_vanishing_temperature. Dehydroxylation's sourced
+        kinetics are plain Arrhenius (no window), which never
+        reaches an exact zero, so there is no anchor and the
+        slope is the tangent -- never weaker than it.
         """
 
         model = DehydroxylationModel()
 
         self.assertEqual(
             model.rate_vanishing_temperature(),
-            model.T_start,
+            -math.inf,
         )
 
-        T = model.T_start + 600.0
-
-        self.assertGreaterEqual(
-            model.reaction_heat_slope(1.0, T, 66.0),
-            model.reaction_heat_derivative(1.0, T, 66.0),
-        )
+        for T in (800.0, 1000.0, 1100.0):
+            self.assertEqual(
+                model.reaction_heat_slope(1.0, T, 3.0),
+                model.reaction_heat_derivative(1.0, T, 3.0),
+            )
 
 
 class CellFixedPointTest(unittest.TestCase):

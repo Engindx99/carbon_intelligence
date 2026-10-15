@@ -89,6 +89,11 @@ class ChemistryModel:
 
         Q_cells = np.zeros(N)
 
+        # Clay water released stage by stage (dehydroxylation
+        # runs after drying in the same stage, on the same tau).
+        Q_dh_cells = np.zeros(N)
+        released_cells = np.zeros(N)
+
         for i in range(N - 1, -1, -1):
 
             m_dot_s_in = sum(flow.values())
@@ -101,11 +106,23 @@ class ChemistryModel:
                     float(tau[i]),
                 )
 
+                Q_dh_cells[i], released_cells[i] = (
+                    self.dehydroxylation.react_flow(
+                        flow,
+                        float(Ts[i]),
+                        float(tau[i]),
+                    )
+                )
+
             else:
 
                 evaporated = 0.0
 
-            flows.gases.H2O[i] = evaporated
+            # All the water the stage hands the gas: free
+            # moisture AND clay water. Every reader of this
+            # channel (stage flows, gas species, the plant mass
+            # chain) counts it as vapour, whatever its origin.
+            flows.gases.H2O[i] = evaporated + released_cells[i]
 
             set_cell_solid_flow(
                 flows.solids,
@@ -117,12 +134,31 @@ class ChemistryModel:
 
         state.Drying_Q_sink = float(np.sum(Q_cells))
 
+        # Own fields: the calciner's Dehydroxylation_Q_sink and
+        # m_dot_H2O_generated_dehydroxylation are written by its
+        # own pass, and step() runs calciner -> preheater ->
+        # calciner, so sharing them would overwrite one another.
+        state.Dehydroxylation_Q_sink_preheater = float(
+            np.sum(Q_dh_cells)
+        )
+
+        state.m_dot_BoundH2O_reacted_preheater = float(
+            np.sum(released_cells)
+        )
+
+        # Water to the gas, free AND clay (the name predates the
+        # clay water; m_dot_BoundH2O_reacted_preheater is its
+        # clay part).
         state.m_dot_H2O_evaporated_preheater = float(
             np.sum(flows.gases.H2O)
         )
 
+        # Per-stage reaction heat the stage balances draw.
+        state.Preheater_Q_sink_cells = Q_cells + Q_dh_cells
+
         state.Preheater_Q_sink = float(
             state.Drying_Q_sink
+            + state.Dehydroxylation_Q_sink_preheater
         )
 
         return state

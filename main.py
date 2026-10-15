@@ -674,8 +674,8 @@ class Twin:
 
         # m_dot_exhaust also carries two H2O mass-flow terms
         # that leave the solid stream and join the gas stream
-        # the same way CO2 does: free moisture evaporated in
-        # the preheater (m_dot_H2O_generated) and dehydroxylation
+        # the same way CO2 does: the water the preheater releases,
+        # free moisture and clay water (m_dot_H2O_generated), and dehydroxylation
         # water released in the calciner
         # (m_dot_H2O_generated_calciner). Both must be subtracted
         # to isolate CO2, or this check reports their combined
@@ -987,9 +987,9 @@ class Twin:
         # ======================================================
         # PREHEATER DRYING
         #
-        # Free moisture evaporated in the cyclone stages
-        # (chemistry.reactions.ChemistryModel.apply_preheater)
-        # leaves the solid stream before the calciner and
+        # Free moisture and clay water released in the cyclone
+        # stages (chemistry.reactions.ChemistryModel.apply_preheater)
+        # leave the solid stream before the calciner and
         # leaves the plant with the exhaust gas.
         # ======================================================
 

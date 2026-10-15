@@ -460,7 +460,7 @@ class Preheater:
             state.Tw_preheater,
             state,
             reaction_sink=state.Preheater_Q_sink,
-            reaction_heat_cells=state.Drying_Q_sink_cells,
+            reaction_heat_cells=state.Preheater_Q_sink_cells,
         )
 
         # Reaction energy accounting is validated through

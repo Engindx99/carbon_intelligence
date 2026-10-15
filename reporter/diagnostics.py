@@ -1046,8 +1046,13 @@ def thermal_demand_vs_supply(twin):
 
     CO2_full = CaCO3_feed * M_CO2 / M_CaCO3
 
+    # The preheater's water to the gas is free moisture plus
+    # the clay water it dehydroxylates; the clay part is already
+    # in H2O_bound below, so only the free part counts here.
     H2O_free = float(
         getattr(state, "m_dot_H2O_evaporated_preheater", 0.0)
+    ) - float(
+        getattr(state, "m_dot_BoundH2O_reacted_preheater", 0.0)
     )
     H2O_bound = float(feed.get("Bound_H2O", 0.0))
 
@@ -1073,6 +1078,7 @@ def thermal_demand_vs_supply(twin):
 
     fixed_terms = (
         float(getattr(state, "Dehydroxylation_Q_sink", 0.0))
+        + float(getattr(state, "Dehydroxylation_Q_sink_preheater", 0.0))
         + float(getattr(state, "Drying_Q_sink", 0.0))
         + clinkering
     )

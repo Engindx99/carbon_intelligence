@@ -492,6 +492,7 @@ class GlobalState:
             "Hg_preheater", "Hs_preheater",
             "Hg_preheater_old", "Hs_preheater_old",
             "Drying_Q_sink_cells",
+            "Preheater_Q_sink_cells",
         ):
             _resize(name, self.N_preheater)
 
@@ -743,11 +744,26 @@ class GlobalState:
 
     Drying_Q_sink: float = 0.0
 
-    # Free moisture evaporated in the preheater [kg/s]; leaves
-    # the solid stream and joins the exhaust gas.
+    # Water the preheater hands the gas [kg/s]: free moisture
+    # AND clay water; leaves the solid stream and joins the
+    # exhaust gas. The clay part is
+    # m_dot_BoundH2O_reacted_preheater.
     m_dot_H2O_evaporated_preheater: float = 0.0
-    
+
     Drying_Q_sink_cells: np.ndarray = field(
+    default_factory=lambda: np.zeros(5)
+    )
+
+    # Clay dehydroxylation in the preheater stages: its heat [W]
+    # and the water it releases [kg/s]. Apart from the
+    # calciner's Dehydroxylation_Q_sink, which its own pass
+    # writes.
+    Dehydroxylation_Q_sink_preheater: float = 0.0
+    m_dot_BoundH2O_reacted_preheater: float = 0.0
+
+    # Drying + dehydroxylation per stage [W], what the stage
+    # balances draw (Preheater_Q_sink is its sum).
+    Preheater_Q_sink_cells: np.ndarray = field(
     default_factory=lambda: np.zeros(5)
     )
 
