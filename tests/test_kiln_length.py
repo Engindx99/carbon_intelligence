@@ -15,8 +15,8 @@ vertical riser, a cyclone string and a grate are not this tube and
 must not follow it when it moves.
 
 WHAT L/D MEANS HERE. It is a statement about the ROTARY KILN, and
-about kiln TYPE. With fuel.kiln_fraction = 0.40 this plant burns
-60% of its fuel in a separate static calciner, which is what lets
+about kiln TYPE. With fuel.kiln_fraction = 0.38 this plant burns
+62% of its fuel in a separate static calciner, which is what lets
 the rotary tube be short: US4425092 puts the rotary kiln of such a
 plant below 14:1. It says nothing about the precalciner vessel.
 

@@ -284,27 +284,43 @@ fuel:
   # The middle of the specific heat consumption band (user decision,
   # 13 Oct 2026): SHC_BAND 2900-3300 kJ/kg clinker in
   # reporter/diagnostics.py, so 3100 kJ/kg on the clinker the meal can
-  # make (D11 clinker_potential: 89.70 kg/s meal -> 54.63 kg/s) at
-  # LHV 32 MJ/kg = 5.29 kg/s. A fixed operating input, not a control
-  # loop. With kiln_fraction 0.40 the kiln burns 1240 kJ/kg, where the
-  # FLS reference scenario measures 300 kcal/kg = 1256 (Svensen et al.
-  # 2025, arXiv:2504.02886, sec. 4.3).
+  # make, at LHV 32 MJ/kg. A fixed operating input, not a control loop.
   #
-  # Was 8.07 (4460 kJ/kg): the 2500-era fuel per kg of meal, scaled
-  # with the feed on 12 Oct 2026. It only ran because the old
-  # calcination kinetics had the calciner self-heat to 1580 K; with
-  # calcination finishing in the calciner, the kiln got ~30 MW more
-  # than its bed can take and ran to 2400-2900 K.
-  Fuel_rate_total: 5.29
+  # The clinker is the feed's, from its composition
+  # (chemistry/composition.py): 89.70 kg/s meal less its water (free
+  # and bound) and the CaCO3's CO2,
+  #
+  #   89.70 x (1 - 3000/96000 - 73000/96000 x 44.01/100.09) = 56.90 kg/s
+  #
+  # so 3100e3 x 56.90 / 32e6 = 5.513 kg/s (tests/test_fuel_basis.py).
+  #
+  # Was 5.29 (15 Oct 2026): the same 3100 kJ/kg on a 54.63 kg/s clinker
+  # potential that still held the clay's bound water, which the model
+  # then left in the clinker. With the water released (dehydroxylation
+  # in the preheater) the real clinker is 56.90 kg/s and 5.29 was
+  # 2975 kJ/kg. Against the VDZ reference plant the calciner was the
+  # side short of it: meal to the kiln 74 % calcined, 87 % with this.
+  #
+  # Was 8.07 (4460 kJ/kg) before 13 Oct 2026: the 2500-era fuel per kg
+  # of meal, scaled with the feed on 12 Oct 2026. It only ran because
+  # the old calcination kinetics had the calciner self-heat to 1580 K;
+  # with calcination finishing in the calciner, the kiln got ~30 MW
+  # more than its bed can take and ran to 2400-2900 K.
+  Fuel_rate_total: 5.513
   O2: 3.5              # dry STACK O2 [%], sizing the plant's total combustion air
 
   # Share of the total fuel burned at the kiln burner; the rest fires
-  # in the precalciner. In-line calciner (ILC) plants run 35-45% at the
-  # kiln, so 0.40 is the mid-range literature value for the generic
-  # reference kiln this config describes. Firing 100% at the kiln (the
-  # previous behaviour) puts 3892 kJ/kg clinker into the kiln alone,
-  # more than a whole plant's specific heat consumption.
-  kiln_fraction: 0.40
+  # in the precalciner. The VDZ BAT reference plant (CEMCAP D3.2 rev 2,
+  # zenodo.org/records/1257112, Tables 3.7 and 3.5): 39.895 MW at the
+  # kiln, 65.160 MW in the calciner, 39.895 / 105.055 = 0.380. The kiln
+  # then burns 1178 kJ/kg (VDZ 1149; the FLS reference scenario 1256,
+  # Svensen et al. 2025, arXiv:2504.02886, sec. 4.3).
+  #
+  # Was 0.40, the middle of the 35-45 % ILC range, without a plant
+  # behind it. Firing 100% at the kiln (the behaviour before that) put
+  # 3892 kJ/kg clinker into the kiln alone, more than a whole plant's
+  # specific heat consumption.
+  kiln_fraction: 0.380
 
 
 burning:
