@@ -53,6 +53,10 @@ class Const:
     def line(self):
         if self.kind == "Boolean":
             text = "True" if self.value else "False"
+        elif self.kind == "String":
+            if not str(self.value).isascii():
+                raise ValueError(f"{self.name}: macro strings are ASCII (latin-1 file, VBA code page)")
+            text = '"' + str(self.value).replace('"', '""') + '"'
         elif self.kind == "Long":
             text = str(int(self.value))
         else:
@@ -258,10 +262,85 @@ def drawing_bas(g):
     return out
 
 
+# ======================================================================
+# drawings.bas: the equipment drawings (inner, fluid geometry)
+# ======================================================================
+TABLE_CHUNKS = 8          # TAB_1 .. TAB_8; a VBA line holds ~1000 characters
+TABLE_CHUNK_LEN = 700
+
+
+def _table_consts(prefix, P, order):
+    """The sheet's parameter table as TAB_1..TAB_8 strings: rows split
+    by ';', fields by '~': key, label, value, unit, source, status."""
+    from tools.drawings import cyclone as dcy
+
+    rows = []
+    for k in order:
+        p = P[k]
+        fields = (k, p.label, dcy.cell(p), dcy.unit(p), dcy.SOURCE_EN[p.source], p.status)
+        for f in fields:
+            if any(ch in f for ch in ";~\""):
+                raise ValueError(f"{k}: a table field may not contain ; ~ or a quote: {f!r}")
+        rows.append("~".join(fields) + ";")
+    chunks, cur = [], ""
+    for r in rows:
+        if len(cur) + len(r) > TABLE_CHUNK_LEN:
+            chunks.append(cur)
+            cur = ""
+        cur += r
+    chunks.append(cur)
+    if len(chunks) > TABLE_CHUNKS:
+        raise ValueError(f"{prefix}: the table needs {len(chunks)} chunks, the macro reads {TABLE_CHUNKS}")
+    chunks += [""] * (TABLE_CHUNKS - len(chunks))
+    return [Const(f"{prefix}_TAB_{i + 1}", s, "parameter table rows", kind="String")
+            for i, s in enumerate(chunks)]
+
+
+def drawings_bas(g):
+    from tools.drawings import cyclone as dcy
+
+    cy, d = g["cyclones"], g["cyclone_domain"]
+    c1 = pg.cyclone(g, "C1")
+    s = pg.cyclone_slot_inlet(g, "C1")
+    o = pg.cyclone_outlet(g, "C1")
+    P = dcy.params(g, "C1")
+    nx, nz = s["normal"]
+    cex, _, cez = s["face_centre"]
+    h = 0.5 * c1["H_inlet"]
+    out = [
+        src("C1_D_BARREL", cy["C1"]["D_barrel"], "barrel inner D"),
+        src("C1_H_BARREL", cy["C1"]["H_barrel"], "barrel height"),
+        src("C1_H_CONE", cy["C1"]["H_cone"], "cone height"),
+        src("C1_L_VORTEX", cy["C1"]["L_vortex"], "vortex finder immersion"),
+        src("C1_D_VORTEX", cy["C1"]["D_vortex"], "vortex finder / outlet pipe bore"),
+        src("C1_D_DUST", cy["C1"]["D_dust"], "dust outlet D"),
+        src("C1_W_INLET", cy["C1"]["W_inlet"], "inlet width"),
+        src("C1_H_INLET", cy["C1"]["H_inlet"], "inlet height, normal to the duct"),
+        src("C1_INLET_SLOPE_DEG", cy["C1"]["inlet_slope"], "inlet duct slope"),
+        src("C1_VORTEX_WALL", d["vortex_wall"], "vortex finder wall"),
+        der("C1_HEIGHT", c1["height"], "barrel + cone"),
+        der("C1_OUT_RISE", c1["outlet_rise"], "outlet pipe rise over the roof"),
+        der("C1_OUT_R", c1["outlet_bend_R"], "outlet bend centreline R"),
+        der("C1_OUT_RUN", c1["outlet_run"], "outlet drop leg"),
+        der("C1_LEG_X", o["leg_x"], "barrel axis to drop leg axis"),
+        der("C1_TOP", P["top"].value, "dust outlet to the top of the bend"),
+        der("C1_Y_INNER", s["y_inner"], "inlet duct inner wall, y"),
+        der("C1_Y_OUTER", s["y_outer"], "inlet duct outer wall, y"),
+        der("C1_FACE_TOP_X", cex + h * nx, "inlet face, upper edge x"),
+        der("C1_FACE_TOP_Z", cez + h * nz, "inlet face, upper edge z"),
+        der("C1_FACE_BOT_X", cex - h * nx, "inlet face, lower edge x"),
+        der("C1_FACE_BOT_Z", cez - h * nz, "inlet face, lower edge z"),
+        der("C1_REACH", s["reach"], "inlet opening's upstream end on the barrel, -x"),
+    ]
+    out += _table_consts("C1", P, dcy.ORDER)
+    return out
+
+
 TARGETS = {
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
     "plant_topology_2d.bas": drawing_bas,
+    "drawings.bas": drawings_bas,
 }
 
 

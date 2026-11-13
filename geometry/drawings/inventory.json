@@ -1,0 +1,1458 @@
+{
+  "source": "geometry/plant_geometry.yaml",
+  "equipment": [
+    {
+      "area": "Raw meal",
+      "tag": "FEED",
+      "name": "Raw meal feed chute into the C1 riser",
+      "quantity": "2",
+      "connections": "raw meal in -> R1 branch of each C1",
+      "dimensions": [
+        {
+          "key": "cyclone_domain.c1_feed_width",
+          "value": 0.6,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "preheater/riser_R1.md"
+        },
+        {
+          "key": "cyclone_domain.c1_feed_height",
+          "value": 0.6,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "preheater/riser_R1.md"
+        },
+        {
+          "key": "cyclone_domain.c1_feed_depth",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/riser_R1.md"
+        },
+        {
+          "key": "cyclone_domain.meal_slope",
+          "value": 60.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 4
+      },
+      "missing": [
+        "preheater/riser_R1.md: feed system upstream of the chute is not modelled"
+      ],
+      "cfd_solid": "",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Raw meal",
+      "tag": "MP",
+      "name": "Meal pipes C1-C5 (with flap valves)",
+      "quantity": "per cyclone",
+      "connections": "cyclone dust outlet -> next stage's riser / calciner / kiln inlet",
+      "dimensions": [],
+      "status_counts": {},
+      "missing": [
+        "preheater/meal_pipe_C1.md .. C5.md: diameter, length, slope, route, flap position TBD"
+      ],
+      "cfd_solid": "",
+      "drawing": "no data: source research first"
+    },
+    {
+      "area": "Preheater",
+      "tag": "C1",
+      "name": "Cyclone C1 (stage 1, top)",
+      "quantity": "2 per string",
+      "connections": "gas: R1 -> C1 -> to the ID fan; meal: C1 -> C2 riser",
+      "dimensions": [
+        {
+          "key": "cyclones.C1.per_string",
+          "value": 2,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.D_barrel",
+          "value": 4.32,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.H_barrel",
+          "value": 6.79,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.H_cone",
+          "value": 4.65,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.L_vortex",
+          "value": 2.16,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.D_vortex",
+          "value": 2.4,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.D_dust",
+          "value": 0.4,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.W_inlet",
+          "value": 0.86,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.H_inlet",
+          "value": 2.16,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.inlet_slope",
+          "value": 5.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.volute",
+          "value": false,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.outlet_turn",
+          "value": 180.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.outlet_rise_over_Dx",
+          "value": 1.25,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.outlet_bend_R_over_Dx",
+          "value": 1.5,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.outlet_run_over_Dx",
+          "value": 1.25,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.boi_radius",
+          "value": 0.8,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclone_domain.vortex_wall",
+          "value": 0.08,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclone_domain.inlet_duct_length",
+          "value": 3.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclone_domain.inlet_roof_clearance",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclone_domain.inlet_tangent_relief",
+          "value": 0.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclone_domain.volute_tongue",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 2,
+        "Estimated": 19
+      },
+      "missing": [
+        "preheater/cyclone_C1.md: C1 Y split TBD"
+      ],
+      "cfd_solid": "C1.SLDPRT",
+      "drawing": "drawn: geometry/drawings/C1/"
+    },
+    {
+      "area": "Preheater",
+      "tag": "C2",
+      "name": "Cyclone C2",
+      "quantity": "1 per string",
+      "connections": "gas: R2 -> C2 -> R1; meal: C2 -> C3 riser",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_cone",
+          "value": 7.3,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.L_vortex",
+          "value": 3.9,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_dust",
+          "value": 0.81,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.W_inlet",
+          "value": 2.912,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_inlet",
+          "value": 3.4,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.inlet_slope",
+          "value": 0.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.volute",
+          "value": true,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.boi_radius",
+          "value": 1.5,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C2.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C2.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 3,
+        "Estimated": 14
+      },
+      "missing": [],
+      "cfd_solid": "C4.SLDPRT (same geometry)",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Preheater",
+      "tag": "C3",
+      "name": "Cyclone C3",
+      "quantity": "1 per string",
+      "connections": "gas: R3 -> C3 -> R2; meal: C3 -> C4 riser",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_cone",
+          "value": 7.3,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.L_vortex",
+          "value": 3.9,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_dust",
+          "value": 0.81,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.W_inlet",
+          "value": 2.912,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_inlet",
+          "value": 3.4,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.inlet_slope",
+          "value": 0.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.volute",
+          "value": true,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.boi_radius",
+          "value": 1.5,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C3.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C3.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 3,
+        "Estimated": 14
+      },
+      "missing": [],
+      "cfd_solid": "C4.SLDPRT (same geometry)",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Preheater",
+      "tag": "C4",
+      "name": "Cyclone C4",
+      "quantity": "1 per string",
+      "connections": "gas: R4 -> C4 -> R3; meal: C4 -> calciner",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_cone",
+          "value": 7.3,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.L_vortex",
+          "value": 3.9,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_dust",
+          "value": 0.81,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.W_inlet",
+          "value": 2.912,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_inlet",
+          "value": 3.4,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.inlet_slope",
+          "value": 0.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.volute",
+          "value": true,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.boi_radius",
+          "value": 1.5,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclone_domain.vortex_wall",
+          "value": 0.08,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclone_domain.inlet_duct_length",
+          "value": 3.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclone_domain.volute_tongue",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclone_domain.volute_overlap",
+          "value": 0.1,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 2,
+        "Estimated": 18
+      },
+      "missing": [],
+      "cfd_solid": "C4.SLDPRT",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Preheater",
+      "tag": "C5",
+      "name": "Cyclone C5 (calciner outlet cyclone)",
+      "quantity": "1 per string",
+      "connections": "gas: gooseneck -> C5 -> R4; meal: C5 -> kiln inlet chamber",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_barrel",
+          "value": 6.3,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_cone",
+          "value": 7.3,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.L_vortex",
+          "value": 3.9,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_dust",
+          "value": 0.81,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.W_inlet",
+          "value": 2.912,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.H_inlet",
+          "value": 3.4,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.inlet_slope",
+          "value": 0.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.volute",
+          "value": true,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.boi_radius",
+          "value": 1.5,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C5.D_barrel_published",
+          "value": 6.5,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C5.md"
+        },
+        {
+          "key": "cyclones.C5.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C5.md"
+        },
+        {
+          "key": "cyclones.C5.boi_radius",
+          "value": 1.55,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C5.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 4,
+        "Estimated": 15
+      },
+      "missing": [],
+      "cfd_solid": "C5.SLDPRT",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Preheater",
+      "tag": "VF",
+      "name": "Vortex finders (dip tubes) of C1-C5",
+      "quantity": "per cyclone",
+      "connections": "inside each cyclone, gas out",
+      "dimensions": [
+        {
+          "key": "cyclones.C1.L_vortex",
+          "value": 2.16,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C1.D_vortex",
+          "value": 2.4,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
+          "key": "cyclones.C4.L_vortex",
+          "value": 3.9,
+          "unit": "m",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclone_domain.vortex_wall",
+          "value": 0.08,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 5
+      },
+      "missing": [
+        "(no structure: wall 0.08 m is a CFD model parameter)"
+      ],
+      "cfd_solid": "in each cyclone solid",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Preheater",
+      "tag": "R1-R4",
+      "name": "Gas risers / ducts between stages",
+      "quantity": "per string",
+      "connections": "R1: C2 -> C1; R2-R4: C3..C5 outlet pipes up to C2..C4",
+      "dimensions": [
+        {
+          "key": "risers.R1.D",
+          "value": 3.07,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/riser_R1.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 1
+      },
+      "missing": [
+        "preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout"
+      ],
+      "cfd_solid": "",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Calciner",
+      "tag": "GN",
+      "name": "Gooseneck (Y) from the calciner to C5",
+      "quantity": "1 per calciner",
+      "connections": "calciner roof -> 2 legs -> C5 of each string",
+      "dimensions": [
+        {
+          "key": "gooseneck.D_leg",
+          "value": 3.5,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.rise_over_D_neck",
+          "value": 1.25,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.bend_R_over_D_leg",
+          "value": 1.5,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.end_at_vessel_H",
+          "value": 0.5,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 1,
+        "Estimated": 3
+      },
+      "missing": [],
+      "cfd_solid": "calciner.SLDPRT",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Calciner",
+      "tag": "ILC",
+      "name": "In-line calciner (ILC) vessel",
+      "quantity": "1",
+      "connections": "kiln gas (throat) + tertiary air + C4 meal + fuel -> gooseneck",
+      "dimensions": [
+        {
+          "key": "calciner.D_shell",
+          "value": 7.2,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D",
+          "value": 6.7404,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.H",
+          "value": 30.0,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.cone_angle",
+          "value": 65.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_flow",
+          "value": 61.44444444,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_T",
+          "value": 1323.15,
+          "unit": "K",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_x_N2",
+          "value": 0.744,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_x_O2",
+          "value": 0.076,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_x_H2O",
+          "value": 0.05,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_gas_x_CO2",
+          "value": 0.13,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_velocity",
+          "value": 29.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.throat_length_over_D",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D_tertiary_air",
+          "value": 2.4393,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D_feed",
+          "value": 0.8485,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D_fuel",
+          "value": 0.2828,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 2,
+        "Estimated": 13
+      },
+      "missing": [],
+      "cfd_solid": "calciner.SLDPRT",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Calciner",
+      "tag": "TAD",
+      "name": "Tertiary air duct",
+      "quantity": "1",
+      "connections": "cooler hood -> calciner (tangential)",
+      "dimensions": [
+        {
+          "key": "calciner.D_tertiary_air",
+          "value": 2.4393,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_flow",
+          "value": 54.925,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_T",
+          "value": 1073.15,
+          "unit": "K",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_x_N2",
+          "value": 0.79,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_x_O2",
+          "value": 0.21,
+          "unit": "mol/mol",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_velocity",
+          "value": 35.87,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_cone_clearance",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_wall_relief",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.tertiary_air_stub_length",
+          "value": 3.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 9
+      },
+      "missing": [
+        "fluid_volumes.md: duct length and route absent (drawn route is schematic)"
+      ],
+      "cfd_solid": "calciner.SLDPRT (3 m stub only)",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Calciner",
+      "tag": "NOZ",
+      "name": "Calciner meal and fuel inlet pipes",
+      "quantity": "2 + 2",
+      "connections": "C4 meal, calciner fuel -> calciner",
+      "dimensions": [
+        {
+          "key": "calciner.feed_above_tertiary_air",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D_feed",
+          "value": 0.8485,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.feed_depth",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.D_fuel",
+          "value": 0.2828,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        },
+        {
+          "key": "calciner.fuel_slope",
+          "value": 30.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "calciner/calciner.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 5
+      },
+      "missing": [],
+      "cfd_solid": "calciner.SLDPRT",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Rotary kiln",
+      "tag": "KILN",
+      "name": "Rotary kiln tube",
+      "quantity": "1",
+      "connections": "kiln inlet chamber <- clinker -> kiln hood / cooler",
+      "dimensions": [
+        {
+          "key": "kiln.D",
+          "value": 4.8,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.L",
+          "value": 74.0,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.slope",
+          "value": 3.0,
+          "unit": "%",
+          "source": "published",
+          "status": "Verified",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.transition_L",
+          "value": 30.83,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 3,
+        "Estimated": 1
+      },
+      "missing": [],
+      "cfd_solid": "",
+      "drawing": "to draw"
+    },
+    {
+      "area": "Rotary kiln",
+      "tag": "KIC",
+      "name": "Kiln inlet chamber",
+      "quantity": "1",
+      "connections": "C5 meal + kiln gas -> calciner throat",
+      "dimensions": [],
+      "status_counts": {},
+      "missing": [
+        "kiln/kiln_inlet_chamber.md: geometry TBD (only a schematic margin in the layout)"
+      ],
+      "cfd_solid": "",
+      "drawing": "no data: source research first"
+    },
+    {
+      "area": "Rotary kiln",
+      "tag": "HOOD",
+      "name": "Kiln hood",
+      "quantity": "1",
+      "connections": "cooler -> secondary air -> kiln; -> tertiary air duct",
+      "dimensions": [],
+      "status_counts": {},
+      "missing": [
+        "fluid_volumes.md: all dimensions absent"
+      ],
+      "cfd_solid": "",
+      "drawing": "no data: source research first"
+    },
+    {
+      "area": "Rotary kiln",
+      "tag": "BRN",
+      "name": "Kiln burner",
+      "quantity": "1",
+      "connections": "primary air + fuel -> kiln",
+      "dimensions": [],
+      "status_counts": {},
+      "missing": [
+        "plant_topology.md: drawn as an arrow only; no dimensions"
+      ],
+      "cfd_solid": "",
+      "drawing": "no data: source research first"
+    },
+    {
+      "area": "Clinker cooler",
+      "tag": "COOL",
+      "name": "Grate cooler",
+      "quantity": "1",
+      "connections": "kiln clinker -> cooler; air -> secondary / tertiary / vent",
+      "dimensions": [
+        {
+          "key": "cooler.grate_area",
+          "value": 119.6,
+          "unit": "m2",
+          "source": "published",
+          "status": "Verified",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.width",
+          "value": 4.0,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.casing_height",
+          "value": 3.0,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        }
+      ],
+      "status_counts": {
+        "Verified": 1,
+        "Estimated": 2
+      },
+      "missing": [
+        "cooler/cooler.md: vent outlet TBD"
+      ],
+      "cfd_solid": "",
+      "drawing": "to draw"
+    },
+    {
+      "area": "ID fan",
+      "tag": "IDF",
+      "name": "Preheater ID fan",
+      "quantity": "per string",
+      "connections": "C1 gas -> ID fan",
+      "dimensions": [],
+      "status_counts": {},
+      "missing": [
+        "plant_topology.md: drawn as an arrow only; no dimensions"
+      ],
+      "cfd_solid": "",
+      "drawing": "no data: source research first"
+    }
+  ]
+}

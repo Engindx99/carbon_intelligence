@@ -8,6 +8,7 @@ akışkan hacmini kuran, kendini doğrulayan ve dışa aktaran makrolar.
 |---|---|
 | `cyclone.bas` | Tek bir siklonun CFD akışkan hacmi → STEP (AP214) + STL + SLDPRT |
 | `calciner.bas` | ILC kalsinatörün CFD akışkan hacmi: boğaz + koni + gövde, Y kaz boynu, iki farin borusu, teğetsel tersiyer hava kanalı, iki yakıt borusu; sınır yüzleri boyalı → STEP (AP214) + STL + SLDPRT. Ölçüler ve kaynakları: [`calciner.md`](../calciner/calciner.md) |
+| `drawings.bas` | **CFD için değil**: ekipmanların iç (akışkan) geometrisinin ISO teknik resmi (A1, 1. açı, ISO 5457 çerçeve, ISO 7200 antet), CFD katısından gerçek izdüşüm, kesit ve detay görünüşleri; ölçüler katının kenarlarından alınır, okunur ve kaynakla karşılaştırılır; Estimated ölçüler " E" ekli; parametre tablosu kaynak ve durumla → `geometry/drawings/<ad>/<ad>.pdf` + `.dxf`, log `geometry/output/2500/drawings_<ad>_build.log`. Önce katı kurulmalı (C1 için `cyclone.bas`, C1 durumunda `RISER_ON = False`). Envanter ve JSON: `python3 tools/gen_drawings.py` |
 | `plant_topology_2d.bas` | **CFD için değil**: tesis topolojisinin gerçek ölçekli 2D çizimi: SolidWorks çizim sayfası (SLDDRW, A1, 1:200) ve PDF. İki hatlı ön ısıtıcı (12 siklon), ILC kalsinatör, fırın, soğutucu ve başlık; gaz, farin ve hava yolları renkli katmanlarda, ana kanallar gerçek çapında, akış okları, lejant ve antet. Bkz. [`plant_topology.md`](../plant_topology.md) |
 
 `calciner.bas` aynı yoldan çalıştırılır (makro adı ör. `calciner.swp`) ve `cyclone.bas`'ın doğrulanmış

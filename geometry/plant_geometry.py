@@ -416,19 +416,25 @@ def cooler(g):
 
 
 # ======================================================================
-# C1's own riser branch (cyclone.bas Derive, the C1 case)
+# A cyclone's slot inlet and outlet pipe (cyclone.bas Derive)
 # ======================================================================
-def c1_branch(g):
-    """C1's CFD riser branch, heights from its dust outlet and x from
-    its axis (the inlet duct towards -x): the branch D (half R1's
-    area), its bend radius, the bend's start (top of the straight
-    branch), the feed and the domain's floor, and the branch axis's
-    distance from the C1 axis."""
+def cyclone_slot_inlet(g, name):
+    """The straight, sloped tangential inlet duct of a cyclone without
+    a volute (C1), in the macro's frame: axis z from the dust outlet,
+    the gas entering towards +x, the duct's outer wall tangent to the
+    barrel at y = R. The top of the opening sits inlet_roof_clearance
+    below the roof where the duct's inner wall meets the barrel; the
+    face is inlet_duct_length back along the duct axis from where the
+    centreline crosses the tangent plane x = 0; the duct stops
+    volute_tongue short of the barrel (x = -x_trim, the cut-water)."""
 
-    c = cyclone(g, "C1")
+    c = cyclone(g, name)
+    if c["volute"]:
+        raise ValueError(f"{name} has a volute, not a slot inlet")
     d = g["cyclone_domain"]
     R = 0.5 * c["D_barrel"]
     z_roof = c["height"]
+    y_outer = R - v(d["inlet_tangent_relief"])
     y_inner = R - c["W_inlet"]
     th = math.radians(c["inlet_slope"])
     dx, dz = math.cos(th), -math.sin(th)
@@ -440,6 +446,64 @@ def c1_branch(g):
     L_in = v(d["inlet_duct_length"])
     ce_x = -L_in * dx
     ce_z = 0.5 * (z_top0 + z_bot0) - L_in * dz
+    t = v(d["volute_tongue"])
+    return {
+        "y_inner": y_inner,
+        "y_outer": y_outer,
+        "slope_deg": c["inlet_slope"],
+        "axis": (dx, dz),
+        "normal": (nx, nz),
+        "reach": reach,
+        "z_top0": z_top0,
+        "z_bot0": z_bot0,
+        "face_centre": (ce_x, 0.5 * (y_inner + y_outer), ce_z),
+        "x_trim": math.sqrt(t * (2.0 * R - t)),
+        "length": L_in,
+    }
+
+
+def cyclone_outlet(g, name):
+    """The outlet pipe above the roof, in the slot inlet's frame: it
+    rises outlet_rise from the roof, bends through outlet_turn about
+    an axis outlet_bend_R out along +x, then drops (180 deg, down to
+    outlet_run below the bend start) or runs on along +x (90 deg)."""
+
+    c = cyclone(g, name)
+    z_roof = c["height"]
+    z_bend = z_roof + c["outlet_rise"]
+    r_bend = c["outlet_bend_R"]
+    out = {
+        "D": c["D_vortex"],
+        "z_roof": z_roof,
+        "z_bend": z_bend,
+        "bend_R": r_bend,
+        "bend_centre": (r_bend, z_bend),
+        "turn_deg": c["outlet_turn"],
+    }
+    if c["outlet_turn"] == 180.0:
+        out["leg_x"] = 2.0 * r_bend
+        out["z_end"] = z_bend - c["outlet_run"]
+    else:
+        out["z_leg"] = z_bend + r_bend
+        out["x_end"] = r_bend + c["outlet_run"]
+    return out
+
+
+# ======================================================================
+# C1's own riser branch (cyclone.bas Derive, the C1 case)
+# ======================================================================
+def c1_branch(g):
+    """C1's CFD riser branch, heights from its dust outlet and x from
+    its axis (the inlet duct towards -x): the branch D (half R1's
+    area), its bend radius, the bend's start (top of the straight
+    branch), the feed and the domain's floor, and the branch axis's
+    distance from the C1 axis."""
+
+    d = g["cyclone_domain"]
+    s = cyclone_slot_inlet(g, "C1")
+    dx, dz = s["axis"]
+    nx, nz = s["normal"]
+    ce_x, _, ce_z = s["face_centre"]
 
     D_r1 = v(g["risers"]["R1"]["D"])
     r = math.sqrt(v(d["c1_riser_area_share"]) * 0.25 * D_r1 * D_r1)
@@ -452,7 +516,7 @@ def c1_branch(g):
     return {
         "D": 2.0 * r,
         "bend_R": r_bend,
-        "bend_deg": 90.0 + c["inlet_slope"],
+        "bend_deg": 90.0 + s["slope_deg"],
         "x": -(x_axis - r_bend),
         "z_bend": z_bend,
         "z_feed": z_feed,
