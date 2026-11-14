@@ -1384,8 +1384,8 @@
         "Estimated": 1
       },
       "missing": [],
-      "cfd_solid": "",
-      "drawing": "to draw"
+      "cfd_solid": "kiln.SLDPRT",
+      "drawing": "drawn: geometry/drawings/kiln/"
     },
     {
       "area": "Rotary kiln",

@@ -356,6 +356,7 @@ def drawings_bas(g):
     out += _twin_sheet_consts(g)
     out += _volute_sheet_consts(g)
     out += _calciner_sheet_consts(g)
+    out += _kiln_sheet_consts(g)
     return out
 
 
@@ -440,6 +441,20 @@ def _calciner_sheet_consts(g):
     return out
 
 
+def _kiln_sheet_consts(g):
+    """What drawings.bas needs for the kiln sheet, under a KIL_ prefix,
+    and its table."""
+    from tools.drawings import kiln as dki
+
+    k = pg.kiln(g)
+    out = [
+        der("KIL_D", k["D"], "kiln inner D"),
+        der("KIL_L", k["L"], "kiln length, back end to hood end"),
+    ]
+    out += _table_consts("kiln", dki.params(g), dki.ORDER)
+    return out
+
+
 def _twin_sheet_consts(g):
     """What drawings.bas needs for the C1_twin sheet: c1_twin.bas' own
     Consts under a TW_ prefix, the section's level, the sheet's table."""
@@ -504,7 +519,21 @@ def c1_twin_bas(g):
     ]
 
 
+# ======================================================================
+# kiln.bas
+# ======================================================================
+def kiln_bas(g):
+    k = g["kiln"]
+    return [
+        src("KILN_D", k["D"], "effective inner diameter"),
+        src("KILN_L", k["L"], "back end (z = 0) to hood end"),
+        src("KILN_SLOPE", k["slope"], "%: the installed slope, not built into the solid"),
+        src("KILN_TRANSITION_L", k["transition_L"], "the transition zone from the back end (model split)"),
+    ]
+
+
 TARGETS = {
+    "kiln.bas": kiln_bas,
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
     "plant_topology_2d.bas": drawing_bas,

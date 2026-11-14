@@ -67,7 +67,7 @@ EQUIPMENT = [
      "C4 meal, calciner fuel -> calciner", [], "calciner.SLDPRT"),
     ("Rotary kiln", "KILN", "Rotary kiln tube", "1",
      ["kiln."],
-     "kiln inlet chamber <- clinker -> kiln hood / cooler", [], ""),
+     "kiln inlet chamber <- clinker -> kiln hood / cooler", [], "kiln.SLDPRT"),
     ("Rotary kiln", "KIC", "Kiln inlet chamber", "1",
      [], "C5 meal + kiln gas -> calciner throat",
      ["kiln/kiln_inlet_chamber.md: geometry TBD (only a schematic margin in the layout)"], ""),
@@ -88,7 +88,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"KILN": "kiln", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

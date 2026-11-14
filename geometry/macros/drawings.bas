@@ -182,6 +182,16 @@ Const calciner_TAB_5               As String  = ""           ' parameter table r
 Const calciner_TAB_6               As String  = ""           ' parameter table rows
 Const calciner_TAB_7               As String  = ""           ' parameter table rows
 Const calciner_TAB_8               As String  = ""           ' parameter table rows
+Const KIL_D                        As Double  = 4.8          ' kiln inner D [derived]
+Const KIL_L                        As Double  = 74#          ' kiln length, back end to hood end [derived]
+Const kiln_TAB_1                   As String  = "D_kiln~Kiln inner diameter (effective)~4800~mm~published~Verified;L_kiln~Kiln length~74000~mm~published~Verified;slope~Slope (installed, not built into the solid)~3~%~published~Verified;transition_L~Transition zone from the back end (model split)~30830~mm~model parameter~Estimated;burning_L~Burning zone (model split)~43170~mm~derived~Estimated;volume~Volume (tube)~1339.07~m3~derived~Verified;wall_area~Wetted area (tube)~1115.89~m2~derived~Verified;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_tyre~Tyres / support rollers~-~~no source~Unknown;u_drive~Drive / girth gear~-~~no source~Unknown;" ' parameter table rows
+Const kiln_TAB_2                   As String  = "u_seal~Inlet and outlet seals~-~~no source~Unknown;" ' parameter table rows
+Const kiln_TAB_3                   As String  = ""           ' parameter table rows
+Const kiln_TAB_4                   As String  = ""           ' parameter table rows
+Const kiln_TAB_5                   As String  = ""           ' parameter table rows
+Const kiln_TAB_6                   As String  = ""           ' parameter table rows
+Const kiln_TAB_7                   As String  = ""           ' parameter table rows
+Const kiln_TAB_8                   As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -220,6 +230,12 @@ Const CAL_LEFT_X  As Double = 0.47
 Const CAL_DET_X   As Double = 0.57
 Const CAL_DET_Y   As Double = 0.18
 
+' kiln (1:200): the side view, the end view (1:50) under it
+Const KIL_SIDE_X  As Double = 0.3
+Const KIL_SIDE_Y  As Double = 0.4
+Const KIL_END_X   As Double = 0.2
+Const KIL_END_Y   As Double = 0.27
+
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 Const DRAW_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\drawings\"
@@ -244,7 +260,7 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1", "C1_twin", "C4", "C5" or "calciner": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner" or "kiln": what this run draws
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
@@ -298,6 +314,11 @@ Sub calciner()
 End Sub
 
 
+Sub kiln()
+    Build "kiln"
+End Sub
+
+
 Private Sub Build(ByVal which As String)
 
     Dim why As String
@@ -314,6 +335,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 100#: detailD = 50#: detX = TW_DET_X: detY = TW_DET_Y
     ElseIf equip = "calciner" Then
         scaleD = 200#: detailD = 50#: detX = CAL_DET_X: detY = CAL_DET_Y
+    ElseIf equip = "kiln" Then
+        scaleD = 200#: detailD = 50#: detX = 0.63: detY = DET_Y
     Else
         scaleD = 100#: detailD = 20#: detX = 0.63: detY = DET_Y
         LoadVolute
@@ -388,6 +411,8 @@ Private Sub ParseTable()
     ElseIf equip = "calciner" Then
         all = calciner_TAB_1 & calciner_TAB_2 & calciner_TAB_3 & calciner_TAB_4 & calciner_TAB_5 & _
               calciner_TAB_6 & calciner_TAB_7 & calciner_TAB_8
+    ElseIf equip = "kiln" Then
+        all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
     Else
         all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
               C1_twin_TAB_7 & C1_twin_TAB_8
@@ -551,8 +576,36 @@ Private Sub CheckCalcinerBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+Private Sub CheckKilnBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    want(0) = -0.5 * KIL_D: want(3) = 0.5 * KIL_D
+    want(1) = -0.5 * KIL_D: want(4) = 0.5 * KIL_D
+    want(2) = 0#: want(5) = KIL_L
+    For i = 0 To 5
+        If Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's kiln has " & Num(want(i), 3) & _
+                 " -- rebuild it with kiln.bas."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
-    If equip = "C1_twin" Then
+    If equip = "kiln" Then
+        CheckKilnBox doc
+        Exit Sub
+    ElseIf equip = "C1_twin" Then
         CheckTwinBox doc
         Exit Sub
     ElseIf equip = "calciner" Then
@@ -670,6 +723,8 @@ Private Sub MakeViews()
         MakeViewsTwin
     ElseIf equip = "calciner" Then
         MakeViewsCalciner
+    ElseIf equip = "kiln" Then
+        MakeViewsKiln
     Else
         MakeViewsVolute
     End If
@@ -774,6 +829,23 @@ Private Sub MakeViewsCalciner()
     Set vDet = DetailFrom(vSec, 4.2, 10.4, 3.2, "B")
     Note "views: front " & vFront.Name & ", left " & vLeft.Name & ", detail B " & vDet.Name
     LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
+End Sub
+
+
+' The kiln (1:200): the side view, the tube's axis along the sheet (sheet
+' right = model z, the back end at the left, up = model x), and the end view
+' at 1:50 under it (x right, y up, looking along the axis: the true circle).
+' The end view's scale is set through scaleD for its own creation only.
+Private Sub MakeViewsKiln()
+    Set vFront = OrientedView(0, 0, 1, 1, 0, 0, KIL_SIDE_X, KIL_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+
+    swDraw.EditSheet
+    scaleD = detailD
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, KIL_END_X, KIL_END_Y, "end")
+    LogMap vTop, "end", scaleD
+    scaleD = 200#
+    Note "views: side " & vFront.Name & ", end " & vTop.Name
 End Sub
 
 
@@ -1093,6 +1165,8 @@ Private Sub DimensionAll()
         DimensionTwin
     ElseIf equip = "calciner" Then
         DimensionCalciner
+    ElseIf equip = "kiln" Then
+        DimensionKiln
     Else
         DimensionVolute
     End If
@@ -1182,6 +1256,38 @@ Private Sub DimensionVolute()
         "hline", -(rx + 0.5 * t), 0, zv, 0, zv, _
         "", 0, 0, 0, 0, 0, _
         -(rx + 0.5 * t), 0, zv - 0.25
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The kiln's two reference dimensions, each between edges the solid has:
+' the diameter from the end face's circle (end view, a true circle), the
+' length between the two end faces seen edge-on (side view, circle to
+' circle: the dimension is along the axis). The slope and the zone split
+' have no edge in the solid: the table only.
+Private Sub DimensionKiln()
+    Dim R As Double
+    R = 0.5 * KIL_D
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    ' the hood end's circle: in the end view it hides the back end's behind it
+    DimEdges "D_kiln", KIL_D, vTop, _
+        "circle", 0, 0, KIL_L, R, KIL_L, _
+        "", 0, 0, 0, 0, 0, _
+        R + 2.2, R + 1#, 0
+    DimEdges "L_kiln", KIL_L, vFront, _
+        "circle", 0, 0, 0, R, 0, _
+        "circle", 0, 0, KIL_L, R, KIL_L, _
+        -R - 3.2, 0, 0.5 * KIL_L
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -1720,12 +1826,12 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
-    Cell 0.771, 0.037, "Identification number", "CI-PH-" & equip & "-001"
+    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln", "CI-RK-", "CI-PH-") & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (" & IIf(equip = "C1_twin", "C", "B") & " 1:" & Fmt(detailD) & ")"
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -1798,6 +1904,7 @@ Private Function TitleText() As String
     Case "C4": TitleText = "CYCLONE C2 / C3 / C4 (SAME)"
     Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
+    Case "kiln": TitleText = "ROTARY KILN TUBE"
     End Select
 End Function
 
@@ -1815,6 +1922,11 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    ElseIf equip = "kiln" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: axis z; z = 0 at the back end (kiln inlet chamber), hood end at z = L.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. The slope (table) is installed, not built into the solid.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Transition / burning split: a model parameter, table only.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln.md", TEXT_H
     ElseIf equip = "calciner" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the throat's foot (kiln gas inlet); tertiary air along -x, tangential.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. One calciner for both strings; the arms end in vertical faces at z = " & Num(CAL_Z_END, 2) & " (CFD outlets, to C5).", TEXT_H
@@ -1846,6 +1958,8 @@ Private Sub DrawFlows()
         DrawFlowsTwin
     ElseIf equip = "calciner" Then
         DrawFlowsCalciner
+    ElseIf equip = "kiln" Then
+        DrawFlowsKiln
     Else
         DrawFlowsVolute
     End If
@@ -1873,6 +1987,20 @@ End Sub
 ' The calciner's flows: the kiln gas up the throat, the gas out of the
 ' two legs, the meal in along each pipe (A-A), the tertiary air along -x
 ' (plan) and the fuel along its pipe (left view).
+' The kiln's flows (side view): the gas from the hood to the back end,
+' the meal from the back end to the hood, along the axis, either side of it.
+Private Sub DrawFlowsKiln()
+    UseLayer L_FLOW
+    ArrowM3 vFront, 1#, 0#, KIL_L - 4#, 1#, 0#, KIL_L - 14#
+    ArrowM3 vFront, -1#, 0#, 4#, -1#, 0#, 14#
+    UseLayer L_TEXT
+    LabelM3 vFront, 1.6, 0#, KIL_L - 30#, "Gas (hood to back end)"
+    LabelM3 vFront, -2.4, 0#, 17#, "Meal (back end to hood)"
+    LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, 0#, "Back end (kiln inlet chamber)"
+    LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, KIL_L - 14#, "Hood end"
+End Sub
+
+
 Private Sub DrawFlowsCalciner()
     Dim xl As Double, ze As Double, k As Double, sg As Double, i As Long
     Dim fx As Double, fz As Double
@@ -1952,6 +2080,8 @@ Private Sub DrawAxes()
         DrawAxesTwin
     ElseIf equip = "calciner" Then
         DrawAxesCalciner
+    ElseIf equip = "kiln" Then
+        DrawAxesKiln
     Else
         DrawAxesVolute
     End If
@@ -1969,6 +2099,17 @@ Private Sub DrawAxesVolute()
     AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ
     AxisM vTop, -R - 0.6, 0#, vHeight, vExitX + 0.6, 0#, vHeight
     AxisM vTop, 0#, -R - 0.6, vHeight, 0#, R + 0.6, vHeight
+End Sub
+
+
+' The kiln's centre lines: the axis in the side view, the cross in the end view.
+Private Sub DrawAxesKiln()
+    Dim R As Double
+    R = 0.5 * KIL_D
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, -2#, 0#, 0#, KIL_L + 2#
+    AxisM vTop, -R - 0.6, 0#, 0#, R + 0.6, 0#, 0#
+    AxisM vTop, 0#, -R - 0.6, 0#, 0#, R + 0.6, 0#
 End Sub
 
 

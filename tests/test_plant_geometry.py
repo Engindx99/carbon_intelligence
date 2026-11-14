@@ -536,3 +536,54 @@ class TheTwinReadsTheSourceTest(unittest.TestCase):
         self.assertEqual(cfg["kiln"]["diameter"], pg.kiln(pg.load())["D"])
         self.assertEqual(len(cfg["preheater"]["stages"]), 4)
         self.assertEqual([z["name"] for z in cfg["calciner"]["zone_segments"]], ["vessel", "gooseneck", "C5"])
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
+    """kiln.bas builds a plain cylinder of the published D and L; its
+    log (decimal comma or point) carries the volume, the end faces and
+    the slope it does not build in, held here to plant_geometry.kiln."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_build.log").read_text(encoding="latin-1")
+        cls.k = pg.kiln(pg.load())
+
+    def num(self, pattern):
+        m = re.search(pattern.replace("#", r"(-?[\d.,]+)"), self.log)
+        self.assertIsNotNone(m, pattern)
+        return [float(x.replace(",", ".")) for x in m.groups()]
+
+    def test_the_build_succeeded(self):
+        self.assertTrue(self.log.startswith("kiln built"), self.log.splitlines()[0])
+        self.assertIn("closed manifold solid", self.log)
+
+    def test_the_tube_is_the_sources(self):
+        d, length, slope, vol = self.num(r"kiln: D # m, L # m, slope # % \(installation, not built into the solid\), volume # m3")
+        self.assertAlmostEqual(d, self.k["D"], places=5)
+        self.assertAlmostEqual(length, self.k["L"], places=5)
+        self.assertAlmostEqual(slope, self.k["slope"], places=5)
+        self.assertAlmostEqual(vol, self.k["volume"], delta=1e-6 * self.k["volume"])
+
+    def test_the_zones_are_the_sources(self):
+        tr, burn = self.num(r"transition # m from the back end, burning # m")
+        self.assertAlmostEqual(tr, self.k["transition_L"], places=5)
+        self.assertAlmostEqual(burn, self.k["burning_L"], places=5)
+
+    def test_the_solid_is_the_tube(self):
+        vol = self.num(r"kiln volume # m3")[0]
+        self.assertAlmostEqual(vol, self.k["volume"], delta=1e-3 * self.k["volume"])
+        zmin, zmax = self.num(r"extent: x [-\d.,]+ \.\. [-\d.,]+, y [-\d.,]+ \.\. [-\d.,]+, z # \.\. # m")
+        self.assertAlmostEqual(zmin, 0.0, places=2)
+        self.assertAlmostEqual(zmax, self.k["L"], places=2)
+
+    def test_the_two_ends_are_the_boundaries(self):
+        area = math.pi * (0.5 * self.k["D"]) ** 2
+        for name in ("kiln_back", "kiln_hood"):
+            with self.subTest(name):
+                self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], area, delta=2e-3 * area)
+        self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.k["wall_area"],
+                               delta=2e-3 * self.k["wall_area"])
