@@ -606,6 +606,34 @@ def id_fan(g):
 
 
 # ======================================================================
+# The kiln burner (JETFLEX): thermal input, primary air, jet momentum
+# ======================================================================
+def kiln_burner(g):
+    """The burner's duty and its primary air jet: the thermal input from
+    the kiln's fuel, the primary air from its share of the kiln air, the
+    momentum from FLSmidth's N/MW; the mean jet velocity is the momentum
+    over the air flow, the jet area the air flow over its density (ambient
+    pressure, the primary air's temperature) times the velocity."""
+
+    b = g["kiln_burner"]
+    q_th = v(b["fuel_flow"]) * v(b["fuel_LHV"])                 # MW
+    m_pa = v(b["kiln_air_flow"]) * v(b["primary_air_fraction"])
+    force = v(b["momentum_per_MW"]) * q_th                       # N
+    u = force / m_pa
+    rho = 101325.0 * 0.028965 / (R_GAS * v(b["primary_air_T"]))
+    area = m_pa / (rho * u)
+    return {
+        "thermal_MW": q_th,
+        "m_pa": m_pa,
+        "momentum_N": force,
+        "u_jet": u,
+        "rho_pa": rho,
+        "jet_area": area,
+        "jet_D_eq": math.sqrt(4.0 * area / math.pi),
+    }
+
+
+# ======================================================================
 # A cyclone's slot inlet and outlet pipe (cyclone.bas Derive)
 # ======================================================================
 def cyclone_slot_inlet(g, name):

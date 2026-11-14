@@ -672,3 +672,41 @@ class TheIdFanIsTheProcessDutyTest(unittest.TestCase):
         self.assertTrue(2.2 <= fan["D_impeller"] <= 3.5, fan["D_impeller"])         # Pengxiang catalogue
         self.assertTrue(600e3 <= fan["q_total_h"] <= 900e3, fan["q_total_h"])       # 5000 t/d, vendor range
         self.assertTrue(1500e3 <= 2 * fan["p_shaft"] <= 3000e3, fan["p_shaft"])     # both fans, guide range
+
+
+class TheKilnBurnerIsTheKilnFiringTest(unittest.TestCase):
+    """The JETFLEX burner (kiln/kiln_burner.md) takes the twin's kiln
+    firing; the jet follows from FLSmidth's N/MW."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.b = pg.kiln_burner(cls.g)
+
+    def test_the_duty_is_the_twins_kiln_firing(self):
+        import json
+
+        with open(REPO_ROOT / "tests" / "data" / "twin_state_reference.json", encoding="utf-8") as handle:
+            snap = json.load(handle)["snapshot"]
+        f = self.g["kiln_burner"]
+        self.assertAlmostEqual(pg.v(f["fuel_flow"]), snap["mass_flow_m_dot_fuel_kiln"], places=4)
+        self.assertAlmostEqual(pg.v(f["kiln_air_flow"]), snap["mass_flow_m_dot_air_kiln"], places=3)
+        self.assertAlmostEqual(self.b["m_pa"], snap["mass_flow_m_dot_primary_air"], places=3)
+
+    def test_the_primary_air_share_is_the_twins(self):
+        import yaml
+
+        with open(REPO_ROOT / "configs" / "twin_cfg.yaml", encoding="utf-8") as handle:
+            cfg = yaml.safe_load(handle)
+        self.assertEqual(pg.v(self.g["kiln_burner"]["primary_air_fraction"]), cfg["burning"]["primary_air_fraction"])
+
+    def test_the_jet_follows_from_the_momentum(self):
+        b = self.b
+        self.assertAlmostEqual(b["u_jet"] * b["m_pa"], b["momentum_N"], places=6)
+        self.assertAlmostEqual(b["rho_pa"] * b["u_jet"] * b["jet_area"], b["m_pa"], places=9)
+        self.assertAlmostEqual(b["momentum_N"] / b["thermal_MW"], pg.v(self.g["kiln_burner"]["momentum_per_MW"]), places=9)
+
+    def test_it_is_inside_the_jetflex_range(self):
+        # 10-250 MW, 7-11 N/MW (FLSmidth)
+        self.assertTrue(10.0 <= self.b["thermal_MW"] <= 250.0)
+        self.assertTrue(7.0 <= self.b["momentum_N"] / self.b["thermal_MW"] <= 11.0)

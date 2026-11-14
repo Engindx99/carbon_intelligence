@@ -592,7 +592,7 @@ SOURCE_TR = {
     "model": "modelleme",
     "schematic": "şematik",
 }
-UNITS = {"rpm": "dev/dk", "g/mol": "g/mol", "Pa": "Pa", "m": "m", "deg": "°", "%": "%", "m2": "m²", "-": "", "kg/s": "kg/s",
+UNITS = {"N/MW": "N/MW", "MJ/kg": "MJ/kg", "rpm": "dev/dk", "g/mol": "g/mol", "Pa": "Pa", "m": "m", "deg": "°", "%": "%", "m2": "m²", "-": "", "kg/s": "kg/s",
          "K": "K", "m/s": "m/s", "mol/mol": "mol/mol"}
 
 
@@ -799,6 +799,25 @@ def _id_fan_rows(g):
     ]
 
 
+def _kiln_burner_rows(g):
+    b, bu = g["kiln_burner"], pg.kiln_burner(g)
+    return [
+        row_src("Kiln yakıtı", b["fuel_flow"]),
+        row_src("Yakıt alt ısıl değeri", b["fuel_LHV"]),
+        row_src("Fırın yanma havası", b["kiln_air_flow"]),
+        row_src("Birincil hava payı", b["primary_air_fraction"]),
+        row_src("Birincil hava sıcaklığı", b["primary_air_T"]),
+        row_src("Alev momentumu", b["momentum_per_MW"]),
+        row_der("Isıl güç", bu["thermal_MW"], "MW", 2),
+        row_der("Birincil hava debisi", bu["m_pa"], "kg/s", 3),
+        row_der("Jet momentumu", bu["momentum_N"], "N", 0),
+        row_der("Ortalama jet hızı", bu["u_jet"], "m/s", 0),
+        row_der("Birincil hava yoğunluğu", bu["rho_pa"], "kg/m³", 3),
+        row_der("Jet toplam alanı", bu["jet_area"], "m²", 4),
+        row_der("Jet eşdeğer çapı", bu["jet_D_eq"] * 1e3, "mm", 0),
+    ]
+
+
 def _fluid_volume_rows(g):
     t = pg.twin_sections(g)
     n = t["preheater"]["strings"]
@@ -981,6 +1000,7 @@ DOCS = {
     "preheater/gooseneck.md": _gooseneck_rows,
     "calciner/calciner.md": _calciner_rows,
     "kiln/kiln.md": _kiln_rows,
+    "kiln/kiln_burner.md": _kiln_burner_rows,
     "fan/id_fan.md": _id_fan_rows,
     "cooler/cooler.md": _cooler_rows,
     "fluid_volumes.md": _fluid_volume_rows,

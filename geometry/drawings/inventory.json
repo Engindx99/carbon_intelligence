@@ -1557,16 +1557,67 @@
     {
       "area": "Rotary kiln",
       "tag": "BRN",
-      "name": "Kiln burner",
+      "name": "Kiln burner (JETFLEX)",
       "quantity": "1",
       "connections": "primary air + fuel -> kiln",
-      "dimensions": [],
-      "status_counts": {},
+      "dimensions": [
+        {
+          "key": "kiln_burner.fuel_flow",
+          "value": 2.09494,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.fuel_LHV",
+          "value": 32.0,
+          "unit": "MJ/kg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.kiln_air_flow",
+          "value": 29.1625,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.primary_air_fraction",
+          "value": 0.1,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.primary_air_T",
+          "value": 293.15,
+          "unit": "K",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.momentum_per_MW",
+          "value": 9.0,
+          "unit": "N/MW",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 6
+      },
       "missing": [
-        "plant_topology.md: drawn as an arrow only; no dimensions"
+        "kiln/kiln_burner.md: a selection from the kiln firing (no published plant dimension); burner pipe, channels, nozzles unknown; drawn as an arrow only"
       ],
       "cfd_solid": "",
-      "drawing": "no data: source research first"
+      "drawing": "to draw"
     },
     {
       "area": "Clinker cooler",
