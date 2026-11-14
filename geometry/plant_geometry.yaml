@@ -196,7 +196,11 @@ layout:
   gooseneck_turn_leg_over_D: {value: 0.5, unit: "-", source: schematic, doc: plant_topology.md}
   stage_gap:           {value: 4.0,  unit: m,     source: schematic,    doc: plant_topology.md}
   column_offset:       {value: 15.0, unit: m,     source: schematic,    doc: plant_topology.md}
-  r1_branch_half:      {value: 2.75, unit: m,     source: schematic,    doc: plant_topology.md}
+  # the twin C1 (mirror pair, inlet ducts facing each other, R1 on the
+  # mirror plane in front): clear gap between the two branches' walls,
+  # two lined walls (~0.3 m each) and access; the spacing and R1's Y
+  # follow from it (plant_geometry.c1_twin). No source gives either.
+  c1_twin_gap:         {value: 1.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
   r1_up_min:           {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
   r1_leg_on:           {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
   cooler_drop:         {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}

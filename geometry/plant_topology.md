@@ -125,7 +125,7 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | `ZIG_DX` | Hattın dış kolonunun (C4, C2) iç kolonundan (C5, C3) uzaklığı. Yatay bacağın yalnız ilk 4.63 m'si (C5'te 4.78) CFD domenidir, üstteki siklonun 3.0 m'lik giriş kanalı gövdenin içinde kalır; aradaki bacak serbesttir. Alt sınır: çıkış yüzü + 0.5 m + daralma + gövde yarıçapı, R4 için 14.6 m; ön kontrol zorlar. 20 m idi (farin borularını riserların yanından geçirmek için); farin uçlarla gösterilince kule kare gibi durduğu için 15 m'ye indi (kullanıcı kararı 14 Ekim 2026). 11 m'den 20'ye çıkmıştı |
 | **donmuş (CFD):** `C1_RISER_X` … `C1_OUT_R` | Her C1, kendi CFD domeniyle aynı ([cyclone_C1.md](preheater/cyclone_C1.md), [riser_R1.md](preheater/riser_R1.md)); yükseklikler toz çıkışından: riser kolu (R1'in alanının yarısı) domen tabanından dirseğine dik; dirsek (CFD'deki gibi yuvarlak: duvarları eş merkezli iki yay); geçiş ve aşağı eğimli giriş kanalı gövdeye; kare kesitli, 60° eğimli farin oluğu kol duvarından dışarı çıkar; gaz çıkışı çatının üstünde dik boru, kolun ters tarafına 180° dirsek (yuvarlak, iki yay) ve aşağı inen bacak |
 | `R1_LEG_ON` | C2'nin çıkış bacağının, CFD'nin 4.63 m'sinden sonra R1'in dirseğine kadar uzandığı yol. İki hattın uzak C1'lerinin çıkış dirsekleri kalsinatörün üstünde ~5.9 m arayla kalır. 1.55 m idi |
-| `R1_BRANCH_HALF` | R1'in Y'sinden çıkan iki kolun R1 ekseninden uzaklığı; ikiz C1'ler eksenden 9.593 m uzakta. İki farin oluğu kolların arasında birbirine bakar, ön kontrol birbirine değmemelerini zorlar |
+| `C1_TWIN_GAP` (→ `C1_TWIN_S`, `R1_BRANCH_HALF`) | İkiz C1 (kullanıcı kararı 13 Kas 2026): ayna simetrik çift, her C1 kendi CFD domeniyle aynı ama ekseni etrafında 90° döndürülmüş; kol, dirsek, giriş kanalı, farin oluğu ve çıkış dirseği derinlik yönünde (bu ön görünüşte uçtan görünür, akış ⊗ ile). Giriş kanalları birbirine bakar, ortak R1 simetri düzleminde önde yükselir. `C1_TWIN_GAP` iki kolun cidarları arası (model); C1 eksenleri arası ve Y'nin kol yarı aralığı ondan türetilir. Önceden kollar ön görünüş düzlemindeydi ve C1'ler R1'den 9.593 m uzaktaydı |
 | `GN_TO_C5_GAP` | Kaz boynu inişi ile C5 gövdesi arasındaki boşluk. İniş, C5'in giriş kotunda bu boşluğu yatay geçerek gövdeye girer |
 | `GN_BEND_LEG` | Kaz boynu inişinin C5'e dönerken 45° parçasının yatay boyu, kol çapı cinsinden. Kolla C5 gövdesi arasında 2.75 m olduğu için riserlardaki 1.0 sığmıyor; ön kontrol, ardından en az yarım kol yarıçapı yatay giriş kalmasını zorlar |
 | `TA_BEND_R_OVER_D` | Tersiyer hava kanalının başlıktan kalsinatöre dönüşü: kaz boynundaki gibi geniş bir dirsek, eksende R 3.66 m, duvarları iki yay (kullanıcı kararı 14 Ekim 2026; önceden keskin köşeydi). Ön kontrol, dirseğin başlığın üstüne sığmasını ve tersiyer hava okunun dirsekten önce bitmesini zorlar |
@@ -225,7 +225,10 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
 | `GN_BEND_LEG` | 0.5 | plant_geometry.yaml |
-| `R1_BRANCH_HALF` | 2.75 | plant_geometry.yaml |
+| `C1_TWIN_GAP` | 1 | plant_geometry.yaml |
+| `C1_TWIN_S` | 6.630818 | plant_geometry.yaml |
+| `C1_DUCT_Y` | 1.73 | plant_geometry.yaml |
+| `R1_BRANCH_HALF` | 1.585409 | plant_geometry.yaml |
 | `R1_UP_MIN` | 0.5 | plant_geometry.yaml |
 | `R1_LEG_ON` | 0.5 | plant_geometry.yaml |
 | `KILN_AXIS_Z` | 10 | plant_geometry.yaml |
@@ -284,13 +287,13 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | İç kolon (C5, C3) | x = ±17.225 |
 | Dış kolon (C4, C2) | x = ±32.225 |
 | R1 | x = ±20.930 |
-| İkiz C1 | x = ±11.337 ve ±30.523 |
+| İkiz C1 | x = ±17.614 ve ±24.245 |
 | C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
 | C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
 | C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |
 | C2 toz çıkışı / çıkış borusu tepesi | z 69.991 / 91.462 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 101.222 / 115.662 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 120.462 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 100.057 / 114.497 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 119.297 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |

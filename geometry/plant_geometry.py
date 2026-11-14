@@ -527,6 +527,50 @@ def c1_branch(g):
 
 
 # ======================================================================
+# The twin C1 and R1's Y (c1_twin.bas; user decision, 13 Nov 2026)
+# ======================================================================
+def c1_twin(g):
+    """The twin C1 as a mirror pair over one R1, in the pair's frame:
+    z from the C1 dust outlets, x across the pair (mirror plane x = 0),
+    y the inlet ducts' direction. Each C1 is its CFD domain (with its
+    riser branch, c1_branch) turned 90 deg so its duct runs along +y on
+    the barrel's side facing the other; the second is the first's
+    mirror. The branches then rise side by side at x = +-b, c1_branch's
+    x in front of the barrels, and R1 between them on the mirror plane.
+
+    The spacing is the tightest the branches allow: their walls (the
+    widest part: the branch circle, its bend and transition) c1_twin_gap
+    apart. R1's Y is plant_topology_2d.bas's: R1's walls open at 45 deg
+    to the branches' outer walls, the branches' inner walls rise 45 deg
+    from the crotch on R1's axis, each branch keeping its width; the
+    branches' straight run starts at the CFD domain's floor."""
+
+    br = c1_branch(g)
+    s = cyclone_slot_inlet(g, "C1")
+    c = cyclone(g, "C1")
+    R = 0.5 * c["D_barrel"]
+    r = 0.5 * v(g["risers"]["R1"]["D"])
+    rb = 0.5 * br["D"]
+    gap = v(g["layout"]["c1_twin_gap"])
+    y_duct = 0.5 * (s["y_inner"] + s["y_outer"])   # the duct's (and branch's) axis from the C1 axis
+    spacing = 2.0 * (y_duct + rb) + gap
+    b = 0.5 * spacing - y_duct
+    y_rise = b - rb + 2.0 * math.sqrt(2.0) * rb - r
+    return {
+        "spacing": spacing,
+        "barrel_gap": spacing - 2.0 * R,
+        "branch_half": b,
+        "branch_gap": 2.0 * (b - rb),
+        "y_duct": y_duct,
+        "y_branch": -br["x"],
+        "y_rise": y_rise,
+        "z_split": br["z_floor"] - y_rise,
+        "z_branch": br["z_floor"],
+        "gap": gap,
+    }
+
+
+# ======================================================================
 # Layout (plant_topology_2d.bas Derive): one string, x > 0 outboard
 # ======================================================================
 def layout(g):
@@ -567,9 +611,9 @@ def layout(g):
         z_dust[s] = top(below) + c[below]["outlet_bend_R"] + 0.5 * c[below]["D_vortex"] - c[s]["height"]
 
     D_r1 = v(g["risers"]["R1"]["D"])
-    r, rb = 0.5 * D_r1, 0.5 * br["D"]
-    b = v(L["r1_branch_half"])
-    y_rise = b - rb + 2.0 * math.sqrt(2.0) * rb - r
+    r = 0.5 * D_r1
+    tw = c1_twin(g)
+    y_rise = tw["y_rise"]
     z_leg_top = top(2) + c[2]["outlet_bend_R"] + 0.5 * c[2]["D_vortex"]
     # C1 over C2's outlet pipe by the stage gap, or as high as R1's
     # rise and Y ask before the C1 CFD branch's floor
@@ -578,7 +622,7 @@ def layout(g):
         z_leg_top + v(L["r1_up_min"]) + y_rise - br["z_floor"],
     )
     d_r1 = c[2]["outlet_bend_R"] + c[2]["outlet_run"] + v(L["r1_leg_on"]) + r
-    d_c1 = br["x"] + b
+    d_c1 = 0.5 * tw["spacing"]        # the twin's ducts face each other across R1's axis
 
     # The kiln out of the chamber's +x side, falling at its slope; the
     # cooler under its discharge, the hood (the chamber's mirror) on it

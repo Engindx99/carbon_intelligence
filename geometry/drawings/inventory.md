@@ -8,13 +8,13 @@ schematic = layout only; absent = Unknown.
 |---|---|---|---|---|---|---|---|
 | Raw meal | FEED | Raw meal feed chute into the C1 riser | 2 | 0 / 4 / 0 | - | to draw | preheater/riser_R1.md: feed system upstream of the chute is not modelled |
 | Raw meal | MP | Meal pipes C1-C5 (with flap valves) | per cyclone | 0 / 0 / 0 | - | no data: source research first | preheater/meal_pipe_C1.md .. C5.md: diameter, length, slope, route, flap position TBD |
-| Preheater | C1 | Cyclone C1 (stage 1, top) | 2 per string | 2 / 19 / 0 | C1.SLDPRT | drawn: geometry/drawings/C1/ | preheater/cyclone_C1.md: C1 Y split TBD |
+| Preheater | C1 | Cyclone C1 (stage 1, top) | 2 per string | 2 / 19 / 0 | C1.SLDPRT | drawn: geometry/drawings/C1/ | - |
 | Preheater | C2 | Cyclone C2 | 1 per string | 3 / 14 / 0 | C4.SLDPRT (same geometry) | to draw | - |
 | Preheater | C3 | Cyclone C3 | 1 per string | 3 / 14 / 0 | C4.SLDPRT (same geometry) | to draw | - |
 | Preheater | C4 | Cyclone C4 | 1 per string | 2 / 18 / 0 | C4.SLDPRT | to draw | - |
 | Preheater | C5 | Cyclone C5 (calciner outlet cyclone) | 1 per string | 4 / 15 / 0 | C5.SLDPRT | to draw | - |
 | Preheater | VF | Vortex finders (dip tubes) of C1-C5 | per cyclone | 0 / 5 / 0 | in each cyclone solid | to draw | (no structure: wall 0.08 m is a CFD model parameter) |
-| Preheater | R1-R4 | Gas risers / ducts between stages | per string | 1 / 0 / 0 | - | to draw | preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout |
+| Preheater | R1-R4 | Gas risers / ducts between stages | per string | 1 / 1 / 0 | C1_twin.SLDPRT (R1 stub, Y, both C1) | to draw | preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout |
 | Calciner | GN | Gooseneck (Y) from the calciner to C5 | 1 per calciner | 1 / 3 / 0 | calciner.SLDPRT | to draw | - |
 | Calciner | ILC | In-line calciner (ILC) vessel | 1 | 2 / 13 / 0 | calciner.SLDPRT | to draw | - |
 | Calciner | TAD | Tertiary air duct | 1 | 0 / 9 / 0 | calciner.SLDPRT (3 m stub only) | to draw | fluid_volumes.md: duct length and route absent (drawn route is schematic) |

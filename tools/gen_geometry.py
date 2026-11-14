@@ -190,6 +190,7 @@ def drawing_bas(g):
     d, cal, gn = g["cyclone_domain"], g["calciner"], g["gooseneck"]
     k, coo, lay = g["kiln"], g["cooler"], g["layout"]
     br = pg.c1_branch(g)
+    tw = pg.c1_twin(g)
 
     out = []
     for tag, c in (("C1", cy["C1"]), ("C4", cy["C4"])):
@@ -252,7 +253,10 @@ def drawing_bas(g):
         src("C5_OVER_TA", lay["c5_over_tertiary_air"]),
         src("GN_TO_C5_GAP", lay["gooseneck_to_c5_gap"]),
         src("GN_BEND_LEG", lay["gooseneck_turn_leg_over_D"], "x leg D"),
-        src("R1_BRANCH_HALF", lay["r1_branch_half"]),
+        src("C1_TWIN_GAP", lay["c1_twin_gap"], "twin C1: gap between the branches' walls"),
+        der("C1_TWIN_S", tw["spacing"], "twin C1: axis to axis"),
+        der("C1_DUCT_Y", tw["y_duct"], "C1 inlet duct / branch axis from the C1 axis"),
+        der("R1_BRANCH_HALF", tw["branch_half"], "R1's Y: each branch from R1's axis"),
         src("R1_UP_MIN", lay["r1_up_min"]),
         src("R1_LEG_ON", lay["r1_leg_on"]),
         src("KILN_AXIS_Z", lay["kiln_axis_z"]),
@@ -336,11 +340,42 @@ def drawings_bas(g):
     return out
 
 
+# ======================================================================
+# c1_twin.bas
+# ======================================================================
+def c1_twin_bas(g):
+    d, lay = g["cyclone_domain"], g["layout"]
+    c1, br, tw = pg.cyclone(g, "C1"), pg.c1_branch(g), pg.c1_twin(g)
+    o = pg.cyclone_outlet(g, "C1")
+    L = pg.layout(g)
+    th = math.radians(pg.v(d["meal_slope"]))
+    rb = 0.5 * br["D"]
+    # the feed chute's far corner, out along -x of the C1 frame
+    tip = -(br["x"] + rb + pg.v(d["c1_feed_depth"]) * math.cos(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.sin(th))
+    return [
+        src("R1_D", g["risers"]["R1"]["D"], "R1 bore"),
+        src("TWIN_GAP", lay["c1_twin_gap"], "the branches' walls apart"),
+        der("TWIN_S", tw["spacing"], "C1 axis to axis"),
+        der("BRANCH_HALF", tw["branch_half"], "each branch from R1's axis, x"),
+        der("BRANCH_D", br["D"], "branch bore (half R1's area)"),
+        der("BRANCH_Y", tw["y_branch"], "branches and R1 in front of the C1 axes, y"),
+        der("Z_BRANCH", tw["z_branch"], "the branches' floor (the C1_riser inlet face)"),
+        der("Z_SPLIT", tw["z_split"], "R1's top: the Y starts"),
+        der("R1_STUB_L", L["z_r1_split"] - L["z_r1_leg_top"], "R1 straight under its Y, over C2's outlet leg"),
+        der("C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
+        der("C1_TOP", o["z_bend"] + o["bend_R"] + 0.5 * o["D"], "the outlet bend's crown"),
+        der("C1_X_MAX", o["leg_x"] + 0.5 * o["D"], "the C1_riser solid's far side, its outlet leg (C1 frame x)"),
+        der("C1_X_MIN", tip, "the C1_riser solid's near side, its feed chute (C1 frame x)"),
+        der("OUT_Z_END", o["z_end"], "the outlet legs' end faces"),
+    ]
+
+
 TARGETS = {
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
     "plant_topology_2d.bas": drawing_bas,
     "drawings.bas": drawings_bas,
+    "c1_twin.bas": c1_twin_bas,
 }
 
 
@@ -433,6 +468,7 @@ def _riser_rows(g, k):
         r = pg.r1_path(g)
         p = r["parts"]
         br = r["branch"]
+        tw = pg.c1_twin(g)
         rows = [
             row_der("C2 çıkış borusu yükselişi (Ø{:.3f})".format(p[0]["D"]), p[0]["length"], "m"),
             row_der("C2 çıkış dirseği, 90° yay", p[1]["length"], "m"),
@@ -442,6 +478,12 @@ def _riser_rows(g, k):
             row_der("İkiz C1 kolu çapı (R1 alanının yarısı)", br["D"], "m"),
             row_der("Kol başına boy (dik + 95° dirsek + geçiş + kanal)", br["length"], "m"),
             row_der("Kol sayısı", r["branches"], "", 0),
+            row_src("İkiz C1 kolları arası boşluk (cidardan cidara)", g["layout"]["c1_twin_gap"]),
+            row_der("İkiz C1 eksenleri arası", tw["spacing"], "m"),
+            row_der("İkiz C1 gövdeleri arası boşluk", tw["barrel_gap"], "m"),
+            row_der("Y'den her kolun R1 eksenine uzaklığı", tw["branch_half"], "m"),
+            row_der("Y'nin yüksekliği (R1 tepesinden kolların dik kısmına)", tw["y_rise"], "m"),
+            row_der("R1 ve kollar, C1 eksenlerinin önünde", -tw["y_branch"], "m"),
         ]
     else:
         r = pg.stage_riser(g, k)

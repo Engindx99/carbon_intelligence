@@ -244,9 +244,7 @@
         "Verified": 2,
         "Estimated": 19
       },
-      "missing": [
-        "preheater/cyclone_C1.md: C1 Y split TBD"
-      ],
+      "missing": [],
       "cfd_solid": "C1.SLDPRT",
       "drawing": "drawn: geometry/drawings/C1/"
     },
@@ -960,7 +958,7 @@
       "tag": "R1-R4",
       "name": "Gas risers / ducts between stages",
       "quantity": "per string",
-      "connections": "R1: C2 -> C1; R2-R4: C3..C5 outlet pipes up to C2..C4",
+      "connections": "R1: C2 -> its Y -> the twin C1; R2-R4: C3..C5 outlet pipes up to C2..C4",
       "dimensions": [
         {
           "key": "risers.R1.D",
@@ -969,15 +967,24 @@
           "source": "published",
           "status": "Verified",
           "doc": "preheater/riser_R1.md"
+        },
+        {
+          "key": "layout.c1_twin_gap",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/riser_R1.md"
         }
       ],
       "status_counts": {
-        "Verified": 1
+        "Verified": 1,
+        "Estimated": 1
       },
       "missing": [
         "preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout"
       ],
-      "cfd_solid": "",
+      "cfd_solid": "C1_twin.SLDPRT (R1 stub, Y, both C1)",
       "drawing": "to draw"
     },
     {

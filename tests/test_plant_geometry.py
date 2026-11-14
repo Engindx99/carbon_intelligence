@@ -180,13 +180,19 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
             with self.subTest(key=key):
                 self.assertAlmostEqual(br[key], self.drw[macro], delta=TOL)
 
+    def test_the_twin_c1_is_the_drawings(self):
+        tw = pg.c1_twin(self.g)
+        for key, macro in (("branch_half", "R1_BRANCH_HALF"), ("spacing", "C1_TWIN_S"), ("y_duct", "C1_DUCT_Y")):
+            with self.subTest(key=key):
+                self.assertAlmostEqual(tw[key], self.drw[macro], delta=TOL)
+
     def test_layout_constants_are_the_drawings(self):
         L = self.g["layout"]
         for key, macro in (
             ("kiln_axis_z", "KILN_AXIS_Z"), ("chamber_margin", "CHAMBER_MARGIN"),
             ("c5_over_tertiary_air", "C5_OVER_TA"), ("gooseneck_to_c5_gap", "GN_TO_C5_GAP"),
             ("gooseneck_turn_leg_over_D", "GN_BEND_LEG"), ("stage_gap", "STAGE_GAP"),
-            ("column_offset", "ZIG_DX"), ("r1_branch_half", "R1_BRANCH_HALF"),
+            ("column_offset", "ZIG_DX"), ("c1_twin_gap", "C1_TWIN_GAP"),
             ("r1_up_min", "R1_UP_MIN"), ("r1_leg_on", "R1_LEG_ON"), ("cooler_drop", "COOLER_DROP"),
         ):
             with self.subTest(key=key):
@@ -340,6 +346,34 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
                 self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], want, delta=2e-3 * want)
 
 
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "c1_twin_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheTwinSolidIsTheSourcesTest(unittest.TestCase):
+    """c1_twin.bas copies the verified C1_riser solid twice (read-only)
+    and adds R1 and its Y; its log says the copies are the source's,
+    the twin is one body inside its volume bounds, the source untouched."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "c1_twin_build.log").read_text(encoding="latin-1")
+
+    def test_the_build_succeeded(self):
+        self.assertTrue(self.log.startswith("c1_twin built"), self.log.splitlines()[0])
+        self.assertIn("source unchanged: ", self.log)
+
+    def test_the_pair_is_the_source(self):
+        tw = pg.c1_twin(pg.load())
+        m = re.search(r"twin: C1 axes ([\d.]+) apart, branches ([\d.]+) apart \(walls ([\d.]+)\), R1 ([\d.]+) in front",
+                      self.log)
+        self.assertIsNotNone(m)
+        got = [float(x) for x in m.groups()]
+        want = [tw["spacing"], 2.0 * tw["branch_half"], tw["gap"], -tw["y_branch"]]
+        for g_, w in zip(got, want):
+            self.assertAlmostEqual(g_, w, delta=0.001)
+
+
 class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
     """User decisions, 14 Oct 2026: R2-R4 are the CFD outlet pipes,
     the gooseneck legs run to the C5 inlet."""
@@ -362,6 +396,23 @@ class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
         self.assertLess(L["z_c5_inlet"], L["z_gooseneck_top"])
         self.assertGreater(gp["leg_length"], 0.0)
         self.assertGreater(gp["volume"], 0.0)
+
+    def test_the_twin_c1_share_one_r1(self):
+        """User decision, 13 Nov 2026: a mirror pair, ducts facing each
+        other, R1 on the mirror plane; the pair as tight as the branches'
+        walls c1_twin_gap apart allow, nothing else touching."""
+        tw, br = pg.c1_twin(self.g), pg.c1_branch(self.g)
+        c, s = pg.cyclone(self.g, "C1"), pg.cyclone_slot_inlet(self.g, "C1")
+        R, rb = 0.5 * c["D_barrel"], 0.5 * br["D"]
+        self.assertAlmostEqual(tw["branch_gap"], pg.v(self.g["layout"]["c1_twin_gap"]), places=12)
+        self.assertGreater(tw["barrel_gap"], tw["gap"])               # the barrels clear too
+        self.assertGreater(0.5 * tw["spacing"] - s["y_outer"], 0.0)   # each duct on its own side
+        self.assertGreater(tw["branch_half"], rb)                     # the Y's branches part
+        self.assertGreater(tw["y_rise"], 0.0)
+        self.assertAlmostEqual(tw["z_split"] + tw["y_rise"], br["z_floor"], places=12)
+        L = pg.layout(self.g)
+        self.assertAlmostEqual(L["x_c1"][1] - L["x_c1"][0], tw["spacing"], places=9)
+        self.assertAlmostEqual(0.5 * sum(L["x_c1"]), L["x_r1"], places=9)   # symmetric over R1
 
 
 class TheTwinReadsTheSourceTest(unittest.TestCase):
