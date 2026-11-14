@@ -116,7 +116,7 @@ Const R1_BRANCH_HALF               As Double  = 1.585409     ' R1's Y: each bran
 Const R1_UP_MIN                    As Double  = 0.5          ' [schematic, plant_topology.md]
 Const R1_LEG_ON                    As Double  = 0.5          ' [schematic, plant_topology.md]
 Const KILN_AXIS_Z                  As Double  = 10#          ' [schematic, plant_topology.md]
-Const CHAMBER_MARGIN               As Double  = 1#           ' [schematic, kiln/kiln_inlet_chamber.md]
+Const CHAMBER_MARGIN               As Double  = 1#           ' [model, kiln/kiln_inlet_chamber.md]
 Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant_topology.md]
 ' END GENERATED
 

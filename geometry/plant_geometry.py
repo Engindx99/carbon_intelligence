@@ -634,6 +634,63 @@ def kiln_burner(g):
 
 
 # ======================================================================
+# The kiln hood and the kiln inlet chamber: gas velocity checks
+# ======================================================================
+def kiln_hood(g):
+    """The hood is the layout's square round the kiln end (side 2 a). The
+    air through it is the secondary air and the tertiary air; at the
+    tertiary air's temperature (the hotter secondary air makes it faster:
+    checked at 1250 K too) the velocity over the square is held to the
+    literature's range."""
+
+    h = g["kiln_hood"]
+    bnd = calciner_boundaries(g)["tertiary_air_inlet"]
+    m = bnd["flow"] + v(h["secondary_air_flow"])
+    side = 2.0 * layout(g)["a_chamber"]
+    area = side * side
+
+    def vel(T):
+        rho = 101325.0 * bnd["M"] / (R_GAS * T)
+        return m / rho / area
+
+    vmax = v(h["air_velocity_max"])
+    rho = bnd["rho"]
+    return {
+        "m": m,
+        "rho": rho,
+        "q": m / rho,
+        "side": side,
+        "area": area,
+        "u": vel(bnd["T"]),
+        "u_hot": vel(1250.0),
+        "side_min": math.sqrt(m / rho / vmax),
+        "u_min": v(h["air_velocity_min"]),
+        "u_max": vmax,
+    }
+
+
+def kiln_inlet_chamber(g):
+    """The chamber is the same square round the kiln end: the kiln gas
+    leaves the tube (inner D) into it and rises through its plan area to
+    the calciner's throat; its velocity there is held to the literature's
+    kiln-inlet limit, as the tube's own is reported."""
+
+    kg = calciner_boundaries(g)["kiln_gas_inlet"]
+    kl = kiln(g)
+    side = 2.0 * layout(g)["a_chamber"]
+    q = kg["flow"] / kg["rho"]
+    vmax = v(g["kiln_inlet_chamber"]["gas_velocity_max"])
+    return {
+        "q": q,
+        "side": side,
+        "u_kiln": q / (0.25 * math.pi * kl["D"] ** 2),
+        "u_chamber": q / (side * side),
+        "side_min": math.sqrt(q / vmax),
+        "u_max": vmax,
+    }
+
+
+# ======================================================================
 # A cyclone's slot inlet and outlet pipe (cyclone.bas Derive)
 # ======================================================================
 def cyclone_slot_inlet(g, name):

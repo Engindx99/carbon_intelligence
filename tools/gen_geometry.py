@@ -818,6 +818,34 @@ def _kiln_burner_rows(g):
     ]
 
 
+def _kiln_hood_rows(g):
+    h, hd = g["kiln_hood"], pg.kiln_hood(g)
+    return [
+        row_src("İkincil hava debisi", h["secondary_air_flow"]),
+        row_src("Hız ölçütü, alt", h["air_velocity_min"]),
+        row_src("Hız ölçütü, üst", h["air_velocity_max"]),
+        row_der("Başlıktan geçen hava (ikincil + tersiyer)", hd["m"], "kg/s", 2),
+        row_der("Hacimsel debi (1073 K)", hd["q"], "m³/s", 1),
+        row_der("Başlık kesiti (kare, kenar 2a)", hd["side"], "m", 2),
+        row_der("Kesit alanı", hd["area"], "m²", 2),
+        row_der("Hız (1073 K)", hd["u"], "m/s", 2),
+        row_der("Hız (1250 K)", hd["u_hot"], "m/s", 2),
+        row_der("Ölçütün izin verdiği en küçük kenar", hd["side_min"], "m", 2),
+    ]
+
+
+def _kiln_chamber_rows(g):
+    c, ch = g["kiln_inlet_chamber"], pg.kiln_inlet_chamber(g)
+    return [
+        row_src("Fırın girişi gaz hızı üst sınırı", c["gas_velocity_max"]),
+        row_der("Fırın gazı hacimsel debisi (1323 K)", ch["q"], "m³/s", 1),
+        row_der("Oda kesiti (kare, kenar 2a)", ch["side"], "m", 2),
+        row_der("Hız, oda kesitinde", ch["u_chamber"], "m/s", 2),
+        row_der("Hız, fırın tüpünün girişinde (CFD debisi)", ch["u_kiln"], "m/s", 2),
+        row_der("Ölçütün izin verdiği en küçük kenar", ch["side_min"], "m", 2),
+    ]
+
+
 def _fluid_volume_rows(g):
     t = pg.twin_sections(g)
     n = t["preheater"]["strings"]
@@ -1001,6 +1029,8 @@ DOCS = {
     "calciner/calciner.md": _calciner_rows,
     "kiln/kiln.md": _kiln_rows,
     "kiln/kiln_burner.md": _kiln_burner_rows,
+    "kiln/kiln_hood.md": _kiln_hood_rows,
+    "kiln/kiln_inlet_chamber.md": _kiln_chamber_rows,
     "fan/id_fan.md": _id_fan_rows,
     "cooler/cooler.md": _cooler_rows,
     "fluid_volumes.md": _fluid_volume_rows,

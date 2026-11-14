@@ -1532,13 +1532,32 @@
       "name": "Kiln inlet chamber",
       "quantity": "1",
       "connections": "C5 meal + kiln gas -> calciner throat",
-      "dimensions": [],
-      "status_counts": {},
+      "dimensions": [
+        {
+          "key": "kiln_inlet_chamber.gas_velocity_max",
+          "value": 10.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        },
+        {
+          "key": "layout.chamber_margin",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 2
+      },
       "missing": [
-        "kiln/kiln_inlet_chamber.md: geometry TBD (only a schematic margin in the layout)"
+        "kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown; no CFD solid"
       ],
       "cfd_solid": "",
-      "drawing": "no data: source research first"
+      "drawing": "to draw"
     },
     {
       "area": "Rotary kiln",
@@ -1546,13 +1565,48 @@
       "name": "Kiln hood",
       "quantity": "1",
       "connections": "cooler -> secondary air -> kiln; -> tertiary air duct",
-      "dimensions": [],
-      "status_counts": {},
+      "dimensions": [
+        {
+          "key": "kiln_hood.secondary_air_flow",
+          "value": 26.246,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "kiln_hood.air_velocity_min",
+          "value": 4.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "kiln_hood.air_velocity_max",
+          "value": 10.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "layout.chamber_margin",
+          "value": 1.0,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 4
+      },
       "missing": [
-        "fluid_volumes.md: all dimensions absent"
+        "kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"
       ],
       "cfd_solid": "",
-      "drawing": "no data: source research first"
+      "drawing": "to draw"
     },
     {
       "area": "Rotary kiln",

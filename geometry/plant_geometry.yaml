@@ -235,6 +235,18 @@ kiln_burner:
   momentum_per_MW:     {value: 9.0,     unit: N/MW,  source: literature,  doc: kiln/kiln_burner.md}
 
 # ---------------------------------------------------------------------
+# Kiln hood and kiln inlet chamber (user decision, 16 Nov 2026: size by
+# the literature's gas velocities; the layout square round the kiln
+# passes both checks, so it stays and is a model value, not a schematic).
+# ---------------------------------------------------------------------
+kiln_hood:
+  secondary_air_flow:  {value: 26.246, unit: kg/s,   source: model,       doc: kiln/kiln_hood.md}
+  air_velocity_min:    {value: 4.0,    unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
+  air_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
+kiln_inlet_chamber:
+  gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
+
+# ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it
 # only lays the plant out (geometry/plant_topology.md). Elevations of
 # the cyclones then follow from their CFD domains (each roof flush with
@@ -242,7 +254,7 @@ kiln_burner:
 # ---------------------------------------------------------------------
 layout:
   kiln_axis_z:         {value: 10.0, unit: m,     source: schematic,    doc: plant_topology.md}
-  chamber_margin:      {value: 1.0,  unit: m,     source: schematic,    doc: kiln/kiln_inlet_chamber.md}
+  chamber_margin:      {value: 1.0,  unit: m,     source: model,        doc: kiln/kiln_inlet_chamber.md}
   c5_over_tertiary_air: {value: 1.75, unit: m,    source: schematic,    doc: plant_topology.md}
   gooseneck_to_c5_gap: {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
   stage_gap:           {value: 4.0,  unit: m,     source: schematic,    doc: plant_topology.md}

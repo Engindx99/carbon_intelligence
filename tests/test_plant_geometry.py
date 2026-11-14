@@ -710,3 +710,38 @@ class TheKilnBurnerIsTheKilnFiringTest(unittest.TestCase):
         # 10-250 MW, 7-11 N/MW (FLSmidth)
         self.assertTrue(10.0 <= self.b["thermal_MW"] <= 250.0)
         self.assertTrue(7.0 <= self.b["momentum_N"] / self.b["thermal_MW"] <= 11.0)
+
+
+class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
+    """Hood and inlet chamber have no published size (user decision,
+    16 Nov 2026: size by gas velocity): the layout square round the kiln
+    stays because it passes the literature's velocities."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.hood, cls.ch = pg.kiln_hood(cls.g), pg.kiln_inlet_chamber(cls.g)
+
+    def test_the_hood_air_is_inside_the_literatures_range(self):
+        h = self.hood
+        self.assertTrue(h["u_min"] <= h["u"] <= h["u_max"], h["u"])
+        self.assertTrue(h["u_min"] <= h["u_hot"] <= h["u_max"], h["u_hot"])      # the hotter secondary air too
+        self.assertGreaterEqual(h["side"], h["side_min"])
+
+    def test_the_chamber_gas_is_under_the_limit_and_above_the_updraft_minimum(self):
+        c = self.ch
+        self.assertLessEqual(c["u_chamber"], c["u_max"])
+        self.assertGreaterEqual(c["u_chamber"], 4.0)
+        self.assertGreaterEqual(c["side"], c["side_min"])
+
+    def test_the_square_is_the_layouts_and_a_model_value(self):
+        a = pg.layout(self.g)["a_chamber"]
+        self.assertAlmostEqual(self.hood["side"], 2.0 * a)
+        self.assertAlmostEqual(self.ch["side"], 2.0 * a)
+        self.assertEqual(self.g["layout"]["chamber_margin"]["source"], "model")
+
+    def test_the_kiln_tube_inlet_velocity_is_reported_not_hidden(self):
+        # the CFD's kiln gas flow is high for the 4.8 m tube (12.3 m/s against ~10): written in the doc
+        self.assertGreater(self.ch["u_kiln"], self.ch["u_max"])
+        text = (REPO_ROOT / "geometry" / "kiln" / "kiln_inlet_chamber.md").read_text(encoding="utf-8")
+        self.assertIn("10 m/s'yi aşıyor", text)
