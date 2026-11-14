@@ -192,6 +192,20 @@ Const kiln_TAB_5                   As String  = ""           ' parameter table r
 Const kiln_TAB_6                   As String  = ""           ' parameter table rows
 Const kiln_TAB_7                   As String  = ""           ' parameter table rows
 Const kiln_TAB_8                   As String  = ""           ' parameter table rows
+Const COO_L                        As Double  = 29.9         ' grate length, hot end x = 0 to the cold end [derived]
+Const COO_W                        As Double  = 4#           ' grate width [derived]
+Const COO_H                        As Double  = 3#           ' grate to roof [derived]
+Const COO_SEG_L                    As Double  = 2.99         ' one segment's length [derived]
+Const COO_HOOD_L                   As Double  = 5.98         ' the hood opening's length from x = 0 [derived]
+Const COO_SEGMENTS                 As Double  = 10#          ' undergrate air segments [derived]
+Const cooler_TAB_1                 As String  = "grate_area~Grate area (PF5000)~119.60~m2~published~Verified;w_cool~Grate width~4000~mm~literature~Estimated;L_cool~Grate length (area / width)~29900~mm~derived~Estimated;H_cool~Height, grate to roof~3000~mm~literature~Estimated;segments~Undergrate air segments (FLS)~10~-~literature~Estimated;segment~One segment: length~2990~mm~derived~Estimated;hood_segments~Segments under the hood's opening (hot end)~2~-~literature~Estimated;hood~Hood opening: length from the hot end~5980~mm~derived~Estimated;volume~Volume (box, bed included)~358.80~m3~derived~Estimated;wall_area~Wall area (sides, ends, roof but the hood)~299.08~m2~derived~Estimated;" ' parameter table rows
+Const cooler_TAB_2                 As String  = "u_vent~Vent outlet (cold end): place and size~-~~no source~Unknown;u_plate~Grate plates / compartment walls~-~~no source~Unknown;u_crusher~Clinker crusher~-~~no source~Unknown;u_chute~Clinker chute from the kiln~-~~no source~Unknown;u_wall~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
+Const cooler_TAB_3                 As String  = ""           ' parameter table rows
+Const cooler_TAB_4                 As String  = ""           ' parameter table rows
+Const cooler_TAB_5                 As String  = ""           ' parameter table rows
+Const cooler_TAB_6                 As String  = ""           ' parameter table rows
+Const cooler_TAB_7                 As String  = ""           ' parameter table rows
+Const cooler_TAB_8                 As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -236,6 +250,15 @@ Const KIL_SIDE_Y  As Double = 0.4
 Const KIL_END_X   As Double = 0.2
 Const KIL_END_Y   As Double = 0.27
 
+' cooler (1:100): side view, plan under it, floor view under that, the end
+' view (1:50) at the bottom left
+Const COO_X       As Double = 0.33
+Const COO_SIDE_Y  As Double = 0.5
+Const COO_PLAN_Y  As Double = 0.4
+Const COO_FLOOR_Y As Double = 0.3
+Const COO_END_X   As Double = 0.14
+Const COO_END_Y   As Double = 0.13
+
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 Const DRAW_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\drawings\"
@@ -260,7 +283,7 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner" or "kiln": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kiln" or "cooler": what this run draws
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
@@ -319,6 +342,11 @@ Sub kiln()
 End Sub
 
 
+Sub cooler()
+    Build "cooler"
+End Sub
+
+
 Private Sub Build(ByVal which As String)
 
     Dim why As String
@@ -337,6 +365,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = 50#: detX = CAL_DET_X: detY = CAL_DET_Y
     ElseIf equip = "kiln" Then
         scaleD = 200#: detailD = 50#: detX = 0.63: detY = DET_Y
+    ElseIf equip = "cooler" Then
+        scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
     Else
         scaleD = 100#: detailD = 20#: detX = 0.63: detY = DET_Y
         LoadVolute
@@ -411,6 +441,8 @@ Private Sub ParseTable()
     ElseIf equip = "calciner" Then
         all = calciner_TAB_1 & calciner_TAB_2 & calciner_TAB_3 & calciner_TAB_4 & calciner_TAB_5 & _
               calciner_TAB_6 & calciner_TAB_7 & calciner_TAB_8
+    ElseIf equip = "cooler" Then
+        all = cooler_TAB_1 & cooler_TAB_2 & cooler_TAB_3 & cooler_TAB_4 & cooler_TAB_5 & cooler_TAB_6 & cooler_TAB_7 & cooler_TAB_8
     ElseIf equip = "kiln" Then
         all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
     Else
@@ -601,8 +633,36 @@ Private Sub CheckKilnBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+Private Sub CheckCoolerBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    want(0) = 0#: want(3) = COO_L
+    want(1) = -0.5 * COO_W: want(4) = 0.5 * COO_W
+    want(2) = 0#: want(5) = COO_H
+    For i = 0 To 5
+        If Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's cooler has " & Num(want(i), 3) & _
+                 " -- rebuild it with cooler.bas."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
-    If equip = "kiln" Then
+    If equip = "cooler" Then
+        CheckCoolerBox doc
+        Exit Sub
+    ElseIf equip = "kiln" Then
         CheckKilnBox doc
         Exit Sub
     ElseIf equip = "C1_twin" Then
@@ -725,6 +785,8 @@ Private Sub MakeViews()
         MakeViewsCalciner
     ElseIf equip = "kiln" Then
         MakeViewsKiln
+    ElseIf equip = "cooler" Then
+        MakeViewsCooler
     Else
         MakeViewsVolute
     End If
@@ -846,6 +908,30 @@ Private Sub MakeViewsKiln()
     LogMap vTop, "end", scaleD
     scaleD = 200#
     Note "views: side " & vFront.Name & ", end " & vTop.Name
+End Sub
+
+
+' The cooler (1:100), a box: the side view on top (x right, z up), the plan
+' under it (the roof: x right, y up), the floor seen from below under that
+' (x right, y down: the floor's strip lines), and the end view from the hot
+' end at 1:50 (y to the left of the box's x = 0 face seen from -x: z up).
+' The end view's scale is set through scaleD for its own creation only.
+Private Sub MakeViewsCooler()
+    Set vFront = OrientedView(1, 0, 0, 0, 0, 1, COO_X, COO_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+    swDraw.EditSheet
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, COO_X, COO_PLAN_Y, "plan")
+    HiddenLinesVisible vTop
+    LogMap vTop, "plan", scaleD
+    swDraw.EditSheet
+    Set vLeft = OrientedView(1, 0, 0, 0, -1, 0, COO_X, COO_FLOOR_Y, "floor")
+    LogMap vLeft, "floor", scaleD
+    swDraw.EditSheet
+    scaleD = detailD
+    Set vSide = OrientedView(0, -1, 0, 0, 0, 1, COO_END_X, COO_END_Y, "end")
+    LogMap vSide, "end", scaleD
+    scaleD = 100#
+    Note "views: side " & vFront.Name & ", plan " & vTop.Name & ", floor " & vLeft.Name & ", end " & vSide.Name
 End Sub
 
 
@@ -1167,6 +1253,8 @@ Private Sub DimensionAll()
         DimensionCalciner
     ElseIf equip = "kiln" Then
         DimensionKiln
+    ElseIf equip = "cooler" Then
+        DimensionCooler
     Else
         DimensionVolute
     End If
@@ -1256,6 +1344,53 @@ Private Sub DimensionVolute()
         "hline", -(rx + 0.5 * t), 0, zv, 0, zv, _
         "", 0, 0, 0, 0, 0, _
         -(rx + 0.5 * t), 0, zv - 0.25
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The cooler's reference dimensions, each between edges the box has: the
+' length and the hood opening in the plan (roof edges x = 0, x = hood end,
+' x = L), the segment in the floor view (floor strip lines, seen from below),
+' the width and the height from the near end face in the end view. Which of
+' the two end faces is the near one is found, not assumed.
+Private Sub DimensionCooler()
+    Dim hw As Double, xe As Double, nSeen As Long, nFit As Long
+    hw = 0.5 * COO_W
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    xe = 0#
+    If FindEdge(vSide, "line", 0#, 0#, COO_H, 0, 0, nSeen, nFit) Is Nothing Or foundDist > SEL_TOL Then xe = COO_L
+    Note "end view: the near end face is at x = " & Num(xe, 3) & " m"
+
+    DimEdges "L_cool", COO_L, vTop, _
+        "line", 0, 0, COO_H, 0, 0, _
+        "line", COO_L, 0, COO_H, 0, 0, _
+        0.5 * COO_L, -hw - 2.4, COO_H
+    DimEdges "hood", COO_HOOD_L, vTop, _
+        "line", 0, 0, COO_H, 0, 0, _
+        "line", COO_HOOD_L, 0, COO_H, 0, 0, _
+        0.5 * COO_HOOD_L, hw + 1.6, COO_H
+    DimEdges "segment", COO_SEG_L, vLeft, _
+        "line", 0, 0, 0, 0, 0, _
+        "line", COO_SEG_L, 0, 0, 0, 0, _
+        0.5 * COO_SEG_L, hw + 1.6, 0
+    DimEdges "w_cool", COO_W, vSide, _
+        "line", xe, 0, COO_H, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        xe, 0, COO_H + 2.4
+    DimEdges "H_cool", COO_H, vSide, _
+        "line", xe, -hw, 0.5 * COO_H, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        xe, -hw - 3#, 0.5 * COO_H
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -1826,12 +1961,12 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
-    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln", "CI-RK-", "CI-PH-") & equip & "-001"
+    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln", "CI-RK-", IIf(equip = "cooler", "CI-CL-", "CI-PH-")) & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -1905,6 +2040,7 @@ Private Function TitleText() As String
     Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     Case "kiln": TitleText = "ROTARY KILN TUBE"
+    Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     End Select
 End Function
 
@@ -1922,6 +2058,11 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    ElseIf equip = "cooler" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: x along the grate, x = 0 at the hot end (under the hood); z up from the grate.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. The clinker bed is a cell zone in the box, not a body; the vent outlet has no source.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Floor: " & Num(COO_SEGMENTS, 0) & " air segments (FLS); hood opening over the first two.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/cooler/cooler.md", TEXT_H
     ElseIf equip = "kiln" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: axis z; z = 0 at the back end (kiln inlet chamber), hood end at z = L.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. The slope (table) is installed, not built into the solid.  Dimensions mm.", TEXT_H
@@ -1960,6 +2101,8 @@ Private Sub DrawFlows()
         DrawFlowsCalciner
     ElseIf equip = "kiln" Then
         DrawFlowsKiln
+    ElseIf equip = "cooler" Then
+        DrawFlowsCooler
     Else
         DrawFlowsVolute
     End If
@@ -1987,6 +2130,24 @@ End Sub
 ' The calciner's flows: the kiln gas up the throat, the gas out of the
 ' two legs, the meal in along each pipe (A-A), the tertiary air along -x
 ' (plan) and the fuel along its pipe (left view).
+' The cooler's flows (side view): the air up through each floor segment, out
+' of the hood opening, and the clinker along the grate (a bed zone, not in the solid).
+Private Sub DrawFlowsCooler()
+    Dim i As Long, cx As Double
+    UseLayer L_FLOW
+    For i = 0 To CLng(COO_SEGMENTS) - 1
+        cx = (i + 0.5) * COO_SEG_L
+        ArrowM3 vFront, cx, 0#, -2.2, cx, 0#, -0.3
+    Next i
+    ArrowM3 vFront, 0.5 * COO_HOOD_L, 0#, COO_H + 0.3, 0.5 * COO_HOOD_L, 0#, COO_H + 2.2
+    ArrowM3 vFront, 9#, 0#, 0.4, 19#, 0#, 0.4
+    UseLayer L_TEXT
+    LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment)"
+    LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "Hood opening (to the kiln and the tertiary air)"
+    LabelM3 vFront, 20#, 0#, 0.7, "Clinker travel (bed zone)"
+End Sub
+
+
 ' The kiln's flows (side view): the gas from the hood to the back end,
 ' the meal from the back end to the hood, along the axis, either side of it.
 Private Sub DrawFlowsKiln()
@@ -2082,6 +2243,8 @@ Private Sub DrawAxes()
         DrawAxesCalciner
     ElseIf equip = "kiln" Then
         DrawAxesKiln
+    ElseIf equip = "cooler" Then
+        DrawAxesCooler
     Else
         DrawAxesVolute
     End If
@@ -2099,6 +2262,16 @@ Private Sub DrawAxesVolute()
     AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ
     AxisM vTop, -R - 0.6, 0#, vHeight, vExitX + 0.6, 0#, vHeight
     AxisM vTop, 0#, -R - 0.6, vHeight, 0#, R + 0.6, vHeight
+End Sub
+
+
+' The cooler's centre lines: the grate's axis (y = 0) in the plan and floor
+' views, the box's mid-plane in the end view.
+Private Sub DrawAxesCooler()
+    UseLayer L_AXIS
+    AxisM vTop, -1#, 0#, COO_H, COO_L + 1#, 0#, COO_H
+    AxisM vLeft, -1#, 0#, 0#, COO_L + 1#, 0#, 0#
+    AxisM vSide, COO_L * 0#, 0#, -0.6, COO_L * 0#, 0#, COO_H + 0.6
 End Sub
 
 

@@ -1,0 +1,239 @@
+{
+  "equipment": "cooler",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/cooler/cooler.pdf",
+      "geometry/drawings/cooler/cooler.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_cooler_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "cooler.grate_area",
+      "label": "Grate area (PF5000)",
+      "value": 119.6,
+      "unit": "m2",
+      "source": "published",
+      "status": "Verified",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area"
+      ],
+      "short": "grate_area"
+    },
+    {
+      "key": "cooler.width",
+      "label": "Grate width",
+      "value": 4.0,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.width"
+      ],
+      "value_mm": 4000.0,
+      "short": "w_cool"
+    },
+    {
+      "key": "cooler.L",
+      "label": "Grate length (area / width)",
+      "value": 29.9,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width"
+      ],
+      "value_mm": 29900.0,
+      "short": "L_cool"
+    },
+    {
+      "key": "cooler.casing_height",
+      "label": "Height, grate to roof",
+      "value": 3.0,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.casing_height"
+      ],
+      "value_mm": 3000.0,
+      "short": "H_cool"
+    },
+    {
+      "key": "cooler.segments",
+      "label": "Undergrate air segments (FLS)",
+      "value": 10,
+      "unit": "-",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.segments"
+      ],
+      "short": "segments"
+    },
+    {
+      "key": "cooler.segment_L",
+      "label": "One segment: length",
+      "value": 2.9899999999999998,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments"
+      ],
+      "value_mm": 2990.0,
+      "short": "segment"
+    },
+    {
+      "key": "cooler.hood_segments",
+      "label": "Segments under the hood's opening (hot end)",
+      "value": 2,
+      "unit": "-",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.hood_segments"
+      ],
+      "short": "hood_segments"
+    },
+    {
+      "key": "cooler.hood_L",
+      "label": "Hood opening: length from the hot end",
+      "value": 5.9799999999999995,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "value_mm": 5980.0,
+      "short": "hood"
+    },
+    {
+      "key": "cooler.volume",
+      "label": "Volume (box, bed included)",
+      "value": 358.79999999999995,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.casing_height"
+      ],
+      "short": "volume"
+    },
+    {
+      "key": "cooler.wall_area",
+      "label": "Wall area (sides, ends, roof but the hood)",
+      "value": 299.08,
+      "unit": "m2",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.casing_height",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "short": "wall_area"
+    },
+    {
+      "key": "cooler.vent",
+      "label": "Vent outlet (cold end): place and size",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: no source, not made",
+      "inputs": [],
+      "short": "u_vent"
+    },
+    {
+      "key": "cooler.plates",
+      "label": "Grate plates / compartment walls",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: not modelled",
+      "inputs": [],
+      "short": "u_plate"
+    },
+    {
+      "key": "cooler.crusher",
+      "label": "Clinker crusher",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: not modelled",
+      "inputs": [],
+      "short": "u_crusher"
+    },
+    {
+      "key": "cooler.chute",
+      "label": "Clinker chute from the kiln",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: not modelled",
+      "inputs": [],
+      "short": "u_chute"
+    },
+    {
+      "key": "cooler.shell",
+      "label": "Casing / refractory thickness",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: no structure modelled",
+      "inputs": [],
+      "short": "u_wall"
+    },
+    {
+      "key": "cooler.material",
+      "label": "Material",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "cooler/cooler.md: no source",
+      "inputs": [],
+      "short": "u_material"
+    }
+  ],
+  "dimensioned": [
+    "L_cool",
+    "w_cool",
+    "H_cool",
+    "segment",
+    "hood"
+  ],
+  "also_the_sheet_of": []
+}

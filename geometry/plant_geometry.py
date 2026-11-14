@@ -548,12 +548,22 @@ def cooler(g):
     c = g["cooler"]
     w, h = v(c["width"]), v(c["casing_height"])
     L = v(c["grate_area"]) / w
+    n, nh = int(v(c["segments"])), int(v(c["hood_segments"]))
+    hood_L = nh * L / n
     return {
         "width": w,
         "casing_height": h,
         "length": L,
         "grate_area": v(c["grate_area"]),
         "box_volume": w * L * h,
+        "segments": n,
+        "segment_L": L / n,
+        "segment_area": w * L / n,
+        "hood_segments": nh,
+        "hood_L": hood_L,
+        "hood_area": w * hood_L,
+        # the walls: two sides, two ends, and the roof but for the hood's opening
+        "wall_area": 2.0 * L * h + 2.0 * w * h + w * (L - hood_L),
     }
 
 

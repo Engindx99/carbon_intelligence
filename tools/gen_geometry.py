@@ -357,6 +357,7 @@ def drawings_bas(g):
     out += _volute_sheet_consts(g)
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
+    out += _cooler_sheet_consts(g)
     return out
 
 
@@ -455,6 +456,24 @@ def _kiln_sheet_consts(g):
     return out
 
 
+def _cooler_sheet_consts(g):
+    """What drawings.bas needs for the cooler sheet, under a COO_ prefix,
+    and its table."""
+    from tools.drawings import cooler as dco
+
+    c = pg.cooler(g)
+    out = [
+        der("COO_L", c["length"], "grate length, hot end x = 0 to the cold end"),
+        der("COO_W", c["width"], "grate width"),
+        der("COO_H", c["casing_height"], "grate to roof"),
+        der("COO_SEG_L", c["segment_L"], "one segment's length"),
+        der("COO_HOOD_L", c["hood_L"], "the hood opening's length from x = 0"),
+        der("COO_SEGMENTS", float(c["segments"]), "undergrate air segments"),
+    ]
+    out += _table_consts("cooler", dco.params(g), dco.ORDER)
+    return out
+
+
 def _twin_sheet_consts(g):
     """What drawings.bas needs for the C1_twin sheet: c1_twin.bas' own
     Consts under a TW_ prefix, the section's level, the sheet's table."""
@@ -522,6 +541,19 @@ def c1_twin_bas(g):
 # ======================================================================
 # kiln.bas
 # ======================================================================
+def cooler_bas(g):
+    c, cc = g["cooler"], pg.cooler(g)
+    return [
+        src("COOLER_W", c["width"], "grate width"),
+        src("COOLER_H", c["casing_height"], "grate to roof"),
+        src("COOLER_SEGMENTS", c["segments"], "undergrate air segments (FLS)"),
+        src("COOLER_HOOD_SEGMENTS", c["hood_segments"], "segments from the hot end under the hood's opening"),
+        der("COOLER_L", cc["length"], "grate area / width, hot end x = 0 to the cold end"),
+        der("COOLER_SEG_L", cc["segment_L"], "one segment's length"),
+        der("COOLER_HOOD_L", cc["hood_L"], "the hood opening's length from x = 0"),
+    ]
+
+
 def kiln_bas(g):
     k = g["kiln"]
     return [
@@ -533,6 +565,7 @@ def kiln_bas(g):
 
 
 TARGETS = {
+    "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
@@ -734,7 +767,12 @@ def _cooler_rows(g):
         row_src("Izgara genişliği w", c["width"]),
         row_der("Izgara boyu L", cc["length"], "m", 2, "alan / genişlik"),
         row_src("Gövde yüksekliği H", c["casing_height"]),
+        row_src("Taban segmenti sayısı", c["segments"]),
+        row_src("Hood açıklığı (sıcak uçtan, segment)", c["hood_segments"]),
+        row_der("Segment boyu L/n", cc["segment_L"], "m", 2, "boy / segment sayısı"),
+        row_der("Hood açıklığı boyu", cc["hood_L"], "m", 2, "hood segmentleri × segment boyu"),
         row_der("**Gövde hacmi**", cc["box_volume"], "m³", 2),
+        row_der("Duvar alanı (yanlar, uçlar, hood dışı tavan)", cc["wall_area"], "m²", 2),
     ]
 
 

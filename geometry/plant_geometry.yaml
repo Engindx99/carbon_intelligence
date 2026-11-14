@@ -198,6 +198,10 @@ cooler:
   grate_area:          {value: 119.6, unit: m2,   source: published,    doc: cooler/cooler.md}
   width:               {value: 4.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
   casing_height:       {value: 3.0,  unit: m,     source: literature,   doc: cooler/cooler.md}
+  # FLS reference cooler's 10-segment model: the undergrate air's segments, and how many from the
+  # hot end carry the hood's opening (segment 1 -> the kiln, 2 -> the tertiary air; both leave by the hood)
+  segments:            {value: 10,   unit: "-",   source: literature,   doc: cooler/cooler.md}
+  hood_segments:       {value: 2,    unit: "-",   source: literature,   doc: cooler/cooler.md}
 
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it

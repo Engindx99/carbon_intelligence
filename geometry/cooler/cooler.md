@@ -24,7 +24,12 @@ FLS soğutucusu, twin'in çapraz akış hücre yapısının da kaynağıdır (`p
 | Izgara genişliği w | 4 m | literatür |
 | Izgara boyu L | 29.90 m | alan / genişlik |
 | Gövde yüksekliği H | 3 m | literatür |
+| Taban segmenti sayısı | 10 | literatür |
+| Hood açıklığı (sıcak uçtan, segment) | 2 | literatür |
+| Segment boyu L/n | 2.99 m | boy / segment sayısı |
+| Hood açıklığı boyu | 5.98 m | hood segmentleri × segment boyu |
 | **Gövde hacmi** | 358.80 m³ | türetilmiş |
+| Duvar alanı (yanlar, uçlar, hood dışı tavan) | 299.08 m² | türetilmiş |
 <!-- END GENERATED -->
 
 Izgara alanı PF5000'in; genişlik ve gövde yüksekliği (ızgaradan tavana, yatak ve üstündeki hava) FLS soğutucusunun; boy alan / genişlik (kullanıcı kararı, 13 Ekim 2026: alan tesisin, genişlik FLS'nin).

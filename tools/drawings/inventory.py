@@ -80,7 +80,7 @@ EQUIPMENT = [
     ("Clinker cooler", "COOL", "Grate cooler", "1",
      ["cooler."],
      "kiln clinker -> cooler; air -> secondary / tertiary / vent",
-     ["cooler/cooler.md: vent outlet TBD"], ""),
+     ["cooler/cooler.md: vent outlet TBD"], "cooler.SLDPRT"),
     ("ID fan", "IDF", "Preheater ID fan", "per string",
      [], "C1 gas -> ID fan",
      ["plant_topology.md: drawn as an arrow only; no dimensions"], ""),
@@ -88,7 +88,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"KILN": "kiln", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"KILN": "kiln", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

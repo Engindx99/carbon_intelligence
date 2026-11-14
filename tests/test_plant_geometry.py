@@ -587,3 +587,53 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
                 self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], area, delta=2e-3 * area)
         self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.k["wall_area"],
                                delta=2e-3 * self.k["wall_area"])
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "cooler_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
+    """cooler.bas builds the box of cooler.md; its log carries the size,
+    the floor's strips, the hood opening and the wall, held here to
+    plant_geometry.cooler."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "cooler_build.log").read_text(encoding="latin-1")
+        cls.c = pg.cooler(pg.load())
+
+    def num(self, pattern):
+        m = re.search(pattern.replace("#", r"(-?[\d.,]+)"), self.log)
+        self.assertIsNotNone(m, pattern)
+        return [float(x.replace(",", ".").rstrip(".")) for x in m.groups()]
+
+    def test_the_build_succeeded(self):
+        self.assertTrue(self.log.startswith("cooler built"), self.log.splitlines()[0])
+        self.assertIn("closed manifold solid", self.log)
+
+    def test_the_box_is_the_sources(self):
+        w, length, h, vol = self.num(r"cooler: # m wide, # m long, # m high, volume # m3")
+        self.assertAlmostEqual(w, self.c["width"], places=5)
+        self.assertAlmostEqual(length, self.c["length"], places=5)
+        self.assertAlmostEqual(h, self.c["casing_height"], places=5)
+        self.assertAlmostEqual(vol, self.c["box_volume"], delta=1e-6 * self.c["box_volume"])
+        got = self.num(r"cooler volume # m3")[0]
+        self.assertAlmostEqual(got, self.c["box_volume"], delta=1e-3 * self.c["box_volume"])
+
+    def test_the_zones_are_the_sources(self):
+        n, seg, nh, hood = self.num(r"cooler: # segments of # m \(grate_air_1 \.\. \d+ from the hot end\), hood opening # segments, x 0 \.\. # m")
+        self.assertEqual(int(n), self.c["segments"])
+        self.assertAlmostEqual(seg, self.c["segment_L"], places=5)
+        self.assertEqual(int(nh), self.c["hood_segments"])
+        self.assertAlmostEqual(hood, self.c["hood_L"], places=5)
+
+    def test_every_strip_and_the_hood_are_one_face(self):
+        for i in range(1, self.c["segments"] + 1):
+            with self.subTest(i):
+                self.assertAlmostEqual(self.num(rf"boundary grate_air_{i}: # m2")[0], self.c["segment_area"],
+                                       delta=2e-3 * self.c["segment_area"])
+        self.assertAlmostEqual(self.num(r"boundary hood_opening: # m2")[0], self.c["hood_area"],
+                               delta=2e-3 * self.c["hood_area"])
+        self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.c["wall_area"],
+                               delta=2e-3 * self.c["wall_area"])

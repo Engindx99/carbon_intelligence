@@ -1459,17 +1459,33 @@
           "source": "literature",
           "status": "Estimated",
           "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.segments",
+          "value": 10,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.hood_segments",
+          "value": 2,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
         }
       ],
       "status_counts": {
         "Verified": 1,
-        "Estimated": 2
+        "Estimated": 4
       },
       "missing": [
         "cooler/cooler.md: vent outlet TBD"
       ],
-      "cfd_solid": "",
-      "drawing": "to draw"
+      "cfd_solid": "cooler.SLDPRT",
+      "drawing": "drawn: geometry/drawings/cooler/"
     },
     {
       "area": "ID fan",
