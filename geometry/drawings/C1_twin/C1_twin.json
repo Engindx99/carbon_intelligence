@@ -1,0 +1,286 @@
+{
+  "equipment": "C1_twin",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/C1_twin/C1_twin.pdf",
+      "geometry/drawings/C1_twin/C1_twin.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_C1_twin_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "R1_D",
+      "label": "R1 bore",
+      "value": 3.07,
+      "unit": "m",
+      "source": "published",
+      "status": "Verified",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "risers.R1.D"
+      ],
+      "value_mm": 3070.0,
+      "short": "R1_D"
+    },
+    {
+      "key": "c1_twin.branch_D",
+      "label": "Branch bore (half R1's area)",
+      "value": 2.1708178182427007,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share"
+      ],
+      "value_mm": 2170.817818,
+      "short": "branch_D"
+    },
+    {
+      "key": "c1_twin.gap",
+      "label": "Branches' walls apart",
+      "value": 1.0,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "layout.c1_twin_gap"
+      ],
+      "value_mm": 1000.0,
+      "short": "twin_gap"
+    },
+    {
+      "key": "c1_twin.spacing",
+      "label": "C1 axis to axis",
+      "value": 6.630817818242701,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "layout.c1_twin_gap",
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share",
+        "cyclones.C1.W_inlet",
+        "cyclone_domain.inlet_tangent_relief"
+      ],
+      "value_mm": 6630.817818,
+      "short": "spacing"
+    },
+    {
+      "key": "c1_twin.barrel_gap",
+      "label": "Barrel wall to wall",
+      "value": 2.3108178182427004,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "layout.c1_twin_gap",
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share",
+        "cyclones.C1.W_inlet",
+        "cyclone_domain.inlet_tangent_relief",
+        "cyclones.C1.D_barrel"
+      ],
+      "value_mm": 2310.817818,
+      "short": "barrel_gap"
+    },
+    {
+      "key": "c1_twin.branch_pitch",
+      "label": "Branch axis to axis (Y)",
+      "value": 3.1708178182427003,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "layout.c1_twin_gap",
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share",
+        "cyclones.C1.W_inlet",
+        "cyclone_domain.inlet_tangent_relief"
+      ],
+      "value_mm": 3170.817818,
+      "short": "branch_pitch"
+    },
+    {
+      "key": "c1_twin.y_branch",
+      "label": "R1 / branches in front of the C1 axes",
+      "value": 6.84289319897435,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share",
+        "cyclones.C1.W_inlet",
+        "cyclones.C1.H_inlet",
+        "cyclones.C1.inlet_slope",
+        "cyclone_domain.inlet_tangent_relief",
+        "cyclone_domain.inlet_roof_clearance",
+        "cyclone_domain.inlet_duct_length",
+        "cyclone_domain.c1_riser_transition",
+        "cyclone_domain.c1_riser_bend_R_over_D"
+      ],
+      "value_mm": 6842.893199,
+      "short": "y_branch"
+    },
+    {
+      "key": "c1_twin.y_rise",
+      "label": "Y height (R1 top to the branches' floor)",
+      "value": 2.0349999999999993,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/riser_R1.md",
+      "inputs": [
+        "layout.c1_twin_gap",
+        "risers.R1.D",
+        "cyclone_domain.c1_riser_area_share",
+        "cyclones.C1.W_inlet",
+        "cyclone_domain.inlet_tangent_relief"
+      ],
+      "value_mm": 2035.0,
+      "short": "y_rise"
+    },
+    {
+      "key": "c1_twin.r1_stub",
+      "label": "R1 straight under its Y",
+      "value": 0.5,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "plant_topology.md",
+      "inputs": [
+        "layout.r1_up_min",
+        "layout.stage_gap"
+      ],
+      "value_mm": 500.0,
+      "short": "r1_stub"
+    },
+    {
+      "key": "C1.D_barrel",
+      "label": "Barrel inner diameter D",
+      "value": 4.32,
+      "unit": "m",
+      "source": "published",
+      "status": "Verified",
+      "doc": "preheater/cyclone_C1.md",
+      "inputs": [
+        "cyclones.C1.D_barrel"
+      ],
+      "value_mm": 4320.0,
+      "short": "D_barrel"
+    },
+    {
+      "key": "C1.height",
+      "label": "Barrel + cone height",
+      "value": 11.440000000000001,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C1.md",
+      "inputs": [
+        "cyclones.C1.H_barrel",
+        "cyclones.C1.H_cone"
+      ],
+      "value_mm": 11440.0,
+      "short": "height"
+    },
+    {
+      "key": "C1.D_vortex",
+      "label": "Vortex finder / outlet pipe bore Dx",
+      "value": 2.4,
+      "unit": "m",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C1.md",
+      "inputs": [
+        "cyclones.C1.D_vortex"
+      ],
+      "value_mm": 2400.0,
+      "short": "D_vortex"
+    },
+    {
+      "key": "c1_twin.top",
+      "label": "Dust outlets to the top of the bends",
+      "value": 19.24,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C1.md",
+      "inputs": [
+        "cyclones.C1.H_barrel",
+        "cyclones.C1.H_cone",
+        "cyclones.C1.D_vortex",
+        "cyclones.C1.outlet_rise_over_Dx",
+        "cyclones.C1.outlet_bend_R_over_Dx"
+      ],
+      "value_mm": 19240.0,
+      "short": "top"
+    },
+    {
+      "key": "c1_twin.shell",
+      "label": "Shell / refractory thickness",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "preheater/cyclone_C1.md: CFD fluid volume, no structure modelled",
+      "inputs": [],
+      "short": "u_wall"
+    },
+    {
+      "key": "c1_twin.material",
+      "label": "Material",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "preheater/cyclone_C1.md: no source",
+      "inputs": [],
+      "short": "u_material"
+    },
+    {
+      "key": "c1_twin.flanges",
+      "label": "Flanges / nozzles / manholes",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "preheater/cyclone_C1.md: no source",
+      "inputs": [],
+      "short": "u_flange"
+    },
+    {
+      "key": "c1_twin.supports",
+      "label": "Supports / hangers",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "preheater/cyclone_C1.md: no source",
+      "inputs": [],
+      "short": "u_support"
+    }
+  ],
+  "dimensioned": [
+    "R1_D",
+    "D_barrel",
+    "branch_D",
+    "spacing",
+    "branch_pitch",
+    "y_branch",
+    "y_rise"
+  ]
+}

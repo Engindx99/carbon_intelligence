@@ -337,6 +337,41 @@ def drawings_bas(g):
         der("C1_REACH", s["reach"], "inlet opening's upstream end on the barrel, -x"),
     ]
     out += _table_consts("C1", P, dcy.ORDER)
+    out += _twin_sheet_consts(g)
+    return out
+
+
+def _twin_sheet_consts(g):
+    """What drawings.bas needs for the C1_twin sheet: c1_twin.bas' own
+    Consts under a TW_ prefix, the section's level, the sheet's table."""
+    from tools.drawings import twin as dtw
+
+    d = g["cyclone_domain"]
+    br, tw = pg.c1_branch(g), pg.c1_twin(g)
+    c1, o = pg.cyclone(g, "C1"), pg.cyclone_outlet(g, "C1")
+    L = pg.layout(g)
+    th = math.radians(pg.v(d["meal_slope"]))
+    rb = 0.5 * br["D"]
+    # the feed chute's top corner and its far side, in the C1 frame
+    chute_top = br["z_feed"] + pg.v(d["c1_feed_depth"]) * math.sin(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.cos(th)
+    y_min = -(br["x"] + rb + pg.v(d["c1_feed_depth"]) * math.cos(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.sin(th))
+    out = [
+        src("TW_R1_D", g["risers"]["R1"]["D"], "R1 bore"),
+        src("TW_GAP", g["layout"]["c1_twin_gap"], "the branches' walls apart"),
+        der("TW_S", tw["spacing"], "C1 axis to axis"),
+        der("TW_BRANCH_HALF", tw["branch_half"], "each branch from R1's axis, x"),
+        der("TW_BRANCH_D", br["D"], "branch bore"),
+        der("TW_Y_BRANCH", tw["y_branch"], "branches and R1 in front of the C1 axes, y"),
+        der("TW_Z_BRANCH", tw["z_branch"], "the branches' floor"),
+        der("TW_Z_SPLIT", tw["z_split"], "R1's top: the Y starts"),
+        der("TW_R1_STUB_L", L["z_r1_split"] - L["z_r1_leg_top"], "R1 straight under its Y"),
+        der("TW_Z_CUT", 0.5 * (chute_top + br["z_bend"]), "section A-A: clear of the feed chutes and the bends"),
+        der("TW_C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
+        der("TW_Y_MIN", y_min, "the feed chutes' far side, y (the C1_riser solid's -x)"),
+        der("TW_Y_MAX", o["leg_x"] + 0.5 * o["D"], "the outlet legs' far side, y"),
+        der("TW_TOP", o["z_bend"] + o["bend_R"] + 0.5 * o["D"], "the outlet bends' crown"),
+    ]
+    out += _table_consts("C1_twin", dtw.params(g), dtw.ORDER)
     return out
 
 

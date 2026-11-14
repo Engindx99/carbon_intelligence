@@ -68,13 +68,35 @@ Const C1_TAB_5                     As String  = ""           ' parameter table r
 Const C1_TAB_6                     As String  = ""           ' parameter table rows
 Const C1_TAB_7                     As String  = ""           ' parameter table rows
 Const C1_TAB_8                     As String  = ""           ' parameter table rows
+Const TW_R1_D                      As Double  = 3.07         ' R1 bore [published, preheater/riser_R1.md]
+Const TW_GAP                       As Double  = 1#           ' the branches' walls apart [model, preheater/riser_R1.md]
+Const TW_S                         As Double  = 6.630818     ' C1 axis to axis [derived]
+Const TW_BRANCH_HALF               As Double  = 1.585409     ' each branch from R1's axis, x [derived]
+Const TW_BRANCH_D                  As Double  = 2.170818     ' branch bore [derived]
+Const TW_Y_BRANCH                  As Double  = -6.842893    ' branches and R1 in front of the C1 axes, y [derived]
+Const TW_Z_BRANCH                  As Double  = 0.884601     ' the branches' floor [derived]
+Const TW_Z_SPLIT                   As Double  = -1.150399    ' R1's top: the Y starts [derived]
+Const TW_R1_STUB_L                 As Double  = 0.5          ' R1 straight under its Y [derived]
+Const TW_Z_CUT                     As Double  = 7.392614     ' section A-A: clear of the feed chutes and the bends [derived]
+Const TW_C1_R                      As Double  = 2.16         ' barrel radius [derived]
+Const TW_Y_MIN                     As Double  = -8.68811     ' the feed chutes' far side, y (the C1_riser solid's -x) [derived]
+Const TW_Y_MAX                     As Double  = 8.4          ' the outlet legs' far side, y [derived]
+Const TW_TOP                       As Double  = 19.24        ' the outlet bends' crown [derived]
+Const C1_twin_TAB_1                As String  = "R1_D~R1 bore~3070~mm~published~Verified;branch_D~Branch bore (half R1's area)~2171~mm~derived~Estimated;twin_gap~Branches' walls apart~1000~mm~model parameter~Estimated;spacing~C1 axis to axis~6631~mm~derived~Estimated;barrel_gap~Barrel wall to wall~2311~mm~derived~Estimated;branch_pitch~Branch axis to axis (Y)~3171~mm~derived~Estimated;y_branch~R1 / branches in front of the C1 axes~6843~mm~derived~Estimated;y_rise~Y height (R1 top to the branches' floor)~2035~mm~derived~Estimated;r1_stub~R1 straight under its Y~500~mm~derived~Schematic;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;height~Barrel + cone height~11440~mm~derived~Estimated;" ' parameter table rows
+Const C1_twin_TAB_2                As String  = "D_vortex~Vortex finder / outlet pipe bore Dx~2400~mm~FLS ratio~Estimated;top~Dust outlets to the top of the bends~19240~mm~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const C1_twin_TAB_3                As String  = ""           ' parameter table rows
+Const C1_twin_TAB_4                As String  = ""           ' parameter table rows
+Const C1_twin_TAB_5                As String  = ""           ' parameter table rows
+Const C1_twin_TAB_6                As String  = ""           ' parameter table rows
+Const C1_twin_TAB_7                As String  = ""           ' parameter table rows
+Const C1_twin_TAB_8                As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
 Const PAPER_W  As Double = 0.841
 Const PAPER_H  As Double = 0.594
-Const SCALE_D  As Double = 50#          ' 1:50, the sheet's scale
-Const DETAIL_D As Double = 20#          ' 1:20, detail B
+' (the sheet's scale and the detail's: C1 1:50 / 1:20, C1_twin 1:100 / 1:50;
+' set per run in Build)
 Const FR_X0 As Double = 0.02, FR_X1 As Double = 0.831, FR_Y0 As Double = 0.01, FR_Y1 As Double = 0.584
 Const COL_X0 As Double = 0.651          ' the right-hand column: notes, legend, table, title block
 Const TEXT_H As Double = 0.0025
@@ -88,8 +110,15 @@ Const SEC_Y  As Double = 0.38
 Const LEFT_X As Double = 0.44
 Const DET_X  As Double = 0.57
 Const DET_Y  As Double = 0.45
+' C1_twin: the front view's centre; the plan (A-A) under it, the side
+' view right of it, detail C right of the plan
+Const TW_FRONT_X As Double = 0.17
+Const TW_FRONT_Y As Double = 0.4
+Const TW_PLAN_Y  As Double = 0.155
+Const TW_SIDE_X  As Double = 0.38
+Const TW_DET_X   As Double = 0.55
+Const TW_DET_Y   As Double = 0.2
 
-Const EQUIP    As String = "C1"
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 Const DRAW_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\drawings\"
@@ -114,10 +143,14 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
+Dim equip As String              ' "C1" or "C1_twin": what this run draws
+Dim scaleD As Double, detailD As Double
+Dim detX As Double, detY As Double
 Dim partPath As String
 Dim swPart As SldWorks.ModelDoc2
 Dim partStamp As Date, partLen As Long
 Dim vTop As SldWorks.View, vSec As SldWorks.View, vLeft As SldWorks.View, vDet As SldWorks.View
+Dim vFront As SldWorks.View, vPlan As SldWorks.View, vSide As SldWorks.View, vDetC As SldWorks.View
 
 ' the parameter table, parsed: key, label, value, unit, source, status
 Dim tKey() As String, tLabel() As String, tVal() As String, tUnit() As String
@@ -135,11 +168,30 @@ Dim phase As String
 ' main
 '==================================================================
 Sub main()
+    Build "C1"
+End Sub
+
+
+Sub c1_twin()
+    Build "C1_twin"
+End Sub
+
+
+Private Sub Build(ByVal which As String)
 
     Dim why As String
 
+    equip = which
     buildLog = ""
     phase = "starting up"
+    nDims = 0: nDimsOk = 0: nRows = 0: skPerM = 0#
+    Set vTop = Nothing: Set vSec = Nothing: Set vLeft = Nothing: Set vDet = Nothing
+    Set vFront = Nothing: Set vPlan = Nothing: Set vSide = Nothing: Set vDetC = Nothing
+    If equip = "C1" Then
+        scaleD = 50#: detailD = 20#: detX = DET_X: detY = DET_Y
+    Else
+        scaleD = 100#: detailD = 50#: detX = TW_DET_X: detY = TW_DET_Y
+    End If
     On Error GoTo Failed
 
     Set swApp = Application.SldWorks
@@ -161,17 +213,17 @@ Sub main()
     phase = "saving"
     SaveOutputs
 
-    buildLog = "drawings " & EQUIP & " built: " & nDimsOk & " of " & nDims & " dimensions verified" & vbLf & buildLog
+    buildLog = "drawings " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified" & vbLf & buildLog
     WriteLog
-    MsgBox "Drawing " & EQUIP & " built: " & nDimsOk & " of " & nDims & " dimensions verified." & vbLf & _
+    MsgBox "Drawing " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified." & vbLf & _
            "Full log: " & LogPath(), vbInformation, "Equipment drawings"
     Exit Sub
 
 Failed:
     why = Err.Description
-    buildLog = "drawings " & EQUIP & " ABORTED while " & phase & ": " & why & vbLf & buildLog
+    buildLog = "drawings " & equip & " ABORTED while " & phase & ": " & why & vbLf & buildLog
     WriteLog
-    MsgBox "Drawing " & EQUIP & " ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
+    MsgBox "Drawing " & equip & " ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
            vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Equipment drawings"
 End Sub
 
@@ -182,7 +234,12 @@ End Sub
 Private Sub ParseTable()
     Dim all As String, rows As Variant, f As Variant
     Dim i As Long
-    all = C1_TAB_1 & C1_TAB_2 & C1_TAB_3 & C1_TAB_4 & C1_TAB_5 & C1_TAB_6 & C1_TAB_7 & C1_TAB_8
+    If equip = "C1" Then
+        all = C1_TAB_1 & C1_TAB_2 & C1_TAB_3 & C1_TAB_4 & C1_TAB_5 & C1_TAB_6 & C1_TAB_7 & C1_TAB_8
+    Else
+        all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
+              C1_twin_TAB_7 & C1_twin_TAB_8
+    End If
     rows = Split(all, ";")
     nRows = 0
     For i = 0 To UBound(rows)
@@ -220,7 +277,7 @@ End Function
 Private Sub OpenPart()
     Dim errs As Long, warns As Long
     Dim doc As SldWorks.ModelDoc2
-    partPath = OUT_ROOT & LINE_KEY & "\" & EQUIP & ".SLDPRT"
+    partPath = OUT_ROOT & LINE_KEY & "\" & equip & ".SLDPRT"
     If Dir(partPath) = "" Then Fail partPath & " does not exist: build it with cyclone.bas first."
     ' The solid is a verified CFD input: opened read-only, never saved,
     ' and its file is checked unchanged at the end (PartUntouched).
@@ -237,7 +294,54 @@ End Sub
 ' z = 0 at the dust outlet, the inlet face furthest out at -x, the drop
 ' leg's outer wall at +x, the bend's crown on top. An older build (the
 ' 90 deg elbow and run towards -x) or the riser domain is refused.
+' The twin's solid, c1_twin.bas' own: its true extent (GetExtremePoint;
+' GetBodyBox bounds curved faces loosely), 1 cm.
+Private Sub CheckTwinBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    want(0) = -(0.5 * TW_S + TW_C1_R): want(3) = 0.5 * TW_S + TW_C1_R
+    want(1) = TW_Y_MIN: want(4) = TW_Y_MAX
+    want(2) = TW_Z_SPLIT - TW_R1_STUB_L: want(5) = TW_TOP
+    For i = 0 To 5
+        If Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's twin has " & Num(want(i), 3) & _
+                 " -- rebuild it with c1_twin.bas."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
+' The body's true extent from its extreme points.
+Private Function ExactBox(body As SldWorks.Body2) As Variant
+    Dim b(5) As Double, d(2) As Double
+    Dim px As Double, py As Double, pz As Double
+    Dim a As Long, sd As Long
+    For a = 0 To 2
+        For sd = -1 To 1 Step 2
+            d(0) = 0#: d(1) = 0#: d(2) = 0#: d(a) = sd
+            If Not body.GetExtremePoint(d(0), d(1), d(2), px, py, pz) Then Fail "GetExtremePoint failed along axis " & a & "."
+            If sd < 0 Then b(a) = Choose(a + 1, px, py, pz) Else b(a + 3) = Choose(a + 1, px, py, pz)
+        Next sd
+    Next a
+    ExactBox = b
+End Function
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
+    If equip <> "C1" Then
+        CheckTwinBox doc
+        Exit Sub
+    End If
     Dim pd As SldWorks.PartDoc
     Dim bodies As Variant, b As Object, box As Variant
     Dim want(5) As Double, i As Long, nm As Variant
@@ -285,10 +389,10 @@ Private Sub NewSheet()
     ' SetupSheet5 as plant_topology_2d.bas calls it, with the scale and
     ' the projection (FirstAngle = True); read back, not trusted.
     Set sh = swDraw.GetCurrentSheet
-    ok = swDraw.SetupSheet5(sh.GetName, swDwgPaperA1size, swDwgTemplateNone, 1#, SCALE_D, _
+    ok = swDraw.SetupSheet5(sh.GetName, swDwgPaperA1size, swDwgTemplateNone, 1#, scaleD, _
                             True, "", PAPER_W, PAPER_H, "Default", True)
     If Not ok Then Note "WARNING: SetupSheet5 returned False."
-    If Not ok Then sh.SetProperties2 swDwgPaperA1size, swDwgTemplateNone, 1#, SCALE_D, True, PAPER_W, PAPER_H, True
+    If Not ok Then sh.SetProperties2 swDwgPaperA1size, swDwgTemplateNone, 1#, scaleD, True, PAPER_W, PAPER_H, True
     props = sh.GetProperties2
     Note "sheet properties: " & Num(props(0), 0) & " " & Num(props(1), 0) & " " & Num(props(2), 3) & " " & _
          Num(props(3), 3) & " " & Num(props(4), 0) & " " & Num(props(5), 4) & " " & Num(props(6), 4)
@@ -304,7 +408,7 @@ Private Sub NewSheet()
     If swModel.Extension.GetUserPreferenceInteger(swDetailingDimensionStandard, swDetailingNoOptionSpecified) _
        <> swDetailingStandardISO Then Fail "could not set the ISO drafting standard."
     MakeLayers
-    Note "sheet: A1, 1:" & Fmt(SCALE_D) & ", first angle, ISO"
+    Note "sheet: A1, 1:" & Fmt(scaleD) & ", first angle, ISO"
 End Sub
 
 
@@ -340,6 +444,11 @@ End Sub
 ' Views
 '==================================================================
 Private Sub MakeViews()
+    If equip = "C1" Then MakeViewsC1 Else MakeViewsTwin
+End Sub
+
+
+Private Sub MakeViewsC1()
 
     Dim R As Double, rx As Double, xa As Double, xb As Double
     Dim ax As Double, ay As Double, qx As Double, qy As Double
@@ -358,7 +467,7 @@ Private Sub MakeViews()
     xa = -R - C1_W_INLET - 1.5: xb = C1_LEG_X + rx + 1#
     ToSheet vTop, xa, 0#, C1_HEIGHT, ax, ay
     ToSheet vTop, xb, 0#, C1_HEIGHT, qx, qy
-    Set vSec = SectionFrom(vTop, qx, qy, ax, ay, "A")
+    Set vSec = SectionFrom(vTop, qx, qy, ax, ay, "A", 0.5 * (qx + ax), SEC_Y)
     If Not Maps(vSec, 1, 0, 0, 0, 0, 1) Then Fail "section A-A does not show x right, z up: " & MapText(vSec)
     ' Cut, not just projected (run 5): the vortex finder's bore, inside
     ' the barrel below the roof, shows only in a cut.
@@ -366,7 +475,7 @@ Private Sub MakeViews()
     If FindEdge(vSec, "vline", -rx, 0#, C1_HEIGHT - 0.5 * C1_L_VORTEX, -rx, 0#, nSeen, nFit) Is Nothing _
        Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no vortex finder bore among its " & nSeen & " edges."
     Note "views: top " & vTop.Name & ", A-A " & vSec.Name
-    LogMap vTop, "top", SCALE_D: LogMap vSec, "A-A", SCALE_D
+    LogMap vTop, "top", scaleD: LogMap vSec, "A-A", scaleD
 
     ' Left view, right of A-A (first angle: seen from the left), from the
     ' part's named views like the top view -- selecting A-A by name to
@@ -379,8 +488,59 @@ Private Sub MakeViews()
     ' Detail B: the vortex finder's mouth, from A-A.
     Set vDet = DetailFrom(vSec, R - 0.35, C1_HEIGHT - C1_L_VORTEX + 0.3, 1.25, "B")
     Note "views: left " & vLeft.Name & ", detail B " & vDet.Name
-    LogMap vLeft, "left", SCALE_D: LogMap vDet, "detail B", DETAIL_D
+    LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
 
+End Sub
+
+
+' The twin C1 (c1_twin.bas' solid): front view (x right, z up, R1 in
+' front of the C1 axes), section A-A under it (a cut at TW_Z_CUT: the two
+' barrels and the two branches, seen from above), the left view right of
+' it (-y right) and detail C of R1's Y.
+Private Sub MakeViewsTwin()
+    Dim S2 As Double, R As Double
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long
+    S2 = 0.5 * TW_S: R = TW_C1_R
+
+    Set vFront = OrientedView(1, 0, 0, 0, 0, 1, TW_FRONT_X, TW_FRONT_Y, "front")
+    HiddenLinesVisible vFront
+    LogMap vFront, "front", scaleD
+
+    ' A-A: a cutting line along x at z = TW_Z_CUT in the front view; the
+    ' direction it is drawn in sets which way SolidWorks looks, found
+    ' by trying (the wrong try is deleted)
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vFront, S2 + R + 1.5, 0#, TW_Z_CUT, ax, ay
+            ToSheet vFront, -(S2 + R + 1.5), 0#, TW_Z_CUT, qx, qy
+        Else
+            ToSheet vFront, -(S2 + R + 1.5), 0#, TW_Z_CUT, ax, ay
+            ToSheet vFront, S2 + R + 1.5, 0#, TW_Z_CUT, qx, qy
+        End If
+        Set vPlan = SectionFrom(vFront, ax, ay, qx, qy, "A", TW_FRONT_X, TW_PLAN_Y)
+        If Maps(vPlan, 1, 0, 0, 0, 1, 0) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "right to left", "left to right") & " looks wrong: " & MapText(vPlan)
+        If tries = 1 Then Fail "section A-A shows x right, y up in neither direction: " & MapText(vPlan)
+        DeleteView vPlan
+    Next tries
+    If FindEdge(vPlan, "circle", S2 + R, 0#, TW_Z_CUT, R, TW_Z_CUT, nSeen, nFit) Is Nothing _
+       Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no barrel circle among its " & nSeen & " edges."
+    Note "views: front " & vFront.Name & ", A-A " & vPlan.Name
+    LogMap vPlan, "A-A", scaleD
+
+    swDraw.EditSheet
+    Set vSide = OrientedView(0, -1, 0, 0, 0, 1, TW_SIDE_X, TW_FRONT_Y, "side")
+    AlignHeight vSide, vFront
+    HiddenLinesVisible vSide
+    LogMap vSide, "side", scaleD
+
+    ' detail C: R1's Y, from the front view
+    ' (centred 0.75 m over R1's top, 3.0 m round: the Y's far corner is 2.96 m
+    ' off it, the dust outlets' cones 3.1 m)
+    Set vDetC = DetailFrom(vFront, 0#, TW_Z_SPLIT + 0.75, 3#, "C")
+    Note "views: side " & vSide.Name & ", detail C " & vDetC.Name
+    LogMap vDetC, "detail C", detailD
 End Sub
 
 
@@ -401,7 +561,7 @@ Private Function OrientedView(ByVal rx As Double, ByVal ry As Double, ByVal rz A
         If v Is Nothing Then
             Note what & " view: " & names(i) & " could not be placed"
         Else
-            v.ScaleDecimal = 1# / SCALE_D
+            v.ScaleDecimal = 1# / scaleD
             For k = 0 To 3
                 v.Angle = k * PI / 2#
                 swModel.ForceRebuild3 False
@@ -443,14 +603,15 @@ Private Function MapText(v As SldWorks.View) As String
     For i = 0 To 2
         e(0) = 0: e(1) = 0: e(2) = 0: e(i) = 1
         ToSheet v, e(0), e(1), e(2), a, b
-        s = s & Mid("xyz", i + 1, 1) & "->(" & Num((a - ox) * SCALE_D, 2) & "," & Num((b - oy) * SCALE_D, 2) & ") "
+        s = s & Mid("xyz", i + 1, 1) & "->(" & Num((a - ox) * scaleD, 2) & "," & Num((b - oy) * scaleD, 2) & ") "
     Next i
     MapText = s
 End Function
 
 
 Private Function SectionFrom(parent As SldWorks.View, ByVal ax As Double, ByVal ay As Double, _
-                             ByVal qx As Double, ByVal qy As Double, ByVal label As String) As SldWorks.View
+                             ByVal qx As Double, ByVal qy As Double, ByVal label As String, _
+                             ByVal px As Double, ByVal py As Double) As SldWorks.View
     Dim seg As Object
     Dim v As SldWorks.View
     Dim kax As Double, kay As Double, kqx As Double, kqy As Double
@@ -463,7 +624,7 @@ Private Function SectionFrom(parent As SldWorks.View, ByVal ax As Double, ByVal 
     If seg Is Nothing Then Fail "could not sketch the cutting line " & label & "-" & label & "."
     swModel.ClearSelection2 True
     seg.Select4 False, Nothing
-    Set v = swDraw.CreateSectionViewAt5(0.5 * (ax + qx), SEC_Y, 0#, label, 0, Nothing, 0#)
+    Set v = swDraw.CreateSectionViewAt5(px, py, 0#, label, 0, Nothing, 0#)
     If v Is Nothing Then Fail "could not make section " & label & "-" & label & "."
     Set SectionFrom = v
 End Function
@@ -487,7 +648,7 @@ Private Function DetailFrom(parent As SldWorks.View, ByVal x As Double, ByVal z 
          ") mm, radius " & Num(1000 * Abs(ex - cx), 1) & " mm on the sheet, in " & parent.Name
     swModel.ClearSelection2 True
     seg.Select4 False, Nothing
-    Set v = swDraw.CreateDetailViewAt4(DET_X, DET_Y, 0#, swDetViewSTANDARD, 1#, DETAIL_D, label, _
+    Set v = swDraw.CreateDetailViewAt4(detX, detY, 0#, swDetViewSTANDARD, 1#, detailD, label, _
                                        swDetCircleCIRCLE, True, False, False, 5)
     If v Is Nothing Then Fail "could not make detail " & label & "."
     Set DetailFrom = v
@@ -597,6 +758,68 @@ End Sub
 ' Dimensions
 '==================================================================
 Private Sub DimensionAll()
+    If equip = "C1" Then DimensionC1 Else DimensionTwin
+End Sub
+
+
+' The twin's reference dimensions, each between circles the solid has:
+' R1's floor and its Y's two ends in the front view, the barrels' and
+' branches' sections in A-A. Between two circles SolidWorks measures
+' centre to centre; the text's place (outside both, beside them) makes
+' it vertical or horizontal. Each is read back and checked.
+Private Sub DimensionTwin()
+    Dim S2 As Double, R As Double, b As Double, rb As Double, rr As Double
+    Dim zc As Double, yb As Double, zf As Double, zt As Double, zb As Double
+    S2 = 0.5 * TW_S: R = TW_C1_R: b = TW_BRANCH_HALF: rb = 0.5 * TW_BRANCH_D: rr = 0.5 * TW_R1_D
+    zc = TW_Z_CUT: yb = TW_Y_BRANCH
+    zf = TW_Z_SPLIT - TW_R1_STUB_L: zt = TW_Z_SPLIT: zb = TW_Z_BRANCH
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    ' front view
+    DimEdges "R1_D", TW_R1_D, vFront, _
+        "circle", rr, yb, zf, rr, zf, _
+        "", 0, 0, 0, 0, 0, _
+        0, yb, zf - 1.6
+    DimEdges "y_rise", zb - zt, vFront, _
+        "circle", -rr, yb, zt, rr, zt, _
+        "circle", b + rb, yb, zb, rb, zb, _
+        S2 + 1.6, yb, 0.5 * (zt + zb)
+
+    ' A-A (from above: x right, y up)
+    DimEdges "D_barrel", C1_D_BARREL, vPlan, _
+        "circle", -S2 - R, 0, zc, R, zc, _
+        "", 0, 0, 0, 0, 0, _
+        -S2, -R - 1.4, zc
+    DimEdges "spacing", TW_S, vPlan, _
+        "circle", S2 + R, 0, zc, R, zc, _
+        "circle", -S2 - R, 0, zc, R, zc, _
+        0, R + 1.4, zc
+    DimEdges "branch_D", TW_BRANCH_D, vPlan, _
+        "circle", b + rb, yb, zc, rb, zc, _
+        "", 0, 0, 0, 0, 0, _
+        b + rb + 1.8, yb - rb - 1.2, zc
+    DimEdges "branch_pitch", 2# * b, vPlan, _
+        "circle", b + rb, yb, zc, rb, zc, _
+        "circle", -b - rb, yb, zc, rb, zc, _
+        0, yb - rb - 1.6, zc
+    DimEdges "y_branch", -yb, vPlan, _
+        "circle", S2 + R, 0, zc, R, zc, _
+        "circle", b + rb, yb, zc, rb, zc, _
+        S2 + R + 1.6, 0.5 * yb, zc, "v"
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+Private Sub DimensionC1()
 
     Dim R As Double, rx As Double, rd As Double, t As Double
     Dim zr As Double, hc As Double, zv As Double
@@ -716,7 +939,7 @@ End Sub
 Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.View, _
         ByVal k1 As String, ByVal x1 As Double, ByVal y1 As Double, ByVal z1 As Double, ByVal p11 As Double, ByVal p12 As Double, _
         ByVal k2 As String, ByVal x2 As Double, ByVal y2 As Double, ByVal z2 As Double, ByVal p21 As Double, ByVal p22 As Double, _
-        ByVal tx As Double, ByVal ty As Double, ByVal tz As Double)
+        ByVal tx As Double, ByVal ty As Double, ByVal tz As Double, Optional ByVal orient As String = "")
 
     Dim st As String
     Dim dd As SldWorks.DisplayDimension
@@ -735,7 +958,15 @@ Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.Vi
     End If
 
     ToSheet v, tx, ty, tz, sx, sy
-    Set dd = swModel.AddDimension2(sx, sy, 0#)
+    ' Between two circles' centres the plain dimension is the slant
+    ' distance whichever side its text is on (run 1 of the twin: 7058
+    ' for the 6843 asked), so orient "v" / "h" asks for the vertical /
+    ' horizontal one.
+    Select Case orient
+    Case "v": Set dd = swModel.AddVerticalDimension2(sx, sy, 0#)
+    Case "h": Set dd = swModel.AddHorizontalDimension2(sx, sy, 0#)
+    Case Else: Set dd = swModel.AddDimension2(sx, sy, 0#)
+    End Select
     swModel.ClearSelection2 True
     If dd Is Nothing Then
         Note "MISSING dim " & key & ": AddDimension2 made nothing"
@@ -960,14 +1191,14 @@ Private Sub DrawTitle()
     Cell 0.711, 0.046, "Technical reference", "plant_geometry.yaml"
     Cell 0.771, 0.046, "Document status", "draft, for approval"
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
-    LabelPH COL_X0 + 0.0015, 0.0335, "PREHEATER CYCLONE " & EQUIP, 0.005
+    LabelPH COL_X0 + 0.0015, 0.0335, IIf(equip = "C1", "PREHEATER CYCLONE C1", "TWIN CYCLONE C1 + RISER R1"), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
-    Cell 0.771, 0.037, "Identification number", "CI-PH-" & EQUIP & "-001"
+    Cell 0.771, 0.037, "Identification number", "CI-PH-" & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(SCALE_D) & " (B 1:" & Fmt(DETAIL_D) & ")"
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (" & IIf(equip = "C1", "B", "C") & " 1:" & Fmt(detailD) & ")"
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -1042,15 +1273,49 @@ Private Sub DrawNotes()
     LabelPH COL_X0, y + 0.027, "   Shell, refractory, material, flanges, supports: Unknown (no source).", TEXT_H
     LabelPH COL_X0, y + 0.022, "2. 1234 = Verified (published).  1234 E = Estimated: FLS ratio,", TEXT_H
     LabelPH COL_X0, y + 0.017, "   literature, CFD decision, model parameter or derived from them.", TEXT_H
-    LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
-    LabelPH COL_X0, y + 0.007, "4. " & EQUIP & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
-    LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    If equip = "C1" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    Else
+        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the C1 dust outlets, x across the pair, y along the inlet ducts.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. C1 B is C1 A mirrored (ducts face each other); 1 pair per string.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Spacing and Y follow from the branch gap (a model choice, no source): all E.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/preheater/riser_R1.md", TEXT_H
+    End If
 End Sub
 
 
 ' Flow arrows on the sheet at model points of A-A: gas in, gas out,
 ' meal out.
 Private Sub DrawFlows()
+    If equip = "C1" Then DrawFlowsC1 Else DrawFlowsTwin
+End Sub
+
+
+' The twin's flows: gas and meal in at R1's floor, the meal out of the
+' two dust outlets, the gas out at the outlet legs' ends (seen in the
+' left view), and which way each C1 swirls.
+Private Sub DrawFlowsTwin()
+    Dim S2 As Double
+    S2 = 0.5 * TW_S
+    UseLayer L_FLOW
+    ' (the arrow stops above R1_D's dimension line, 1.6 m under R1's floor)
+    ArrowM3 vFront, 0#, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 1#, 0#, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 0.15
+    ArrowM3 vFront, S2, 0#, -0.2, S2, 0#, -1.4
+    ArrowM3 vFront, -S2, 0#, -0.2, -S2, 0#, -1.4
+    ArrowM3 vSide, 0#, C1_LEG_X, C1_HEIGHT - 0.2, 0#, C1_LEG_X, C1_HEIGHT - 1.6
+    UseLayer L_TEXT
+    LabelM3 vFront, 2.1, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 1.5, "Gas + meal in (R1, from C2)"
+    LabelM3 vFront, S2 + 0.4, 0#, -1#, "Meal out"
+    LabelM3 vFront, -S2 - 2.6, 0#, -1#, "Meal out"
+    ' (in the left view +y is leftwards: the text runs on from here to the right, past the arrow)
+    LabelM3 vSide, 0#, C1_LEG_X - 0.6, C1_HEIGHT - 1#, "Gas out (to fan)"
+    LabelM3 vPlan, -S2 - TW_C1_R, 6#, TW_Z_CUT, "C1 A swirl clockwise, C1 B anticlockwise (seen from above)"
+End Sub
+
+
+Private Sub DrawFlowsC1()
     Dim R As Double, rx As Double
     Dim cx As Double, cz As Double
     R = 0.5 * C1_D_BARREL: rx = 0.5 * C1_D_VORTEX
@@ -1071,6 +1336,34 @@ End Sub
 ' left view: the cyclone's, up the outlet pipe to its bend, and the
 ' drop leg's; each runs 0.6 m past the solid.
 Private Sub DrawAxes()
+    If equip = "C1" Then DrawAxesC1 Else DrawAxesTwin
+End Sub
+
+
+' The twin's centre lines (ISO 128 04.1): each C1's axis up its outlet
+' pipe and R1's axis in the front view; in A-A a cross through each
+' barrel's and each branch's centre; the C1 axes and the outlet legs'
+' in the left view.
+Private Sub DrawAxesTwin()
+    Dim S2 As Double, b As Double, yb As Double, i As Long, sg As Double
+    S2 = 0.5 * TW_S: b = TW_BRANCH_HALF: yb = TW_Y_BRANCH
+    UseLayer L_AXIS
+    AxisM vFront, S2, 0#, -0.6, S2, 0#, TW_TOP
+    AxisM vFront, -S2, 0#, -0.6, -S2, 0#, TW_TOP
+    AxisM vFront, 0#, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 0.6, 0#, 0#, TW_Z_SPLIT + 0.6
+    For i = 0 To 1
+        sg = 1# - 2# * i
+        AxisM vPlan, sg * S2 - TW_C1_R - 0.5, 0#, TW_Z_CUT, sg * S2 + TW_C1_R + 0.5, 0#, TW_Z_CUT
+        AxisM vPlan, sg * S2, -TW_C1_R - 0.5, TW_Z_CUT, sg * S2, TW_C1_R + 0.5, TW_Z_CUT
+        AxisM vPlan, sg * b - 0.5 * TW_BRANCH_D - 0.4, yb, TW_Z_CUT, sg * b + 0.5 * TW_BRANCH_D + 0.4, yb, TW_Z_CUT
+        AxisM vPlan, sg * b, yb - 0.5 * TW_BRANCH_D - 0.4, TW_Z_CUT, sg * b, yb + 0.5 * TW_BRANCH_D + 0.4, TW_Z_CUT
+    Next i
+    AxisM vSide, 0#, 0#, -0.6, 0#, 0#, TW_TOP
+    AxisM vSide, 0#, C1_LEG_X, C1_HEIGHT - 0.6, 0#, C1_LEG_X, TW_TOP - 0.5 * C1_D_VORTEX
+End Sub
+
+
+Private Sub DrawAxesC1()
     Dim zr As Double, zb As Double
     zr = C1_HEIGHT: zb = C1_HEIGHT + C1_OUT_RISE
     UseLayer L_AXIS
@@ -1090,15 +1383,30 @@ End Sub
 
 
 Private Sub ArrowM(v As SldWorks.View, ByVal xa As Double, ByVal za As Double, ByVal xb As Double, ByVal zb As Double)
+    ArrowM3 v, xa, 0#, za, xb, 0#, zb
+End Sub
+
+
+' An arrow between two model points, in whichever view (its transform
+' drops the depth).
+Private Sub ArrowM3(v As SldWorks.View, ByVal xa As Double, ByVal ya As Double, ByVal za As Double, _
+                    ByVal xb As Double, ByVal yb As Double, ByVal zb As Double)
     Dim ax As Double, ay As Double, qx As Double, qy As Double
     Dim ux As Double, uy As Double, n As Double
     Const AL As Double = 0.004, AW As Double = 0.0014
-    ToSheet v, xa, 0#, za, ax, ay
-    ToSheet v, xb, 0#, zb, qx, qy
+    ToSheet v, xa, ya, za, ax, ay
+    ToSheet v, xb, yb, zb, qx, qy
     LineP ax, ay, qx, qy
     ux = qx - ax: uy = qy - ay: n = Sqr(ux * ux + uy * uy): ux = ux / n: uy = uy / n
     LineP qx, qy, qx - AL * ux - AW * uy, qy - AL * uy + AW * ux
     LineP qx, qy, qx - AL * ux + AW * uy, qy - AL * uy - AW * ux
+End Sub
+
+
+Private Sub LabelM3(v As SldWorks.View, ByVal x As Double, ByVal y As Double, ByVal z As Double, ByVal txt As String)
+    Dim sx As Double, sy As Double
+    ToSheet v, x, y, z, sx, sy
+    LabelPH sx, sy, txt, TEXT_H
 End Sub
 
 
@@ -1200,10 +1508,10 @@ Private Sub SaveOutputs()
     Dim drw As String, pdf As String, dxf As String
     If Dir(OUT_ROOT & LINE_KEY & "\drawings", vbDirectory) = "" Then MkDir OUT_ROOT & LINE_KEY & "\drawings"
     If Dir(DRAW_ROOT, vbDirectory) = "" Then MkDir DRAW_ROOT
-    If Dir(DRAW_ROOT & EQUIP, vbDirectory) = "" Then MkDir DRAW_ROOT & EQUIP
-    drw = OUT_ROOT & LINE_KEY & "\drawings\" & EQUIP & ".SLDDRW"
-    pdf = DRAW_ROOT & EQUIP & "\" & EQUIP & ".pdf"
-    dxf = DRAW_ROOT & EQUIP & "\" & EQUIP & ".dxf"
+    If Dir(DRAW_ROOT & equip, vbDirectory) = "" Then MkDir DRAW_ROOT & equip
+    drw = OUT_ROOT & LINE_KEY & "\drawings\" & equip & ".SLDDRW"
+    pdf = DRAW_ROOT & equip & "\" & equip & ".pdf"
+    dxf = DRAW_ROOT & equip & "\" & equip & ".dxf"
     SaveOne drw, errs, warns
     SaveOne pdf, errs, warns
     SaveOne dxf, errs, warns
@@ -1231,7 +1539,7 @@ End Sub
 
 
 Private Function LogPath() As String
-    LogPath = OUT_ROOT & LINE_KEY & "\drawings_" & EQUIP & "_build.log"
+    LogPath = OUT_ROOT & LINE_KEY & "\drawings_" & equip & "_build.log"
 End Function
 
 Private Sub WriteLog()
