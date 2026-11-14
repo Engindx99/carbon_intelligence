@@ -955,10 +955,10 @@
     },
     {
       "area": "Preheater",
-      "tag": "R1-R4",
-      "name": "Gas risers / ducts between stages",
+      "tag": "R1",
+      "name": "Gas riser R1 (C2 outlet up to the twin C1)",
       "quantity": "per string",
-      "connections": "R1: C2 -> its Y -> the twin C1; R2-R4: C3..C5 outlet pipes up to C2..C4",
+      "connections": "R1: C2 -> its Y -> the twin C1",
       "dimensions": [
         {
           "key": "risers.R1.D",
@@ -982,10 +982,149 @@
         "Estimated": 1
       },
       "missing": [
-        "preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout"
+        "preheater/riser_R1.md: the route above R1's stub is the C2 outlet pipe (drawn on the C4 sheet)"
       ],
       "cfd_solid": "C1_twin.SLDPRT (R1 stub, Y, both C1)",
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/C1_twin/"
+    },
+    {
+      "area": "Preheater",
+      "tag": "R2-R3",
+      "name": "Gas risers R2, R3 (the outlet pipes of C3, C4)",
+      "quantity": "per string",
+      "connections": "R2: C3 -> C2; R3: C4 -> C3 (each the CFD outlet pipe: rise, 90 deg bend, leg)",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 5
+      },
+      "missing": [
+        "preheater/riser_R2.md, R3.md: the leg's length to the next cyclone is layout (schematic); the solid ends 1.0 D_x into it"
+      ],
+      "cfd_solid": "C4.SLDPRT (the outlet pipe of C4's solid; C3's is the same)",
+      "drawing": "drawn: geometry/drawings/C4/"
+    },
+    {
+      "area": "Preheater",
+      "tag": "R4",
+      "name": "Gas riser R4 (the outlet pipe of C5)",
+      "quantity": "per string",
+      "connections": "R4: C5 -> C4 (the CFD outlet pipe: rise, 90 deg bend, leg)",
+      "dimensions": [
+        {
+          "key": "cyclones.C4.D_vortex",
+          "value": 4.63,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_turn",
+          "value": 90.0,
+          "unit": "deg",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_rise_over_Dx",
+          "value": 1.7,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_bend_R_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.outlet_run_over_Dx",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C5.D_barrel_published",
+          "value": 6.5,
+          "unit": "m",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C5.md"
+        },
+        {
+          "key": "cyclones.C5.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "published",
+          "status": "Verified",
+          "doc": "preheater/cyclone_C5.md"
+        },
+        {
+          "key": "cyclones.C5.boi_radius",
+          "value": 1.55,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C5.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 6,
+        "Verified": 2
+      },
+      "missing": [
+        "preheater/riser_R4.md: the leg's length to C4 is layout (schematic); the solid ends 1.0 D_x into it"
+      ],
+      "cfd_solid": "C5.SLDPRT (the outlet pipe of C5's solid)",
+      "drawing": "drawn: geometry/drawings/C5/"
     },
     {
       "area": "Calciner",

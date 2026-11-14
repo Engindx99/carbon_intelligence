@@ -46,11 +46,21 @@ EQUIPMENT = [
       "cyclones.C4.D_vortex", "cyclone_domain.vortex_wall"],
      "inside each cyclone, gas out", ["(no structure: wall 0.08 m is a CFD model parameter)"],
      "in each cyclone solid"),
-    ("Preheater", "R1-R4", "Gas risers / ducts between stages", "per string",
+    ("Preheater", "R1", "Gas riser R1 (C2 outlet up to the twin C1)", "per string",
      ["risers.R1.", "layout.c1_twin_gap"],
-     "R1: C2 -> its Y -> the twin C1; R2-R4: C3..C5 outlet pipes up to C2..C4",
-     ["preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout"],
+     "R1: C2 -> its Y -> the twin C1",
+     ["preheater/riser_R1.md: the route above R1's stub is the C2 outlet pipe (drawn on the C4 sheet)"],
      "C1_twin.SLDPRT (R1 stub, Y, both C1)"),
+    ("Preheater", "R2-R3", "Gas risers R2, R3 (the outlet pipes of C3, C4)", "per string",
+     ["cyclones.C4.D_vortex", "cyclones.C4.outlet_", "cyclone_domain.outlet_"],
+     "R2: C3 -> C2; R3: C4 -> C3 (each the CFD outlet pipe: rise, 90 deg bend, leg)",
+     ["preheater/riser_R2.md, R3.md: the leg's length to the next cyclone is layout (schematic); the solid ends 1.0 D_x into it"],
+     "C4.SLDPRT (the outlet pipe of C4's solid; C3's is the same)"),
+    ("Preheater", "R4", "Gas riser R4 (the outlet pipe of C5)", "per string",
+     ["cyclones.C5.", "cyclones.C4.D_vortex", "cyclones.C4.outlet_", "cyclone_domain.outlet_"],
+     "R4: C5 -> C4 (the CFD outlet pipe: rise, 90 deg bend, leg)",
+     ["preheater/riser_R4.md: the leg's length to C4 is layout (schematic); the solid ends 1.0 D_x into it"],
+     "C5.SLDPRT (the outlet pipe of C5's solid)"),
     ("Calciner", "GN", "Gooseneck (Y) from the calciner to C5", "1 per calciner",
      ["gooseneck."],
      "calciner roof -> 2 legs -> C5 of each string", [], "calciner.SLDPRT"),
@@ -88,7 +98,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"KILN": "kiln", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

@@ -14,7 +14,9 @@ schematic = layout only; absent = Unknown.
 | Preheater | C4 | Cyclone C4 | 1 per string | 2 / 18 / 0 | C4.SLDPRT | drawn: geometry/drawings/C4/ | - |
 | Preheater | C5 | Cyclone C5 (calciner outlet cyclone) | 1 per string | 4 / 15 / 0 | C5.SLDPRT | drawn: geometry/drawings/C5/ | - |
 | Preheater | VF | Vortex finders (dip tubes) of C1-C5 | per cyclone | 0 / 5 / 0 | in each cyclone solid | to draw | (no structure: wall 0.08 m is a CFD model parameter) |
-| Preheater | R1-R4 | Gas risers / ducts between stages | per string | 1 / 1 / 0 | C1_twin.SLDPRT (R1 stub, Y, both C1) | to draw | preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout |
+| Preheater | R1 | Gas riser R1 (C2 outlet up to the twin C1) | per string | 1 / 1 / 0 | C1_twin.SLDPRT (R1 stub, Y, both C1) | drawn: geometry/drawings/C1_twin/ | preheater/riser_R1.md: the route above R1's stub is the C2 outlet pipe (drawn on the C4 sheet) |
+| Preheater | R2-R3 | Gas risers R2, R3 (the outlet pipes of C3, C4) | per string | 0 / 5 / 0 | C4.SLDPRT (the outlet pipe of C4's solid; C3's is the same) | drawn: geometry/drawings/C4/ | preheater/riser_R2.md, R3.md: the leg's length to the next cyclone is layout (schematic); the solid ends 1.0 D_x into it |
+| Preheater | R4 | Gas riser R4 (the outlet pipe of C5) | per string | 2 / 6 / 0 | C5.SLDPRT (the outlet pipe of C5's solid) | drawn: geometry/drawings/C5/ | preheater/riser_R4.md: the leg's length to C4 is layout (schematic); the solid ends 1.0 D_x into it |
 | Calciner | GN | Gooseneck (Y) from the calciner to C5 | 1 per calciner | 1 / 6 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | - |
 | Calciner | ILC | In-line calciner (ILC) vessel | 1 | 2 / 13 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | - |
 | Calciner | TAD | Tertiary air duct | 1 | 0 / 9 / 0 | calciner.SLDPRT (3 m stub only) | drawn: geometry/drawings/calciner/ | fluid_volumes.md: duct length and route absent (drawn route is schematic) |
