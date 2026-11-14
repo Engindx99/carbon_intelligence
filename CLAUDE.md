@@ -10,6 +10,7 @@
 8. Geometry exists to parametrically define physically meaningful, continuous fluid volumes for CFD, not to perform structural or manufacturing CAD design. Prefer simple, clean, and CFD-oriented geometry over detailed or production-oriented geometry. Keep geometry calculations/solvers only when necessary to construct, validate, or derive relevant hydraulic/geometric properties of the fluid volume; avoid unnecessary geometric detail and computational complexity.
    Exception: `geometry/macros/plant_topology_2d.bas` draws a schematic, real-scale 2D drawing (SLDDRW) of the plant topology (equipment, and the gas, meal and air paths between them); it is not a CFD input.
    Exception: `geometry/macros/drawings.bas` makes ISO engineering drawings of each equipment's inner (fluid) geometry from the CFD solids (`geometry/drawings/`); they are not fabrication drawings and draw no wall, flange, support or material.
+   Exception: `geometry/macros/pid.bas` draws the P&ID of the plant as the twin models it (4 A1 sheets, ISO 10628 / ISA 5.1 symbols; topology and instruments from `geometry/pid/pid.yaml`, line sizes from `plant_geometry.yaml`); it shows only what the twin has and is not a CFD input.
    
 9. For CFD, review the literature, but use the simplest and fastest sufficient solution; do not add academic-level complexity.
 

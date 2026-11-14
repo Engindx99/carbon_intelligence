@@ -48,6 +48,9 @@
         "preheater/riser_R1.md: feed system upstream of the chute is not modelled"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "to draw"
     },
     {
@@ -81,6 +84,9 @@
         "preheater/meal_pipe_C1.md .. C5.md: diameter (scaled by mass flux) and slope are model values; length, route, flap position unknown; no CFD solid"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "to draw"
     },
     {
@@ -265,6 +271,9 @@
       },
       "missing": [],
       "cfd_solid": "C1.SLDPRT",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C1/"
     },
     {
@@ -417,6 +426,9 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT (same geometry)",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C4/"
     },
     {
@@ -569,6 +581,9 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT (same geometry)",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C4/"
     },
     {
@@ -745,6 +760,9 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C4/"
     },
     {
@@ -913,6 +931,9 @@
       },
       "missing": [],
       "cfd_solid": "C5.SLDPRT",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C5/"
     },
     {
@@ -970,6 +991,7 @@
         "(no structure: wall 0.08 m is a CFD model parameter)"
       ],
       "cfd_solid": "in each cyclone solid",
+      "pid_sheets": [],
       "drawing": "to draw"
     },
     {
@@ -1004,6 +1026,9 @@
         "preheater/riser_R1.md: the route above R1's stub is the C2 outlet pipe (drawn on the C4 sheet)"
       ],
       "cfd_solid": "C1_twin.SLDPRT (R1 stub, Y, both C1)",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C1_twin/"
     },
     {
@@ -1061,6 +1086,9 @@
         "preheater/riser_R2.md, R3.md: the leg's length to the next cyclone is layout (schematic); the solid ends 1.0 D_x into it"
       ],
       "cfd_solid": "C4.SLDPRT (the outlet pipe of C4's solid; C3's is the same)",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C4/"
     },
     {
@@ -1143,6 +1171,9 @@
         "preheater/riser_R4.md: the leg's length to C4 is layout (schematic); the solid ends 1.0 D_x into it"
       ],
       "cfd_solid": "C5.SLDPRT (the outlet pipe of C5's solid)",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "drawn: geometry/drawings/C5/"
     },
     {
@@ -1215,6 +1246,9 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
+      "pid_sheets": [
+        "2 CA"
+      ],
       "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
@@ -1351,6 +1385,9 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
+      "pid_sheets": [
+        "2 CA"
+      ],
       "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
@@ -1440,6 +1477,9 @@
         "fluid_volumes.md: duct length and route absent (drawn route is schematic)"
       ],
       "cfd_solid": "calciner.SLDPRT (3 m stub only)",
+      "pid_sheets": [
+        "2 CA"
+      ],
       "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
@@ -1495,6 +1535,9 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
+      "pid_sheets": [
+        "2 CA"
+      ],
       "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
@@ -1543,6 +1586,9 @@
       },
       "missing": [],
       "cfd_solid": "kiln.SLDPRT",
+      "pid_sheets": [
+        "3 KI"
+      ],
       "drawing": "drawn: geometry/drawings/kiln/"
     },
     {
@@ -1576,6 +1622,9 @@
         "kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown; no CFD solid"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "3 KI"
+      ],
       "drawing": "to draw"
     },
     {
@@ -1625,6 +1674,9 @@
         "kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "3 KI"
+      ],
       "drawing": "to draw"
     },
     {
@@ -1690,6 +1742,9 @@
         "kiln/kiln_burner.md: a selection from the kiln firing (no published plant dimension); burner pipe, channels, nozzles unknown; drawn as an arrow only"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "3 KI"
+      ],
       "drawing": "to draw"
     },
     {
@@ -1748,6 +1803,9 @@
         "cooler/cooler.md: vent outlet TBD"
       ],
       "cfd_solid": "cooler.SLDPRT",
+      "pid_sheets": [
+        "4 CO"
+      ],
       "drawing": "drawn: geometry/drawings/cooler/"
     },
     {
@@ -1853,6 +1911,9 @@
         "fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only"
       ],
       "cfd_solid": "",
+      "pid_sheets": [
+        "1 PH"
+      ],
       "drawing": "to draw"
     }
   ]

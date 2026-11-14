@@ -105,9 +105,11 @@ def _matches(key, prefixes):
     return any(key == p or key.startswith(p) for p in prefixes)
 
 
-def build(g, drawn, ready=()):
+def build(g, drawn, ready=(), pid_sheets=None):
     """drawn: tags whose drawing has been made and checked in SolidWorks;
-    ready: tags drawings.bas can draw, not yet run."""
+    ready: tags drawings.bas can draw, not yet run.
+    pid_sheets: {tag: ['1 PH', ...]}, the P&ID sheets showing the tag."""
+    pid_sheets = pid_sheets or {}
     out = []
     for area, tag, name, qty, prefixes, conn, missing, solid in EQUIPMENT:
         dims = []
@@ -128,6 +130,7 @@ def build(g, drawn, ready=()):
             "status_counts": counts,
             "missing": missing,
             "cfd_solid": solid,
+            "pid_sheets": pid_sheets.get(tag, []),
             "drawing": ("drawn: geometry/drawings/" + SAME_SHEET.get(tag, tag) + "/")
                        if SAME_SHEET.get(tag, tag) in drawn else
                        "drawings.bas ready, not yet run" if SAME_SHEET.get(tag, tag) in ready else
@@ -144,13 +147,13 @@ def markdown(inv):
         "Status: published = Verified; FLS ratio, literature, CFD decision, model = Estimated;",
         "schematic = layout only; absent = Unknown.",
         "",
-        "| Area | Tag | Equipment | Qty | Dimensions (V / E / S) | CFD solid | Drawing | Missing |",
-        "|---|---|---|---|---|---|---|---|",
+        "| Area | Tag | Equipment | Qty | Dimensions (V / E / S) | CFD solid | Drawing | P&ID sheet | Missing |",
+        "|---|---|---|---|---|---|---|---|---|",
     ]
     for e in inv["equipment"]:
         c = e["status_counts"]
         dims = f"{c.get('Verified', 0)} / {c.get('Estimated', 0)} / {c.get('Schematic', 0)}"
         miss = "; ".join(e["missing"]) or "-"
         lines.append(f"| {e['area']} | {e['tag']} | {e['name']} | {e['quantity']} | {dims} | "
-                     f"{e['cfd_solid'] or '-'} | {e['drawing']} | {miss} |")
+                     f"{e['cfd_solid'] or '-'} | {e['drawing']} | {', '.join(e['pid_sheets']) or '-'} | {miss} |")
     return "\n".join(lines) + "\n"

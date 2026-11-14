@@ -953,15 +953,15 @@ Private Sub DrawPlant()
     UseLayer L_TEXT
     DrawRuler
     LabelM -aCh, zCh0 - 1#, "KIC kiln inlet chamber", 0#
-    LabelM -0.3 * TEXT_H * 3 * SHEET_SCALE, zGnTop + 3#, "CAL", 0#   ' centred on the calciner axis, as CycLabel
+    LabelM -0.3 * TEXT_H * 3 * SHEET_SCALE, zGnTop + 3#, "ILC", 0#   ' centred on the calciner axis, as CycLabel
     LabelM -xBend - 0.5, zLeg + rGn + 2#, "GN", 0#
     LabelM xBend - 0.5, zLeg + rGn + 2#, "GN", 0#
-    LabelM 20#, kAz + 3.5, "KLN rotary kiln D" & Num(KILN_D, 3) & " x " & Num(KILN_L, 0) & " m", 0#
-    LabelM kBx + 0.3 * coolL, zCool0 + 0.75 * COOLER_H, "CLR grate cooler", 0#
+    LabelM 20#, kAz + 3.5, "KILN rotary kiln D" & Num(KILN_D, 3) & " x " & Num(KILN_L, 0) & " m", 0#
+    LabelM kBx + 0.3 * coolL, zCool0 + 0.75 * COOLER_H, "COOL grate cooler", 0#
     LabelM kBx + coolL - VENT_IN - 0.3 * TEXT_H * 14 * SHEET_SCALE, zCool0 + COOLER_H + VENT_UP + 1.1, _
            "to cooler vent", 0#
     LabelM kBx + coolL - 1.5 - 0.6 * TEXT_H * 20 * SHEET_SCALE, -CLINKER_OUT_Z + 2#, "to clinker transport", 0#
-    LabelM kBx + 2# * aCh + 1#, zHood0 + 2# * aCh, "HD kiln hood", 0#
+    LabelM kBx + 2# * aCh + 1#, zHood0 + 2# * aCh, "HOOD kiln hood", 0#
     LabelM kBx + 2# * aCh + 0.5, kBz + kOff - 0.3, "primary air", 0#
     ' inside the kiln, between its gas and its clinker: the kiln gas
     ' there is the secondary air the burner has fired
@@ -1278,7 +1278,7 @@ Private Sub C1Unit(ByVal side As String, ByVal xc As Double, ByVal g As Double)
     UseLayer L_MEAL
     PathOut "meal: raw meal -> R1 " & side & " branch", Array(xr, zo + q + RM_L, xr, zo + q), 0.5 * ARROW_L
     UseLayer L_TEXT
-    LabelMH xr + g * (rb + 0.3), zo + q + RM_L + 0.4, "RM", IIf(g > 0#, 0#, -0.0034), CAP_H
+    LabelMH xr + g * (rb + 0.3), zo + q + RM_L + 0.4, "FEED", IIf(g > 0#, 0#, -0.0068), CAP_H
 
     ' the outlet's 180 deg bend, in depth: the pipe's walls up to its
     ' crown, a half circle there, the flow away from the viewer
@@ -1894,7 +1894,7 @@ Private Sub DrawEquipmentList()
     Dim i As Long, n As Long
     Const RH As Double = 0.006
 
-    tg = Array("Tag", "C1", "C2-C4", "C5", "R1", "R2", "R3", "R4", "CAL", "GN", "TAD", "KIC", "KLN", "HD", "CLR", "RM")
+    tg = Array("Tag", "C1", "C2-C4", "C5", "R1", "R2", "R3", "R4", "ILC", "GN", "TAD", "KIC", "KILN", "HOOD", "COOL", "FEED")
     eq = Array("Equipment", "twin top cyclone", "cyclone", "cyclone", "riser", "riser", "riser", "riser", _
                "ILC calciner", "gooseneck + Y", "tertiary air duct", "kiln inlet chamber", "rotary kiln", _
                "kiln hood", "grate cooler", "raw meal inlet")

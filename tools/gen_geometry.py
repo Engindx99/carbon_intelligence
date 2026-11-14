@@ -564,6 +564,13 @@ def kiln_bas(g):
     ]
 
 
+def pid_bas(g):
+    """The P&ID macro's records (geometry/pid/pid.yaml; tools/pid/)."""
+    from tools.pid import encode, model
+
+    return encode.consts(model.load(), g)
+
+
 TARGETS = {
     "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
@@ -572,6 +579,7 @@ TARGETS = {
     "plant_topology_2d.bas": drawing_bas,
     "drawings.bas": drawings_bas,
     "c1_twin.bas": c1_twin_bas,
+    "pid.bas": pid_bas,
 }
 
 
@@ -1032,6 +1040,12 @@ def _topology_params(g):
     return rows
 
 
+def _pid_rows(what, g):
+    from tools.pid import encode, model
+
+    return getattr(encode, f"rows_{what}")(model.load(), g)
+
+
 DOCS = {
     "preheater/cyclone_C1.md": lambda g: _cyclone_rows(g, "C1"),
     "preheater/cyclone_C2.md": lambda g: _cyclone_rows(g, "C2"),
@@ -1057,6 +1071,11 @@ DOCS = {
     "plant_topology.md#cfd": _topology_cfd,
     "plant_topology.md#layout": _topology_layout,
     "plant_topology.md#params": _topology_params,
+    "pid/pid.md#sheets": lambda g: _pid_rows("sheets", g),
+    "pid/pid.md#equipment": lambda g: _pid_rows("equipment", g),
+    "pid/pid.md#lines": lambda g: _pid_rows("lines", g),
+    "pid/pid.md#instruments": lambda g: _pid_rows("instruments", g),
+    "pid/pid.md#connectors": lambda g: _pid_rows("connectors", g),
 }
 DOC_HEADS = {
     "fluid_volumes.md": ("Twin bölgesi", "Ekipman", "Hacim [m³]"),
@@ -1065,6 +1084,11 @@ DOC_HEADS = {
     "plant_topology.md#cfd": ("Blok", "Domen (donmuş)", "Giriş yüzü", "Çıkış yüzü"),
     "plant_topology.md#layout": ("Ne", "Konum [m]"),
     "plant_topology.md#params": ("Const", "Değer", "Nerede yazılı"),
+    "pid/pid.md#sheets": ("No", "Kod", "Başlık", "Ekipman", "Hat", "Enstrüman"),
+    "pid/pid.md#equipment": ("Kimlik", "Etiket", "Sembol", "Sayfa", "Adet"),
+    "pid/pid.md#lines": ("Hat", "Servis", "Nereden", "Nereye", "Sayfa", "Ölçü [m]", "Durum"),
+    "pid/pid.md#instruments": ("Etiket", "Değişken", "Twin anahtarı", "Durum", "Referans değer (SI)", "Yer"),
+    "pid/pid.md#connectors": ("Kimlik", "Servis", "Nereden sayfa", "Nereye sayfa", "Açıklama"),
 }
 
 

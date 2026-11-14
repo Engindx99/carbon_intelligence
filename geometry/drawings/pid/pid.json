@@ -1,0 +1,1674 @@
+{
+  "source": "geometry/pid/pid.yaml",
+  "scope_rule": "only what the twin models (tools/pid/scope.py)",
+  "drawing": {
+    "macro": "geometry/macros/pid.bas",
+    "files": {
+      "PH": [
+        "geometry/drawings/pid/pid_PH.pdf",
+        "geometry/drawings/pid/pid_PH.dxf"
+      ],
+      "CA": [
+        "geometry/drawings/pid/pid_CA.pdf",
+        "geometry/drawings/pid/pid_CA.dxf"
+      ],
+      "KI": [
+        "geometry/drawings/pid/pid_KI.pdf",
+        "geometry/drawings/pid/pid_KI.dxf"
+      ],
+      "CO": [
+        "geometry/drawings/pid/pid_CO.pdf",
+        "geometry/drawings/pid/pid_CO.dxf"
+      ]
+    },
+    "build_logs": {
+      "PH": "geometry/output/2500/pid_PH_build.log",
+      "CA": "geometry/output/2500/pid_CA_build.log",
+      "KI": "geometry/output/2500/pid_KI_build.log",
+      "CO": "geometry/output/2500/pid_CO_build.log"
+    },
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "units": "none (schematic, grid cells)"
+  },
+  "sheets": [
+    {
+      "code": "PH",
+      "num": 1,
+      "title": "PREHEATER, STRING A (STRING B IDENTICAL)",
+      "area": "Preheater"
+    },
+    {
+      "code": "CA",
+      "num": 2,
+      "title": "ILC CALCINER, GOOSENECK AND TERTIARY AIR",
+      "area": "Calciner"
+    },
+    {
+      "code": "KI",
+      "num": 3,
+      "title": "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER",
+      "area": "Rotary kiln"
+    },
+    {
+      "code": "CO",
+      "num": 4,
+      "title": "GRATE COOLER",
+      "area": "Clinker cooler"
+    }
+  ],
+  "equipment": [
+    {
+      "id": "FEEDA",
+      "tag": "FEED",
+      "sheet": "PH",
+      "symbol": "feed_chute",
+      "cell": [
+        29,
+        14
+      ],
+      "size": [
+        2,
+        2
+      ]
+    },
+    {
+      "id": "R1A",
+      "tag": "R1",
+      "sheet": "PH",
+      "symbol": "riser",
+      "cell": [
+        29,
+        19.8
+      ],
+      "size": [
+        2,
+        6
+      ]
+    },
+    {
+      "id": "C1A",
+      "tag": "C1",
+      "sheet": "PH",
+      "symbol": "cyclone",
+      "cell": [
+        32,
+        18
+      ],
+      "size": [
+        3,
+        6
+      ],
+      "qty": "2"
+    },
+    {
+      "id": "C2A",
+      "tag": "C2",
+      "sheet": "PH",
+      "symbol": "cyclone",
+      "cell": [
+        25,
+        15
+      ],
+      "size": [
+        3,
+        6
+      ]
+    },
+    {
+      "id": "C3A",
+      "tag": "C3",
+      "sheet": "PH",
+      "symbol": "cyclone",
+      "cell": [
+        18,
+        12
+      ],
+      "size": [
+        3,
+        6
+      ]
+    },
+    {
+      "id": "C4A",
+      "tag": "C4",
+      "sheet": "PH",
+      "symbol": "cyclone",
+      "cell": [
+        11,
+        9
+      ],
+      "size": [
+        3,
+        6
+      ]
+    },
+    {
+      "id": "C5A",
+      "tag": "C5",
+      "sheet": "PH",
+      "symbol": "cyclone",
+      "cell": [
+        4,
+        6
+      ],
+      "size": [
+        3,
+        6
+      ]
+    },
+    {
+      "id": "R2A",
+      "tag": "R2-R3",
+      "label": "R2",
+      "sheet": "PH",
+      "symbol": "riser",
+      "cell": [
+        22,
+        18.3
+      ],
+      "size": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "R3A",
+      "tag": "R2-R3",
+      "label": "R3",
+      "sheet": "PH",
+      "symbol": "riser",
+      "cell": [
+        15,
+        15.3
+      ],
+      "size": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "R4A",
+      "tag": "R4",
+      "sheet": "PH",
+      "symbol": "riser",
+      "cell": [
+        8,
+        12.3
+      ],
+      "size": [
+        2,
+        3
+      ]
+    },
+    {
+      "id": "MP1A",
+      "tag": "MP",
+      "sheet": "PH",
+      "symbol": "flap_valve",
+      "cell": [
+        33,
+        16
+      ]
+    },
+    {
+      "id": "MP2A",
+      "tag": "MP",
+      "sheet": "PH",
+      "symbol": "flap_valve",
+      "cell": [
+        26,
+        13
+      ]
+    },
+    {
+      "id": "MP3A",
+      "tag": "MP",
+      "sheet": "PH",
+      "symbol": "flap_valve",
+      "cell": [
+        19,
+        10
+      ]
+    },
+    {
+      "id": "MP4A",
+      "tag": "MP",
+      "sheet": "PH",
+      "symbol": "flap_valve",
+      "cell": [
+        12,
+        7
+      ]
+    },
+    {
+      "id": "MP5A",
+      "tag": "MP",
+      "sheet": "PH",
+      "symbol": "flap_valve",
+      "cell": [
+        5,
+        4
+      ]
+    },
+    {
+      "id": "IDFA",
+      "tag": "IDF",
+      "sheet": "PH",
+      "symbol": "fan",
+      "cell": [
+        37,
+        29
+      ],
+      "size": [
+        3,
+        3
+      ],
+      "qty": "1 per string"
+    },
+    {
+      "id": "ILC",
+      "tag": "ILC",
+      "sheet": "CA",
+      "symbol": "vessel",
+      "cell": [
+        18,
+        6
+      ],
+      "size": [
+        5,
+        20
+      ]
+    },
+    {
+      "id": "GN",
+      "tag": "GN",
+      "sheet": "CA",
+      "symbol": "gooseneck",
+      "cell": [
+        18,
+        27
+      ],
+      "size": [
+        8,
+        4
+      ]
+    },
+    {
+      "id": "TAD",
+      "tag": "TAD",
+      "sheet": "CA",
+      "symbol": "duct",
+      "cell": [
+        6,
+        11
+      ],
+      "size": [
+        8,
+        2
+      ]
+    },
+    {
+      "id": "NOZM",
+      "tag": "NOZ",
+      "label": "NOZ meal",
+      "sheet": "CA",
+      "symbol": "nozzle_meal",
+      "cell": [
+        28,
+        15
+      ],
+      "size": [
+        3,
+        2
+      ],
+      "qty": "2"
+    },
+    {
+      "id": "NOZF",
+      "tag": "NOZ",
+      "label": "NOZ fuel",
+      "sheet": "CA",
+      "symbol": "nozzle_fuel",
+      "cell": [
+        28,
+        12
+      ],
+      "size": [
+        3,
+        2
+      ],
+      "qty": "2"
+    },
+    {
+      "id": "KIC",
+      "tag": "KIC",
+      "sheet": "KI",
+      "symbol": "chamber",
+      "cell": [
+        4,
+        14
+      ],
+      "size": [
+        5,
+        8
+      ]
+    },
+    {
+      "id": "KILN",
+      "tag": "KILN",
+      "sheet": "KI",
+      "symbol": "rotary_kiln",
+      "cell": [
+        12,
+        15
+      ],
+      "size": [
+        15,
+        4
+      ],
+      "zones": [
+        "transition",
+        "burning"
+      ]
+    },
+    {
+      "id": "HOOD",
+      "tag": "HOOD",
+      "sheet": "KI",
+      "symbol": "hood",
+      "cell": [
+        33,
+        11
+      ],
+      "size": [
+        5,
+        12
+      ]
+    },
+    {
+      "id": "BRN",
+      "tag": "BRN",
+      "sheet": "KI",
+      "symbol": "burner",
+      "cell": [
+        39,
+        16
+      ],
+      "size": [
+        2,
+        2
+      ]
+    },
+    {
+      "id": "COOL",
+      "tag": "COOL",
+      "sheet": "CO",
+      "symbol": "grate_cooler",
+      "cell": [
+        8,
+        10
+      ],
+      "size": [
+        26,
+        8
+      ],
+      "segments": 10,
+      "hood_segments": 2
+    }
+  ],
+  "lines": [
+    {
+      "line": "G101",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "OPC-01",
+      "to": "C5A.gas_in",
+      "size_ref": "yaml:gooseneck.D_leg",
+      "size_m": 3.5,
+      "size_text": "D 3.500",
+      "status": "Verified",
+      "inputs": [
+        "gooseneck.D_leg"
+      ]
+    },
+    {
+      "line": "G102",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "C5A.gas_out",
+      "to": "R4A.gas_in",
+      "size_ref": "derived:stage_riser(4).parts[0].D",
+      "size_m": 4.776984126984128,
+      "size_text": "D 4.777 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G103",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "R4A.gas_out",
+      "to": "C4A.gas_in",
+      "size_ref": "derived:stage_riser(4).parts[0].D",
+      "size_m": 4.776984126984128,
+      "size_text": "D 4.777 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G104",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "C4A.gas_out",
+      "to": "R3A.gas_in",
+      "size_ref": "derived:stage_riser(3).parts[0].D",
+      "size_m": 4.63,
+      "size_text": "D 4.630 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G105",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "R3A.gas_out",
+      "to": "C3A.gas_in",
+      "size_ref": "derived:stage_riser(3).parts[0].D",
+      "size_m": 4.63,
+      "size_text": "D 4.630 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G106",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "C3A.gas_out",
+      "to": "R2A.gas_in",
+      "size_ref": "derived:stage_riser(2).parts[0].D",
+      "size_m": 4.63,
+      "size_text": "D 4.630 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G107",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "R2A.gas_out",
+      "to": "C2A.gas_in",
+      "size_ref": "derived:stage_riser(2).parts[0].D",
+      "size_m": 4.63,
+      "size_text": "D 4.630 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G108",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "C2A.gas_out",
+      "to": "R1A.gas_in",
+      "size_ref": "derived:r1_path().parts[0].D",
+      "size_m": 4.63,
+      "size_text": "D 4.630 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G109",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "R1A.gas_out",
+      "to": "C1A.gas_in",
+      "size_ref": "yaml:risers.R1.D",
+      "size_m": 3.07,
+      "size_text": "D 3.070",
+      "status": "Verified",
+      "inputs": [
+        "risers.R1.D"
+      ]
+    },
+    {
+      "line": "G110",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "C1A.gas_out",
+      "to": "IDFA.gas_in",
+      "size_ref": "derived:cyclone('C1').D_vortex",
+      "size_m": 2.4,
+      "size_text": "D 2.400 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G111",
+      "service": "gas",
+      "sheet": "PH",
+      "from": "IDFA.gas_out",
+      "to": "SNK.stack",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "M101",
+      "service": "meal_raw",
+      "sheet": "PH",
+      "from": "SRC.raw_meal",
+      "to": "FEEDA.in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "M102",
+      "service": "meal_raw",
+      "sheet": "PH",
+      "from": "FEEDA.out",
+      "to": "R1A.meal_in",
+      "size_ref": "yaml:cyclone_domain.c1_feed_width",
+      "size_m": 0.6,
+      "size_text": "D 0.600 E",
+      "status": "Estimated",
+      "inputs": [
+        "cyclone_domain.c1_feed_width"
+      ]
+    },
+    {
+      "line": "M103",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "C1A.dust_out",
+      "to": "MP1A.in",
+      "size_ref": "derived:meal_pipes()[1].D",
+      "size_m": 0.5999801038367856,
+      "size_text": "D 0.600 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M104",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "MP1A.out",
+      "to": "R2A.meal_in",
+      "size_ref": "derived:meal_pipes()[1].D",
+      "size_m": 0.5999801038367856,
+      "size_text": "D 0.600 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M105",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "C2A.dust_out",
+      "to": "MP2A.in",
+      "size_ref": "derived:meal_pipes()[2].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M106",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "MP2A.out",
+      "to": "R3A.meal_in",
+      "size_ref": "derived:meal_pipes()[2].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M107",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "C3A.dust_out",
+      "to": "MP3A.in",
+      "size_ref": "derived:meal_pipes()[3].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M108",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "MP3A.out",
+      "to": "R4A.meal_in",
+      "size_ref": "derived:meal_pipes()[3].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M109",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "C4A.dust_out",
+      "to": "MP4A.in",
+      "size_ref": "derived:meal_pipes()[4].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M110",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "MP4A.out",
+      "to": "OPC-02",
+      "size_ref": "derived:meal_pipes()[4].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M111",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "C5A.dust_out",
+      "to": "MP5A.in",
+      "size_ref": "derived:meal_pipes()[5].D",
+      "size_m": 0.6977474155880954,
+      "size_text": "D 0.698 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M112",
+      "service": "meal_hot",
+      "sheet": "PH",
+      "from": "MP5A.out",
+      "to": "OPC-03",
+      "size_ref": "derived:meal_pipes()[5].D",
+      "size_m": 0.6977474155880954,
+      "size_text": "D 0.698 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "D101",
+      "service": "dust",
+      "sheet": "PH",
+      "from": "C1A.dust_esc",
+      "to": "FEEDA.dust_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "G201",
+      "service": "gas",
+      "sheet": "CA",
+      "from": "OPC-04",
+      "to": "ILC.kiln_gas_inlet",
+      "size_ref": "derived:calciner().D_throat",
+      "size_m": 3.13007717954508,
+      "size_text": "D 3.130 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "A201",
+      "service": "air_hot",
+      "sheet": "CA",
+      "from": "OPC-05",
+      "to": "TAD.air_in",
+      "size_ref": "yaml:calciner.D_tertiary_air",
+      "size_m": 2.4393,
+      "size_text": "D 2.439 E",
+      "status": "Estimated",
+      "inputs": [
+        "calciner.D_tertiary_air"
+      ]
+    },
+    {
+      "line": "A202",
+      "service": "air_hot",
+      "sheet": "CA",
+      "from": "TAD.air_out",
+      "to": "ILC.tertiary_air_inlet",
+      "size_ref": "yaml:calciner.D_tertiary_air",
+      "size_m": 2.4393,
+      "size_text": "D 2.439 E",
+      "status": "Estimated",
+      "inputs": [
+        "calciner.D_tertiary_air"
+      ]
+    },
+    {
+      "line": "M201",
+      "service": "meal_hot",
+      "sheet": "CA",
+      "from": "OPC-02",
+      "to": "NOZM.meal_in",
+      "size_ref": "derived:meal_pipes()[4].D",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M202",
+      "service": "meal_hot",
+      "sheet": "CA",
+      "from": "NOZM.meal_out",
+      "to": "ILC.meal_feed",
+      "size_ref": "yaml:calciner.D_feed",
+      "size_m": 0.8485,
+      "size_text": "D 0.849 E",
+      "status": "Estimated",
+      "inputs": [
+        "calciner.D_feed"
+      ]
+    },
+    {
+      "line": "F201",
+      "service": "fuel",
+      "sheet": "CA",
+      "from": "SRC.fuel_calciner",
+      "to": "NOZF.fuel_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "F202",
+      "service": "fuel",
+      "sheet": "CA",
+      "from": "NOZF.fuel_out",
+      "to": "ILC.fuel_inlet",
+      "size_ref": "yaml:calciner.D_fuel",
+      "size_m": 0.2828,
+      "size_text": "D 0.283 E",
+      "status": "Estimated",
+      "inputs": [
+        "calciner.D_fuel"
+      ]
+    },
+    {
+      "line": "G202",
+      "service": "gas",
+      "sheet": "CA",
+      "from": "ILC.gas_outlet",
+      "to": "GN.gas_in",
+      "size_ref": "derived:gooseneck().D_neck",
+      "size_m": 4.949747468305833,
+      "size_text": "D 4.950 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "G203",
+      "service": "gas",
+      "sheet": "CA",
+      "from": "GN.gas_out",
+      "to": "OPC-01",
+      "size_ref": "yaml:gooseneck.D_leg",
+      "size_m": 3.5,
+      "size_text": "D 3.500",
+      "status": "Verified",
+      "inputs": [
+        "gooseneck.D_leg"
+      ]
+    },
+    {
+      "line": "A301",
+      "service": "air_primary",
+      "sheet": "KI",
+      "from": "SRC.primary_air",
+      "to": "BRN.air_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "F301",
+      "service": "fuel",
+      "sheet": "KI",
+      "from": "SRC.fuel_kiln",
+      "to": "BRN.fuel_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "G301",
+      "service": "gas",
+      "sheet": "KI",
+      "from": "BRN.flame_out",
+      "to": "KILN.burner_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A302",
+      "service": "air_hot",
+      "sheet": "KI",
+      "from": "OPC-06",
+      "to": "HOOD.sec_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A303",
+      "service": "air_hot",
+      "sheet": "KI",
+      "from": "HOOD.sec_out",
+      "to": "KILN.air_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A304",
+      "service": "air_hot",
+      "sheet": "KI",
+      "from": "OPC-07",
+      "to": "HOOD.ter_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A305",
+      "service": "air_hot",
+      "sheet": "KI",
+      "from": "HOOD.ter_out",
+      "to": "OPC-05",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "M301",
+      "service": "meal_hot",
+      "sheet": "KI",
+      "from": "OPC-03",
+      "to": "KIC.meal_in",
+      "size_ref": "derived:meal_pipes()[5].D",
+      "size_m": 0.6977474155880954,
+      "size_text": "D 0.698 E",
+      "status": "Estimated",
+      "inputs": []
+    },
+    {
+      "line": "M302",
+      "service": "meal_hot",
+      "sheet": "KI",
+      "from": "KIC.meal_out",
+      "to": "KILN.meal_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "G302",
+      "service": "gas",
+      "sheet": "KI",
+      "from": "KILN.gas_out",
+      "to": "KIC.gas_in",
+      "size_ref": "yaml:kiln.D",
+      "size_m": 4.8,
+      "size_text": "D 4.800",
+      "status": "Verified",
+      "inputs": [
+        "kiln.D"
+      ]
+    },
+    {
+      "line": "G303",
+      "service": "gas",
+      "sheet": "KI",
+      "from": "KIC.gas_out",
+      "to": "OPC-04",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "K301",
+      "service": "clinker",
+      "sheet": "KI",
+      "from": "KILN.clinker_out",
+      "to": "OPC-08",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A401",
+      "service": "air_cooler",
+      "sheet": "CO",
+      "from": "SRC.cooler_air",
+      "to": "COOL.grate_air",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A402",
+      "service": "air_hot",
+      "sheet": "CO",
+      "from": "COOL.hood_1",
+      "to": "OPC-06",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A403",
+      "service": "air_hot",
+      "sheet": "CO",
+      "from": "COOL.hood_2",
+      "to": "OPC-07",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "A404",
+      "service": "air_hot",
+      "sheet": "CO",
+      "from": "COOL.vent_outlet",
+      "to": "SNK.cooler_vent",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "K401",
+      "service": "clinker",
+      "sheet": "CO",
+      "from": "OPC-08",
+      "to": "COOL.clinker_in",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    },
+    {
+      "line": "K402",
+      "service": "clinker",
+      "sheet": "CO",
+      "from": "COOL.clinker_out",
+      "to": "SNK.clinker",
+      "size_ref": "absent",
+      "size_m": null,
+      "size_text": "-",
+      "status": "Unknown",
+      "inputs": []
+    }
+  ],
+  "instruments": [
+    {
+      "tag": "FT-101",
+      "variable": "raw meal feed",
+      "key": "cfg:feed.Feed_rate_kg_s",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "M101",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "TT-103",
+      "variable": "C1 meal outlet T",
+      "key": "stage:4.solid_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "M103",
+      "mount": "F",
+      "reference_value": 572.6295348815778
+    },
+    {
+      "tag": "TT-105",
+      "variable": "C2 meal outlet T",
+      "key": "stage:3.solid_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "M105",
+      "mount": "F",
+      "reference_value": 746.8717373934703
+    },
+    {
+      "tag": "TT-107",
+      "variable": "C3 meal outlet T",
+      "key": "stage:2.solid_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "M107",
+      "mount": "F",
+      "reference_value": 878.5377030921501
+    },
+    {
+      "tag": "TT-109",
+      "variable": "C4 meal outlet T",
+      "key": "stage:1.solid_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "M109",
+      "mount": "F",
+      "reference_value": 987.1829030741887
+    },
+    {
+      "tag": "TT-104",
+      "variable": "C4 gas outlet T",
+      "key": "stage:1.gas_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "G104",
+      "mount": "F",
+      "reference_value": 979.7684439705415
+    },
+    {
+      "tag": "TT-106",
+      "variable": "C3 gas outlet T",
+      "key": "stage:2.gas_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "G106",
+      "mount": "F",
+      "reference_value": 877.0067278758007
+    },
+    {
+      "tag": "TT-108",
+      "variable": "C2 gas outlet T",
+      "key": "stage:3.gas_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "G108",
+      "mount": "F",
+      "reference_value": 744.6618191534857
+    },
+    {
+      "tag": "TT-110",
+      "variable": "C1 gas outlet (exhaust) T",
+      "key": "stage:4.gas_outlet_temperature",
+      "status": "Modelled",
+      "found_in": "tests/twin_harness.py STAGE_FIELDS",
+      "at": "G110",
+      "mount": "F",
+      "reference_value": 572.1873958274266
+    },
+    {
+      "tag": "AT-110",
+      "variable": "stack O2 target",
+      "key": "cfg:fuel.O2",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "G110",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-103",
+      "variable": "preheater gas flow",
+      "key": "mass:m_dot_g_preheater",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G104",
+      "mount": "F",
+      "reference_value": 112.53754200701411
+    },
+    {
+      "tag": "FT-111",
+      "variable": "exhaust flow",
+      "key": "mass:m_dot_exhaust",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G111",
+      "mount": "F",
+      "reference_value": 115.05146254036349
+    },
+    {
+      "tag": "FT-102",
+      "variable": "C5 dust escaping to C4",
+      "key": "mass:m_dot_s_C5_dust",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G102",
+      "mount": "F",
+      "reference_value": 7.49701627061043
+    },
+    {
+      "tag": "FT-105",
+      "variable": "C1 dust returned with the feed",
+      "key": "attr:preheater.m_dot_dust_return",
+      "status": "Modelled",
+      "found_in": "pyroprocess/preheater/preheater.py",
+      "at": "D101",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-112",
+      "variable": "C5 meal to the kiln",
+      "key": "mass:m_dot_s_calciner_out",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "M112",
+      "mount": "F",
+      "reference_value": 68.15469336918574
+    },
+    {
+      "tag": "TI-101",
+      "variable": "preheater shell T (max)",
+      "key": "state:Preheater_T_shell_max",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "C4A",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-102",
+      "variable": "C5 dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[C5].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "C5A",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-103",
+      "variable": "C4 dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[C4].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "C4A",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-105",
+      "variable": "C3 dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[C3].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "C3A",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-107",
+      "variable": "C2 dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[C2].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "C2A",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-109",
+      "variable": "C1 dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[C1].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "C1A",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "JI-101",
+      "variable": "hydraulic power of the CFD dP",
+      "key": "diag:gas_pressure_losses.total_power_W",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "IDFA",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-201",
+      "variable": "calciner fuel",
+      "key": "mass:m_dot_fuel_calciner",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "F201",
+      "mount": "F",
+      "reference_value": 3.41806
+    },
+    {
+      "tag": "FT-202",
+      "variable": "tertiary air",
+      "key": "mass:m_dot_tertiary_air",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "A202",
+      "mount": "F",
+      "reference_value": 47.58089832739631
+    },
+    {
+      "tag": "TT-204",
+      "variable": "tertiary air T",
+      "key": "state:Tg_tertiary_air",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "A202",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-204",
+      "variable": "meal into the calciner",
+      "key": "mass:m_dot_s_calciner_in",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "M202",
+      "mount": "F",
+      "reference_value": 94.68309573727015
+    },
+    {
+      "tag": "FT-203",
+      "variable": "calciner gas flow",
+      "key": "mass:m_dot_g_calciner",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G203",
+      "mount": "F",
+      "reference_value": 112.53754200701411
+    },
+    {
+      "tag": "TT-202",
+      "variable": "calciner gas T (zone profile)",
+      "key": "state:Tg_calciner",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "ILC",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "TI-205",
+      "variable": "calciner shell T (max)",
+      "key": "state:Calciner_T_shell_max",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "ILC",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "PDI-201",
+      "variable": "calciner dP (Euler)",
+      "key": "diag:gas_pressure_losses.rows[calciner].dP",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "ILC",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-301",
+      "variable": "kiln fuel",
+      "key": "mass:m_dot_fuel_kiln",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "F301",
+      "mount": "F",
+      "reference_value": 2.09494
+    },
+    {
+      "tag": "FY-301",
+      "variable": "kiln share of the total fuel",
+      "key": "cfg:fuel.kiln_fraction",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "F301",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-302",
+      "variable": "primary air",
+      "key": "mass:m_dot_primary_air",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "A301",
+      "mount": "F",
+      "reference_value": 2.9162486071630003
+    },
+    {
+      "tag": "FY-302",
+      "variable": "primary air share of kiln air",
+      "key": "cfg:burning.primary_air_fraction",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "A301",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-303",
+      "variable": "secondary air",
+      "key": "mass:m_dot_secondary_air",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "A303",
+      "mount": "F",
+      "reference_value": 26.246237464467
+    },
+    {
+      "tag": "TT-301",
+      "variable": "gas T into the burning zone",
+      "key": "state:Tg_burning_in",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "G301",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "TT-302",
+      "variable": "meal T into the burning zone",
+      "key": "state:Ts_burning_in",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "M302",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "ST-301",
+      "variable": "kiln speed (clipped to rpm_min..rpm_max)",
+      "key": "cfg:motion.rpm_default",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "KILN",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "TT-303",
+      "variable": "kiln gas T at the back end",
+      "key": "state:Tg_transition[0]",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "G303",
+      "mount": "F",
+      "reference_value": 1347.0194879723665
+    },
+    {
+      "tag": "FT-304",
+      "variable": "kiln gas flow, burning zone out",
+      "key": "mass:m_dot_g_burning_out",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G301",
+      "mount": "F",
+      "reference_value": 31.25742607163
+    },
+    {
+      "tag": "FT-305",
+      "variable": "kiln gas flow to the calciner",
+      "key": "mass:m_dot_g_transition",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "G303",
+      "mount": "F",
+      "reference_value": 35.01018131153337
+    },
+    {
+      "tag": "FT-306",
+      "variable": "clinker from the burning zone",
+      "key": "mass:m_dot_s_burning",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "K301",
+      "mount": "F",
+      "reference_value": 56.90492185867193
+    },
+    {
+      "tag": "TT-304",
+      "variable": "clinker T at the kiln outlet",
+      "key": "state:Ts_burning[-1]",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "K301",
+      "mount": "F",
+      "reference_value": 1908.1773872523418
+    },
+    {
+      "tag": "TI-307",
+      "variable": "transition shell T (max)",
+      "key": "state:Transition_T_shell_max",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "KILN",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "TI-308",
+      "variable": "burning shell T (max)",
+      "key": "state:Burning_T_shell_max",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "KILN",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-401",
+      "variable": "cooler air",
+      "key": "mass:m_dot_air_cooler",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "A401",
+      "mount": "F",
+      "reference_value": 125.19082808907827
+    },
+    {
+      "tag": "FY-401",
+      "variable": "cooler air per kg clinker",
+      "key": "cfg:cooler_air.cooling_air_rate_kg_per_kg_clinker",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "A401",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "ST-401",
+      "variable": "grate speed",
+      "key": "cfg:cooler.grate_speed_m_s",
+      "status": "Input",
+      "found_in": "configs/twin_cfg.yaml",
+      "at": "COOL",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "TT-402",
+      "variable": "secondary air T",
+      "key": "state:Tg_secondary_air",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "A402",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "FT-402",
+      "variable": "cooler vent air",
+      "key": "mass:m_dot_vent_air",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "A404",
+      "mount": "F",
+      "reference_value": 51.36369229721495
+    },
+    {
+      "tag": "TT-404",
+      "variable": "vent air T",
+      "key": "state:Tg_vent_air",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "A404",
+      "mount": "F",
+      "reference_value": null
+    },
+    {
+      "tag": "TT-403",
+      "variable": "clinker T at the cooler outlet",
+      "key": "state:Ts_cooler[-1]",
+      "status": "Modelled",
+      "found_in": "pyroprocess/globalstate.py",
+      "at": "K402",
+      "mount": "F",
+      "reference_value": 492.04555455748823
+    },
+    {
+      "tag": "FT-403",
+      "variable": "clinker out",
+      "key": "mass:m_dot_clinker",
+      "status": "Modelled",
+      "found_in": "physics/steady_state_mass.py",
+      "at": "K402",
+      "mount": "F",
+      "reference_value": 56.90492185867193
+    },
+    {
+      "tag": "AT-401",
+      "variable": "free lime in the clinker",
+      "key": "diag:free_lime.free_lime_pct",
+      "status": "Report-only",
+      "found_in": "reporter/diagnostics.py",
+      "at": "COOL",
+      "mount": "P",
+      "reference_value": null
+    },
+    {
+      "tag": "TI-405",
+      "variable": "cooler shell T (max)",
+      "key": "state:Cooler_T_shell_max",
+      "status": "Modelled",
+      "found_in": "assigned on state in the zones",
+      "at": "COOL",
+      "mount": "F",
+      "reference_value": null
+    }
+  ],
+  "connectors": [
+    {
+      "id": "OPC-01",
+      "service": "gas",
+      "from_sheet": "CA",
+      "to_sheet": "PH",
+      "label": "GOOSENECK GAS TO C5"
+    },
+    {
+      "id": "OPC-02",
+      "service": "meal_hot",
+      "from_sheet": "PH",
+      "to_sheet": "CA",
+      "label": "C4 MEAL TO CALCINER"
+    },
+    {
+      "id": "OPC-03",
+      "service": "meal_hot",
+      "from_sheet": "PH",
+      "to_sheet": "KI",
+      "label": "C5 MEAL TO KILN INLET CHAMBER"
+    },
+    {
+      "id": "OPC-04",
+      "service": "gas",
+      "from_sheet": "KI",
+      "to_sheet": "CA",
+      "label": "KILN GAS TO CALCINER THROAT"
+    },
+    {
+      "id": "OPC-05",
+      "service": "air_hot",
+      "from_sheet": "KI",
+      "to_sheet": "CA",
+      "label": "TERTIARY AIR FROM HOOD"
+    },
+    {
+      "id": "OPC-06",
+      "service": "air_hot",
+      "from_sheet": "CO",
+      "to_sheet": "KI",
+      "label": "SECONDARY AIR FROM COOLER"
+    },
+    {
+      "id": "OPC-07",
+      "service": "air_hot",
+      "from_sheet": "CO",
+      "to_sheet": "KI",
+      "label": "TERTIARY AIR FROM COOLER"
+    },
+    {
+      "id": "OPC-08",
+      "service": "clinker",
+      "from_sheet": "KI",
+      "to_sheet": "CO",
+      "label": "CLINKER TO COOLER"
+    }
+  ],
+  "setpoints": [
+    {
+      "id": "SP-1",
+      "sheet": "KI",
+      "kind": "inverse_solve",
+      "manipulated": "cfg:fuel.Fuel_rate_total",
+      "measured": "AT-401",
+      "spec": "free_lime_spec (1.5 %)",
+      "alt_spec": "clinker_temperature_spec (1723 K)",
+      "status": "Optional",
+      "note": "off in a plain run; the fuel is then the configured Fuel_rate_total"
+    }
+  ]
+}

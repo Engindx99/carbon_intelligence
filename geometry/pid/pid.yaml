@@ -1,0 +1,210 @@
+# THE P&ID's topology: equipment, lines, instruments, off-page connectors.
+#
+# What is NOT written here (single-source rule, geometry/plant_geometry.yaml):
+#   - no dimension: a line's `size` is a reference into plant_geometry.yaml
+#       yaml:<dotted key>           a primary entry (status from its source tag)
+#       derived:<fn>(<args>)<path>  a plant_geometry.py function (Estimated)
+#       absent                      no source gives it (Unknown), drawn as "-"
+#   - no process value: an instrument's `key` names the twin's own variable
+#       cfg:      configs/twin_cfg.yaml                     Input
+#       mass:     physics.steady_state_mass field           Modelled
+#       state:    GlobalState / state.<name> set in a zone  Modelled
+#       stage:    preheater stage k (1 = C4 .. 4 = C1)      Modelled
+#       attr:     attribute of a twin object                Modelled
+#       diag:     reporter.diagnostics result               Report-only
+# The grid cells (col, row; origin bottom-left of the drawing area, 41 x 32
+# cells) only lay the sheet out, as layout.* does in plant_geometry.yaml.
+#
+# Scope (user decision, 14 Nov 2026): only what the twin models. tools/pid/
+# scope.py lists every key; each is covered by exactly one instrument.
+# Equipment tags are the inventory's (tools/drawings/inventory.py).
+# Plant: two identical strings; string A is drawn, string B is identical.
+#
+# Line numbers: <service letter><sheet no><seq>; G gas, M meal, D dust,
+# A air, F fuel, K clinker. A stream that changes sheet ends at an
+# off-page connector (OPC-nn) and starts again on the next sheet under that
+# sheet's own number.
+
+sheets:
+  PH: {num: 1, title: "PREHEATER, STRING A (STRING B IDENTICAL)", area: Preheater}
+  CA: {num: 2, title: "ILC CALCINER, GOOSENECK AND TERTIARY AIR", area: Calciner}
+  KI: {num: 3, title: "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER", area: "Rotary kiln"}
+  CO: {num: 4, title: "GRATE COOLER", area: "Clinker cooler"}
+
+equipment:
+  # ---- sheet 1: preheater, string A
+  FEEDA: {tag: FEED, sheet: PH, symbol: feed_chute,  cell: [29, 14], size: [2, 2]}
+  R1A:   {tag: R1,   sheet: PH, symbol: riser,       cell: [29, 19.8], size: [2, 6]}
+  C1A:   {tag: C1,   sheet: PH, symbol: cyclone,     cell: [32, 18], size: [3, 6], qty: "2"}
+  C2A:   {tag: C2,   sheet: PH, symbol: cyclone,     cell: [25, 15], size: [3, 6]}
+  C3A:   {tag: C3,   sheet: PH, symbol: cyclone,     cell: [18, 12], size: [3, 6]}
+  C4A:   {tag: C4,   sheet: PH, symbol: cyclone,     cell: [11, 9],  size: [3, 6]}
+  C5A:   {tag: C5,   sheet: PH, symbol: cyclone,     cell: [4, 6],   size: [3, 6]}
+  R2A:   {tag: R2-R3, label: R2, sheet: PH, symbol: riser,      cell: [22, 18.3], size: [2, 3]}
+  R3A:   {tag: R2-R3, label: R3, sheet: PH, symbol: riser,      cell: [15, 15.3], size: [2, 3]}
+  R4A:   {tag: R4,   sheet: PH, symbol: riser,       cell: [8, 12.3], size: [2, 3]}
+  MP1A:  {tag: MP,   sheet: PH, symbol: flap_valve,  cell: [33, 16]}
+  MP2A:  {tag: MP,   sheet: PH, symbol: flap_valve,  cell: [26, 13]}
+  MP3A:  {tag: MP,   sheet: PH, symbol: flap_valve,  cell: [19, 10]}
+  MP4A:  {tag: MP,   sheet: PH, symbol: flap_valve,  cell: [12, 7]}
+  MP5A:  {tag: MP,   sheet: PH, symbol: flap_valve,  cell: [5, 4]}
+  IDFA:  {tag: IDF,  sheet: PH, symbol: fan,         cell: [37, 29], size: [3, 3], qty: "1 per string"}
+  # ---- sheet 2: calciner
+  ILC:   {tag: ILC,  sheet: CA, symbol: vessel,      cell: [18, 6],  size: [5, 20]}
+  GN:    {tag: GN,   sheet: CA, symbol: gooseneck,   cell: [18, 27], size: [8, 4]}
+  TAD:   {tag: TAD,  sheet: CA, symbol: duct,        cell: [6, 11],   size: [8, 2]}
+  NOZM:  {tag: NOZ, label: NOZ meal, sheet: CA, symbol: nozzle_meal, cell: [28, 15], size: [3, 2], qty: "2"}
+  NOZF:  {tag: NOZ, label: NOZ fuel, sheet: CA, symbol: nozzle_fuel, cell: [28, 12], size: [3, 2], qty: "2"}
+  # ---- sheet 3: kiln
+  KIC:   {tag: KIC,  sheet: KI, symbol: chamber,     cell: [4, 14],  size: [5, 8]}
+  KILN:  {tag: KILN, sheet: KI, symbol: rotary_kiln, cell: [12, 15], size: [15, 4], zones: [transition, burning]}
+  HOOD:  {tag: HOOD, sheet: KI, symbol: hood,        cell: [33, 11], size: [5, 12]}
+  BRN:   {tag: BRN,  sheet: KI, symbol: burner,      cell: [39, 16], size: [2, 2]}
+  # ---- sheet 4: cooler
+  COOL:  {tag: COOL, sheet: CO, symbol: grate_cooler, cell: [8, 10], size: [26, 8], segments: 10, hood_segments: 2}
+
+lines:
+  # ================= sheet 1: preheater, gas in flow order =================
+  G101: {service: gas, sheet: PH, from: OPC-01, to: C5A.gas_in, size: "yaml:gooseneck.D_leg"}
+  G102: {service: gas, sheet: PH, from: C5A.gas_out, to: R4A.gas_in, size: "derived:stage_riser(4).parts[0].D"}
+  G103: {service: gas, sheet: PH, from: R4A.gas_out, to: C4A.gas_in, size: "derived:stage_riser(4).parts[0].D"}
+  G104: {service: gas, sheet: PH, from: C4A.gas_out, to: R3A.gas_in, size: "derived:stage_riser(3).parts[0].D"}
+  G105: {service: gas, sheet: PH, from: R3A.gas_out, to: C3A.gas_in, size: "derived:stage_riser(3).parts[0].D"}
+  G106: {service: gas, sheet: PH, from: C3A.gas_out, to: R2A.gas_in, size: "derived:stage_riser(2).parts[0].D"}
+  G107: {service: gas, sheet: PH, from: R2A.gas_out, to: C2A.gas_in, size: "derived:stage_riser(2).parts[0].D"}
+  G108: {service: gas, sheet: PH, from: C2A.gas_out, to: R1A.gas_in, size: "derived:r1_path().parts[0].D"}
+  G109: {service: gas, sheet: PH, from: R1A.gas_out, to: C1A.gas_in, size: "yaml:risers.R1.D"}
+  G110: {service: gas, sheet: PH, from: C1A.gas_out, to: IDFA.gas_in, size: "derived:cyclone('C1').D_vortex"}
+  G111: {service: gas, sheet: PH, from: IDFA.gas_out, to: SNK.stack, size: absent}
+  # ---- meal and dust
+  M101: {service: meal_raw, sheet: PH, from: SRC.raw_meal, to: FEEDA.in, size: absent}
+  M102: {service: meal_raw, sheet: PH, from: FEEDA.out, to: R1A.meal_in, size: "yaml:cyclone_domain.c1_feed_width"}
+  M103: {service: meal_hot, sheet: PH, from: C1A.dust_out, to: MP1A.in, size: "derived:meal_pipes()[1].D"}
+  M104: {service: meal_hot, sheet: PH, from: MP1A.out, to: R2A.meal_in, size: "derived:meal_pipes()[1].D", via: [[33.5, 10], [23, 10]]}
+  M105: {service: meal_hot, sheet: PH, from: C2A.dust_out, to: MP2A.in, size: "derived:meal_pipes()[2].D"}
+  M106: {service: meal_hot, sheet: PH, from: MP2A.out, to: R3A.meal_in, size: "derived:meal_pipes()[2].D", via: [[26.5, 7.5], [16, 7.5]]}
+  M107: {service: meal_hot, sheet: PH, from: C3A.dust_out, to: MP3A.in, size: "derived:meal_pipes()[3].D"}
+  M108: {service: meal_hot, sheet: PH, from: MP3A.out, to: R4A.meal_in, size: "derived:meal_pipes()[3].D", via: [[19.5, 5], [9, 5]]}
+  M109: {service: meal_hot, sheet: PH, from: C4A.dust_out, to: MP4A.in, size: "derived:meal_pipes()[4].D"}
+  M110: {service: meal_hot, sheet: PH, from: MP4A.out, to: OPC-02, size: "derived:meal_pipes()[4].D"}
+  M111: {service: meal_hot, sheet: PH, from: C5A.dust_out, to: MP5A.in, size: "derived:meal_pipes()[5].D"}
+  M112: {service: meal_hot, sheet: PH, from: MP5A.out, to: OPC-03, size: "derived:meal_pipes()[5].D"}
+  D101: {service: dust, sheet: PH, from: C1A.dust_esc, to: FEEDA.dust_in, size: absent,
+         via: [[37, 22.8], [37, 15]],
+         note: "C1 dust leaves with the exhaust and is returned with the feed; the twin has no filter object"}
+  # ================= sheet 2: calciner =================
+  G201: {service: gas, sheet: CA, from: OPC-04, to: ILC.kiln_gas_inlet, size: "derived:calciner().D_throat"}
+  A201: {service: air_hot, sheet: CA, from: OPC-05, to: TAD.air_in, size: "yaml:calciner.D_tertiary_air"}
+  A202: {service: air_hot, sheet: CA, from: TAD.air_out, to: ILC.tertiary_air_inlet, size: "yaml:calciner.D_tertiary_air"}
+  M201: {service: meal_hot, sheet: CA, from: OPC-02, to: NOZM.meal_in, size: "derived:meal_pipes()[4].D"}
+  M202: {service: meal_hot, sheet: CA, from: NOZM.meal_out, to: ILC.meal_feed, size: "yaml:calciner.D_feed"}
+  F201: {service: fuel, sheet: CA, from: SRC.fuel_calciner, to: NOZF.fuel_in, size: absent}
+  F202: {service: fuel, sheet: CA, from: NOZF.fuel_out, to: ILC.fuel_inlet, size: "yaml:calciner.D_fuel"}
+  G202: {service: gas, sheet: CA, from: ILC.gas_outlet, to: GN.gas_in, size: "derived:gooseneck().D_neck"}
+  G203: {service: gas, sheet: CA, from: GN.gas_out, to: OPC-01, size: "yaml:gooseneck.D_leg"}
+  # ================= sheet 3: kiln =================
+  A301: {service: air_primary, sheet: KI, from: SRC.primary_air, to: BRN.air_in, size: absent}
+  F301: {service: fuel, sheet: KI, from: SRC.fuel_kiln, to: BRN.fuel_in, size: absent}
+  G301: {service: gas, sheet: KI, from: BRN.flame_out, to: KILN.burner_in, size: absent}
+  A302: {service: air_hot, sheet: KI, from: OPC-06, to: HOOD.sec_in, size: absent}
+  A303: {service: air_hot, sheet: KI, from: HOOD.sec_out, to: KILN.air_in, size: absent}
+  A304: {service: air_hot, sheet: KI, from: OPC-07, to: HOOD.ter_in, size: absent}
+  A305: {service: air_hot, sheet: KI, from: HOOD.ter_out, to: OPC-05, size: absent}
+  M301: {service: meal_hot, sheet: KI, from: OPC-03, to: KIC.meal_in, size: "derived:meal_pipes()[5].D"}
+  M302: {service: meal_hot, sheet: KI, from: KIC.meal_out, to: KILN.meal_in, size: absent}
+  G302: {service: gas, sheet: KI, from: KILN.gas_out, to: KIC.gas_in, size: "yaml:kiln.D"}
+  G303: {service: gas, sheet: KI, from: KIC.gas_out, to: OPC-04, size: absent}
+  K301: {service: clinker, sheet: KI, from: KILN.clinker_out, to: OPC-08, size: absent}
+  # ================= sheet 4: cooler =================
+  A401: {service: air_cooler, sheet: CO, from: SRC.cooler_air, to: COOL.grate_air, size: absent}
+  A402: {service: air_hot, sheet: CO, from: COOL.hood_1, to: OPC-06, size: absent}
+  A403: {service: air_hot, sheet: CO, from: COOL.hood_2, to: OPC-07, size: absent}
+  A404: {service: air_hot, sheet: CO, from: COOL.vent_outlet, to: SNK.cooler_vent, size: absent}
+  K401: {service: clinker, sheet: CO, from: OPC-08, to: COOL.clinker_in, size: absent}
+  K402: {service: clinker, sheet: CO, from: COOL.clinker_out, to: SNK.clinker, size: absent}
+
+connectors:        # one per stream that changes sheet; ends one line, starts one
+  OPC-01: {service: gas,       from_sheet: CA, to_sheet: PH, label: "GOOSENECK GAS TO C5"}
+  OPC-02: {service: meal_hot,  from_sheet: PH, to_sheet: CA, label: "C4 MEAL TO CALCINER"}
+  OPC-03: {service: meal_hot,  from_sheet: PH, to_sheet: KI, label: "C5 MEAL TO KILN INLET CHAMBER"}
+  OPC-04: {service: gas,       from_sheet: KI, to_sheet: CA, label: "KILN GAS TO CALCINER THROAT"}
+  OPC-05: {service: air_hot,   from_sheet: KI, to_sheet: CA, label: "TERTIARY AIR FROM HOOD"}
+  OPC-06: {service: air_hot,   from_sheet: CO, to_sheet: KI, label: "SECONDARY AIR FROM COOLER"}
+  OPC-07: {service: air_hot,   from_sheet: CO, to_sheet: KI, label: "TERTIARY AIR FROM COOLER"}
+  OPC-08: {service: clinker,   from_sheet: KI, to_sheet: CO, label: "CLINKER TO COOLER"}
+
+# `at` is a line number or an equipment id. mount: F field, P panel / soft
+# (an Input or a Report-only value has no field device). On an equipment, `side`
+# (top by default, right, left) and `along` (0..1 up that side) place the bubble.
+instruments:
+  # ---- sheet 1
+  FT-101: {var: "raw meal feed",                    key: "cfg:feed.Feed_rate_kg_s", status: Input, at: M101, mount: P}
+  TT-103: {var: "C1 meal outlet T",                 key: "stage:4.solid_outlet_temperature", status: Modelled, at: M103, mount: F}
+  TT-105: {var: "C2 meal outlet T",                 key: "stage:3.solid_outlet_temperature", status: Modelled, at: M105, mount: F}
+  TT-107: {var: "C3 meal outlet T",                 key: "stage:2.solid_outlet_temperature", status: Modelled, at: M107, mount: F}
+  TT-109: {var: "C4 meal outlet T",                 key: "stage:1.solid_outlet_temperature", status: Modelled, at: M109, mount: F}
+  TT-104: {var: "C4 gas outlet T",                  key: "stage:1.gas_outlet_temperature", status: Modelled, at: G104, mount: F}
+  TT-106: {var: "C3 gas outlet T",                  key: "stage:2.gas_outlet_temperature", status: Modelled, at: G106, mount: F}
+  TT-108: {var: "C2 gas outlet T",                  key: "stage:3.gas_outlet_temperature", status: Modelled, at: G108, mount: F}
+  TT-110: {var: "C1 gas outlet (exhaust) T",        key: "stage:4.gas_outlet_temperature", status: Modelled, at: G110, mount: F}
+  AT-110: {var: "stack O2 target",                  key: "cfg:fuel.O2", status: Input, at: G110, mount: P}
+  FT-103: {var: "preheater gas flow",               key: "mass:m_dot_g_preheater", status: Modelled, at: G104, mount: F}
+  FT-111: {var: "exhaust flow",                     key: "mass:m_dot_exhaust", status: Modelled, at: G111, mount: F}
+  FT-102: {var: "C5 dust escaping to C4",           key: "mass:m_dot_s_C5_dust", status: Modelled, at: G102, mount: F}
+  FT-105: {var: "C1 dust returned with the feed",   key: "attr:preheater.m_dot_dust_return", status: Modelled, at: D101, mount: F}
+  FT-112: {var: "C5 meal to the kiln",              key: "mass:m_dot_s_calciner_out", status: Modelled, at: M112, mount: F}
+  TI-101: {var: "preheater shell T (max)",          key: "state:Preheater_T_shell_max", status: Modelled, at: C4A, mount: F}
+  PDI-102: {var: "C5 dP (Euler)",                   key: "diag:gas_pressure_losses.rows[C5].dP", status: Report-only, at: C5A, mount: P}
+  PDI-103: {var: "C4 dP (Euler)",                   key: "diag:gas_pressure_losses.rows[C4].dP", status: Report-only, at: C4A, mount: P}
+  PDI-105: {var: "C3 dP (Euler)",                   key: "diag:gas_pressure_losses.rows[C3].dP", status: Report-only, at: C3A, mount: P}
+  PDI-107: {var: "C2 dP (Euler)",                   key: "diag:gas_pressure_losses.rows[C2].dP", status: Report-only, at: C2A, mount: P}
+  PDI-109: {var: "C1 dP (Euler)",                   key: "diag:gas_pressure_losses.rows[C1].dP", status: Report-only, at: C1A, mount: P}
+  JI-101: {var: "hydraulic power of the CFD dP",    key: "diag:gas_pressure_losses.total_power_W", status: Report-only, at: IDFA, mount: P}
+  # ---- sheet 2
+  FT-201: {var: "calciner fuel",                    key: "mass:m_dot_fuel_calciner", status: Modelled, at: F201, mount: F}
+  FT-202: {var: "tertiary air",                     key: "mass:m_dot_tertiary_air", status: Modelled, at: A202, mount: F}
+  TT-204: {var: "tertiary air T",                   key: "state:Tg_tertiary_air", status: Modelled, at: A202, mount: F}
+  FT-204: {var: "meal into the calciner",           key: "mass:m_dot_s_calciner_in", status: Modelled, at: M202, mount: F}
+  FT-203: {var: "calciner gas flow",                key: "mass:m_dot_g_calciner", status: Modelled, at: G203, mount: F}
+  TT-202: {var: "calciner gas T (zone profile)",    key: "state:Tg_calciner", status: Modelled, at: ILC, mount: F, side: right, along: 0.92}
+  TI-205: {var: "calciner shell T (max)",           key: "state:Calciner_T_shell_max", status: Modelled, at: ILC, mount: F, side: right, along: 0.82}
+  PDI-201: {var: "calciner dP (Euler)",             key: "diag:gas_pressure_losses.rows[calciner].dP", status: Report-only, at: ILC, mount: P, side: right, along: 0.72}
+  # ---- sheet 3
+  FT-301: {var: "kiln fuel",                        key: "mass:m_dot_fuel_kiln", status: Modelled, at: F301, mount: F}
+  FY-301: {var: "kiln share of the total fuel",     key: "cfg:fuel.kiln_fraction", status: Input, at: F301, mount: P}
+  FT-302: {var: "primary air",                      key: "mass:m_dot_primary_air", status: Modelled, at: A301, mount: F}
+  FY-302: {var: "primary air share of kiln air",    key: "cfg:burning.primary_air_fraction", status: Input, at: A301, mount: P}
+  FT-303: {var: "secondary air",                    key: "mass:m_dot_secondary_air", status: Modelled, at: A303, mount: F}
+  TT-301: {var: "gas T into the burning zone",      key: "state:Tg_burning_in", status: Modelled, at: G301, mount: F}
+  TT-302: {var: "meal T into the burning zone",     key: "state:Ts_burning_in", status: Modelled, at: M302, mount: F}
+  ST-301: {var: "kiln speed (clipped to rpm_min..rpm_max)", key: "cfg:motion.rpm_default", status: Input, at: KILN, mount: P}
+  TT-303: {var: "kiln gas T at the back end",       key: "state:Tg_transition[0]", status: Modelled, at: G303, mount: F}
+  FT-304: {var: "kiln gas flow, burning zone out",  key: "mass:m_dot_g_burning_out", status: Modelled, at: G301, mount: F}
+  FT-305: {var: "kiln gas flow to the calciner",    key: "mass:m_dot_g_transition", status: Modelled, at: G303, mount: F}
+  FT-306: {var: "clinker from the burning zone",    key: "mass:m_dot_s_burning", status: Modelled, at: K301, mount: F}
+  TT-304: {var: "clinker T at the kiln outlet",     key: "state:Ts_burning[-1]", status: Modelled, at: K301, mount: F}
+  TI-307: {var: "transition shell T (max)",         key: "state:Transition_T_shell_max", status: Modelled, at: KILN, mount: F}
+  TI-308: {var: "burning shell T (max)",            key: "state:Burning_T_shell_max", status: Modelled, at: KILN, mount: F}
+  # ---- sheet 4
+  FT-401: {var: "cooler air",                       key: "mass:m_dot_air_cooler", status: Modelled, at: A401, mount: F}
+  FY-401: {var: "cooler air per kg clinker",        key: "cfg:cooler_air.cooling_air_rate_kg_per_kg_clinker", status: Input, at: A401, mount: P}
+  ST-401: {var: "grate speed",                      key: "cfg:cooler.grate_speed_m_s", status: Input, at: COOL, mount: P}
+  TT-402: {var: "secondary air T",                  key: "state:Tg_secondary_air", status: Modelled, at: A402, mount: F}
+  FT-402: {var: "cooler vent air",                  key: "mass:m_dot_vent_air", status: Modelled, at: A404, mount: F}
+  TT-404: {var: "vent air T",                       key: "state:Tg_vent_air", status: Modelled, at: A404, mount: F}
+  TT-403: {var: "clinker T at the cooler outlet",   key: "state:Ts_cooler[-1]", status: Modelled, at: K402, mount: F}
+  FT-403: {var: "clinker out",                      key: "mass:m_dot_clinker", status: Modelled, at: K402, mount: F}
+  AT-401: {var: "free lime in the clinker",         key: "diag:free_lime.free_lime_pct", status: Report-only, at: COOL, mount: P, side: right, along: 0.4}
+  TI-405: {var: "cooler shell T (max)",             key: "state:Cooler_T_shell_max", status: Modelled, at: COOL, mount: F}
+
+# The only "control" in the twin: an inverse solve, not a loop (solver/setpoint.py).
+setpoints:
+  SP-1:
+    sheet: KI
+    kind: inverse_solve
+    manipulated: "cfg:fuel.Fuel_rate_total"
+    measured: AT-401
+    spec: "free_lime_spec (1.5 %)"
+    alt_spec: "clinker_temperature_spec (1723 K)"
+    status: Optional
+    note: "off in a plain run; the fuel is then the configured Fuel_rate_total"

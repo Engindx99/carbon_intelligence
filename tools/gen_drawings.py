@@ -10,6 +10,8 @@ this writes what goes with them:
     geometry/drawings/inventory.json, .md  every piece of equipment, by
                                            process area, with what the
                                            source holds for it
+    geometry/drawings/pid/pid.json         every line and instrument of the
+                                           P&ID (geometry/pid/pid.yaml)
 
     python3 tools/gen_drawings.py
     python3 tools/gen_drawings.py --check     # exit 1 if any file is stale
@@ -26,6 +28,7 @@ if str(ROOT) not in sys.path:
 
 from geometry import plant_geometry as pg  # noqa: E402
 from tools.drawings import calciner, cooler, cyclone, inventory, kiln, twin, volute  # noqa: E402
+from tools.pid import encode as pid_encode, model as pid_model  # noqa: E402
 
 OUT = ROOT / "geometry" / "drawings"
 LOG_DIR = ROOT / "geometry" / "output" / "2500"
@@ -80,7 +83,10 @@ def files(g=None):
     """{path: text} of every file this writes."""
     g = g or pg.load()
     out = {OUT / n / f"{n}.json": _text(payload(n, g)) for n in EQUIPMENT}
-    inv = inventory.build(g, drawn=DRAWN, ready=[n for n in EQUIPMENT if n not in DRAWN])
+    pid = pid_model.load()
+    out[OUT / "pid" / "pid.json"] = _text(pid_encode.payload(pid, g))
+    inv = inventory.build(g, drawn=DRAWN, ready=[n for n in EQUIPMENT if n not in DRAWN],
+                          pid_sheets=pid_encode.pid_sheets(pid))
     out[OUT / "inventory.json"] = _text(inv)
     out[OUT / "inventory.md"] = inventory.markdown(inv)
     return out
