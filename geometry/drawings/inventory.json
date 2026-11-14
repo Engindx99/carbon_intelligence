@@ -398,7 +398,7 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT (same geometry)",
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/C4/"
     },
     {
       "area": "Preheater",
@@ -550,7 +550,7 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT (same geometry)",
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/C4/"
     },
     {
       "area": "Preheater",
@@ -726,7 +726,7 @@
       },
       "missing": [],
       "cfd_solid": "C4.SLDPRT",
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/C4/"
     },
     {
       "area": "Preheater",
@@ -894,7 +894,7 @@
       },
       "missing": [],
       "cfd_solid": "C5.SLDPRT",
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/C5/"
     },
     {
       "area": "Preheater",

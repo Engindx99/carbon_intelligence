@@ -338,6 +338,41 @@ def drawings_bas(g):
     ]
     out += _table_consts("C1", P, dcy.ORDER)
     out += _twin_sheet_consts(g)
+    out += _volute_sheet_consts(g)
+    return out
+
+
+def _volute_sheet_consts(g):
+    """What drawings.bas needs for the C4 and C5 sheets (volute cyclones
+    with a 90 deg outlet), under their own prefix, and their tables."""
+    from tools.drawings import volute as dvo
+
+    d = g["cyclone_domain"]
+    out = []
+    for name in ("C4", "C5"):
+        c = pg.cyclone(g, name)
+        o = pg.cyclone_outlet(g, name)
+        out += [
+            der(f"{name}_D_BARREL", c["D_barrel"], "barrel inner D"),
+            der(f"{name}_H_BARREL", c["H_barrel"], "barrel height"),
+            der(f"{name}_H_CONE", c["H_cone"], "cone height"),
+            der(f"{name}_L_VORTEX", c["L_vortex"], "vortex finder immersion"),
+            der(f"{name}_D_VORTEX", c["D_vortex"], "vortex finder / outlet pipe bore"),
+            der(f"{name}_D_DUST", c["D_dust"], "dust outlet D"),
+            der(f"{name}_W_INLET", c["W_inlet"], "volute duct width"),
+            der(f"{name}_H_INLET", c["H_inlet"], "volute duct height"),
+            src(f"{name}_VORTEX_WALL", d["vortex_wall"], "vortex finder wall (not scaled)"),
+            src(f"{name}_TONGUE", d["volute_tongue"], "volute tongue (not scaled)"),
+            src(f"{name}_L_DUCT", d["inlet_duct_length"], "volute duct length (not scaled)"),
+            der(f"{name}_HEIGHT", c["height"], "barrel + cone"),
+            der(f"{name}_OUT_RISE", c["outlet_rise"], "outlet pipe rise over the roof"),
+            der(f"{name}_OUT_R", c["outlet_bend_R"], "outlet bend centreline R"),
+            der(f"{name}_OUT_RUN", c["outlet_run"], "outlet run after the bend"),
+            der(f"{name}_EXIT_X", o["x_end"], "barrel axis to the gas outlet face"),
+            der(f"{name}_Z_LEG", o["z_leg"], "the outlet run's axis, z"),
+            der(f"{name}_TOP", o["z_leg"] + 0.5 * o["D"], "top of the outlet pipe"),
+        ]
+        out += _table_consts(name, dvo.params(g, name), dvo.ORDER)
     return out
 
 

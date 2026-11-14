@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from geometry import plant_geometry as pg  # noqa: E402
-from tools.drawings import cyclone, inventory, twin  # noqa: E402
+from tools.drawings import cyclone, inventory, twin, volute  # noqa: E402
 
 OUT = ROOT / "geometry" / "drawings"
 LOG_DIR = ROOT / "geometry" / "output" / "2500"
@@ -38,11 +38,13 @@ STATUS_RULE = ("published -> Verified; derived_from_reference, literature, cfd_d
 EQUIPMENT = {
     "C1": cyclone,
     "C1_twin": twin,
+    "C4": volute,
+    "C5": volute,
 }
 
 # Drawings made in SolidWorks and checked against their build log; the
 # rest of EQUIPMENT is ready in drawings.bas but not yet run.
-DRAWN = ("C1", "C1_twin")
+DRAWN = ("C1", "C1_twin", "C4", "C5")
 
 
 def payload(name, g=None):
@@ -63,6 +65,7 @@ def payload(name, g=None):
         "status_rule": STATUS_RULE,
         "params": [dict(P[k].as_json(), short=k) for k in mod.ORDER],
         "dimensioned": list(mod.DIMENSIONED),
+        "also_the_sheet_of": list(getattr(mod, "ALSO", {}).get(name, [])),
     }
 
 

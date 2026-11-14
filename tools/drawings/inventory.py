@@ -87,6 +87,10 @@ EQUIPMENT = [
 ]
 
 
+# Equipment drawn on another's sheet (same geometry, one solid).
+SAME_SHEET = {"C2": "C4", "C3": "C4"}
+
+
 def _matches(key, prefixes):
     return any(key == p or key.startswith(p) for p in prefixes)
 
@@ -114,8 +118,9 @@ def build(g, drawn, ready=()):
             "status_counts": counts,
             "missing": missing,
             "cfd_solid": solid,
-            "drawing": ("drawn: geometry/drawings/" + tag + "/") if tag in drawn else
-                       "drawings.bas ready, not yet run" if tag in ready else
+            "drawing": ("drawn: geometry/drawings/" + SAME_SHEET.get(tag, tag) + "/")
+                       if SAME_SHEET.get(tag, tag) in drawn else
+                       "drawings.bas ready, not yet run" if SAME_SHEET.get(tag, tag) in ready else
                        ("no data: source research first" if not dims else "to draw"),
         })
     return {"source": "geometry/plant_geometry.yaml", "equipment": out}

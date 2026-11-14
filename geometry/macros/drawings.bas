@@ -90,6 +90,58 @@ Const C1_twin_TAB_5                As String  = ""           ' parameter table r
 Const C1_twin_TAB_6                As String  = ""           ' parameter table rows
 Const C1_twin_TAB_7                As String  = ""           ' parameter table rows
 Const C1_twin_TAB_8                As String  = ""           ' parameter table rows
+Const C4_D_BARREL                  As Double  = 6.3          ' barrel inner D [derived]
+Const C4_H_BARREL                  As Double  = 6.3          ' barrel height [derived]
+Const C4_H_CONE                    As Double  = 7.3          ' cone height [derived]
+Const C4_L_VORTEX                  As Double  = 3.9          ' vortex finder immersion [derived]
+Const C4_D_VORTEX                  As Double  = 4.63         ' vortex finder / outlet pipe bore [derived]
+Const C4_D_DUST                    As Double  = 0.81         ' dust outlet D [derived]
+Const C4_W_INLET                   As Double  = 2.912        ' volute duct width [derived]
+Const C4_H_INLET                   As Double  = 3.4          ' volute duct height [derived]
+Const C4_VORTEX_WALL               As Double  = 0.08         ' vortex finder wall (not scaled) [model, preheater/cyclone_C1.md]
+Const C4_TONGUE                    As Double  = 0.05         ' volute tongue (not scaled) [model, preheater/cyclone_C4.md]
+Const C4_L_DUCT                    As Double  = 3#           ' volute duct length (not scaled) [model, preheater/cyclone_C4.md]
+Const C4_HEIGHT                    As Double  = 13.6         ' barrel + cone [derived]
+Const C4_OUT_RISE                  As Double  = 7.871        ' outlet pipe rise over the roof [derived]
+Const C4_OUT_R                     As Double  = 4.63         ' outlet bend centreline R [derived]
+Const C4_OUT_RUN                   As Double  = 4.63         ' outlet run after the bend [derived]
+Const C4_EXIT_X                    As Double  = 9.26         ' barrel axis to the gas outlet face [derived]
+Const C4_Z_LEG                     As Double  = 26.101       ' the outlet run's axis, z [derived]
+Const C4_TOP                       As Double  = 28.416       ' top of the outlet pipe [derived]
+Const C4_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6300~mm~published~Verified;H_barrel~Barrel height~6300~mm~CFD decision~Estimated;H_cone~Cone height~7300~mm~FLS ratio~Estimated;height~Barrel + cone height~13600~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3900~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4630~mm~FLS ratio~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~810~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~2912~mm~CFD decision~Estimated;H_inlet~Inlet height a (volute duct)~3400~mm~CFD decision~Estimated;" ' parameter table rows
+Const C4_TAB_2                     As String  = "inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;outlet_turn~Outlet bend angle~90~deg~CFD decision~Estimated;outlet_rise~Outlet pipe rise over the roof~7871~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~4630~mm~derived~Estimated;outlet_run~Outlet run after the bend~4630~mm~derived~Estimated;outlet_axis~Roof to the outlet run's axis~12501~mm~derived~Estimated;exit_x~Barrel axis to the gas outlet face~9260~mm~derived~Estimated;" ' parameter table rows
+Const C4_TAB_3                     As String  = "top~Dust outlet to the top of the outlet pipe~28416~mm~derived~Estimated;volume~Volume (barrel + cone)~283.25~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~226.13~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const C4_TAB_4                     As String  = ""           ' parameter table rows
+Const C4_TAB_5                     As String  = ""           ' parameter table rows
+Const C4_TAB_6                     As String  = ""           ' parameter table rows
+Const C4_TAB_7                     As String  = ""           ' parameter table rows
+Const C4_TAB_8                     As String  = ""           ' parameter table rows
+Const C5_D_BARREL                  As Double  = 6.5          ' barrel inner D [derived]
+Const C5_H_BARREL                  As Double  = 6.5          ' barrel height [derived]
+Const C5_H_CONE                    As Double  = 7.531746     ' cone height [derived]
+Const C5_L_VORTEX                  As Double  = 4.02381      ' vortex finder immersion [derived]
+Const C5_D_VORTEX                  As Double  = 4.776984     ' vortex finder / outlet pipe bore [derived]
+Const C5_D_DUST                    As Double  = 0.835714     ' dust outlet D [derived]
+Const C5_W_INLET                   As Double  = 3.004444     ' volute duct width [derived]
+Const C5_H_INLET                   As Double  = 3.507937     ' volute duct height [derived]
+Const C5_VORTEX_WALL               As Double  = 0.08         ' vortex finder wall (not scaled) [model, preheater/cyclone_C1.md]
+Const C5_TONGUE                    As Double  = 0.05         ' volute tongue (not scaled) [model, preheater/cyclone_C4.md]
+Const C5_L_DUCT                    As Double  = 3#           ' volute duct length (not scaled) [model, preheater/cyclone_C4.md]
+Const C5_HEIGHT                    As Double  = 14.031746    ' barrel + cone [derived]
+Const C5_OUT_RISE                  As Double  = 8.120873     ' outlet pipe rise over the roof [derived]
+Const C5_OUT_R                     As Double  = 4.776984     ' outlet bend centreline R [derived]
+Const C5_OUT_RUN                   As Double  = 4.776984     ' outlet run after the bend [derived]
+Const C5_EXIT_X                    As Double  = 9.553968     ' barrel axis to the gas outlet face [derived]
+Const C5_Z_LEG                     As Double  = 26.929603    ' the outlet run's axis, z [derived]
+Const C5_TOP                       As Double  = 29.318095    ' top of the outlet pipe [derived]
+Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~derived~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4777~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
+Const C5_TAB_2                     As String  = "inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;outlet_turn~Outlet bend angle~90~deg~derived~Estimated;outlet_rise~Outlet pipe rise over the roof~8121~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~4777~mm~derived~Estimated;outlet_run~Outlet run after the bend~4777~mm~derived~Estimated;outlet_axis~Roof to the outlet run's axis~12898~mm~derived~Estimated;exit_x~Barrel axis to the gas outlet face~9554~mm~derived~Estimated;" ' parameter table rows
+Const C5_TAB_3                     As String  = "top~Dust outlet to the top of the outlet pipe~29318~mm~derived~Estimated;volume~Volume (barrel + cone)~311.09~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~240.71~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const C5_TAB_4                     As String  = ""           ' parameter table rows
+Const C5_TAB_5                     As String  = ""           ' parameter table rows
+Const C5_TAB_6                     As String  = ""           ' parameter table rows
+Const C5_TAB_7                     As String  = ""           ' parameter table rows
+Const C5_TAB_8                     As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -143,7 +195,12 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1" or "C1_twin": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4" or "C5": what this run draws
+' a volute cyclone's values (C4 / C5), loaded by LoadVolute
+Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
+Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
+Dim vHeight As Double, vRise As Double, vBendR As Double, vRun As Double, vExitX As Double
+Dim vZleg As Double, vTopZ As Double
 Dim scaleD As Double, detailD As Double
 Dim detX As Double, detY As Double
 Dim partPath As String
@@ -177,6 +234,16 @@ Sub c1_twin()
 End Sub
 
 
+Sub c4()
+    Build "C4"
+End Sub
+
+
+Sub c5()
+    Build "C5"
+End Sub
+
+
 Private Sub Build(ByVal which As String)
 
     Dim why As String
@@ -189,8 +256,11 @@ Private Sub Build(ByVal which As String)
     Set vFront = Nothing: Set vPlan = Nothing: Set vSide = Nothing: Set vDetC = Nothing
     If equip = "C1" Then
         scaleD = 50#: detailD = 20#: detX = DET_X: detY = DET_Y
-    Else
+    ElseIf equip = "C1_twin" Then
         scaleD = 100#: detailD = 50#: detX = TW_DET_X: detY = TW_DET_Y
+    Else
+        scaleD = 100#: detailD = 20#: detX = 0.63: detY = DET_Y
+        LoadVolute
     End If
     On Error GoTo Failed
 
@@ -231,11 +301,34 @@ End Sub
 '==================================================================
 ' The parameter table (generated): rows ';', fields '~'
 '==================================================================
+' A volute cyclone's values for this run, from its generated Consts
+' (C4's; C5's are C4's scaled, but for the finder's wall, the tongue and
+' the duct's length).
+Private Sub LoadVolute()
+    Select Case equip
+    Case "C4"
+        vD = C4_D_BARREL: vHb = C4_H_BARREL: vHc = C4_H_CONE: vLv = C4_L_VORTEX: vDv = C4_D_VORTEX
+        vDd = C4_D_DUST: vW = C4_W_INLET: vH = C4_H_INLET: vWall = C4_VORTEX_WALL: vTongue = C4_TONGUE
+        vLduct = C4_L_DUCT: vHeight = C4_HEIGHT: vRise = C4_OUT_RISE: vBendR = C4_OUT_R: vRun = C4_OUT_RUN
+        vExitX = C4_EXIT_X: vZleg = C4_Z_LEG: vTopZ = C4_TOP
+    Case "C5"
+        vD = C5_D_BARREL: vHb = C5_H_BARREL: vHc = C5_H_CONE: vLv = C5_L_VORTEX: vDv = C5_D_VORTEX
+        vDd = C5_D_DUST: vW = C5_W_INLET: vH = C5_H_INLET: vWall = C5_VORTEX_WALL: vTongue = C5_TONGUE
+        vLduct = C5_L_DUCT: vHeight = C5_HEIGHT: vRise = C5_OUT_RISE: vBendR = C5_OUT_R: vRun = C5_OUT_RUN
+        vExitX = C5_EXIT_X: vZleg = C5_Z_LEG: vTopZ = C5_TOP
+    End Select
+End Sub
+
+
 Private Sub ParseTable()
     Dim all As String, rows As Variant, f As Variant
     Dim i As Long
     If equip = "C1" Then
         all = C1_TAB_1 & C1_TAB_2 & C1_TAB_3 & C1_TAB_4 & C1_TAB_5 & C1_TAB_6 & C1_TAB_7 & C1_TAB_8
+    ElseIf equip = "C4" Then
+        all = C4_TAB_1 & C4_TAB_2 & C4_TAB_3 & C4_TAB_4 & C4_TAB_5 & C4_TAB_6 & C4_TAB_7 & C4_TAB_8
+    ElseIf equip = "C5" Then
+        all = C5_TAB_1 & C5_TAB_2 & C5_TAB_3 & C5_TAB_4 & C5_TAB_5 & C5_TAB_6 & C5_TAB_7 & C5_TAB_8
     Else
         all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
               C1_twin_TAB_7 & C1_twin_TAB_8
@@ -321,6 +414,42 @@ Private Sub CheckTwinBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+' A volute cyclone's solid (C4, C5; cyclone.bas): its true extent, 1 cm.
+' The volute's spiral is a spline through sample points and bulges a
+' little past the tongue's radius (C4: 0.125 m, C5: 0.129 m on -y, seen
+' in their STL), so y min is bounded, not matched.
+Private Sub CheckVoluteBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant, rT As Double
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    rT = 0.5 * vD + vTongue
+    want(0) = -vLduct: If vLduct < 0.5 * vD Then want(0) = -0.5 * vD
+    want(3) = vExitX
+    want(1) = -rT: want(4) = rT + vW
+    want(2) = 0#: want(5) = vTopZ
+    For i = 0 To 5
+        If i = 1 Then
+            If box(1) > want(1) + 0.01 Or box(1) < want(1) - 0.2 Then
+                Fail partPath & ": y min is " & Num(box(1), 3) & " m, today's " & equip & " scroll ends at " & Num(want(1), 3) & _
+                     " (a spline may bulge 0.2 m past it) -- rebuild it with cyclone.bas."
+            End If
+        ElseIf Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's " & equip & " has " & Num(want(i), 3) & _
+                 " -- rebuild it with cyclone.bas (CYCLONE_NAME = " & equip & ", VOLUTE_ON)."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
 ' The body's true extent from its extreme points.
 Private Function ExactBox(body As SldWorks.Body2) As Variant
     Dim b(5) As Double, d(2) As Double
@@ -338,8 +467,11 @@ End Function
 
 
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
-    If equip <> "C1" Then
+    If equip = "C1_twin" Then
         CheckTwinBox doc
+        Exit Sub
+    ElseIf equip <> "C1" Then
+        CheckVoluteBox doc
         Exit Sub
     End If
     Dim pd As SldWorks.PartDoc
@@ -444,7 +576,61 @@ End Sub
 ' Views
 '==================================================================
 Private Sub MakeViews()
-    If equip = "C1" Then MakeViewsC1 Else MakeViewsTwin
+    If equip = "C1" Then
+        MakeViewsC1
+    ElseIf equip = "C1_twin" Then
+        MakeViewsTwin
+    Else
+        MakeViewsVolute
+    End If
+End Sub
+
+
+' A volute cyclone (C4, C5), laid out as C1's sheet at 1:100: the top view
+' (x right, y up; the volute's duct on its +y side), A-A over it, cut
+' along y = 0 through the axis, the left view right of A-A, detail B of
+' the vortex finder's mouth, on the -x side (the volute is on +x).
+Private Sub MakeViewsVolute()
+    Dim R As Double, rx As Double, xa As Double, xb As Double
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long
+    R = 0.5 * vD: rx = 0.5 * vDv
+
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, TOP_X, TOP_Y, "top")
+    HiddenLinesVisible vTop
+    LogMap vTop, "top", scaleD
+
+    ' A-A: along y = 0 through the whole cyclone and its outlet; the
+    ' direction it is drawn in sets which way SolidWorks looks (found by
+    ' trying: it must show x right, z up)
+    xa = -(R + 1#): xb = vExitX + 1#
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vTop, xb, 0#, vHeight, ax, ay
+            ToSheet vTop, xa, 0#, vHeight, qx, qy
+        Else
+            ToSheet vTop, xa, 0#, vHeight, ax, ay
+            ToSheet vTop, xb, 0#, vHeight, qx, qy
+        End If
+        Set vSec = SectionFrom(vTop, ax, ay, qx, qy, "A", 0.5 * (ax + qx), SEC_Y)
+        If Maps(vSec, 1, 0, 0, 0, 0, 1) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "right to left", "left to right") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A shows x right, z up in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    If FindEdge(vSec, "vline", -rx, 0#, vHeight - 0.5 * vLv, -rx, 0#, nSeen, nFit) Is Nothing _
+       Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no vortex finder bore among its " & nSeen & " edges."
+    Note "views: top " & vTop.Name & ", A-A " & vSec.Name
+    LogMap vSec, "A-A", scaleD
+
+    swDraw.EditSheet
+    Set vLeft = OrientedView(0, -1, 0, 0, 0, 1, LEFT_X, SEC_Y, "left")
+    AlignHeight vLeft, vSec
+    HiddenLinesVisible vLeft
+
+    Set vDet = DetailFrom(vSec, -(R - 0.35), vHeight - vLv + 0.3, 1.25, "B")
+    Note "views: left " & vLeft.Name & ", detail B " & vDet.Name
+    LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
 End Sub
 
 
@@ -758,7 +944,101 @@ End Sub
 ' Dimensions
 '==================================================================
 Private Sub DimensionAll()
-    If equip = "C1" Then DimensionC1 Else DimensionTwin
+    If equip = "C1" Then
+        DimensionC1
+    ElseIf equip = "C1_twin" Then
+        DimensionTwin
+    Else
+        DimensionVolute
+    End If
+End Sub
+
+
+' A volute cyclone's reference dimensions, each between edges the solid
+' has (C1's scheme). A circle seen edge-on is measured whole, so the
+' barrel's diameter is read at the cone's top, a full circle (the roof
+' circle is cut by the volute); between two circles SolidWorks measures
+' centre to centre, here along z or x. The spiral is a spline and is not
+' dimensioned.
+Private Sub DimensionVolute()
+    Dim R As Double, rx As Double, rd As Double, t As Double
+    Dim zr As Double, hc As Double, zv As Double, rT As Double, rS As Double, ym As Double
+    R = 0.5 * vD: rx = 0.5 * vDv: rd = 0.5 * vDd: t = vWall
+    zr = vHeight: hc = vHc: zv = zr - vLv
+    rT = R + vTongue: rS = rT + vW: ym = 0.5 * (rT + rS)
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    ' left view: the circular edges seen edge-on (y < 0 half, clear of the volute)
+    DimEdges "D_barrel", vD, vLeft, _
+        "circle", 0, -R, hc, R, hc, _
+        "", 0, 0, 0, 0, 0, _
+        0, -0.35 * R, hc + 0.9
+    DimEdges "D_dust", vDd, vLeft, _
+        "circle", 0, -rd, 0, rd, 0, _
+        "", 0, 0, 0, 0, 0, _
+        0, -rd - 0.6, -0.9
+    DimEdges "H_cone", vHc, vLeft, _
+        "circle", 0, -rd, 0, rd, 0, _
+        "circle", 0, -R, hc, R, hc, _
+        0, -R - 1#, 0.5 * hc
+    DimEdges "H_barrel", vHb, vLeft, _
+        "circle", 0, -R, hc, R, hc, _
+        "circle", 0, -R, zr, R, zr, _
+        0, -R - 1#, 0.5 * (hc + zr)
+    DimEdges "height", vHeight, vLeft, _
+        "circle", 0, -rd, 0, rd, 0, _
+        "circle", 0, -R, zr, R, zr, _
+        0, -R - 2.4, 0.5 * zr
+    ' the outlet run's axis above the roof: the roof ring's circle and the
+    ' bend's end circle (face-on from -x), centre to centre
+    DimEdges "outlet_axis", vRise + vBendR, vLeft, _
+        "circle", 0, 0, zr, R, zr, _
+        "circle", vBendR, 0, vZleg, rx, vZleg, _
+        0, -R - 3.8, zr + 0.5 * (vRise + vBendR), "v"
+
+    ' the volute's duct end face, seen face-on from -x: its height
+    DimEdges "H_inlet", vH, vLeft, _
+        "hline", -vLduct, ym, zr, 0, zr, _
+        "hline", -vLduct, ym, zr - vH, 0, zr - vH, _
+        0, rS + 1.4, zr - 0.5 * vH
+
+    ' A-A (the plane y = 0), on the -x side (the volute is on +x)
+    DimEdges "D_vortex", vDv, vSec, _
+        "vline", -rx, 0, zr + 1.5, -rx, 0, _
+        "vline", rx, 0, zr + 1.5, rx, 0, _
+        -1#, 0, zr + 2.2
+    DimEdges "L_vortex", vLv, vSec, _
+        "hline", -0.5 * (rx + t + R), 0, zr, 0, zr, _
+        "hline", -(rx + 0.5 * t), 0, zv, 0, zv, _
+        -R - 1.8, 0, zr - 0.5 * vLv
+
+    ' top view: the duct's two straight sides, true width
+    DimEdges "W_inlet", vW, vTop, _
+        "hline", -0.5 * vLduct, rT, zr, 0, zr, _
+        "hline", -0.5 * vLduct, rS, zr, 0, zr, _
+        -vLduct + 0.9, ym, zr
+    ' the gas outlet face's distance from the barrel axis: the pipe's circle
+    ' over the roof and the exit face (edge-on), centre to centre
+    DimEdges "exit_x", vExitX, vTop, _
+        "circle", 0, 0, zr, rx + t, zr, _
+        "circle", vExitX, 0, vZleg, rx, vZleg, _
+        0.5 * vExitX, -rx - 1.4, vZleg, "h"
+
+    ' detail B: the vortex finder's wall at its mouth
+    DimEdges "vortex_wall", vWall, vDet, _
+        "hline", -(rx + 0.5 * t), 0, zv, 0, zv, _
+        "", 0, 0, 0, 0, 0, _
+        -(rx + 0.5 * t), 0, zv - 0.25
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
 
 
@@ -1017,6 +1297,7 @@ Private Function PickEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
     If ed Is Nothing Then
         Note "MISSING dim " & what & ": none of the " & nSeen & " edges of " & v.Name & " is the " & kind & _
              " asked for (" & nFit & " of that kind)"
+        If kind = "circle" Then ListCircles v
         Exit Function
     End If
     ' Runs 6 and 7: View.SelectEntity and Entity.Select4 (view in the
@@ -1052,6 +1333,7 @@ Private Function PickEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
     If swModel.SelectionManager.GetSelectedObjectCount2(-1) <> IIf(append, 2, 1) Then
         Note "MISSING dim " & what & ": " & swModel.SelectionManager.GetSelectedObjectCount2(-1) & _
              " objects selected after picking it in " & v.Name
+        ListCircles v
         Exit Function
     End If
     PickEdge = True
@@ -1101,6 +1383,27 @@ Private Function FindEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
     Next i
     foundDist = best
 End Function
+
+
+' Diagnostic: every circle or arc edge of view v (centre, axis, radius, ends).
+Private Sub ListCircles(v As SldWorks.View)
+    Dim ents As Variant, i As Long, ed As SldWorks.Edge, crv As SldWorks.Curve
+    Dim cp As Variant, n As Long
+    ents = v.GetVisibleEntities2(Nothing, 1)
+    If IsEmpty(ents) Then Exit Sub
+    For i = 0 To UBound(ents)
+        Set ed = ents(i)
+        Set crv = ed.GetCurve
+        If crv.IsCircle Then
+            cp = crv.CircleParams
+            n = n + 1
+            If n <= 40 Then
+                Note "  circle " & n & " of " & v.Name & ": centre (" & Num(cp(0), 3) & ", " & Num(cp(1), 3) & ", " & Num(cp(2), 3) & _
+                     ") axis (" & Num(cp(3), 2) & ", " & Num(cp(4), 2) & ", " & Num(cp(5), 2) & ") r " & Num(cp(6), 3)
+            End If
+        End If
+    Next i
+End Sub
 
 
 Private Function DistToLine(ByVal x As Double, ByVal y As Double, ByVal z As Double, lp As Variant) As Double
@@ -1191,14 +1494,14 @@ Private Sub DrawTitle()
     Cell 0.711, 0.046, "Technical reference", "plant_geometry.yaml"
     Cell 0.771, 0.046, "Document status", "draft, for approval"
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
-    LabelPH COL_X0 + 0.0015, 0.0335, IIf(equip = "C1", "PREHEATER CYCLONE C1", "TWIN CYCLONE C1 + RISER R1"), 0.005
+    LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
     Cell 0.771, 0.037, "Identification number", "CI-PH-" & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (" & IIf(equip = "C1", "B", "C") & " 1:" & Fmt(detailD) & ")"
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (" & IIf(equip = "C1_twin", "C", "B") & " 1:" & Fmt(detailD) & ")"
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -1264,6 +1567,16 @@ Private Sub DrawTable()
 End Sub
 
 
+Private Function TitleText() As String
+    Select Case equip
+    Case "C1": TitleText = "PREHEATER CYCLONE C1"
+    Case "C1_twin": TitleText = "TWIN CYCLONE C1 + RISER R1"
+    Case "C4": TitleText = "CYCLONE C2 / C3 / C4 (SAME)"
+    Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
+    End Select
+End Function
+
+
 Private Sub DrawNotes()
     Dim y As Double
     y = 0.062 + 0.0045 * (nRows + 1) + 0.05
@@ -1277,6 +1590,14 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    ElseIf equip <> "C1_twin" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet; the volute's duct on the +y side, gas into it along +x.", TEXT_H
+        If equip = "C4" Then
+            LabelPH COL_X0, y + 0.007, "4. C2 and C3 are this cyclone (same geometry); 1 per string.  Dimensions mm.", TEXT_H
+        Else
+            LabelPH COL_X0, y + 0.007, "4. C4 x 6.50/6.30; finder wall, tongue, duct length unscaled; 1 per string.  mm.", TEXT_H
+        End If
+        LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_" & equip & ".md", TEXT_H
     Else
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the C1 dust outlets, x across the pair, y along the inlet ducts.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. C1 B is C1 A mirrored (ducts face each other); 1 pair per string.  Dimensions mm.", TEXT_H
@@ -1289,7 +1610,31 @@ End Sub
 ' Flow arrows on the sheet at model points of A-A: gas in, gas out,
 ' meal out.
 Private Sub DrawFlows()
-    If equip = "C1" Then DrawFlowsC1 Else DrawFlowsTwin
+    If equip = "C1" Then
+        DrawFlowsC1
+    ElseIf equip = "C1_twin" Then
+        DrawFlowsTwin
+    Else
+        DrawFlowsVolute
+    End If
+End Sub
+
+
+' A volute cyclone's flows: gas and meal into the volute's duct (top
+' view), the gas out of the pipe's end and the meal out of the dust outlet
+' (A-A), and which way it swirls.
+Private Sub DrawFlowsVolute()
+    Dim R As Double, rT As Double, ym As Double
+    R = 0.5 * vD: rT = R + vTongue: ym = rT + 0.5 * vW
+    UseLayer L_FLOW
+    ArrowM3 vTop, -vLduct - 2.4, ym, vHeight, -vLduct - 0.3, ym, vHeight
+    ArrowM3 vSec, vExitX + 0.3, 0#, vZleg, vExitX + 2.1, 0#, vZleg
+    ArrowM3 vSec, 0#, 0#, -0.2, 0#, 0#, -1.4
+    UseLayer L_TEXT
+    LabelM3 vTop, -vLduct - 4.6, ym + 0.8, vHeight, "Gas + meal in"
+    LabelM3 vSec, vExitX + 0.3, 0#, vZleg + 1#, "Gas out"
+    LabelM3 vSec, 0.4, 0#, -0.8, "Meal out (to the stage below)"
+    LabelM3 vTop, -R, -R - 1.2, vHeight, "Swirl clockwise seen from above"
 End Sub
 
 
@@ -1336,7 +1681,27 @@ End Sub
 ' left view: the cyclone's, up the outlet pipe to its bend, and the
 ' drop leg's; each runs 0.6 m past the solid.
 Private Sub DrawAxes()
-    If equip = "C1" Then DrawAxesC1 Else DrawAxesTwin
+    If equip = "C1" Then
+        DrawAxesC1
+    ElseIf equip = "C1_twin" Then
+        DrawAxesTwin
+    Else
+        DrawAxesVolute
+    End If
+End Sub
+
+
+' A volute cyclone's centre lines: its axis up its outlet pipe and the
+' run's axis in A-A, the axis in the left view, the cross in the top view.
+Private Sub DrawAxesVolute()
+    Dim R As Double
+    R = 0.5 * vD
+    UseLayer L_AXIS
+    AxisM vSec, 0#, 0#, -0.6, 0#, 0#, vZleg
+    AxisM vSec, vBendR - 0.6, 0#, vZleg, vExitX + 0.6, 0#, vZleg
+    AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ
+    AxisM vTop, -R - 0.6, 0#, vHeight, vExitX + 0.6, 0#, vHeight
+    AxisM vTop, 0#, -R - 0.6, vHeight, 0#, R + 0.6, vHeight
 End Sub
 
 
