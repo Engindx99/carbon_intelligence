@@ -46,9 +46,10 @@ DERIVED_DIGITS = 6  # m: 1 um
 class Const:
     """One generated Const: a source entry, or a derived value."""
 
-    def __init__(self, name, value, note, kind="Double", derived=False):
+    def __init__(self, name, value, note, kind="Double", derived=False, digits=None):
         self.name, self.value, self.note = name, value, note
         self.kind, self.derived = kind, derived
+        self.digits = DERIVED_DIGITS if digits is None else digits
 
     def line(self):
         if self.kind == "Boolean":
@@ -60,7 +61,7 @@ class Const:
         elif self.kind == "Long":
             text = str(int(self.value))
         else:
-            x = round(self.value, DERIVED_DIGITS) if self.derived else float(self.value)
+            x = round(self.value, self.digits) if self.derived else float(self.value)
             text = repr(x)
             if text.endswith(".0"):
                 text = text[:-2] + "#"
@@ -74,8 +75,10 @@ def src(name, node, what="", kind="Double", scale=1.0):
     return Const(name, scale * pg.v(node), f"{what} [{tag}]" if what else f"[{tag}]", kind)
 
 
-def der(name, value, what):
-    return Const(name, value, f"{what} [derived]", derived=True)
+def der(name, value, what, digits=None):
+    """A derived Const; `digits` for a fraction that multiplies a length (6 digits
+    of a fraction of 30 m is 15 um)."""
+    return Const(name, value, f"{what} [derived]", derived=True, digits=digits)
 
 
 # ======================================================================
@@ -160,9 +163,18 @@ def calciner_bas(g):
         src("U_THROAT", c["throat_velocity"], "m/s"),
         src("THROAT_LEN_OVER_D", c["throat_length_over_D"]),
         src("D_GOOSENECK_SRC", gn["D_leg"], "each leg"),
-        src("GN_RISE_OVER_D", gn["rise_over_D_neck"], "x neck D"),
-        src("GN_BEND_R_OVER_D", gn["bend_R_over_D_leg"], "x leg D"),
-        src("GN_OUTLET_AT_VESSEL_H", gn["end_at_vessel_H"], "x H_VESSEL"),
+        der("GN_OUTLET_AT_VESSEL_H", pg.gooseneck(g)["end_over_H"], "the arms' level runs' axis, x H_VESSEL (C5's inlet axis, plant_geometry.py)", digits=12),
+        src("GN_SLOPE_DEG", gn["neck_slope"], "the neck's two inclined pieces, to the horizontal"),
+        src("GN_PIECE_OVER_D", gn["neck_piece_over_D_neck"], "the neck's inclined pieces, x neck D"),
+        src("GN_LEVEL_OVER_D", gn["neck_level_over_D_neck"], "the neck's level piece, x neck D"),
+        src("GN_CHANNEL_OVER_D", gn["channel_over_D_neck"], "the vertical channel below the neck, x neck D"),
+        src("GN_ARM_DEG", gn["arm_angle"], "each arm's angle to the vertical"),
+        src("GN_ARM_RUN_OVER_D", gn["arm_run_over_D_leg"], "each arm's level run, x leg D"),
+        der("GN_ROOT_FWD", pg.gooseneck(g)["root_forward"], "where the neck's first piece pierces the roof, in front of the axis, m (cap kept inside the vessel)"),
+        der("GN_INSIDE_VESSEL", pg.gooseneck(g)["inside_vessel"], "the neck's first piece inside the vessel, m3 (grid, plant_geometry.py)"),
+        der("GN_OVERLAP_NECK_ARM", pg.gooseneck(g)["overlap_neck_arm"], "channel x one arm, m3"),
+        der("GN_OVERLAP_ARMS", pg.gooseneck(g)["overlap_arms"], "arm x arm, m3"),
+        der("GN_OVERLAP_ALL", pg.gooseneck(g)["overlap_all"], "channel x both arms, m3"),
         src("D_TA", c["D_tertiary_air"], "tertiary air duct"),
         src("TA_CONE_CLEARANCE", c["tertiary_air_cone_clearance"], "its lower edge over the cone's top"),
         src("TA_WALL_RELIEF", c["tertiary_air_wall_relief"], "its outer wall inside the vessel's"),
@@ -223,9 +235,14 @@ def drawing_bas(g):
         der("CALC_THROAT_D", 2.0 * pg.throat_radius(g), "throat D"),
         src("CALC_CONE_DEG", cal["cone_angle"]),
         src("GN_D_SRC", gn["D_leg"], "a gooseneck leg"),
-        src("GN_RISE_OVER_D", gn["rise_over_D_neck"], "neck rise, x neck D"),
-        src("GN_BEND_R_OVER_D", gn["bend_R_over_D_leg"], "bend centreline R, x leg D"),
-        src("GN_OUT_AT_H", gn["end_at_vessel_H"], "CFD legs' end, x CALC_H"),
+        src("GN_SLOPE_DEG", gn["neck_slope"], "the neck's inclined pieces, to the horizontal"),
+        src("GN_PIECE_OVER_D", gn["neck_piece_over_D_neck"], "the neck's inclined pieces, x neck D"),
+        src("GN_LEVEL_OVER_D", gn["neck_level_over_D_neck"], "the neck's level piece, x neck D"),
+        src("GN_CHANNEL_OVER_D", gn["channel_over_D_neck"], "the vertical channel below the neck, x neck D"),
+        src("GN_ARM_DEG", gn["arm_angle"], "each arm's angle to the vertical"),
+        src("GN_ARM_RUN_OVER_D", gn["arm_run_over_D_leg"], "each arm's level run, x leg D"),
+        der("GN_ROOT_FWD", pg.gooseneck(g)["root_forward"], "the neck's first piece pierces the roof this far in front of the axis, m"),
+        der("GN_OUT_AT_H", pg.gooseneck(g)["end_over_H"], "CFD arms' level runs' axis, x CALC_H", digits=12),
         der("CALC_TA_Z", pg.calciner_inlets(g)["tertiary_air"]["z"], "tertiary air axis over the throat's foot"),
         der("CALC_FEED_Z", pg.calciner_inlets(g)["meal"]["z_wall"], "meal pipes' axes at the wall, over the throat's foot"),
         src("TA_D", cal["D_tertiary_air"], "tertiary air duct"),
@@ -252,7 +269,6 @@ def drawing_bas(g):
         src("ZIG_DX", lay["column_offset"], "outer column outboard of the inner"),
         src("C5_OVER_TA", lay["c5_over_tertiary_air"]),
         src("GN_TO_C5_GAP", lay["gooseneck_to_c5_gap"]),
-        src("GN_BEND_LEG", lay["gooseneck_turn_leg_over_D"], "x leg D"),
         src("C1_TWIN_GAP", lay["c1_twin_gap"], "twin C1: gap between the branches' walls"),
         der("C1_TWIN_S", tw["spacing"], "twin C1: axis to axis"),
         der("C1_DUCT_Y", tw["y_duct"], "C1 inlet duct / branch axis from the C1 axis"),
@@ -339,6 +355,7 @@ def drawings_bas(g):
     out += _table_consts("C1", P, dcy.ORDER)
     out += _twin_sheet_consts(g)
     out += _volute_sheet_consts(g)
+    out += _calciner_sheet_consts(g)
     return out
 
 
@@ -373,6 +390,53 @@ def _volute_sheet_consts(g):
             der(f"{name}_TOP", o["z_leg"] + 0.5 * o["D"], "top of the outlet pipe"),
         ]
         out += _table_consts(name, dvo.params(g, name), dvo.ORDER)
+    return out
+
+
+def _calciner_sheet_consts(g):
+    """What drawings.bas needs for the calciner sheet, under a CAL_
+    prefix, and its table."""
+    from tools.drawings import calciner as dca
+
+    c = g["calciner"]
+    cal, inl, gn = pg.calciner(g), pg.calciner_inlets(g), pg.gooseneck(g)
+    ta, meal, fuel = inl["tertiary_air"], inl["meal"], inl["fuel"]
+    sf = math.sin(math.radians(pg.v(c["fuel_slope"])))
+    out = [
+        der("CAL_D_THROAT", cal["D_throat"], "throat (kiln gas inlet) D"),
+        der("CAL_L_THROAT", cal["z_throat_top"], "throat length"),
+        der("CAL_H_CONE", cal["h_cone"], "cone height"),
+        der("CAL_D_VESSEL", cal["D"], "vessel inner D"),
+        der("CAL_H_VESSEL", cal["H"], "cone + cylinder"),
+        der("CAL_H_CYL", cal["h_cylinder"], "cylinder height"),
+        der("CAL_Z_CONE", cal["z_cone_top"], "the cone's top, z"),
+        der("CAL_Z_ROOF", cal["z_roof"], "the roof, z"),
+        der("CAL_D_NECK", gn["D_neck"], "gooseneck neck D"),
+        der("CAL_PIECE", gn["piece"], "the neck's inclined pieces"),
+        der("CAL_LEVEL", gn["level"], "the neck's level piece"),
+        der("CAL_Z_BEND", gn["nodes"][1][1], "the level piece's axis, z"),
+        der("CAL_D_LEG", gn["D_leg"], "gooseneck arm D"),
+        der("CAL_X_LEG", gn["x_leg"], "the arms' outlet faces, x"),
+        der("CAL_Z_END", gn["z_end"], "the arms' level runs' axis, z"),
+        der("CAL_WIDTH", 2.0 * gn["x_leg"], "overall width over the arms' outlet faces, x"),
+        der("CAL_Z_SPLIT", gn["z_split"], "the channel's lower end, where the arms leave, z"),
+        der("CAL_X_BEND", gn["x_bend"], "where an arm turns level, x"),
+        der("CAL_Y_OFF", gn["y_off"], "the channel and the arms, in front of the axis"),
+        der("CAL_TOP", gn["crown"], "the neck's crown, z"),
+        der("CAL_Y_FRONT", gn["y_front"], "the channel's far side, forward of the axis"),
+        der("CAL_TA_D", ta["D"], "tertiary air duct D"),
+        der("CAL_TA_Y", ta["y"], "its axis, y"),
+        der("CAL_TA_Z", ta["z"], "its axis, z"),
+        der("CAL_TA_X", ta["x_end"], "its face, x"),
+        der("CAL_FEED_D", meal["D"], "meal pipe D"),
+        der("CAL_FEED_X", meal["end"][0], "meal pipe end face centre, x"),
+        der("CAL_FEED_Z", meal["end"][1], "meal pipe end face centre, z"),
+        der("CAL_FUEL_D", fuel["D"], "fuel pipe D"),
+        der("CAL_FUEL_Y", fuel["end"][0], "fuel pipe end face centre, y"),
+        der("CAL_FUEL_Z", fuel["end"][1], "fuel pipe end face centre, z"),
+        der("CAL_BOX_Y", fuel["end"][0] + 0.5 * fuel["D"] * sf, "the fuel pipes' far side, y"),
+    ]
+    out += _table_consts("calciner", dca.params(g), dca.ORDER)
     return out
 
 
@@ -577,13 +641,27 @@ def _gooseneck_rows(g):
     return [
         row_src("Kol iç çapı", n["D_leg"]),
         row_der("Ortak boyun çapı (kol × √2)", gn["D_neck"], "m"),
-        row_der("Boyun yükselişi", gn["rise"], "m", 3, f"{pg.v(n['rise_over_D_neck']):g} × boyun çapı; modelleme"),
-        row_der("180° dirsek merkez yarıçapı", gn["bend_R"], "m", 3, f"{pg.v(n['bend_R_over_D_leg']):g} × kol çapı; modelleme"),
-        row_der("İki dirseğin ortak hacmi", gn["bend_overlap"], "m³"),
-        row_der("CFD: iniş (gövdenin yarı yüksekliğine)", gn["drop"], "m"),
+        row_der("Boyunun eğik parçaları (2 adet): boy", gn["piece"], "m", 3, f"{pg.v(n['neck_piece_over_D_neck']):g} × boyun çapı; modelleme"),
+        row_der("Boyunun eğimi (yataya)", gn["slope"], "°", 1, "modelleme (kullanıcı kararı)"),
+        row_der("Boyunun yatay parçası: boy", gn["level"], "m", 3, f"{pg.v(n['neck_level_over_D_neck']):g} × boyun çapı; modelleme"),
+        row_der("Düşey kanal: boy", gn["channel"], "m", 3, f"{pg.v(n['channel_over_D_neck']):g} × boyun çapı; modelleme (kullanıcı kararı)"),
+        row_der("Kanalın ekseni, gövde ekseninin önünde (−y)", gn["y_off"], "m"),
+        row_der("Kemerin tepesi (boru dış kenarı)", gn["crown"], "m"),
+        row_der("Kanalın başladığı kot (üçüncü parçanın alt ucu)", gn["z_n3"], "m"),
+        row_der("Kolların ayrıldığı kot (kanalın alt ucu)", gn["z_split"], "m"),
+        row_der("Kolun boyuna açısı (düşeyden)", gn["arm_angle"], "°", 1, "modelleme (kullanıcı kararı)"),
+        row_der("Kolun eğik parçası: boy (yatay kolun eksenine kadar)", gn["arm_piece"], "m", 3, "C5 giriş ekseninden türetilir"),
+        row_der("Kolun yataya döndüğü nokta, x", gn["x_bend"], "m"),
+        row_der("Kolun yatay kısmı: boy", gn["arm_run"], "m", 3, f"{pg.v(n['arm_run_over_D_leg']):g} × kol çapı; modelleme (kullanıcı çizimi)"),
+        row_der("Kol çıkış yüzü (dikey düzlem), x", gn["x_leg"], "m"),
+        row_der("Boru kökünün (çatıyı deldiği nokta) gövde ekseninin önüne kayması", gn["root_forward"], "m", 3, "kapak gövdenin içinde kalsın diye türetilir (5 cm pay)"),
+        row_der("Birinci parçanın gövde içindeki hacmi", gn["inside_vessel"], "m³"),
+        row_der("Kanal ile bir kolun ortak hacmi", gn["overlap_neck_arm"], "m³"),
+        row_der("İki kolun ortak hacmi", gn["overlap_arms"], "m³"),
+        row_der("CFD: kolların yatay kısmının ekseni (C5 giriş ekseni), z", gn["z_end"], "m"),
         row_der("CFD: hacim", gn["volume"], "m³", 2),
         row_der("CFD: duvar alanı", gn["wall_area"], "m²", 2),
-        row_der("Tesis: kol boyu (iniş + 45° + C5 girişine yatay)", gp["leg_length"], "m"),
+        row_der("Tesis: yatay kolun CFD çıkışından C5 namlusuna uzantısı", gp["leg_length"], "m"),
         row_der("**Tesis: hacim (iki kol)**", gp["volume"], "m³", 2),
         row_der("**Tesis: duvar alanı (iki kol)**", gp["wall_area"], "m²", 2),
     ]
@@ -668,7 +746,7 @@ def _topology_equipment(g):
          "C3 / C4 / C5'in CFD çıkış borusu (riser_R2–R4.md)"),
         ("Kalsinatör", f"Ø{cal['D']:.4f}, {cal['H']:.1f} m (koni dahil), boğaz Ø{cal['D_throat']:.3f}, koni {pg.v(g['calciner']['cone_angle']):g}°",
          "calciner.md (PF5000)"),
-        ("Kaz boynu", f"Y: boyun Ø{gn['D_neck']:.3f}, 2 kol × Ø{gn['D_leg']:.2f}, her kol C5 girişine iner", "gooseneck.md"),
+        ("Kaz boynu", f"üç düz parçalı boyun (45°/0°/45°), Ø{gn['D_neck']:.3f}, aşağıda 2 kol × Ø{gn['D_leg']:.2f}, her kol C5 girişine iner", "gooseneck.md"),
         ("Tersiyer hava kanalı", f"Ø{cal['D_tertiary_air']:.4f}", "calciner.md"),
         ("Fırın", f"Ø{k['D']:g} × {k['L']:g} m, %{k['slope']:g} eğim", "kiln.md (PF5000)"),
         ("Soğutucu", f"ızgara {co['grate_area']:g} m² = {co['width']:g} × {co['length']:.2f} m, gövde {co['casing_height']:g} m", "cooler.md (PF5000, FLS)"),
@@ -731,14 +809,20 @@ def _calciner_cfd(g):
     R, r, rl = cal["R"], cal["r_throat"], 0.5 * gn["D_leg"]
     v_cyl = math.pi * R * R * cal["h_cylinder"]
     v_cone = cal["vessel_volume"] - v_cyl
-    v_neck = math.pi * (0.5 * gn["D_neck"]) ** 2 * gn["rise"]
-    v_bend = math.pi * rl * rl * math.pi * gn["bend_R"]
-    v_leg = math.pi * rl * rl * gn["drop"]
+    r_n = 0.5 * gn["D_neck"]
+    a_n = math.pi * r_n * r_n
+    L1, L2, st = gn["piece"], gn["level"], gn["setback"]
+    v_p1 = a_n * (st + L1) - gn["inside_vessel"]       # the first piece, less the part inside the vessel
+    v_p2 = a_n * L2
+    v_p3 = a_n * L1
+    v_p4 = a_n * gn["channel"]
+    v_arm = math.pi * rl * rl * gn["arm_length"]
     f = lambda x: f"{x:.3f}"
     steps = [cal["v_throat"] + cal["vessel_volume"]]
     ins = pg.calciner_inlets(g)
     ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
-    for dv in (v_neck, v_bend, v_bend - gn["bend_overlap"], 2.0 * v_leg,
+    for dv in (v_p1 + v_p2 + v_p3 + v_p4, v_arm - gn["overlap_neck_arm"],
+               v_arm - gn["overlap_neck_arm"] - gn["overlap_arms"] + gn["overlap_all"],
                meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"]):
         steps.append(steps[-1] + dv)
     return [
@@ -747,18 +831,29 @@ def _calciner_cfd(g):
         ("Silindir (düz tavan)", f"Ø{cal['D']:.4f}, z {f(cal['z_cone_top'])} .. {f(cal['z_roof'])}", f"{v_cyl:.3f}"),
         ("Gövde (koni + silindir)", "", f"**{cal['vessel_volume']:.3f}**"),
         ("1 domen (boğaz + gövde)", "", f"{steps[0]:.3f}"),
-        ("2 + boyun", f"Ø{f(gn['D_neck'])}, eksende, z {f(cal['z_roof'])} .. {f(gn['z_top'])}", f"{steps[1]:.3f} (+{v_neck:.3f})"),
-        ("3a + dirsek +x", f"kol Ø{gn['D_leg']:g}, başlangıç diski x = ±{f(gn['x_leg_start'])}; 180°, R {f(gn['bend_R'])}, tepe z {f(gn['z_top'] + gn['bend_R'] + rl)}", f"{steps[2]:.3f} (+{v_bend:.3f}, Pappus)"),
-        ("3b + dirsek −x", f"iki dirseğin ortak hacmi {gn['bend_overlap']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta)", f"{steps[3]:.3f}"),
-        ("4 + iki iniş", f"x = ±{f(gn['x_leg'])}, z {f(gn['z_top'])} .. {f(gn['z_end'])} → gas_outlet_1 (+x), gas_outlet_2 (−x)", f"{steps[4]:.3f} (+2 × {v_leg:.3f})"),
+        ("2 + boyun (üç düz parça) ve düşey kanal", f"Ø{f(gn['D_neck'])}; 1) tavan ortasından {gn['slope']:g}° yukarı-öne, boy {f(gn['piece'])} (kapağı {f(gn['setback'])} geride, gövdenin içinde; içeride kalan {gn['inside_vessel']:.3f}), "
+         f"2) yatay {f(gn['level'])}, z {f(gn['nodes'][1][1])}, 3) {gn['slope']:g}° aşağı-öne {f(gn['piece'])}, z {f(gn['z_n3'])} ile biter; 4) düşey kanal {f(gn['channel'])}; mitre birleşimleri; "
+         f"kanalın alt ucu y = −{f(gn['y_off'])}, z {f(gn['z_split'])}, tepe z {f(gn['crown'])}",
+         f"{steps[1]:.3f} (+{steps[1] - steps[0]:.3f})"),
+        ("3a + kol +x", f"Ø{gn['D_leg']:g}, kanalın alt ucundan x–z düzleminde düşeyden {gn['arm_angle']:g}° dışa, eğik parça {f(gn['arm_piece'])}, "
+         f"mitre ile yatay kol {f(gn['arm_run'])} (eksen z {f(gn['z_end'])}), çıkış yüzü x = {f(gn['x_leg'])} → gas_outlet_1",
+         f"{steps[2]:.3f} (+{v_arm:.3f} − ortak {gn['overlap_neck_arm']:.3f})"),
+        ("3b + kol −x", f"kanalla ortak {gn['overlap_neck_arm']:.3f}, kolların ortak hacmi {gn['overlap_arms']:.3f}, üçünün {gn['overlap_all']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta) → gas_outlet_2",
+         f"{steps[3]:.3f}"),
         ("5a / 5b + farin boruları ±x", f"Ø{meal['D']:g}, {meal['slope']:g}°, eksenleri duvarı z {f(meal['z_wall'])}'da keser; "
          f"deliğin alt kenarı z {f(meal['hole_bottom'])}, uç yüzleri (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
-         f"{steps[5]:.3f} / {steps[6]:.3f} (+{meal['volume']:.4f} her biri)"),
+         f"{steps[4]:.3f} / {steps[5]:.3f} (+{meal['volume']:.4f} her biri)"),
         ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, eksen y {f(ta['y'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
-         f"yüzü x {f(ta['x_end'])}", f"{steps[7]:.3f} (+{ta['volume']:.3f})"),
+         f"yüzü x {f(ta['x_end'])}", f"{steps[6]:.3f} (+{ta['volume']:.3f})"),
         ("7a / 7b + yakıt boruları ±y", f"Ø{fuel['D']:g}, {fuel['slope']:g}°, eksenleri duvarı z {f(fuel['z_wall'])}'da keser; "
          f"uç yüzleri (0, ±{f(fuel['end'][0])}, {f(fuel['end'][1])})",
-         f"{steps[8]:.3f} / **{steps[9]:.3f}** (+{fuel['volume']:.4f} her biri)"),
+         f"{steps[7]:.3f} / **{steps[8]:.3f}** (+{fuel['volume']:.4f} her biri)"),
+        ("**Uyarı: eski CFD sonuçları**", "Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; "
+         "kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı", "—"),
+        ("Yeniden koşu: domen", "geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py",
+         f"{steps[8]:.3f}"),
+        ("Yeniden koşu: çıkışlar", f"gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±{f(gn['x_leg'])}, y = −{f(gn['y_off'])}, z {f(gn['z_end'])}; "
+         f"yatay kol {gn['arm_run'] / gn['D_leg']:g} çap ({f(gn['arm_run'])}), eğik parçadan {90.0 - gn['arm_angle']:g}° mitre sonrası", f"{math.pi * rl * rl:.3f} m² her biri"),
     ]
 
 

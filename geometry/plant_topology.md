@@ -65,7 +65,7 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | R1 (hat başına) | Ø3.07 | riser_R1.md (HFC2500) |
 | R2 / R3 / R4 (hat başına) | Ø4.630 / Ø4.630 / Ø4.777 | C3 / C4 / C5'in CFD çıkış borusu (riser_R2–R4.md) |
 | Kalsinatör | Ø6.7404, 30.0 m (koni dahil), boğaz Ø3.130, koni 65° | calciner.md (PF5000) |
-| Kaz boynu | Y: boyun Ø4.950, 2 kol × Ø3.50, her kol C5 girişine iner | gooseneck.md |
+| Kaz boynu | üç düz parçalı boyun (45°/0°/45°), Ø4.950, aşağıda 2 kol × Ø3.50, her kol C5 girişine iner | gooseneck.md |
 | Tersiyer hava kanalı | Ø2.4393 | calciner.md |
 | Fırın | Ø4.8 × 74 m, %3 eğim | kiln.md (PF5000) |
 | Soğutucu | ızgara 119.6 m² = 4 × 29.90 m, gövde 3 m | cooler.md (PF5000, FLS) |
@@ -195,9 +195,14 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `CALC_THROAT_D` | 3.130077 | plant_geometry.yaml |
 | `CALC_CONE_DEG` | 65 | plant_geometry.yaml |
 | `GN_D_SRC` | 3.5 | plant_geometry.yaml |
-| `GN_RISE_OVER_D` | 1.25 | plant_geometry.yaml |
-| `GN_BEND_R_OVER_D` | 1.5 | plant_geometry.yaml |
-| `GN_OUT_AT_H` | 0.5 | plant_geometry.yaml |
+| `GN_SLOPE_DEG` | 45 | plant_geometry.yaml |
+| `GN_PIECE_OVER_D` | 1 | plant_geometry.yaml |
+| `GN_LEVEL_OVER_D` | 1 | plant_geometry.yaml |
+| `GN_CHANNEL_OVER_D` | 1.5 | plant_geometry.yaml |
+| `GN_ARM_DEG` | 60 | plant_geometry.yaml |
+| `GN_ARM_RUN_OVER_D` | 2 | plant_geometry.yaml |
+| `GN_ROOT_FWD` | 0.184956 | plant_geometry.yaml |
+| `GN_OUT_AT_H` | 0.679740905621 | plant_geometry.yaml |
 | `CALC_TA_Z` | 8.270908 | plant_geometry.yaml |
 | `CALC_FEED_Z` | 11.385494 | plant_geometry.yaml |
 | `TA_D` | 2.4393 | plant_geometry.yaml |
@@ -224,7 +229,6 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `ZIG_DX` | 15 | plant_geometry.yaml |
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
-| `GN_BEND_LEG` | 0.5 | plant_geometry.yaml |
 | `C1_TWIN_GAP` | 1 | plant_geometry.yaml |
 | `C1_TWIN_S` | 6.630818 | plant_geometry.yaml |
 | `C1_DUCT_Y` | 1.73 | plant_geometry.yaml |
@@ -282,12 +286,12 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Ne | Konum [m] |
 |---|---|
 | Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 13.400; taban rampası 40.5° |
-| Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.717, kol inişi x = ±11.225, C5 giriş kotu z 36.922 |
+| Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.505, kol inişi x = ±10.781, C5 giriş kotu z 36.922 |
 | Tersiyer hava kanalı | eksen z 21.671 |
-| İç kolon (C5, C3) | x = ±17.225 |
-| Dış kolon (C4, C2) | x = ±32.225 |
-| R1 | x = ±20.930 |
-| İkiz C1 | x = ±17.614 ve ±24.245 |
+| İç kolon (C5, C3) | x = ±16.781 |
+| Dış kolon (C4, C2) | x = ±31.781 |
+| R1 | x = ±20.486 |
+| İkiz C1 | x = ±17.171 ve ±23.802 |
 | C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
 | C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
 | C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |

@@ -11,9 +11,11 @@ Attribute VB_Name = "calciner"
 ' gooseneck down towards C5. Nothing structural is modelled -- no
 ' shell, no refractory (CLAUDE.md rule 8).
 '
-' BUILD STATUS: complete. Throat + cone + vessel, the Y gooseneck,
-' the two meal feed pipes, the tangential tertiary air duct and the
-' two fuel pipes; the boundary faces are coloured and the solid is
+' BUILD STATUS: complete. Throat + cone + vessel, the gooseneck (a neck
+' of three straight pieces -- 45 deg up, level, 45 deg down -- over the
+' roof's top, then one vertical channel in front of the vessel, dividing
+' at its lower end into two arms; user decision, 15 Nov 2026), the two meal feed pipes, the
+' tangential tertiary air duct and the two fuel pipes; the boundary faces are coloured and the solid is
 ' exported (STEP AP214, STL, SLDPRT).
 '
 ' Coordinates: calciner axis = z, the kiln gas inlet face (bottom of
@@ -54,9 +56,18 @@ Const X_CO2                        As Double  = 0.13         ' [literature, calc
 Const U_THROAT                     As Double  = 29#          ' m/s [literature, calciner/calciner.md]
 Const THROAT_LEN_OVER_D            As Double  = 1#           ' [model, calciner/calciner.md]
 Const D_GOOSENECK_SRC              As Double  = 3.5          ' each leg [published, preheater/gooseneck.md]
-Const GN_RISE_OVER_D               As Double  = 1.25         ' x neck D [model, preheater/gooseneck.md]
-Const GN_BEND_R_OVER_D             As Double  = 1.5          ' x leg D [model, preheater/gooseneck.md]
-Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.5          ' x H_VESSEL [model, preheater/gooseneck.md]
+Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.679740905621 ' the arms' level runs' axis, x H_VESSEL (C5's inlet axis, plant_geometry.py) [derived]
+Const GN_SLOPE_DEG                 As Double  = 45#          ' the neck's two inclined pieces, to the horizontal [model, preheater/gooseneck.md]
+Const GN_PIECE_OVER_D              As Double  = 1#           ' the neck's inclined pieces, x neck D [model, preheater/gooseneck.md]
+Const GN_LEVEL_OVER_D              As Double  = 1#           ' the neck's level piece, x neck D [model, preheater/gooseneck.md]
+Const GN_CHANNEL_OVER_D            As Double  = 1.5          ' the vertical channel below the neck, x neck D [model, preheater/gooseneck.md]
+Const GN_ARM_DEG                   As Double  = 60#          ' each arm's angle to the vertical [model, preheater/gooseneck.md]
+Const GN_ARM_RUN_OVER_D            As Double  = 2#           ' each arm's level run, x leg D [model, preheater/gooseneck.md]
+Const GN_ROOT_FWD                  As Double  = 0.184956     ' where the neck's first piece pierces the roof, in front of the axis, m (cap kept inside the vessel) [derived]
+Const GN_INSIDE_VESSEL             As Double  = 47.546441    ' the neck's first piece inside the vessel, m3 (grid, plant_geometry.py) [derived]
+Const GN_OVERLAP_NECK_ARM          As Double  = 5.669359     ' channel x one arm, m3 [derived]
+Const GN_OVERLAP_ARMS              As Double  = 4.122321     ' arm x arm, m3 [derived]
+Const GN_OVERLAP_ALL               As Double  = 0#           ' channel x both arms, m3 [derived]
 Const D_TA                         As Double  = 2.4393       ' tertiary air duct [derived_from_reference, calciner/calciner.md]
 Const TA_CONE_CLEARANCE            As Double  = 0.05         ' its lower edge over the cone's top [model, calciner/calciner.md]
 Const TA_WALL_RELIEF               As Double  = 0.05         ' its outer wall inside the vessel's [model, calciner/calciner.md]
@@ -67,7 +78,7 @@ Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizon
 Const FEED_DEPTH                   As Double  = 1#           ' meal and fuel pipes past the wall [model, calciner/calciner.md]
 Const D_FUEL                       As Double  = 0.2828       ' [literature, calciner/calciner.md]
 Const FUEL_SLOPE_DEG               As Double  = 30#          ' below the horizontal [literature, calciner/calciner.md]
-Const OVERLAP_N                    As Long    = 80           ' grid per axis, the bends' shared volume [plant_geometry.py]
+Const OVERLAP_N                    As Long    = 300          ' grid per axis, the bends' shared volume [plant_geometry.py]
 Const P_ATM                        As Double  = 101325#      ' Pa, the throat's gas [plant_geometry.py]
 Const R_GAS                        As Double  = 8.314462618  ' J/(mol K) [plant_geometry.py]
 Const M_N2                         As Double  = 0.0280134    ' kg/mol [plant_geometry.py]
@@ -115,30 +126,43 @@ Const M_CO2                        As Double  = 0.0440095    ' kg/mol [plant_geo
 ' inlet face sits on a straight run rather than on the cone's lip.
 ' -> THROAT_LEN_OVER_D: in the generated block above
 
-' Y gooseneck (user decision, 12 Oct 2026). Each leg takes one
-' string's gas to its C5: a 2500 t/d line's whole gas, so each leg is
+' Gooseneck (user decisions, 12 Oct and 15 Nov 2026). Each arm takes one
+' string's gas to its C5: a 2500 t/d line's whole gas, so each arm is
 ' the published 3.50 m gooseneck of that line
-' (geometry/preheater/gooseneck.md). Two 3.50 m legs do not fit side
-' by side on the 6.74 m roof, so ONE neck rises from the roof's centre
-' with the two legs' area, 3.50 x sqrt 2 = 4.95 m, velocity kept. At
-' its top the two legs start, each disc inside the neck's and touching
-' its rim on its own side, turn outward over a 180 deg bend and drop
-' to their gas outlet faces. Where the legs' discs do not cover the
-' neck's, its top is a flat ceiling.
-' -> D_GOOSENECK_SRC: in the generated block above
-'    D_GOOSENECK_SRC: published, one 2500 t/d line [m]: each leg
-
+' (geometry/preheater/gooseneck.md). Two 3.50 m arms do not fit side
+' by side on the 6.74 m roof, so ONE neck leaves the roof's centre
+' with the two arms' area, 3.50 x sqrt 2 = 4.95 m, velocity kept. It is
+' three straight pipes: one rising from the roof's middle, one level,
+' one dropping, each joined to the next by a mitre, so that the neck
+' comes down in front of the vessel (forward = -y) and goes on as one
+' vertical channel of its diameter; at the channel's lower end it
+' divides into two arms, each leaving in the plane across it (x-z)
+' at an angle to the vertical, a straight piece, a mitre, and a vertical
+' drop to its gas outlet face. Each arm's start disc is centred on the
+' channel's end.
+' A mitre joint between equal pipes is made of the two pipes, each
+' running on past the joint by r tan(turn / 2), then cut by the joint's
+' plane (the plane through the node whose normal is the sum of the two
+' directions): the mitred pipe exactly, and its volume the pipes' axis lengths.
 ' Modelling parameters -- NOT plant dimensions. No source gives the
 ' gooseneck's lengths. The rise and the bend are C1's (cyclone.bas),
 ' where the outlet face had to move past a bend before the backflow on
-' it went away. The drops hang down beside the vessel to half its
-' height (user decision, 29 Sep 2026): the outlet faces sit at this
-' fraction of the vessel (cone + cylinder) above its bottom, z =
-' zThroatTop, far enough past the bend for the flow to straighten.
-' -> GN_RISE_OVER_D, GN_BEND_R_OVER_D, GN_OUTLET_AT_VESSEL_H: in the generated block above
-'    GN_RISE_OVER_D: the neck's straight rise above the roof, x neck D
-'    GN_BEND_R_OVER_D: bend centreline radius, x leg D
-'    GN_OUTLET_AT_VESSEL_H: outlet faces' height, fraction of H_VESSEL
+' it went away. Each arm comes down in one inclined piece and turns
+' (mitre) to a level run to its outlet face, a vertical plane at +-x
+' (user's sketch, 15 Nov 2026). The runs' axis is C5's inlet axis
+' (plant_geometry.gooseneck: C5 stands over the tertiary air duct by
+' its clearance), as a fraction of the vessel (cone + cylinder) above
+' its bottom, z = zThroatTop.
+' -> GN_OUTLET_AT_VESSEL_H, GN_SLOPE_DEG, GN_PIECE_OVER_D, GN_LEVEL_OVER_D: in the generated block above
+' -> GN_ARM_DEG, GN_ARM_RUN_OVER_D: in the generated block above
+' -> GN_INSIDE_VESSEL, GN_OVERLAP_NECK_ARM, GN_OVERLAP_ARMS, GN_OVERLAP_ALL: in the generated block above
+'    GN_OUTLET_AT_VESSEL_H: the arms' level runs' axis, fraction of H_VESSEL
+'    GN_SLOPE_DEG: the neck's two inclined pieces, to the horizontal [deg]
+'    GN_PIECE_OVER_D, GN_LEVEL_OVER_D: the neck's inclined pieces and its level piece, x neck D
+'    GN_ARM_DEG: each arm's angle to the vertical where it leaves the neck [deg]
+'    GN_ARM_RUN_OVER_D: the arm's level run to its outlet face, x leg D
+'    GN_INSIDE_VESSEL: the neck's first piece's part inside the vessel [m3], GN_OVERLAP_*:
+'    what the neck and the arms share [m3] (grids in plant_geometry.py)
 
 ' Tertiary air (user decision, 14 Oct 2026). One duct of the derived
 ' bore, entering at the bottom of the cylinder tangentially, as in a
@@ -183,15 +207,21 @@ Const M_CO2                        As Double  = 0.0440095    ' kg/mol [plant_geo
 ' Output
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
-' Grid points per axis for the volume the two gooseneck bends share
-' (GnBendOverlap); its error is well under VOL_TOL on the body.
-' -> OVERLAP_N: in the generated block above
+' Grid points per axis for the volumes the gooseneck's neck and arms
+' share: computed in geometry/plant_geometry.py, handed over as the
+' GN_OVERLAP_* constants (their error is well under VOL_TOL on the body).
+' -> OVERLAP_N: in the generated block above (plant_geometry.py's grid)
 
 ' Verification tolerances
 Const VOL_TOL  As Double = 0.001   ' relative, on every closed-form stage volume
 ' A feed pipe adds well under a cubic metre to a ~1870 m3 body, under
 ' VOL_TOL on the whole, so its stage is also checked on the volume it ADDS, to this.
 Const FEED_VOL_TOL As Double = 0.01
+' What a pipe adds is the difference of two ~1640 m3 volumes, each good to about
+' 1e-6 of itself (SolidWorks' mass properties): the fuel pipe, 0.063 m3, read
+' 1.5 and 2.9 % off on two builds of the same pipe. So the check has this much
+' of the body's volume as a floor; CheckStageVol still holds the whole to VOL_TOL.
+Const ADD_NOISE As Double = 0.000005
 Const AREA_TOL As Double = 0.002   ' relative, on face areas
 Const BOX_TOL  As Double = 0.005   ' absolute [m]; GetBodyBox may overstate curved faces
 Const DIR_TOL  As Double = 0.000001
@@ -221,15 +251,25 @@ Dim zThroatTop As Double                    ' where the throat meets the cone
 Dim hCone As Double                         ' cone height
 Dim zConeTop As Double                      ' where the cone meets the cylinder
 Dim zRoof As Double                         ' the vessel's flat roof
-Dim rGn As Double                           ' gooseneck leg radius
-Dim rNeck As Double                         ' the neck's radius, two legs' area
-Dim xGn As Double                           ' the legs' start discs, x = +-this, y = 0, inside the neck's
-Dim zGnTop As Double                        ' top of the neck, where both bends start and end
-Dim rGnBend As Double                       ' bend centreline radius
-Dim xGnLeg As Double                        ' the drops' axes, x = +-this
-Dim zGnOut As Double                        ' the two gas outlet faces, z = this, facing down
-Dim zGnApex As Double                       ' highest point of the bends
-Dim xBoxMax As Double                       ' the domain's |x| extreme, the drops' outer walls
+Dim rGn As Double                           ' gooseneck arm radius
+Dim rNeck As Double                         ' the neck's radius, two arms' area
+Dim gnBeta As Double                        ' the neck's inclined pieces, to the horizontal [rad]
+Dim gnPiece As Double, gnLevel As Double    ' the neck's pieces' axis lengths
+Dim gnSet As Double                         ' the first piece's cap, this far behind the roof point along its axis
+Dim fN(4) As Double, zN(4) As Double        ' the neck's nodes (forward = -y, z): N0 on the roof, N1, N2, N3 where the channel starts, N4 its lower end
+Dim gnYoff As Double                        ' the neck's channel, and the arms, at y = -this
+Dim gnChan As Double                        ' the vertical channel below the third piece, its length
+Dim zSplit As Double                        ' the channel's lower end, z: the arms leave it
+Dim armAng As Double, armLa As Double       ' each arm's angle to the vertical, its inclined piece (axis, to the mitre node)
+Dim armRun As Double, xBend As Double       ' each arm's level run, and where the arm turns level (x = +-this)
+Dim xGnLeg As Double                        ' the two gas outlet faces, x = +-this (vertical planes), y = -gnYoff
+Dim zGnOut As Double                        ' the arms' level runs' axis, z (the outlet faces' centres)
+Dim zGnApex As Double                       ' highest point of the neck: the level piece's top
+Dim eNeck As Double, eArm As Double         ' how far a mitred pipe runs on past its joint
+Dim xBoxMax As Double                       ' the arms' outlet faces, |x|
+Dim yBoxMin As Double                       ' the channel's front wall (the foremost part), y
+Dim vRun As Double                          ' the volume the build should have reached so far
+Dim vArmRun As Double, vArmPiece As Double
 Dim rTA As Double                           ' tertiary air duct radius
 Dim yTA As Double, zTA As Double            ' its axis, parallel to x, through (., yTA, zTA)
 Dim xTAEnd As Double                        ' its face, the tertiary_air_inlet, at x = this
@@ -253,7 +293,7 @@ Dim outName As String                       ' file name the solid is written und
 Dim uSign As Double, vSign As Double
 Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve profiles
 Dim uSignY As Double, vSignY As Double      ' the y = 0 plane, for the feed pipes
-Dim uSignZ As Double, vSignZ As Double      ' z = zGnTop, where the gooseneck is drawn
+Dim uSignO As Double, vSignO As Double      ' y = -gnYoff, the arms' plane
 
 ' The off-plane component of the first point drawn in the sketch
 ' now open; see G2S.
@@ -262,8 +302,6 @@ Dim wRefSet As Boolean
 
 ' expected volumes, all closed form
 Dim vThroat As Double, vCone As Double, vCyl As Double, vVessel As Double
-Dim vGnPipes As Double, vGnBend As Double, vGnLegs As Double
-Dim vGnOverlap As Double                    ' what the two bends share, over the neck
 Dim vFeed As Double                         ' one feed pipe, the part outside the vessel
 Dim vTA As Double                           ' the tertiary air stub, the part outside the vessel
 Dim vFuel As Double                         ' one fuel pipe, the part outside the vessel
@@ -362,32 +400,48 @@ Private Sub Derive()
     vCyl = PI * R * R * (H_VESSEL - hCone)
     vVessel = vCone + vCyl
 
-    ' Gooseneck. One neck of both legs' area on the axis; each leg's
-    ' start disc inside it, touching its rim on its own side.
+    ' Gooseneck. One neck of both arms' area, three straight pieces and
+    ' a vertical channel; two arms from its lower end.
     rGn = 0.5 * D_GOOSENECK_SRC
     rNeck = rGn * Sqr(2#)
-    xGn = rNeck - rGn
-    zGnTop = zRoof + GN_RISE_OVER_D * 2# * rNeck
-    rGnBend = GN_BEND_R_OVER_D * 2# * rGn
-    xGnLeg = xGn + 2# * rGnBend
-    zGnOut = zThroatTop + GN_OUTLET_AT_VESSEL_H * H_VESSEL
-    zGnApex = zGnTop + rGnBend + rGn
-    xBoxMax = xGnLeg + rGn
+    gnBeta = GN_SLOPE_DEG * PI / 180#
+    gnPiece = GN_PIECE_OVER_D * 2# * rNeck
+    gnLevel = GN_LEVEL_OVER_D * 2# * rNeck
+    gnSet = rNeck
+    fN(0) = GN_ROOT_FWD: zN(0) = zRoof
+    fN(1) = fN(0) + gnPiece * Cos(gnBeta): zN(1) = zN(0) + gnPiece * Sin(gnBeta)
+    fN(2) = fN(1) + gnLevel: zN(2) = zN(1)
+    fN(3) = fN(2) + gnPiece * Cos(gnBeta): zN(3) = zN(2) - gnPiece * Sin(gnBeta)
+    gnChan = GN_CHANNEL_OVER_D * 2# * rNeck
+    fN(4) = fN(3): zN(4) = zN(3) - gnChan
+    gnYoff = fN(3)
+    zSplit = zN(4)
+    zGnApex = zN(1) + rNeck
+    eNeck = rNeck * Tan(gnBeta / 2#)
 
-    vGnPipes = PI * rNeck * rNeck * (zGnTop - zRoof)
-    ' Pappus: a disc swept about an axis it does not cross sweeps its
-    ' area times the path of its centroid, here half a circle of
-    ' radius rGnBend. Exact while rGnBend > rGn. One bend.
-    vGnBend = PI * rGn * rGn * (PI * rGnBend)
-    vGnLegs = 2# * PI * rGn * rGn * (zGnTop - zGnOut)
+    armAng = GN_ARM_DEG * PI / 180#
+    armRun = GN_ARM_RUN_OVER_D * 2# * rGn
+    zGnOut = zThroatTop + GN_OUTLET_AT_VESSEL_H * H_VESSEL
+    If zGnOut >= zSplit Then
+        Fail "the arms' level runs at z = " & Fmt(zGnOut) & " m are not below the channel's end, z = " & Fmt(zSplit) & " m."
+    End If
+    armLa = (zSplit - zGnOut) / Cos(armAng)
+    xBend = (zSplit - zGnOut) * Tan(armAng)
+    xGnLeg = xBend + armRun
+    eArm = rGn * Tan((PI / 2# - armAng) / 2#)    ' the mitre turns by 90 deg less the arm's angle
+    xBoxMax = xGnLeg
+    yBoxMin = -(gnYoff + rNeck)
+
+    vRun = 0#
+    vArmRun = PI * rGn * rGn * armRun
+    vArmPiece = PI * rGn * rGn * armLa
 
     vStage1 = vThroat + vVessel            ' throat + cone + cylinder
-    vStage2 = vStage1 + vGnPipes           ' + the neck rising from the roof
-    ' The two bends start from overlapping discs, so near the neck
-    ' they share a volume no closed form gives; GnBendOverlap
-    ' integrates it.
-    vGnOverlap = GnBendOverlap()
-    vStage3a = vStage2 + vGnBend           ' + the +x bend
+    ' + the neck: three pieces, each the pipes' axis length (a mitre adds
+    ' exactly that), the first from its cap, less what of it is inside the vessel
+    ' (a grid, plant_geometry.py)
+    vStage2 = vStage1 + PI * rNeck * rNeck * (gnSet + 2# * gnPiece + gnLevel + gnChan) - GN_INSIDE_VESSEL
+    vStage3a = vStage2 + vArmRun + vArmPiece - GN_OVERLAP_NECK_ARM   ' + the +x arm
     ' Meal feed pipes. Checked here, not in PreChecks: at 90 deg the
     ' lines below divide by zero before PreChecks runs.
     If FEED_SLOPE_DEG <= 0# Or FEED_SLOPE_DEG >= 90# Then
@@ -447,8 +501,8 @@ Private Sub Derive()
     yFuelMax = yFuelEnd + rFuel * us
     vFuel = PI * rFuel * rFuel * lFuel - (ChordIntegral(rFuel, 0#) - rhoFuel0 * PI * rFuel * rFuel) / uc
 
-    vStage3b = vStage3a + vGnBend - vGnOverlap   ' + the -x bend, less what it shares with the +x one
-    vStage4 = vStage3b + vGnLegs           ' + two drops to the outlet faces
+    vStage3b = vStage3a + vArmRun + vArmPiece - GN_OVERLAP_NECK_ARM - GN_OVERLAP_ARMS + GN_OVERLAP_ALL   ' + the -x arm
+    vStage4 = vStage3b
     vStage5a = vStage4 + vFeed             ' + the +x meal feed pipe
     vStage5b = vStage5a + vFeed            ' + the -x meal feed pipe
     vStage6 = vStage5b + vTA               ' + the tertiary air duct
@@ -491,33 +545,42 @@ Private Sub PreChecks()
              "would sit on the cone's lip."
     End If
 
-    ' 5. the neck on the roof, clear of the wall
+    ' 5. the neck's first piece through the roof, whose opening is an
+    '    ellipse of semi-axes r and r / sin(slope) -- more than the roof
+    '    is wide, and left so: the pipe laps the roof's edge a little
+    If gnBeta <= 0# Or gnBeta >= PI / 2# Then
+        Fail "GN_SLOPE_DEG is " & Fmt(GN_SLOPE_DEG) & "; the neck's inclined pieces have to lie between the horizontal and the vertical."
+    End If
     If rNeck >= R Then
-        Fail "the gooseneck neck (D " & Fmt(2# * rNeck) & " m) does not fit on the D " & _
-             Fmt(D_VESSEL) & " m roof."
+        Fail "the gooseneck neck (D " & Fmt(2# * rNeck) & " m) is not narrower than the D " & Fmt(D_VESSEL) & " m vessel."
     End If
 
-    ' 6. the bends. At rGnBend <= rGn the inner wall of a bend passes
-    '    through the axis it is swept about and the solid folds
-    '    through itself; Pappus stops being the volume, too.
-    If rGnBend <= rGn Then
-        Fail "the gooseneck bend radius " & Fmt(rGnBend) & " m is not larger than the leg " & _
-             "radius " & Fmt(rGn) & " m. GN_BEND_R_OVER_D must exceed 0.5."
+    ' 6. the neck's pieces: a mitre takes r tan(turn / 2) of a pipe's
+    '    length at each end, so a piece between two joints has to be
+    '    longer than twice that
+    If GN_PIECE_OVER_D <= 0# Or GN_LEVEL_OVER_D <= 0# Then
+        Fail "GN_PIECE_OVER_D and GN_LEVEL_OVER_D have to be positive."
+    End If
+    If gnLevel <= 2# * rNeck * Tan(gnBeta / 2#) Or gnPiece <= rNeck * Tan(gnBeta / 2#) Then
+        Fail "the neck's pieces are too short for their mitres: the level piece has to exceed " & _
+             Fmt(2# * rNeck * Tan(gnBeta / 2#)) & " m, the inclined ones " & Fmt(rNeck * Tan(gnBeta / 2#)) & " m."
     End If
 
-    ' 7. the rise and the drop, and the drops clear of the vessel
-    If GN_RISE_OVER_D <= 0# Then
-        Fail "GN_RISE_OVER_D is " & Fmt(GN_RISE_OVER_D) & ". The bends have to start above " & _
-             "the roof, not on it."
+    ' 7. the arms
+    If armAng <= 0# Or armAng >= PI / 2# Then
+        Fail "GN_ARM_DEG is " & Fmt(GN_ARM_DEG) & "; the arms have to leave the neck between the vertical and the horizontal."
     End If
-    If zGnOut >= zGnTop Then
-        Fail "the gooseneck outlet faces at z = " & Fmt(zGnOut) & " m are not below the ends " & _
-             "of the bends at z = " & Fmt(zGnTop) & " m; they would sit where the flow is " & _
-             "still turning. Lower GN_OUTLET_AT_VESSEL_H."
+    If armLa <= eArm Or armRun <= eArm Then
+        Fail "the arms' inclined piece (" & Fmt(armLa) & " m) or level run (" & Fmt(armRun) & " m) is shorter than its mitre needs (" & Fmt(eArm) & " m)."
     End If
-    If xGnLeg - rGn <= R Then
-        Fail "the gooseneck drops' inner walls at |x| = " & Fmt(xGnLeg - rGn) & " m are not " & _
-             "clear of the vessel (" & Fmt(R) & " m). Raise GN_BEND_R_OVER_D."
+    If gnChan <= eNeck Then
+        Fail "the neck's vertical channel (" & Fmt(gnChan) & " m) is shorter than its mitre needs (" & Fmt(eNeck) & " m)."
+    End If
+    If xBend - eArm <= 0# Then
+        Fail "the arms turn level at x = +-" & Fmt(xBend) & " m, inside the mitre's " & Fmt(eArm) & " m of the channel."
+    End If
+    If gnYoff - rGn - R <= 0# Then
+        Fail "the arms' plane at y = -" & Fmt(gnYoff) & " m is not clear of the vessel."
     End If
     ' 8. the tertiary air duct: clear of the cone and of the vessel's
     '    wall by its two hairs, inside the cylinder, out past the wall
@@ -567,18 +630,8 @@ Private Sub PreChecks()
     If yTA + rTA >= -rFeed Then
         Fail "the tertiary air duct reaches y = " & Fmt(yTA + rTA) & " m, into the +x meal pipe."
     End If
-    ' Below the gooseneck's outlet faces and clear of its drops in x.
-    If zFeedEnd + rFeed * fc >= zGnOut Then
-        Fail "the meal pipes reach up to z = " & Fmt(zFeedEnd + rFeed * fc) & " m, not below " & _
-             "the gooseneck outlet faces at z = " & Fmt(zGnOut) & " m."
-    End If
-    If xFeedMax >= xGnLeg - rGn Then
-        Fail "the meal pipes reach out to |x| = " & Fmt(xFeedMax) & " m, into the gooseneck " & _
-             "drops whose inner walls are at |x| = " & Fmt(xGnLeg - rGn) & " m."
-    End If
-
     If zGnOut <= zConeTop Then
-        Fail "the gooseneck drops come down to z = " & Fmt(zGnOut) & " m, below the top of " & _
+        Fail "the gooseneck's level runs are at z = " & Fmt(zGnOut) & " m, below the top of " & _
              "the cone at z = " & Fmt(zConeTop) & " m."
     End If
 
@@ -589,10 +642,16 @@ Private Sub PreChecks()
     Note "cone " & Fmt(CONE_DEG) & " deg, " & Fmt(hCone) & " m tall, z " & Fmt(zThroatTop) & _
          " .. " & Fmt(zConeTop) & " m"
     Note "cylinder D " & Fmt(D_VESSEL) & " m, z " & Fmt(zConeTop) & " .. " & Fmt(zRoof) & " m"
-    Note "gooseneck: neck D " & Fmt(2# * rNeck) & " m rising to z = " & Fmt(zGnTop) & _
-         " m; 2 legs D " & Fmt(2# * rGn) & " m from x = +-" & Fmt(xGn) & " m, bend R " & _
-         Fmt(rGnBend) & " m over 180 deg (sharing " & Fmt(vGnOverlap) & " m3), drop at x = +-" & _
-         Fmt(xGnLeg) & " m to the outlet faces at z = " & Fmt(zGnOut) & " m"
+    Note "gooseneck neck: D " & Fmt(2# * rNeck) & " m, 3 straight pieces at " & Fmt(GN_SLOPE_DEG) & _
+         " deg: " & Fmt(gnPiece) & " m, level " & Fmt(gnLevel) & " m, " & Fmt(gnPiece) & " m; first piece's cap " & _
+         Fmt(gnSet) & " m behind the roof point (" & Fmt(GN_INSIDE_VESSEL) & " m3 inside the vessel); crown z = " & _
+         Fmt(zGnApex) & " m; lower end at y = -" & Fmt(gnYoff) & " m, z = " & Fmt(zSplit) & " m"
+    Note "gooseneck channel: vertical, D " & Fmt(2# * rNeck) & " m, " & Fmt(gnChan) & " m long, from z = " & _
+         Fmt(zN(3)) & " m to z = " & Fmt(zN(4)) & " m, where the arms leave"
+    Note "gooseneck arms: 2 arms D " & Fmt(2# * rGn) & " m leaving the channel's lower end at " & Fmt(GN_ARM_DEG) & _
+         " deg, piece " & Fmt(armLa) & " m, level runs " & Fmt(armRun) & " m from x = +-" & Fmt(xBend) & _
+         " m to the outlet faces at x = +-" & Fmt(xGnLeg) & " m, z = " & Fmt(zGnOut) & " m (channel x arm " & Fmt(GN_OVERLAP_NECK_ARM) & _
+         " m3, arms " & Fmt(GN_OVERLAP_ARMS) & " m3, all " & Fmt(GN_OVERLAP_ALL) & " m3 shared)"
     Note "tertiary air: duct D " & Fmt(D_TA) & " m, tangential, axis at y = " & Fmt(yTA) & _
          " m, z = " & Fmt(zTA) & " m, face at x = " & Fmt(xTAEnd) & " m, " & Fmt(vTA) & _
          " m3 outside the vessel"
@@ -615,8 +674,9 @@ Private Sub Build()
     Dim planeX0 As SldWorks.Feature       ' the x = 0 plane
     Dim planeY0 As SldWorks.Feature       ' the y = 0 plane
     Dim planeZ0 As SldWorks.Feature       ' the z = 0 plane
-    Dim planeGn As SldWorks.Feature       ' z = zGnTop: the whole gooseneck is drawn here
+    Dim planeYoff As SldWorks.Feature     ' y = -gnYoff: the arms' plane
     Dim f As SldWorks.Feature
+    Dim sg As Double, i As Long
 
     Set swModel = swApp.NewPart
     If swModel Is Nothing Then Fail "could not create a new part. Check the default part template."
@@ -648,7 +708,7 @@ Private Sub Build()
     ' All probes run while the part is still empty. Once the vessel
     ' is there a probe would land inside it, merge with it, and then
     ' measure the merged body instead of itself.
-    Set planeGn = OffsetPlane(planeZ0, 0#, 0#, zGnTop, uSignZ, vSignZ)
+    Set planeYoff = OffsetPlane(planeY0, 0#, -gnYoff, 0#, uSignO, vSignO)
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
     CalibrateSketchAxes planeY0, 0#, 0#, 0#, uSignY, vSignY
 
@@ -663,21 +723,92 @@ Private Sub Build()
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the throat + cone + cylinder profile."
     CheckStage "1  throat + cone + cylinder", vStage1, -R, -R, 0#, R, R, zRoof
 
-    '--- 2. the neck rising from the roof ----------------------------
-    ' Drawn at the top of the rise and extruded down onto the roof.
-    Set f = ExtrudeCircles(planeGn, 0#, rNeck, zGnTop - zRoof, vStage2, "2  + gooseneck neck")
-    CheckStage "2  + gooseneck neck", vStage2, -R, -R, 0#, R, R, zGnTop
+    '--- 2. the neck: three straight pieces, mitred -------------------
+    ' Each piece is a pipe that runs on past a joint by eNeck; it is cut
+    ' by the joint's plane (MitrePiece) and joined to what is there.
+    ' Where two pipes meet, the plane is the one through the joint's node
+    ' whose normal is the sum of their directions.
+    Dim d1(2) As Double, d2(2) As Double, d3(2) As Double
+    Dim m1(2) As Double, m2(2) As Double, m3(2) As Double, nd1(2) As Double, nd2(2) As Double, nd3(2) As Double
+    Dim d4(2) As Double
+    Dim q0(2) As Double, q1(2) As Double
+    Dim cuts(11) As Double
 
-    '--- 3. the two 180 deg bends, each turning outward --------------
-    ' One feature each: a revolve takes one axis.
-    Set f = RevolveGnBend(planeGn, 1#, vStage3a, "3a + gooseneck bend, +x")
-    CheckStage "3a + gooseneck bend, +x", vStage3a, -R, -R, 0#, xBoxMax, R, zGnApex
-    Set f = RevolveGnBend(planeGn, -1#, vStage3b, "3b + gooseneck bend, -x")
-    CheckStage "3b + gooseneck bend, -x", vStage3b, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    d1(0) = 0#: d1(1) = -Cos(gnBeta): d1(2) = Sin(gnBeta)
+    d2(0) = 0#: d2(1) = -1#:          d2(2) = 0#
+    d3(0) = 0#: d3(1) = -Cos(gnBeta): d3(2) = -Sin(gnBeta)
+    nd1(0) = 0#: nd1(1) = -fN(1): nd1(2) = zN(1)
+    d4(0) = 0#: d4(1) = 0#:           d4(2) = -1#
+    nd2(0) = 0#: nd2(1) = -fN(2): nd2(2) = zN(2)
+    nd3(0) = 0#: nd3(1) = -fN(3): nd3(2) = zN(3)
+    BisectorOf d1, d2, m1
+    BisectorOf d2, d3, m2
+    BisectorOf d3, d4, m3
 
-    '--- 4. the two drops to the gas outlet faces ---------------------
-    Set f = ExtrudeCircles(planeGn, xGnLeg, rGn, zGnTop - zGnOut, vStage4, "4  + gooseneck drops")
-    CheckStage "4  + gooseneck drops", vStage4, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    vRun = vStage1
+    ' the first piece, from its cap inside the vessel to joint 1 (kept:
+    ' behind m1). It pierces the roof GN_ROOT_FWD in front of the axis, so
+    ' its cap lies wholly inside the vessel; what is inside merges away
+    q0(0) = 0#: q0(1) = -fN(0) + gnSet * Cos(gnBeta): q0(2) = zRoof - gnSet * Sin(gnBeta)
+    q1(0) = 0#: q1(1) = nd1(1) + eNeck * d1(1): q1(2) = nd1(2) + eNeck * d1(2)
+    PutJointCut cuts, 0, nd1, m1, -1#
+    MitrePiece planeX0, uSignX, vSignX, True, q0, q1, rNeck, cuts, 1, _
+               PI * rNeck * rNeck * (gnSet + gnPiece) - GN_INSIDE_VESSEL, "2.1 neck, first piece"
+    ' the level piece, between the two joints (kept: beyond m1, behind m2)
+    q0(0) = 0#: q0(1) = nd1(1) - eNeck * d2(1): q0(2) = nd1(2)
+    q1(0) = 0#: q1(1) = nd2(1) + eNeck * d2(1): q1(2) = nd2(2)
+    PutJointCut cuts, 0, nd1, m1, 1#
+    PutJointCut cuts, 1, nd2, m2, -1#
+    MitrePiece planeX0, uSignX, vSignX, True, q0, q1, rNeck, cuts, 2, _
+               PI * rNeck * rNeck * gnLevel, "2.2 neck, level piece"
+    ' the last piece, from joint 2 to joint 3 (kept: beyond m2, behind m3)
+    q0(0) = 0#: q0(1) = nd2(1) - eNeck * d3(1): q0(2) = nd2(2) - eNeck * d3(2)
+    q1(0) = 0#: q1(1) = nd3(1) + eNeck * d3(1): q1(2) = nd3(2) + eNeck * d3(2)
+    PutJointCut cuts, 0, nd2, m2, 1#
+    PutJointCut cuts, 1, nd3, m3, -1#
+    MitrePiece planeX0, uSignX, vSignX, True, q0, q1, rNeck, cuts, 2, _
+               PI * rNeck * rNeck * gnPiece, "2.3 neck, last piece"
+    ' the vertical channel, from joint 3 down to the arms' node (kept: beyond m3)
+    q0(0) = 0#: q0(1) = nd3(1): q0(2) = nd3(2) - eNeck * d4(2)
+    q1(0) = 0#: q1(1) = -fN(4): q1(2) = zN(4)
+    PutJointCut cuts, 0, nd3, m3, 1#
+    MitrePiece planeX0, uSignX, vSignX, True, q0, q1, rNeck, cuts, 1, _
+               PI * rNeck * rNeck * gnChan, "2.4 neck, vertical channel"
+    CheckStageVol "2  + gooseneck neck", vStage2
+
+    '--- 3. the two arms ----------------------------------------------
+    ' In the plane y = -gnYoff across the channel's lower end. Each: the
+    ' inclined piece from the channel's end (its start disc inside the channel)
+    ' and the level run to the outlet face, mitred where they meet.
+    Dim da(2) As Double, db(2) As Double, ma(2) As Double, nda(2) As Double
+    For i = 0 To 1
+        sg = 1# - 2# * i
+        da(0) = sg * Sin(armAng): da(1) = 0#: da(2) = -Cos(armAng)
+        db(0) = sg: db(1) = 0#: db(2) = 0#
+        nda(0) = sg * xBend: nda(1) = -gnYoff: nda(2) = zGnOut
+        BisectorOf da, db, ma
+        q0(0) = 0#: q0(1) = -gnYoff: q0(2) = zSplit
+        q1(0) = nda(0) + eArm * da(0): q1(1) = -gnYoff: q1(2) = nda(2) + eArm * da(2)
+        PutJointCut cuts, 0, nda, ma, -1#
+        If i = 0 Then
+            MitrePiece planeYoff, uSignO, vSignO, False, q0, q1, rGn, cuts, 1, _
+                       PI * rGn * rGn * armLa - GN_OVERLAP_NECK_ARM, "3 arm piece"
+        Else
+            MitrePiece planeYoff, uSignO, vSignO, False, q0, q1, rGn, cuts, 1, _
+                       PI * rGn * rGn * armLa - GN_OVERLAP_NECK_ARM - GN_OVERLAP_ARMS + GN_OVERLAP_ALL, "3 arm piece"
+        End If
+        q0(0) = nda(0) - eArm * db(0): q0(1) = -gnYoff: q0(2) = nda(2) - eArm * db(2)
+        q1(0) = sg * xGnLeg: q1(1) = -gnYoff: q1(2) = zGnOut
+        PutJointCut cuts, 0, nda, ma, 1#
+        MitrePiece planeYoff, uSignO, vSignO, False, q0, q1, rGn, cuts, 1, _
+                   PI * rGn * rGn * armRun, "3 arm level run"
+        If i = 0 Then
+            CheckStageVol "3a + gooseneck arm, +x", vStage3a
+        Else
+            CheckStageVol "3b + gooseneck arm, -x", vStage3b
+        End If
+    Next i
+    vStage4 = vStage3b
 
     '--- 5. the two meal feed pipes, at +x and -x ---------------------
     ' Each is a rectangle in the y = 0 plane revolved about its own
@@ -686,24 +817,24 @@ Private Sub Build()
     ' drops reach further out in x, so the box does not move.
     AddPipe planeY0, 0, 1#, rFeed, fc, fs, rhoFeed0, zFeedStart, lFeed, xFeedEnd, zFeedEnd, _
             vFeed, "meal_feed", "5a + meal feed, +x"
-    CheckStage "5a + meal feed, +x", vStage5a, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    CheckStageVol "5a + meal feed, +x", vStage5a
     AddPipe planeY0, 0, -1#, rFeed, fc, fs, rhoFeed0, zFeedStart, lFeed, xFeedEnd, zFeedEnd, _
             vFeed, "meal_feed", "5b + meal feed, -x"
-    CheckStage "5b + meal feed, -x", vStage5b, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    CheckStageVol "5b + meal feed, -x", vStage5b
 
     '--- 6. the tertiary air duct, tangential, coming in along +x -----
     AddTertiaryAir planeX0, "6  + tertiary air"
-    CheckStage "6  + tertiary air", vStage6, -xBoxMax, -R, 0#, xBoxMax, R, zGnApex
+    CheckStageVol "6  + tertiary air", vStage6
 
     '--- 7. the two fuel pipes, at +y and -y ---------------------------
     ' As the meal pipes, in the x = 0 plane; they reach out past the
     ' vessel in y, so the box grows there.
     AddPipe planeX0, 1, 1#, rFuel, uc, us, rhoFuel0, zFuelStart, lFuel, yFuelEnd, zFuelEnd, _
             vFuel, "fuel_inlet", "7a + fuel, +y"
-    CheckStage "7a + fuel, +y", vStage7a, -xBoxMax, -R, 0#, xBoxMax, yFuelMax, zGnApex
+    CheckStageVol "7a + fuel, +y", vStage7a
     AddPipe planeX0, 1, -1#, rFuel, uc, us, rhoFuel0, zFuelStart, lFuel, yFuelEnd, zFuelEnd, _
             vFuel, "fuel_inlet", "7b + fuel, -y"
-    CheckStage "7b + fuel, -y", vFinal, -xBoxMax, -yFuelMax, 0#, xBoxMax, yFuelMax, zGnApex
+    CheckStageVol "7b + fuel, -y", vFinal
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -832,216 +963,294 @@ Private Function OffsetPlane(base As SldWorks.Feature, _
 End Function
 
 
-' Discs of radius rc at (+-xc, 0) in the plane z = zGnTop -- one disc
-' on the axis when xc = 0 -- extruded straight DOWN by depth: the neck
-' (onto the roof) or the two drops (to the outlet faces).
-'
-' Which way a blind extrusion goes is not ours to choose. Up from the
-' plane, the pipes would float free of the vessel -- three bodies --
-' and the drops would run back into the bends and come out short; the
-' body count and the volume say which, and the other way is tried.
-Private Function ExtrudeCircles(planeGn As SldWorks.Feature, ByVal xc As Double, ByVal rc As Double, _
-                                ByVal depth As Double, ByVal expected As Double, _
-                                ByVal stage As String) As SldWorks.Feature
+' A straight pipe of radius rr from P0 to P1, both in plane pl: a
+' rectangle from the axis out along n (in the plane, normal to the
+' axis) revolved a full turn about its axis edge -- a full turn has no
+' direction to get wrong. dv is the volume it should add, bodies the
+' number of solid bodies the part should hold after it.
+Private Sub RectPipe(pl As SldWorks.Feature, ByVal usg As Double, ByVal vsg As Double, _
+                     ByVal x0 As Double, ByVal y0 As Double, ByVal z0 As Double, _
+                     ByVal x1 As Double, ByVal y1 As Double, ByVal z1 As Double, _
+                     ByVal nx As Double, ByVal ny As Double, ByVal nz As Double, ByVal rr As Double, _
+                     ByVal dv As Double, ByVal bodies As Long, ByVal stage As String)
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
-    Dim u0 As Double, v0 As Double
-    Dim f As SldWorks.Feature
-    Dim got As Double
-    Dim s As Long, k As Long
-
-    uSign = uSignZ: vSign = vSignZ
-
-    swModel.ClearSelection2 True
-    planeGn.Select2 False, 0
-    swSkMgr.InsertSketch True
-    Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
-    wRefSet = False
-
-    For s = -1 To 1 Step 2
-        G2S sk, s * xc, 0#, zGnTop, u0, v0
-        If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rc) Is Nothing Then
-            Fail "CreateCircleByRadius failed at stage " & stage & "."
-        End If
-        If xc = 0# Then Exit For
-    Next s
-
-    swSkMgr.InsertSketch True
-    Set skFeat = LastFeature("ProfileFeature")
-
-    For k = 0 To 1
-        swModel.ClearSelection2 True
-        skFeat.Select2 False, 0
-        Set f = swFeat.FeatureExtrusion3( _
-            True, False, (k = 1), _
-            swEndCondBlind, swEndCondBlind, _
-            depth, 0.01, _
-            False, False, False, False, _
-            0#, 0#, _
-            False, False, False, False, _
-            True, True, True, _
-            swStartSketchPlane, 0#, False)
-        swModel.ClearSelection2 True
-
-        If Not f Is Nothing Then
-            got = BodiesVolume()
-            If BodyCount() = 1 And Abs(got - expected) <= VOL_TOL * expected Then
-                Set ExtrudeCircles = f
-                Exit Function
-            End If
-            Note "stage " & stage & " extruded the wrong way (" & BodyCount() & " bodies, " & _
-                 Fmt(got) & " m3); reversing"
-            swModel.ClearSelection2 True
-            f.Select2 False, 0
-            swModel.EditDelete
-            swModel.ClearSelection2 True
-            Set f = Nothing
-        End If
-    Next k
-
-    Fail "stage " & stage & " could not be extruded down to one body of " & Fmt(expected) & _
-         " m3 in either direction."
-
-End Function
-
-
-' One gooseneck bend: the leg's disc at (side * xGn, 0) in the plane
-' z = zGnTop, revolved 180 deg about the line through
-' (side * (xGn + rGnBend), 0, zGnTop) parallel to y. That line lies
-' in the disc's plane, which is what a revolve needs, and clears the
-' disc by rGnBend - rGn, so the result is a half torus that leaves
-' the rise going up, goes over and comes back down into the same
-' plane at x = side * xGnLeg. side = +1 turns outward to +x, -1 to -x.
-'
-' Turned the wrong way the bend runs down through the pipe and the
-' roof into the vessel; the volume then comes out short and the top
-' of the box stays at the rise. Either says so, and the other way is
-' tried.
-Private Function RevolveGnBend(planeGn As SldWorks.Feature, ByVal side As Double, _
-                               ByVal expected As Double, ByVal stage As String) As SldWorks.Feature
-
-    Dim sk As SldWorks.Sketch
-    Dim skFeat As SldWorks.Feature
-    Dim segs As Variant
     Dim axisSeg As SldWorks.SketchSegment
+    Dim seg As SldWorks.SketchSegment
     Dim selData As SldWorks.SelectData
+    Dim px(3) As Double, py(3) As Double, pz(3) As Double
     Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
     Dim f As SldWorks.Feature
-    Dim body As SldWorks.Body2
-    Dim mp As Variant, box As Variant
-    Dim reachOut As Double
-    Dim i As Long, k As Long
+    Dim i As Long, j As Long
 
-    uSign = uSignZ: vSign = vSignZ
+    uSign = usg: vSign = vsg
+    px(0) = x0: py(0) = y0: pz(0) = z0
+    px(1) = x1: py(1) = y1: pz(1) = z1
+    px(2) = x1 + rr * nx: py(2) = y1 + rr * ny: pz(2) = z1 + rr * nz
+    px(3) = x0 + rr * nx: py(3) = y0 + rr * ny: pz(3) = z0 + rr * nz
 
     swModel.ClearSelection2 True
-    planeGn.Select2 False, 0
+    pl.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
     wRefSet = False
 
-    G2S sk, side * xGn, 0#, zGnTop, u0, v0
-    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rGn) Is Nothing Then
-        Fail "CreateCircleByRadius failed at stage " & stage & "."
-    End If
-    G2S sk, side * (xGn + rGnBend), -1#, zGnTop, u0, v0
-    G2S sk, side * (xGn + rGnBend), 1#, zGnTop, u1, v1
-    If swSkMgr.CreateCenterLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
-        Fail "CreateCenterLine failed at stage " & stage & "."
-    End If
+    For i = 0 To 3
+        j = (i + 1) Mod 4
+        G2S sk, px(i), py(i), pz(i), u0, v0
+        G2S sk, px(j), py(j), pz(j), u1, v1
+        Set seg = swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#)
+        If seg Is Nothing Then Fail "CreateLine failed at stage " & stage & "."
+        If i = 0 Then Set axisSeg = seg
+    Next i
 
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
 
-    For k = 0 To 1
-        ' A segment pointer does not survive a deleted feature, so the
-        ' axis is looked up again from the sketch on every attempt.
-        Set sk = skFeat.GetSpecificFeature2
-        segs = sk.GetSketchSegments
-        Set axisSeg = Nothing
-        For i = 0 To UBound(segs)
-            If segs(i).ConstructionGeometry Then Set axisSeg = segs(i)
-        Next i
-        If axisSeg Is Nothing Then Fail "the sketch for stage " & stage & " has lost its axis."
+    swModel.ClearSelection2 True
+    Set selData = swModel.SelectionManager.CreateSelectData
+    selData.Mark = 16
+    axisSeg.Select4 False, selData
+    skFeat.Select2 True, 0
 
-        swModel.ClearSelection2 True
-        Set selData = swModel.SelectionManager.CreateSelectData
-        selData.Mark = 16
-        axisSeg.Select4 False, selData
-        skFeat.Select2 True, 0
+    Set f = swFeat.FeatureRevolve2( _
+        True, True, False, False, False, False, _
+        0, 0, 2# * PI, 0#, _
+        False, False, 0.01, 0.01, _
+        0, 0#, 0#, _
+        True, True, True)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "FeatureRevolve2 failed at stage " & stage & "."
 
-        Set f = swFeat.FeatureRevolve2( _
-            True, True, False, False, (k = 1), False, _
-            0, 0, PI, 0#, _
-            False, False, 0.01, 0.01, _
-            0, 0#, 0#, _
-            True, True, True)
-        swModel.ClearSelection2 True
+    vRun = vRun + dv
+    CheckPiece stage, bodies
 
-        If Not f Is Nothing Then
-            Set body = TheBody(stage)
-            mp = body.GetMassProperties(1000#)
-            box = body.GetBodyBox
-            ' How far the body now reaches on this bend's side of x.
-            If side > 0# Then reachOut = box(3) Else reachOut = -box(0)
-            If Abs(mp(3) - expected) <= VOL_TOL * expected And _
-               box(5) > zGnTop + 0.5 * rGnBend And reachOut > R + rGnBend Then
-                Set RevolveGnBend = f
-                Exit Function
-            End If
-            Note "stage " & stage & " turned the wrong way (volume " & Fmt(mp(3)) & " m3, top " & _
-                 Fmt(box(5)) & " m); reversing"
-            swModel.ClearSelection2 True
-            f.Select2 False, 0
-            swModel.EditDelete
-            swModel.ClearSelection2 True
-            Set f = Nothing
-        End If
+End Sub
+
+
+' The unit vector along a + b: the normal of the mitre plane between a
+' pipe running along a and one running on along b.
+Private Sub BisectorOf(a() As Double, b() As Double, m() As Double)
+    Dim k As Long, l As Double
+    For k = 0 To 2
+        m(k) = a(k) + b(k)
     Next k
+    l = Sqr(m(0) * m(0) + m(1) * m(1) + m(2) * m(2))
+    For k = 0 To 2
+        m(k) = m(k) / l
+    Next k
+End Sub
 
-    Fail "stage " & stage & " could not be revolved to the right volume in either direction. " & _
-         "Expected " & Fmt(expected) & " m3, top at z = " & Fmt(zGnApex) & " m."
 
-End Function
+' Cut number c of a piece: the joint's node and the unit direction, from
+' the node, towards the side of its plane the piece keeps (side x the
+' plane's normal).
+Private Sub PutJointCut(cuts() As Double, ByVal c As Long, node() As Double, m() As Double, ByVal side As Double)
+    Dim k As Long
+    For k = 0 To 2
+        cuts(6 * c + k) = node(k)
+        cuts(6 * c + 3 + k) = side * m(k)
+    Next k
+End Sub
 
 
-' The volume the two gooseneck bends share. Each bend is a half torus
-' over the plane z = zGnTop, about the line through
-' (side * (xGn + rGnBend), ., zGnTop) parallel to y: a point is in it
-' when its distance rho from that line, measured in the x-z plane,
-' and its y satisfy (rho - rGnBend)^2 + y^2 <= rGn^2, z >= zGnTop.
-' The +x bend never reaches x < xGn - rGn, nor the -x bend past
-' -(xGn - rGn), and neither rises over rGnBend + rGn: the midpoint rule
-' on that box, OVERLAP_N points a side.
-Private Function GnBendOverlap() As Double
-    Dim i As Long, j As Long, k As Long
-    Dim hx As Double, hy As Double, hz As Double
-    Dim x As Double, y As Double, z As Double
-    Dim xa As Double, ra As Double, rb As Double
-    Dim hit As Long
-    xa = xGn + rGnBend
-    hx = 2# * (rGn - xGn) / OVERLAP_N
-    hy = 2# * rGn / OVERLAP_N
-    hz = (rGnBend + rGn) / OVERLAP_N
-    For i = 0 To OVERLAP_N - 1
-        x = -(rGn - xGn) + (i + 0.5) * hx
-        For k = 0 To OVERLAP_N - 1
-            z = (k + 0.5) * hz
-            ra = Sqr((x - xa) * (x - xa) + z * z) - rGnBend
-            rb = Sqr((x + xa) * (x + xa) + z * z) - rGnBend
-            For j = 0 To OVERLAP_N - 1
-                y = -rGn + (j + 0.5) * hy
-                If ra * ra + y * y <= rGn * rGn Then
-                    If rb * rb + y * y <= rGn * rGn Then hit = hit + 1
-                End If
-            Next j
-        Next k
+' A straight pipe from p0 to p1 (both in plane pl) as a body of its own,
+' not merged with anything: a rectangle from the axis out in the plane,
+' revolved a full turn about the axis edge. inX: the plane is x = const
+' (the radial direction is then in y, z), otherwise y = const.
+Private Function PipeFeature(pl As SldWorks.Feature, ByVal usg As Double, ByVal vsg As Double, _
+                             ByVal inX As Boolean, p0() As Double, p1() As Double, _
+                             ByVal rr As Double, ByVal stage As String) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim axisSeg As SldWorks.SketchSegment
+    Dim seg As SldWorks.SketchSegment
+    Dim selData As SldWorks.SelectData
+    Dim px(3) As Double, py(3) As Double, pz(3) As Double
+    Dim dx As Double, dy As Double, dz As Double, l As Double
+    Dim nx As Double, ny As Double, nz As Double
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim f As SldWorks.Feature
+    Dim i As Long, j As Long
+
+    dx = p1(0) - p0(0): dy = p1(1) - p0(1): dz = p1(2) - p0(2)
+    l = Sqr(dx * dx + dy * dy + dz * dz)
+    dx = dx / l: dy = dy / l: dz = dz / l
+    If inX Then
+        nx = 0#: ny = -dz: nz = dy
+    Else
+        nx = -dz: ny = 0#: nz = dx
+    End If
+
+    uSign = usg: vSign = vsg
+    px(0) = p0(0): py(0) = p0(1): pz(0) = p0(2)
+    px(1) = p1(0): py(1) = p1(1): pz(1) = p1(2)
+    px(2) = p1(0) + rr * nx: py(2) = p1(1) + rr * ny: pz(2) = p1(2) + rr * nz
+    px(3) = p0(0) + rr * nx: py(3) = p0(1) + rr * ny: pz(3) = p0(2) + rr * nz
+
+    swModel.ClearSelection2 True
+    pl.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
+    wRefSet = False
+
+    For i = 0 To 3
+        j = (i + 1) Mod 4
+        G2S sk, px(i), py(i), pz(i), u0, v0
+        G2S sk, px(j), py(j), pz(j), u1, v1
+        Set seg = swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#)
+        If seg Is Nothing Then Fail "CreateLine failed at stage " & stage & "."
+        If i = 0 Then Set axisSeg = seg
     Next i
-    GnBendOverlap = hit * hx * hy * hz
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    swModel.ClearSelection2 True
+    Set selData = swModel.SelectionManager.CreateSelectData
+    selData.Mark = 16
+    axisSeg.Select4 False, selData
+    skFeat.Select2 True, 0
+
+    Set f = swFeat.FeatureRevolve2( _
+        True, True, False, False, False, False, _
+        0, 0, 2# * PI, 0#, _
+        False, False, 0.01, 0.01, _
+        0, 0#, 0#, _
+        False, True, True)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "FeatureRevolve2 failed at stage " & stage & "."
+    Set PipeFeature = f
+
 End Function
+
+
+' The body a revolve feature made, read fresh from the feature.
+Private Function BodyOfFeature(f As SldWorks.Feature, ByVal stage As String) As SldWorks.Body2
+    Dim fc As Variant
+    Dim fa As SldWorks.Face2
+    fc = f.GetFaces
+    If IsEmpty(fc) Then Fail "stage " & stage & ": the pipe feature has no faces."
+    Set fa = fc(0)
+    Set BodyOfFeature = fa.GetBody
+End Function
+
+
+' A pipe with mitred ends, joined to the part. The pipe runs on past
+' each joint (p0, p1 are its extended ends); each of the nc cuts is a
+' joint's plane (node, direction to the kept side), made as a fat pipe
+' of its own whose start disc lies on the plane and whose bulk is on the
+' kept side. The pipe is intersected with them (Combine, Common): a
+' cylinder with its ends cut by the planes. Then all bodies are added
+' together. dv is the volume the part gains.
+Private Sub MitrePiece(pl As SldWorks.Feature, ByVal usg As Double, ByVal vsg As Double, _
+                       ByVal inX As Boolean, p0() As Double, p1() As Double, ByVal rr As Double, _
+                       cuts() As Double, ByVal nc As Long, ByVal dv As Double, ByVal stage As String)
+
+    Dim fs() As SldWorks.Feature
+    Dim tools() As Object, rest() As Object
+    Dim c As Long, k As Long
+    Dim big As Double, l As Double
+    Dim a(2) As Double, b(2) As Double
+    Dim f As SldWorks.Feature
+
+    ReDim fs(nc)
+    Set fs(0) = PipeFeature(pl, usg, vsg, inX, p0, p1, rr, stage)
+
+    l = Sqr((p1(0) - p0(0)) ^ 2 + (p1(1) - p0(1)) ^ 2 + (p1(2) - p0(2)) ^ 2)
+    big = 3# * (l + 2# * rr)
+    For c = 0 To nc - 1
+        For k = 0 To 2
+            a(k) = cuts(6 * c + k)
+            b(k) = cuts(6 * c + k) + big * cuts(6 * c + 3 + k)
+        Next k
+        Set fs(c + 1) = PipeFeature(pl, usg, vsg, inX, a, b, big, stage & " cutter")
+    Next c
+
+    If nc > 0 Then
+        ReDim tools(nc)
+        For c = 0 To nc
+            Set tools(c) = BodyOfFeature(fs(c), stage)
+        Next c
+        Set f = swFeat.InsertCombineFeature(SWBODYINTERSECT, Nothing, tools)
+        If f Is Nothing Then
+            ReDim rest(nc - 1)
+            For c = 1 To nc
+                Set tools(c) = BodyOfFeature(fs(c), stage)
+                Set rest(c - 1) = tools(c)
+            Next c
+            Set tools(0) = BodyOfFeature(fs(0), stage)
+            Set f = swFeat.InsertCombineFeature(SWBODYINTERSECT, tools(0), rest)
+        End If
+        If f Is Nothing Then Fail "stage " & stage & ": the pipe could not be cut by its joint planes."
+    End If
+
+    JoinBodies stage
+    vRun = vRun + dv
+    CheckPiece stage, 1
+
+End Sub
+
+
+' Add every solid body of the part into one.
+Private Sub JoinBodies(ByVal stage As String)
+    Dim bodies As Variant
+    Dim tools() As Object, rest() As Object
+    Dim i As Long
+    Dim f As SldWorks.Feature
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail "stage " & stage & ": the part has no solid body."
+    If UBound(bodies) = 0 Then Exit Sub
+    ReDim tools(UBound(bodies))
+    For i = 0 To UBound(bodies)
+        Set tools(i) = bodies(i)
+    Next i
+    Set f = swFeat.InsertCombineFeature(SWBODYADD, Nothing, tools)
+    If f Is Nothing Then
+        ReDim rest(UBound(bodies) - 1)
+        For i = 1 To UBound(bodies)
+            Set rest(i - 1) = bodies(i)
+        Next i
+        Set f = swFeat.InsertCombineFeature(SWBODYADD, bodies(0), rest)
+    End If
+    If f Is Nothing Then Fail "stage " & stage & ": the bodies could not be added together."
+End Sub
+
+
+' The part's volume and body count as they should be after a piece of
+' the gooseneck (the arms are bodies of their own until the straight
+' piece joins them to the neck).
+Private Sub CheckPiece(ByVal stage As String, ByVal bodies As Long)
+    Dim got As Double
+    got = BodiesVolume()
+    Note "stage " & stage & ": " & Fmt(got) & " m3 (expected " & Fmt(vRun) & "), " & BodyCount() & " bodies"
+    If BodyCount() <> bodies Then
+        Fail "stage " & stage & " left " & BodyCount() & " solid bodies, expected " & bodies & ". A boolean did not merge."
+    End If
+    If Abs(got - vRun) > VOL_TOL * vRun Then
+        Fail "stage " & stage & " volume is " & Fmt(got) & " m3 but should be " & Fmt(vRun) & _
+             " m3 (" & Fmt(100# * (got - vRun) / vRun) & " %)."
+    End If
+End Sub
+
+
+' A stage of the build with its closed-form volume and one body.
+Private Sub CheckStageVol(ByVal stage As String, ByVal expected As Double)
+    Dim got As Double
+    Dim mp As Variant
+    mp = TheBody(stage).GetMassProperties(1000#)
+    got = mp(3)
+    Note "stage " & stage & ": " & Fmt(got) & " m3 (expected " & Fmt(expected) & ")"
+    If Abs(got - expected) > VOL_TOL * expected Then
+        Fail "stage " & stage & " volume is " & Fmt(got) & " m3 but should be " & _
+             Fmt(expected) & " m3 (" & Fmt(100# * (got - expected) / expected) & " %)."
+    End If
+    vRun = expected
+End Sub
 
 
 ' One meal or fuel pipe. It lies in the vertical plane through the
@@ -1129,7 +1338,7 @@ Private Sub AddPipe(pl As SldWorks.Feature, ByVal ax As Long, ByVal side As Doub
 
     added = BodiesVolume() - before
     Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(expected) & ")"
-    If Abs(added - expected) > FEED_VOL_TOL * expected Then
+    If Abs(added - expected) > FEED_VOL_TOL * expected + ADD_NOISE * BodiesVolume() Then
         Fail "stage " & stage & " added " & Fmt(added) & " m3 but should add " & Fmt(expected) & _
              " m3 (" & Fmt(100# * (added - expected) / expected) & " %)."
     End If
@@ -1700,7 +1909,37 @@ Private Sub Verify()
     If Not HasPlaneFace(0, xTAEnd) Then Fail "no tertiary air inlet face at x = " & Fmt(xTAEnd) & " m."
 
     Note "closed manifold solid: " & (UBound(edges) + 1) & " edges, each with two faces"
+    CheckExtremes body
 
+End Sub
+
+
+' The domain's true extent from its extreme points (GetBodyBox bounds
+' curved faces loosely): the arms' outer walls (or the tertiary air
+' duct's face) in x, the neck's front wall and the fuel pipes in y, the
+' arch's crown in z.
+Private Sub CheckExtremes(body As SldWorks.Body2)
+    Dim b(5) As Double, d(2) As Double, want(5) As Double
+    Dim px As Double, py As Double, pz As Double
+    Dim a As Long, sd As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    For a = 0 To 2
+        For sd = -1 To 1 Step 2
+            d(0) = 0#: d(1) = 0#: d(2) = 0#: d(a) = sd
+            If Not body.GetExtremePoint(d(0), d(1), d(2), px, py, pz) Then Fail "GetExtremePoint failed along axis " & a & "."
+            If sd < 0 Then b(a) = Choose(a + 1, px, py, pz) Else b(a + 3) = Choose(a + 1, px, py, pz)
+        Next sd
+    Next a
+    want(0) = -xBoxMax: want(1) = yBoxMin: want(2) = 0#
+    want(3) = xBoxMax: If xTAEnd > xBoxMax Then want(3) = xTAEnd      ' the tertiary air duct's face may reach further
+    want(4) = yFuelMax: want(5) = zGnApex
+    For a = 0 To 5
+        If Abs(b(a) - want(a)) > 0.01 Then
+            Fail "the solid's " & nm(a) & " is " & Fmt(b(a)) & " m but should be " & Fmt(want(a)) & " m."
+        End If
+    Next a
+    Note "extent: x " & Fmt(b(0)) & " .. " & Fmt(b(3)) & ", y " & Fmt(b(1)) & " .. " & Fmt(b(4)) & _
+         ", z " & Fmt(b(2)) & " .. " & Fmt(b(5)) & " m"
 End Sub
 
 
@@ -1743,15 +1982,13 @@ Private Sub TagBoundaryFaces()
             If Abs(e0) < DIR_TOL And Abs(e1) < DIR_TOL Then
                 If Abs(p(5)) < 0.0001 Then
                     k = 0
-                ElseIf Abs(p(5) - zGnOut) < 0.0001 Then
-                    If FaceCentre(face, 0) > 0# Then
-                        k = 1
-                    Else
-                        k = 2
-                    End If
                 End If
             ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xTAEnd) < 0.0001 Then
                 k = 3
+            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xGnLeg) < 0.0001 Then
+                k = 1
+            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) + xGnLeg) < 0.0001 Then
+                k = 2
             ElseIf Not PipeEndFace(face, 0, 1#, fc, fs, xFeedEnd, zFeedEnd) Is Nothing Then
                 k = 4
             ElseIf Not PipeEndFace(face, 0, -1#, fc, fs, xFeedEnd, zFeedEnd) Is Nothing Then
@@ -1881,10 +2118,26 @@ Private Sub ExportFiles()
     swApp.SetUserPreferenceDoubleValue swSTLDeviation, 0.001        ' metres
     swApp.SetUserPreferenceDoubleValue swSTLAngleTolerance, 0.1     ' radians
 
+    KeepOldSolid outDir
     SaveOne outDir & outName & ".SLDPRT"
     SaveOne outDir & outName & ".step"
     SaveOne outDir & outName & ".stl"
 
+End Sub
+
+
+' The solid this one replaces (the Y gooseneck's, the CFD results'
+' geometry) is kept, once, as <name>_Y_old.<ext>.
+Private Sub KeepOldSolid(ByVal outDir As String)
+    Dim e As Variant
+    On Error Resume Next
+    For Each e In Array(".SLDPRT", ".step", ".stl")
+        If Dir(outDir & outName & e) <> "" And Dir(outDir & outName & "_Y_old" & e) = "" Then
+            FileCopy outDir & outName & e, outDir & outName & "_Y_old" & e
+            If Err.Number = 0 Then Note "kept the earlier " & outName & e & " as " & outName & "_Y_old" & e
+            Err.Clear
+        End If
+    Next e
 End Sub
 
 

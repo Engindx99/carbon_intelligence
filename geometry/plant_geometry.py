@@ -40,7 +40,7 @@ MOLAR_MASS = {             # kg/mol
 
 # Grid points per axis for the volume the gooseneck's two bends share
 # (calciner.bas GnBendOverlap uses the same).
-OVERLAP_N = 80
+OVERLAP_N = 300
 
 
 # ======================================================================
@@ -318,70 +318,212 @@ def gooseneck_neck_radius(g):
     return 0.5 * v(g["gooseneck"]["D_leg"]) * math.sqrt(2.0)
 
 
-def _bend_overlap(r_leg, x_start, r_bend, n=OVERLAP_N):
-    """Volume the two 180 deg bends share over the neck (their start
-    discs overlap); a midpoint grid, as calciner.bas GnBendOverlap."""
-    xa = x_start + r_bend
-    hx = 2.0 * (r_leg - x_start) / n
-    hy = 2.0 * r_leg / n
-    hz = (r_bend + r_leg) / n
-    mid = np.arange(n) + 0.5
-    x = (-(r_leg - x_start) + mid * hx)[:, None, None]
-    y = (-r_leg + mid * hy)[None, :, None]
-    z = (mid * hz)[None, None, :]
-    ra = np.sqrt((x - xa) ** 2 + z * z) - r_bend
-    rb = np.sqrt((x + xa) ** 2 + z * z) - r_bend
-    r2 = r_leg * r_leg
-    hit = np.count_nonzero((ra * ra + y * y <= r2) & (rb * rb + y * y <= r2))
-    return float(hit) * hx * hy * hz
+def _cyl(x, y, z, p0, d, length, r):
+    """Membership of the points (x, y, z) in the straight cylinder of
+    radius r from p0 along the unit vector d, `length` long."""
+    dx, dy, dz = x - p0[0], y - p0[1], z - p0[2]
+    ax = dx * d[0] + dy * d[1] + dz * d[2]
+    perp2 = dx * dx + dy * dy + dz * dz - ax * ax
+    return (ax >= 0.0) & (ax <= length) & (perp2 <= r * r)
+
+
+def _grid(centre, half, n):
+    """Cell-centre coordinate arrays of a cube around `centre`, and a cell's
+    volume. The cube is shifted by a few millimetres, by amounts that
+    have no relation to the cells: a plane through the centre (the pipes'
+    ends all are) would otherwise run exactly through whole layers of cell
+    centres, and which side they fall on would be rounding noise."""
+    h = 2.0 * half / n
+    mid = (np.arange(n) + 0.5) * h - half
+    x = (centre[0] + 0.00311 + mid)[:, None, None]
+    y = (centre[1] + 0.00227 + mid)[None, :, None]
+    z = (centre[2] + 0.00173 + mid)[None, None, :]
+    return x, y, z, h ** 3
+
+
+def _root_forward(r_n, R, beta, setback, margin=0.05):
+    """How far in front of the vessel's axis the neck's first piece pierces
+    the roof so that its cap (a disc `setback` back along its axis from
+    the piercing point, perpendicular to it) lies wholly inside the
+    vessel's cylinder, `margin` to spare: an inclined pipe cuts the
+    roof plane in an ellipse longer than the vessel is wide, and its
+    cap would otherwise stick out of the wall at the roof's edge."""
+    phi = np.linspace(0.0, 2.0 * math.pi, 3601)
+    cb, sb = math.cos(beta), math.sin(beta)
+
+    def reach(f0):
+        y = -f0 + setback * cb + r_n * np.cos(phi) * sb
+        x = r_n * np.sin(phi)
+        return float(np.max(np.hypot(x, y)))
+
+    # the reach falls as the point moves forward, then rises again when the cap's front
+    # leaves the wall: scan for the first f0 that fits, then refine within that step
+    step = 1.0e-3
+    f0 = 0.0
+    while reach(f0) > R - margin:
+        f0 += step
+        if f0 > R:
+            raise ValueError("the neck's cap does not fit inside the vessel at any root position")
+    lo, hi = max(0.0, f0 - step), f0
+    for _ in range(40):
+        mid = 0.5 * (lo + hi)
+        if reach(mid) <= R - margin:
+            hi = mid
+        else:
+            lo = mid
+    return hi
 
 
 @lru_cache(maxsize=None)
-def _overlap_cached(r_leg, x_start, r_bend):
-    return _bend_overlap(r_leg, x_start, r_bend)
+def _gn_shared(r_n, r_l, R, z_roof, setback, f0, beta, L1, f4, z4, l_ch, gamma, la, nn=OVERLAP_N):
+    """What the gooseneck's pieces share, midpoint grids (calciner.bas is
+    given these numbers, not the grids): the volume of the neck's first
+    piece inside the vessel (its cap `setback` behind the roof point,
+    which lies `f0` in front of the axis, along the piece's axis; the
+    vessel the cylinder of radius R under z_roof), then where the neck's
+    vertical channel (from `l_ch` above its lower end at forward f4, z4,
+    down to it) and the two arms (from there, la long, gamma from the
+    vertical, +-x) share space: channel x one arm, one arm x the other,
+    all three. Model axes: forward is -y."""
+    cb, sb = math.cos(beta), math.sin(beta)
+    d1 = (0.0, -cb, sb)
+    c0 = (0.0, -f0 + setback * cb, z_roof - setback * sb)
+    # a box whose top face is the roof plane, so no cell straddles it
+    hxy, hz = 2.0 * R / nn, 8.0 / nn
+    mid = np.arange(nn) + 0.5
+    x = (-R + 0.00131 + mid * hxy)[:, None, None]
+    y = (-R + 0.00093 + mid * hxy)[None, :, None]
+    z = (z_roof - 8.0 + mid * hz)[None, None, :]
+    first = _cyl(x, y, z, c0, d1, setback + L1, r_n)
+    inside = x * x + y * y <= R * R
+    v_in = float(np.count_nonzero(first & inside)) * hxy * hxy * hz
+
+    d3 = (0.0, 0.0, -1.0)                           # the channel runs down
+    n3 = (0.0, -f4, z4)                             # its lower end, where the arms start
+    p3 = (n3[0], n3[1], n3[2] + l_ch)
+    sg_, cg_ = math.sin(gamma), math.cos(gamma)
+    half = 3.2
+
+    def grid_overlaps(n):
+        h = 2.0 * half / n
+        mid = (np.arange(n) + 0.5) * h - half
+        y = (n3[1] + 0.00227 + mid)[None, :, None]
+        z = (n3[2] + 0.00173 + mid)[None, None, :]
+        count = [0.0, 0.0, 0.0]
+        for i0 in range(0, n, 25):                  # x planes at a time, to keep the arrays small
+            x = (n3[0] + 0.00311 + mid[i0:i0 + 25])[:, None, None]
+            neck = _cyl(x, y, z, p3, d3, l_ch, r_n)
+            a_p = _cyl(x, y, z, n3, (sg_, 0.0, -cg_), la, r_l)
+            a_m = _cyl(x, y, z, n3, (-sg_, 0.0, -cg_), la, r_l)
+            count[0] += float(np.count_nonzero(neck & a_p))
+            count[1] += float(np.count_nonzero(a_p & a_m))
+            count[2] += float(np.count_nonzero(neck & a_p & a_m))
+        return [c * h ** 3 for c in count]
+
+    # the regions are bounded by planes through the grid's middle; the
+    # midpoint rule's error there falls as 1 / n, so two grids are
+    # extrapolated (Richardson)
+    fine, coarse = grid_overlaps(nn), grid_overlaps(nn // 2)
+    o_na, o_aa, o_all = (2.0 * f - c for f, c in zip(fine, coarse))
+    return (v_in, o_na, o_aa, o_all)
 
 
 def gooseneck(g):
-    """The Y gooseneck as calciner.bas builds it: the neck on the
-    axis, 1.25 neck D up; each leg's disc inside it, a 180 deg bend
-    of 1.5 leg D outward and down, and the drop to where the leg ends
-    (`end_at_vessel_H` of the vessel above its throat top). Volume
-    (the bends' shared part counted once) and wall area (Pappus; the
-    shared part's wall is not taken off: no closed form, small)."""
+    """The gooseneck as calciner.bas builds it (user decision, 15 Nov
+    2026): the neck is three straight pieces -- one rising from the
+    roof's middle at `neck_slope`, one level, one dropping at
+    `neck_slope` -- each joined to the next by a mitre, bending forward
+    (-y) so it comes down in front of the vessel; then a vertical channel
+    of the neck's diameter (`channel_over_D_neck`, a mitre below the third
+    piece); from its lower end two arms leave in the plane across it (+-x, `arm_angle` from the
+    vertical) down in one straight piece, turn by a mitre to a level run
+    (`arm_run_over_D_leg`) whose axis is C5's inlet axis, and end at their outlet faces (vertical planes,
+    normal +-x; user's sketch, 15 Nov 2026). A mitre joint between equal pipes adds the pipes'
+    axis lengths exactly; the shared parts (the first piece inside the
+    vessel, and where the neck and the arms leave one another) are grids.
+    Wall area by the axis lengths. z from the throat's foot; forward is
+    -y."""
 
     gn = g["gooseneck"]
     cal = calciner(g)
-    r_leg = 0.5 * v(gn["D_leg"])
-    r_neck = gooseneck_neck_radius(g)
-    x_start = r_neck - r_leg
-    r_bend = v(gn["bend_R_over_D_leg"]) * 2.0 * r_leg
-    rise = v(gn["rise_over_D_neck"]) * 2.0 * r_neck
-    z_top = cal["z_roof"] + rise
-    z_end = cal["z_throat_top"] + v(gn["end_at_vessel_H"]) * cal["H"]
-    drop = z_top - z_end
+    r_l = 0.5 * v(gn["D_leg"])
+    r_n = gooseneck_neck_radius(g)
+    D_n = 2.0 * r_n
+    beta = math.radians(v(gn["neck_slope"]))
+    L1 = v(gn["neck_piece_over_D_neck"]) * D_n       # the two inclined pieces
+    L2 = v(gn["neck_level_over_D_neck"]) * D_n
+    l_ch = v(gn["channel_over_D_neck"]) * D_n        # the vertical channel below the neck
+    gamma = math.radians(v(gn["arm_angle"]))
+    run = v(gn["arm_run_over_D_leg"]) * 2.0 * r_l     # each arm's level run to its outlet face
+    z_roof = cal["z_roof"]
+    # the arms' level runs end at C5's inlet axis: C5 stands over the tertiary air duct by
+    # its clearance, its inlet r_leg under its roof (the same rule layout() places C5 by)
+    ta, c5h = calciner_inlets(g)["tertiary_air"], cyclone(g, "C5")["height"]
+    z_end = ta["z"] + 0.5 * ta["D"] + v(g["layout"]["c5_over_tertiary_air"]) + c5h - r_l
 
-    overlap = _overlap_cached(round(r_leg, 12), round(x_start, 12), round(r_bend, 12))
-    v_neck = math.pi * r_neck * r_neck * rise
-    v_bend = math.pi * r_leg * r_leg * math.pi * r_bend
-    v_legs = 2.0 * math.pi * r_leg * r_leg * drop
+    cb, sb = math.cos(beta), math.sin(beta)
+    # nodes in (forward f = -y, z): N0 on the roof at the axis
+    setback = r_n                                   # the first piece's cap, behind N0 along its axis
+    f0 = _root_forward(r_n, cal["R"], beta, setback)  # N0 in front of the vessel's axis: the cap stays inside it
+    n0 = (f0, z_roof)
+    n1 = (n0[0] + L1 * cb, n0[1] + L1 * sb)
+    n2 = (n1[0] + L2, n1[1])
+    n3 = (n2[0] + L1 * cb, n2[1] - L1 * sb)         # the third piece ends, the channel starts
+    n4 = (n3[0], n3[1] - l_ch)                      # the channel ends, the arms start
+    cap = (n0[0] - setback * cb, n0[1] - setback * sb)
 
-    a_neck = 2.0 * math.pi * r_neck * rise
-    a_bend = 2.0 * math.pi * r_leg * math.pi * r_bend
-    a_legs = 2.0 * 2.0 * math.pi * r_leg * drop
+    # the arms, in the plane across the channel's lower end: forward f = n4[0]
+    sg, cg = math.sin(gamma), math.cos(gamma)
+    fall = n4[1] - z_end                             # the arms' fall, channel end to the level run's axis
+    if fall <= 0.0:
+        raise ValueError(f"the gooseneck's level runs at z {z_end} m are not below the channel's end at {n4[1]} m")
+    la = fall / cg                                   # the inclined piece, to the mitre
+    x_bend = fall * math.tan(gamma)                  # where it turns level
+    x_leg = x_bend + run                             # the outlet faces, x
+
+    R = cal["R"]
+    v_in, o_na, o_aa, o_all = _gn_shared(
+        round(r_n, 12), round(r_l, 12), round(R, 12), round(z_roof, 12), round(setback, 12), round(f0, 12), beta,
+        round(L1, 12), round(n4[0], 12), round(n4[1], 12), round(l_ch, 12), gamma, round(la, 12))
+
+    a_n = math.pi * r_n * r_n
+    a_l = math.pi * r_l * r_l
+    neck_len = setback + 2.0 * L1 + L2 + l_ch
+    arm_len = la + run
+    volume = (a_n * neck_len - v_in) + 2.0 * a_l * arm_len - 2.0 * o_na - o_aa + o_all
 
     return {
-        "D_leg": 2.0 * r_leg,
-        "D_neck": 2.0 * r_neck,
-        "x_leg_start": x_start,
-        "x_leg": x_start + 2.0 * r_bend,
-        "bend_R": r_bend,
-        "rise": rise,
-        "drop": drop,
-        "z_top": z_top,
+        "D_leg": 2.0 * r_l,
+        "D_neck": D_n,
+        "slope": math.degrees(beta),
+        "piece": L1,
+        "level": L2,
+        "setback": setback,
+        "nodes": (n0, n1, n2, n3, n4),              # (forward, z)
+        "channel": l_ch,
+        "root_forward": f0,
+        "cap": cap,
+        "y_off": n3[0],                             # the channel's lower end, forward of the vessel's axis
+        "z_n3": n3[1],                              # where the third piece ends and the channel starts
+        "z_split": n4[1],                           # where the arms leave the channel
+        "crown": n1[1] + r_n,
+        "arm_angle": math.degrees(gamma),
+        "arm_piece": la,
+        "arm_run": run,
+        "x_bend": x_bend,
+        "x_leg": x_leg,
         "z_end": z_end,
-        "bend_overlap": overlap,
-        "volume": v_neck + 2.0 * v_bend - overlap + v_legs,
-        "wall_area": a_neck + 2.0 * a_bend + a_legs,
+        "end_over_H": (z_end - cal["z_throat_top"]) / cal["H"],
+        "fall": fall,
+        "y_front": n3[0] + r_n,                     # the channel's far side, forward (the foremost part)
+        "neck_length": neck_len,
+        "arm_length": arm_len,
+        "inside_vessel": v_in,
+        "overlap_neck_arm": o_na,
+        "overlap_arms": o_aa,
+        "overlap_all": o_all,
+        "volume": volume,
+        "wall_area": 2.0 * math.pi * r_n * (2.0 * L1 + L2 + l_ch) + 2.0 * 2.0 * math.pi * r_l * arm_len,
     }
 
 
@@ -590,7 +732,7 @@ def layout(g):
     z0 = z_ch0 + 2.0 * a_ch                       # the calciner's throat foot on the chamber
     z_cone_top = z0 + cal["z_cone_top"]
     z_roof_cal = z0 + cal["z_roof"]
-    z_gn_top = z0 + gn["z_top"]
+    z_gn_top = z0 + gn["crown"]                   # the arch's top
     z_gn_end = z0 + gn["z_end"]                   # the CFD's outlet faces
     ta = calciner_inlets(g)["tertiary_air"]
     r_ta = 0.5 * ta["D"]
@@ -601,7 +743,9 @@ def layout(g):
     x_outer = x_inner + v(L["column_offset"])
     col = {5: x_inner, 4: x_outer, 3: x_inner, 2: x_outer}
 
-    z_dust = {5: max(z_gn_end - c[5]["height"], z_ta + r_ta + v(L["c5_over_tertiary_air"]))}
+    # C5's inlet axis is the arms' level runs' axis (the CFD's outlet faces, which gooseneck()
+    # puts at the same height by the same rule)
+    z_dust = {5: z_ta + r_ta + v(L["c5_over_tertiary_air"])}
 
     def top(s):        # the outlet pipe's top, where its bend starts
         return z_dust[s] + c[s]["height"] + c[s]["outlet_rise"]
@@ -644,6 +788,7 @@ def layout(g):
         "z_calciner_cone_top": z_cone_top,
         "z_calciner_roof": z_roof_cal,
         "z_gooseneck_top": z_gn_top,
+        "y_gooseneck": gn["y_off"],
         "z_gooseneck_cfd_end": z_gn_end,
         "z_tertiary_air": z_ta,
         "x_inner": x_inner,
@@ -737,24 +882,21 @@ def r1_path(g):
 
 
 def gooseneck_plant(g):
-    """The gooseneck as the plant has it (user decision, 14 Oct 2026):
-    the neck and bends as the CFD's, each leg on down to its C5's
-    inlet, a 45 deg piece and a level run into the barrel (the
-    drawing), not to the CFD's outlet faces at half the vessel's
-    height. Volume and wall area, both legs."""
+    """The gooseneck as the plant has it (user decisions, 14 Oct and
+    15 Nov 2026): the neck, channel and arms as the CFD's (each arm an
+    inclined piece and a level run), the level run going on from the CFD's
+    outlet face to the C5's barrel at the same height (C5's inlet axis is
+    the arms' axis). The arms stand in front of the vessel (y = -y_off):
+    the C5s stand in their plane (no source places them in y), so no
+    sideways run is added. Volume and wall area, both legs."""
     gn, L, c5 = gooseneck(g), layout(g), cyclone(g, "C5")
     D = gn["D_leg"]
-    t = v(g["layout"]["gooseneck_turn_leg_over_D"]) * D
-    down = L["z_gooseneck_top"] - (L["z_c5_inlet"] + t)
-    run = (L["x_inner"] - 0.5 * c5["D_barrel"]) - (gn["x_leg"] + t)
-    leg = _pipe(D, down + math.sqrt(2.0) * t + run)
-
-    cfd_legs = 2.0 * 0.25 * math.pi * D * D * gn["drop"]
-    cfd_legs_area = 2.0 * math.pi * D * gn["drop"]
+    run = (L["x_inner"] - 0.5 * c5["D_barrel"]) - gn["x_leg"]
+    leg = _pipe(D, run)
     return {
         "leg_length": leg["length"],
-        "volume": gn["volume"] - cfd_legs + 2.0 * leg["volume"],
-        "wall_area": gn["wall_area"] - cfd_legs_area + 2.0 * leg["wall_area"],
+        "volume": gn["volume"] + 2.0 * leg["volume"],
+        "wall_area": gn["wall_area"] + 2.0 * leg["wall_area"],
     }
 
 

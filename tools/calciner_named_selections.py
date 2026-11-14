@@ -103,8 +103,8 @@ def targets(g):
     (xm, zm), (yf, zf) = meal["end"], fuel["end"]
     return {
         "kiln_gas_inlet": ((0.0, 0.0, 0.0), math.pi * cal["r_throat"] ** 2, cal["D_throat"]),
-        "gas_outlet_1": ((gn["x_leg"], 0.0, gn["z_end"]), leg_area, gn["D_leg"]),
-        "gas_outlet_2": ((-gn["x_leg"], 0.0, gn["z_end"]), leg_area, gn["D_leg"]),
+        "gas_outlet_1": ((gn["x_leg"], -gn["y_off"], gn["z_end"]), leg_area, gn["D_leg"]),
+        "gas_outlet_2": ((-gn["x_leg"], -gn["y_off"], gn["z_end"]), leg_area, gn["D_leg"]),
         "tertiary_air_inlet": ((ta["x_end"], ta["y"], ta["z"]), ta["end_area"], ta["D"]),
         "meal_feed_1": ((xm, 0.0, zm), meal["end_area"], meal["D"]),
         "meal_feed_2": ((-xm, 0.0, zm), meal["end_area"], meal["D"]),

@@ -157,12 +157,29 @@ calciner:
 
 gooseneck:
   D_leg:               {value: 3.5,  unit: m,     source: published,    doc: preheater/gooseneck.md}
-  rise_over_D_neck:    {value: 1.25, unit: "-",   source: model,        doc: preheater/gooseneck.md}
-  bend_R_over_D_leg:   {value: 1.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
-  # the CFD's outlet faces: the legs end at this fraction of the vessel
-  # height (calciner.bas). The plant's legs run on to the C5 inlet (user
-  # decision, 14 Oct 2026): plant_geometry.gooseneck_plant.
-  end_at_vessel_H:     {value: 0.5,  unit: "-",   source: model,        doc: preheater/gooseneck.md}
+  # The neck: three straight pieces over the vessel's top (user decision,
+  # 15 Nov 2026, replacing the Y straight on the roof): one rising from
+  # the roof at neck_slope, one level (0 deg), one dropping at neck_slope,
+  # each pipe the next one's mitre. Lengths are model choices (no
+  # source), in neck diameters; the roof's middle is the first piece's
+  # axis; the neck bends forward (-y), so it comes down in front of the
+  # vessel.
+  neck_slope:              {value: 45.0, unit: deg, source: model, doc: preheater/gooseneck.md}
+  neck_piece_over_D_neck:  {value: 1.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  neck_level_over_D_neck:  {value: 1.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  # Below the third piece the neck goes on as one vertical channel of its
+  # own diameter, its length in neck diameters (model choice, user
+  # decision 15 Nov 2026: one straight channel first, the Y below it).
+  channel_over_D_neck:     {value: 1.5,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  # The Y: from the channel's lower end each arm leaves in the plane across
+  # the channel (x-z), at arm_angle from the vertical (user decision, 15 Nov
+  # 2026), runs one straight piece down, and turns (mitre) to a level run
+  # (at C5's inlet axis: plant_geometry.gooseneck()).
+  arm_angle:               {value: 60.0, unit: deg, source: model, doc: preheater/gooseneck.md}
+  # The arm's inclined piece runs down to the level run's axis (C5's
+  # inlet axis), so its length follows; the level run then goes on, in leg
+  # diameters, to the outlet face (user's sketch, 15 Nov 2026).
+  arm_run_over_D_leg:      {value: 2.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
 
 # ---------------------------------------------------------------------
 # Rotary kiln, PF5000
@@ -193,7 +210,6 @@ layout:
   chamber_margin:      {value: 1.0,  unit: m,     source: schematic,    doc: kiln/kiln_inlet_chamber.md}
   c5_over_tertiary_air: {value: 1.75, unit: m,    source: schematic,    doc: plant_topology.md}
   gooseneck_to_c5_gap: {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
-  gooseneck_turn_leg_over_D: {value: 0.5, unit: "-", source: schematic, doc: plant_topology.md}
   stage_gap:           {value: 4.0,  unit: m,     source: schematic,    doc: plant_topology.md}
   column_offset:       {value: 15.0, unit: m,     source: schematic,    doc: plant_topology.md}
   # the twin C1 (mirror pair, inlet ducts facing each other, R1 on the

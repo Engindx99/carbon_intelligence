@@ -59,13 +59,15 @@ Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0
 | Silindir (düz tavan) | Ø6.7404, z 7.001 .. 33.130 | 932.354 |
 | Gövde (koni + silindir) |  | **1009.711** |
 | 1 domen (boğaz + gövde) |  | 1033.797 |
-| 2 + boyun | Ø4.950, eksende, z 33.130 .. 39.317 | 1152.852 (+119.055) |
-| 3a + dirsek +x | kol Ø3.5, başlangıç diski x = ±0.725; 180°, R 5.250, tepe z 46.317 | 1311.537 (+158.685, Pappus) |
-| 3b + dirsek −x | iki dirseğin ortak hacmi 10.346 (sayısal, 80³ nokta) | 1459.876 |
-| 4 + iki iniş | x = ±11.225, z 39.317 .. 18.130 → gas_outlet_1 (+x), gas_outlet_2 (−x) | 1867.565 (+2 × 203.845) |
-| 5a / 5b + farin boruları ±x | Ø0.8485, 60°, eksenleri duvarı z 11.385'da keser; deliğin alt kenarı z 10.491, uç yüzleri (±3.870, 0, 12.252) | 1868.138 / 1868.711 (+0.5730 her biri) |
-| 6 + tersiyer hava | Ø2.4393, teğetsel, eksen y -2.101, z 8.271; üst kenarı z 9.491, yüzü x 6.370 | 1886.798 (+18.087) |
-| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1886.860 / **1886.923** (+0.0629 her biri) |
+| 2 + boyun (üç düz parça) ve düşey kanal | Ø4.950; 1) tavan ortasından 45° yukarı-öne, boy 4.950 (kapağı 2.475 geride, gövdenin içinde; içeride kalan 47.546), 2) yatay 4.950, z 36.630, 3) 45° aşağı-öne 4.950, z 33.130 ile biter; 4) düşey kanal 7.425; mitre birleşimleri; kanalın alt ucu y = −12.135, z 25.705, tepe z 39.105 | 1462.472 (+428.675) |
+| 3a + kol +x | Ø3.5, kanalın alt ucundan x–z düzleminde düşeyden 60° dışa, eğik parça 4.366, mitre ile yatay kol 7.000 (eksen z 23.522), çıkış yüzü x = 10.781 → gas_outlet_1 | 1566.159 (+109.357 − ortak 5.669) |
+| 3b + kol −x | kanalla ortak 5.669, kolların ortak hacmi 4.122, üçünün 0.000 (sayısal, 300³ nokta) → gas_outlet_2 | 1665.724 |
+| 5a / 5b + farin boruları ±x | Ø0.8485, 60°, eksenleri duvarı z 11.385'da keser; deliğin alt kenarı z 10.491, uç yüzleri (±3.870, 0, 12.252) | 1666.297 / 1666.870 (+0.5730 her biri) |
+| 6 + tersiyer hava | Ø2.4393, teğetsel, eksen y -2.101, z 8.271; üst kenarı z 9.491, yüzü x 6.370 | 1684.956 (+18.087) |
+| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1685.019 / **1685.082** (+0.0629 her biri) |
+| **Uyarı: eski CFD sonuçları** | Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı | — |
+| Yeniden koşu: domen | geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py | 1685.082 |
+| Yeniden koşu: çıkışlar | gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±10.781, y = −12.135, z 23.522; yatay kol 2 çap (7.000), eğik parçadan 30° mitre sonrası | 9.621 m² her biri |
 <!-- END GENERATED -->
 
 Kollar x–z düzleminde ayna simetriktir; başlangıç diskleri boynun içinde, kendi tarafında boynun kenarına teğettir. Tersiyer hava kanalı −y tarafında, +x'ten (başlık tarafı) gelir. Farin boruları ±x'te, y = 0 düzleminde; yakıt boruları ±y'de, x = 0 düzlemindedir. Hepsinin ekseni gövdeden dışarı doğru yükselir. Boğazın boyu `THROAT_LEN_OVER_D` (modelleme parametresi).
