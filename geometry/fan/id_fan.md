@@ -35,11 +35,11 @@ Bu tesisin fanı için yayınlanmış bir ölçü yok. Fan **prosese göre seçi
 - **Literatür:**
   - Çin tesisi: 820 000 m³/h ve 10.2 kPa tasarım, 3350 kW motor; sonradan ölçülen 880 000 m³/h, 9.95 kPa, 3015 kW mil gücü, yani η = Q·Δp/P = 0.81 ([Howden vaka](https://files.chartindustries.com/Howden_Fans_Cement_Case_StMarys.pdf)); kapasite yazmıyor. Verim 0.80 bu ölçümden.
   - 3000 t/d, 4 kademeli eğitim örneği: 6 kPa.
-  - Geri eğimli kanatlı (backward-curved) ön ısıtıcı fanı, 1180 → 880 dev/dk (Holnam, [cemnet forumu](https://www.cemnet.com/Forum/thread/108246/preheater-fan-coating-problem.html)); çark çapı 2200–3500 mm ([Pengxiang kataloğu](https://directindustry.com/prod/zhejiang-pengxiang-hvac-equipment-co-ltd/product-232709-2328770.html)). 1000 dev/dk bu aralığın içinde.
+  - Geri eğimli kanatlı (backward-curved) ön ısıtıcı fanı (seçilen tip), 1180 → 880 dev/dk (Holnam, [cemnet forumu](https://www.cemnet.com/Forum/thread/108246/preheater-fan-coating-problem.html)); çark çapı 2200–3500 mm ([Pengxiang kataloğu](https://directindustry.com/prod/zhejiang-pengxiang-hvac-equipment-co-ltd/product-232709-2328770.html)). 1000 dev/dk bu aralığın içinde.
   - 5000 t/d için 600 000–900 000 m³/h, 280–350 °C (satıcı blogu, kaynaksız; yalnız büyüklük sınıfı).
 - **Boyut:** uç hızı u = √(2Δp / (ρ ψ)), ψ = 1.0 (model), çark çapı D = u / (π n), giriş çapı √(4Q / (π v)), v = 25 m/s (model). Motor, mil gücünün 1.10 katı.
 
-Tip: tek girişli, tek genişlikli, geri eğimli (veya radyal uçlu) santrifüj fan; tozlu sıcak gaz için kullanılır. Çark ölçüleri satıcı tasarımı değil, çalışma noktasından türetilmiş büyüklük sınıfıdır.
+**Tip (kullanıcı kararı, 16 Kasım 2026): tek girişli, tek genişlikli (SISW), geri eğimli kanatlı santrifüj fan.** Neden santrifüj: 8 kPa'lık basınç artışını ve 88 m³/s debiyi tek kademede eksenel fan vermez; sıcak (572 K) ve tozlu gazda ağır hizmet çarkı kullanılır; ön ısıtıcı ID fanı literatürde (Holnam, Howden vakaları, Pengxiang kataloğu) hep santrifüjtür. Neden geri eğimli: verimli ve düşük gürültülü; aynı performans için radyal uçlu kanattan daha büyük çark ister (cemnet, Holnam), ψ = 1.0 ve 2.99 m çark bu tip içindir. Radyal uçlu kanat toz birikimine daha dayanıklıdır; seçilmedi, seçilirse yalnız çark çapı değişir. Çark ölçüleri satıcı tasarımı değil, çalışma noktasından türetilmiş büyüklük sınıfıdır.
 
 ## CFD Geometry
 
