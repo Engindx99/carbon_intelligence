@@ -56,13 +56,32 @@
       "name": "Meal pipes C1-C5 (with flap valves)",
       "quantity": "per cyclone",
       "connections": "cyclone dust outlet -> next stage's riser / calciner / kiln inlet",
-      "dimensions": [],
-      "status_counts": {},
+      "dimensions": [
+        {
+          "key": "meal_pipe.feed_per_string",
+          "value": 44.85,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/meal_pipe_C4.md"
+        },
+        {
+          "key": "meal_pipe.c5_meal_per_string",
+          "value": 30.3288,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/meal_pipe_C5.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 2
+      },
       "missing": [
-        "preheater/meal_pipe_C1.md .. C5.md: diameter, length, slope, route, flap position TBD"
+        "preheater/meal_pipe_C1.md .. C5.md: diameter (scaled by mass flux) and slope are model values; length, route, flap position unknown; no CFD solid"
       ],
       "cfd_solid": "",
-      "drawing": "no data: source research first"
+      "drawing": "to draw"
     },
     {
       "area": "Preheater",

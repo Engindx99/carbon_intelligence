@@ -745,3 +745,40 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
         self.assertGreater(self.ch["u_kiln"], self.ch["u_max"])
         text = (REPO_ROOT / "geometry" / "kiln" / "kiln_inlet_chamber.md").read_text(encoding="utf-8")
         self.assertIn("10 m/s'yi aşıyor", text)
+
+
+class TheMealPipesAreTheCalcinersPipeScaledByFluxTest(unittest.TestCase):
+    """Meal pipes C1-C5 (user decision, 16 Nov 2026): the calciner's
+    literature feed pipe, which carries one string's meal, sets the mass
+    flux; every other pipe is sized to it. The flows are the twin's."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.mp = pg.meal_pipes(cls.g)
+
+    def test_the_flows_are_the_twins(self):
+        import json
+
+        with open(REPO_ROOT / "tests" / "data" / "twin_state_reference.json", encoding="utf-8") as handle:
+            snap = json.load(handle)["snapshot"]
+        m = self.g["meal_pipe"]
+        self.assertAlmostEqual(pg.v(m["feed_per_string"]) * 2, snap["mass_flow_m_dot_s_preheater"], places=6)
+        self.assertAlmostEqual(pg.v(m["c5_meal_per_string"]) * 2, snap["mass_flow_m_dot_s_transition_in"], places=2)
+
+    def test_the_calciners_pipe_is_the_reference(self):
+        # C4's meal goes down that very pipe: same flow, same diameter
+        self.assertAlmostEqual(self.mp[4]["D"], pg.v(self.g["calciner"]["D_feed"]), places=9)
+
+    def test_every_pipe_carries_the_same_flux(self):
+        for s, p in self.mp.items():
+            with self.subTest(stage=s):
+                self.assertAlmostEqual(p["m"] / (0.25 * math.pi * p["D"] ** 2), p["flux"], places=6)
+
+    def test_c1_has_two_pipes_each_half_the_string(self):
+        self.assertEqual(self.mp[1]["count_per_string"], 2)
+        self.assertAlmostEqual(2.0 * self.mp[1]["m"], pg.v(self.g["meal_pipe"]["feed_per_string"]), places=9)
+
+    def test_the_slope_is_the_calciners_literature_value(self):
+        for p in self.mp.values():
+            self.assertEqual(p["slope"], pg.v(self.g["cyclone_domain"]["meal_slope"]))

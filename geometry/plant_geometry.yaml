@@ -247,6 +247,15 @@ kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
 
 # ---------------------------------------------------------------------
+# Meal pipes C1-C5 (user decision, 16 Nov 2026: scale the one literature
+# pipe, the calciner's feed pipe, by equal mass flux). The flows are the
+# twin's (feed 89.7 kg/s over 2 strings; C5's meal to the kiln 60.66 kg/s).
+# ---------------------------------------------------------------------
+meal_pipe:
+  feed_per_string:     {value: 44.85,   unit: kg/s,  source: model,       doc: preheater/meal_pipe_C4.md}
+  c5_meal_per_string:  {value: 30.3288, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
+
+# ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it
 # only lays the plant out (geometry/plant_topology.md). Elevations of
 # the cyclones then follow from their CFD domains (each roof flush with

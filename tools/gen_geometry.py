@@ -846,6 +846,23 @@ def _kiln_chamber_rows(g):
     ]
 
 
+def _meal_pipe_rows(g, stage):
+    mp = pg.meal_pipes(g)[stage]
+    m = g["meal_pipe"]
+    flow_node = m["c5_meal_per_string"] if stage == 5 else m["feed_per_string"]
+    share = " (hat başına borunun yarısı)" if stage == 1 else ""
+    return [
+        row_der("Boru sayısı (hat başına)", float(mp["count_per_string"]), "", 0, "yerleşim kararı"),
+        row_src("Hat başına farin debisi", flow_node),
+        row_der("Bir borunun debisi" + share, mp["m"], "kg/s", 2),
+        row_der("Kütle akışı (kalsinatör borusunun)", mp["flux"], "kg/(m² s)", 1),
+        row_der("İç çap", mp["D"], "m", 3, "kütle akışı ölçeği"),
+        row_der("Kesit alanı", mp["area"], "m²", 3),
+        row_der("Yatayla eğim", mp["slope"], "°", 0, "literatür (kalsinatör borusu)"),
+        row_der("Siklonun toz çıkışı çapı (arayüz, boru çapı değil)", mp["D_dust"], "m", 3),
+    ]
+
+
 def _fluid_volume_rows(g):
     t = pg.twin_sections(g)
     n = t["preheater"]["strings"]
@@ -1029,6 +1046,7 @@ DOCS = {
     "calciner/calciner.md": _calciner_rows,
     "kiln/kiln.md": _kiln_rows,
     "kiln/kiln_burner.md": _kiln_burner_rows,
+    **{f"preheater/meal_pipe_C{s_}.md": (lambda g, s_=s_: _meal_pipe_rows(g, s_)) for s_ in range(1, 6)},
     "kiln/kiln_hood.md": _kiln_hood_rows,
     "kiln/kiln_inlet_chamber.md": _kiln_chamber_rows,
     "fan/id_fan.md": _id_fan_rows,

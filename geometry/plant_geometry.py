@@ -691,6 +691,40 @@ def kiln_inlet_chamber(g):
 
 
 # ======================================================================
+# The meal pipes C1-C5: scaled from the calciner's feed pipe by mass flux
+# ======================================================================
+def meal_pipes(g):
+    """Each stage's meal pipe at the mass flux of the one literature pipe,
+    the calciner's feed pipe (D_feed, one string's C4 meal): C1 has two
+    pipes per string (each half the string's meal), C2-C4 one (the string's
+    meal), C5 one (the meal leaving the calciner for the kiln). The slope is
+    the calciner pipe's (cyclone_domain.meal_slope); length, route and flap
+    position are the layout's and unknown."""
+
+    m = g["meal_pipe"]
+    m_feed = v(m["feed_per_string"])
+    d_ref = v(g["calciner"]["D_feed"])
+    a_ref = 0.25 * math.pi * d_ref ** 2
+    flux = m_feed / a_ref
+    slope = v(g["cyclone_domain"]["meal_slope"])
+    flows = {1: 0.5 * m_feed, 2: m_feed, 3: m_feed, 4: m_feed, 5: v(m["c5_meal_per_string"])}
+    count = {1: 2, 2: 1, 3: 1, 4: 1, 5: 1}
+    out = {}
+    for s_, mdot in flows.items():
+        area = mdot / flux
+        out[s_] = {
+            "count_per_string": count[s_],
+            "m": mdot,
+            "flux": flux,
+            "D": math.sqrt(4.0 * area / math.pi),
+            "area": area,
+            "slope": slope,
+            "D_dust": cyclone(g, f"C{s_}")["D_dust"],
+        }
+    return out
+
+
+# ======================================================================
 # A cyclone's slot inlet and outlet pipe (cyclone.bas Derive)
 # ======================================================================
 def cyclone_slot_inlet(g, name):
