@@ -45,7 +45,7 @@ EQUIPMENT = {
 
 # Drawings made in SolidWorks and checked against their build log; the
 # rest of EQUIPMENT is ready in drawings.bas but not yet run.
-DRAWN = ("C1", "C1_twin", "C4", "C5")
+DRAWN = ("C1", "C1_twin", "C4", "C5", "calciner")
 
 
 def payload(name, g=None):

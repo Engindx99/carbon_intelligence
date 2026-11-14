@@ -15,10 +15,10 @@ schematic = layout only; absent = Unknown.
 | Preheater | C5 | Cyclone C5 (calciner outlet cyclone) | 1 per string | 4 / 15 / 0 | C5.SLDPRT | drawn: geometry/drawings/C5/ | - |
 | Preheater | VF | Vortex finders (dip tubes) of C1-C5 | per cyclone | 0 / 5 / 0 | in each cyclone solid | to draw | (no structure: wall 0.08 m is a CFD model parameter) |
 | Preheater | R1-R4 | Gas risers / ducts between stages | per string | 1 / 1 / 0 | C1_twin.SLDPRT (R1 stub, Y, both C1) | to draw | preheater/riser_R2.md .. R4.md: the outlet pipes are the risers; route lengths are layout |
-| Calciner | GN | Gooseneck (Y) from the calciner to C5 | 1 per calciner | 1 / 6 / 0 | calciner.SLDPRT | drawings.bas ready, not yet run | - |
-| Calciner | ILC | In-line calciner (ILC) vessel | 1 | 2 / 13 / 0 | calciner.SLDPRT | drawings.bas ready, not yet run | - |
-| Calciner | TAD | Tertiary air duct | 1 | 0 / 9 / 0 | calciner.SLDPRT (3 m stub only) | drawings.bas ready, not yet run | fluid_volumes.md: duct length and route absent (drawn route is schematic) |
-| Calciner | NOZ | Calciner meal and fuel inlet pipes | 2 + 2 | 0 / 5 / 0 | calciner.SLDPRT | drawings.bas ready, not yet run | - |
+| Calciner | GN | Gooseneck (Y) from the calciner to C5 | 1 per calciner | 1 / 6 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | - |
+| Calciner | ILC | In-line calciner (ILC) vessel | 1 | 2 / 13 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | - |
+| Calciner | TAD | Tertiary air duct | 1 | 0 / 9 / 0 | calciner.SLDPRT (3 m stub only) | drawn: geometry/drawings/calciner/ | fluid_volumes.md: duct length and route absent (drawn route is schematic) |
+| Calciner | NOZ | Calciner meal and fuel inlet pipes | 2 + 2 | 0 / 5 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | - |
 | Rotary kiln | KILN | Rotary kiln tube | 1 | 3 / 1 / 0 | - | to draw | - |
 | Rotary kiln | KIC | Kiln inlet chamber | 1 | 0 / 0 / 0 | - | no data: source research first | kiln/kiln_inlet_chamber.md: geometry TBD (only a schematic margin in the layout) |
 | Rotary kiln | HOOD | Kiln hood | 1 | 0 / 0 / 0 | - | no data: source research first | fluid_volumes.md: all dimensions absent |

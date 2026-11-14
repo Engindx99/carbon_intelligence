@@ -1057,7 +1057,7 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "drawings.bas ready, not yet run"
+      "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
       "area": "Calciner",
@@ -1193,7 +1193,7 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "drawings.bas ready, not yet run"
+      "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
       "area": "Calciner",
@@ -1282,7 +1282,7 @@
         "fluid_volumes.md: duct length and route absent (drawn route is schematic)"
       ],
       "cfd_solid": "calciner.SLDPRT (3 m stub only)",
-      "drawing": "drawings.bas ready, not yet run"
+      "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
       "area": "Calciner",
@@ -1337,7 +1337,7 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "drawings.bas ready, not yet run"
+      "drawing": "drawn: geometry/drawings/calciner/"
     },
     {
       "area": "Rotary kiln",
