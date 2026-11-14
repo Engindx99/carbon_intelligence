@@ -327,20 +327,6 @@ def _cyl(x, y, z, p0, d, length, r):
     return (ax >= 0.0) & (ax <= length) & (perp2 <= r * r)
 
 
-def _grid(centre, half, n):
-    """Cell-centre coordinate arrays of a cube around `centre`, and a cell's
-    volume. The cube is shifted by a few millimetres, by amounts that
-    have no relation to the cells: a plane through the centre (the pipes'
-    ends all are) would otherwise run exactly through whole layers of cell
-    centres, and which side they fall on would be rounding noise."""
-    h = 2.0 * half / n
-    mid = (np.arange(n) + 0.5) * h - half
-    x = (centre[0] + 0.00311 + mid)[:, None, None]
-    y = (centre[1] + 0.00227 + mid)[None, :, None]
-    z = (centre[2] + 0.00173 + mid)[None, None, :]
-    return x, y, z, h ** 3
-
-
 def _root_forward(r_n, R, beta, setback, margin=0.05):
     """How far in front of the vessel's axis the neck's first piece pierces
     the roof so that its cap (a disc `setback` back along its axis from
