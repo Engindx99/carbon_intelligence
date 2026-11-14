@@ -92,8 +92,8 @@ EQUIPMENT = [
      "kiln clinker -> cooler; air -> secondary / tertiary / vent",
      ["cooler/cooler.md: vent outlet TBD"], "cooler.SLDPRT"),
     ("ID fan", "IDF", "Preheater ID fan", "per string",
-     [], "C1 gas -> ID fan",
-     ["plant_topology.md: drawn as an arrow only; no dimensions"], ""),
+     ["id_fan."], "C1 gas -> ID fan",
+     ["fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only"], ""),
 ]
 
 

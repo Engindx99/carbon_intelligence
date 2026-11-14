@@ -568,6 +568,44 @@ def cooler(g):
 
 
 # ======================================================================
+# The preheater ID fan: the duty point and the size that follows
+# ======================================================================
+R_GAS = 8.314462618
+
+
+def id_fan(g):
+    """One string's ID fan from its duty (the twin's exhaust, a model
+    value): gas density and volume flow at the fan's inlet, the shaft
+    and motor power, and the size by the fan laws: the tip speed from
+    the pressure coefficient psi = 2 dp / (rho u^2), the impeller from
+    the tip speed and the speed, the inlet from the inlet velocity."""
+
+    f = g["id_fan"]
+    m, T = v(f["exhaust_flow_per_string"]), v(f["exhaust_T"])
+    M = v(f["exhaust_molar_mass"]) * 1e-3
+    p_in = 101325.0 - v(f["inlet_underpressure"])
+    dp, eta = v(f["total_pressure"]), v(f["efficiency"])
+    n = v(f["speed"]) / 60.0
+    rho = p_in * M / (R_GAS * T)
+    q = m / rho
+    u = math.sqrt(2.0 * dp / (rho * v(f["pressure_coefficient"])))
+    p_shaft = q * dp / eta
+    return {
+        "per_string": int(v(f["per_string"])),
+        "rho": rho,
+        "q": q,
+        "q_h": q * 3600.0,
+        "q_total_h": q * 3600.0 * v(g["plant"]["strings"]),
+        "dp": dp,
+        "p_shaft": p_shaft,
+        "p_motor": p_shaft * v(f["motor_margin"]),
+        "u_tip": u,
+        "D_impeller": u / (math.pi * n),
+        "D_inlet": math.sqrt(4.0 * q / (math.pi * v(f["inlet_velocity"]))),
+    }
+
+
+# ======================================================================
 # A cyclone's slot inlet and outlet pipe (cyclone.bas Derive)
 # ======================================================================
 def cyclone_slot_inlet(g, name):

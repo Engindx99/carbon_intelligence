@@ -592,7 +592,7 @@ SOURCE_TR = {
     "model": "modelleme",
     "schematic": "şematik",
 }
-UNITS = {"m": "m", "deg": "°", "%": "%", "m2": "m²", "-": "", "kg/s": "kg/s",
+UNITS = {"rpm": "dev/dk", "g/mol": "g/mol", "Pa": "Pa", "m": "m", "deg": "°", "%": "%", "m2": "m²", "-": "", "kg/s": "kg/s",
          "K": "K", "m/s": "m/s", "mol/mol": "mol/mol"}
 
 
@@ -773,6 +773,29 @@ def _cooler_rows(g):
         row_der("Hood açıklığı boyu", cc["hood_L"], "m", 2, "hood segmentleri × segment boyu"),
         row_der("**Gövde hacmi**", cc["box_volume"], "m³", 2),
         row_der("Duvar alanı (yanlar, uçlar, hood dışı tavan)", cc["wall_area"], "m²", 2),
+    ]
+
+
+def _id_fan_rows(g):
+    f, fan = g["id_fan"], pg.id_fan(g)
+    return [
+        row_src("Fan sayısı (hat başına)", f["per_string"]),
+        row_src("Egzoz debisi (hat başına)", f["exhaust_flow_per_string"]),
+        row_src("Egzoz sıcaklığı", f["exhaust_T"]),
+        row_src("Gaz mol kütlesi", f["exhaust_molar_mass"]),
+        row_src("Fan girişi, atmosferin altında", f["inlet_underpressure"]),
+        row_src("Toplam basınç artışı", f["total_pressure"]),
+        row_src("Verim", f["efficiency"]),
+        row_src("Dönme hızı", f["speed"]),
+        row_der("Giriş gaz yoğunluğu", fan["rho"], "kg/m³", 3),
+        row_der("Hacimsel debi (hat başına)", fan["q"], "m³/s", 2),
+        row_der("Hacimsel debi (hat başına)", fan["q_h"], "m³/h", 0),
+        row_der("Hacimsel debi (iki hat)", fan["q_total_h"], "m³/h", 0),
+        row_der("Mil gücü", fan["p_shaft"] / 1e3, "kW", 0),
+        row_der("Motor gücü (×1.10)", fan["p_motor"] / 1e3, "kW", 0),
+        row_der("Uç hızı", fan["u_tip"], "m/s", 1),
+        row_der("Çark çapı", fan["D_impeller"], "m", 2),
+        row_der("Giriş çapı", fan["D_inlet"], "m", 2),
     ]
 
 
@@ -958,6 +981,7 @@ DOCS = {
     "preheater/gooseneck.md": _gooseneck_rows,
     "calciner/calciner.md": _calciner_rows,
     "kiln/kiln.md": _kiln_rows,
+    "fan/id_fan.md": _id_fan_rows,
     "cooler/cooler.md": _cooler_rows,
     "fluid_volumes.md": _fluid_volume_rows,
     "calciner/calciner.md#cfd": _calciner_cfd,

@@ -26,4 +26,4 @@ schematic = layout only; absent = Unknown.
 | Rotary kiln | HOOD | Kiln hood | 1 | 0 / 0 / 0 | - | no data: source research first | fluid_volumes.md: all dimensions absent |
 | Rotary kiln | BRN | Kiln burner | 1 | 0 / 0 / 0 | - | no data: source research first | plant_topology.md: drawn as an arrow only; no dimensions |
 | Clinker cooler | COOL | Grate cooler | 1 | 1 / 4 / 0 | cooler.SLDPRT | drawn: geometry/drawings/cooler/ | cooler/cooler.md: vent outlet TBD |
-| ID fan | IDF | Preheater ID fan | per string | 0 / 0 / 0 | - | no data: source research first | plant_topology.md: drawn as an arrow only; no dimensions |
+| ID fan | IDF | Preheater ID fan | per string | 0 / 11 / 0 | - | to draw | fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only |

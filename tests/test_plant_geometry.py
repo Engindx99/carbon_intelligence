@@ -637,3 +637,38 @@ class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
                                delta=2e-3 * self.c["hood_area"])
         self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.c["wall_area"],
                                delta=2e-3 * self.c["wall_area"])
+
+
+class TheIdFanIsTheProcessDutyTest(unittest.TestCase):
+    """The ID fan (fan/id_fan.md) is sized from the twin's exhaust, by
+    fan laws; the source's duty stays tied to the twin reference."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.fan = pg.id_fan(cls.g)
+
+    def test_the_duty_is_the_twins_exhaust(self):
+        import json
+
+        with open(REPO_ROOT / "tests" / "data" / "twin_state_reference.json", encoding="utf-8") as handle:
+            snap = json.load(handle)["snapshot"]
+        f = self.g["id_fan"]
+        strings = pg.v(self.g["plant"]["strings"])
+        self.assertAlmostEqual(pg.v(f["exhaust_flow_per_string"]) * strings, snap["mass_flow_m_dot_exhaust"], delta=0.01)
+        self.assertAlmostEqual(pg.v(f["exhaust_T"]), snap["stage4_gas_outlet_temperature"], delta=0.01)
+
+    def test_the_size_follows_from_the_duty(self):
+        fan = self.fan
+        self.assertAlmostEqual(fan["q"] * fan["rho"], pg.v(self.g["id_fan"]["exhaust_flow_per_string"]), places=9)
+        self.assertAlmostEqual(fan["p_shaft"] * pg.v(self.g["id_fan"]["efficiency"]), fan["q"] * fan["dp"], places=3)
+        # tip speed from the pressure coefficient, the impeller from the speed
+        self.assertAlmostEqual(0.5 * fan["rho"] * fan["u_tip"] ** 2 * pg.v(self.g["id_fan"]["pressure_coefficient"]),
+                               fan["dp"], places=6)
+        self.assertAlmostEqual(fan["D_impeller"] * math.pi * pg.v(self.g["id_fan"]["speed"]) / 60.0, fan["u_tip"], places=9)
+
+    def test_the_size_class_is_the_literatures(self):
+        fan = self.fan
+        self.assertTrue(2.2 <= fan["D_impeller"] <= 3.5, fan["D_impeller"])         # Pengxiang catalogue
+        self.assertTrue(600e3 <= fan["q_total_h"] <= 900e3, fan["q_total_h"])       # 5000 t/d, vendor range
+        self.assertTrue(1500e3 <= 2 * fan["p_shaft"] <= 3000e3, fan["p_shaft"])     # both fans, guide range

@@ -204,6 +204,24 @@ cooler:
   hood_segments:       {value: 2,    unit: "-",   source: literature,   doc: cooler/cooler.md}
 
 # ---------------------------------------------------------------------
+# Preheater ID fan (user decision, 16 Nov 2026: one per string, 8 kPa):
+# the duty point is the twin's exhaust (model), the fan's size follows
+# from it by fan laws. No plant dimension is published (fan/id_fan.md).
+# ---------------------------------------------------------------------
+id_fan:
+  per_string:          {value: 1,      unit: "-",     source: cfd_decision, doc: fan/id_fan.md}
+  exhaust_flow_per_string: {value: 57.526, unit: kg/s, source: model,       doc: fan/id_fan.md}
+  exhaust_T:           {value: 572.19, unit: K,       source: model,        doc: fan/id_fan.md}
+  exhaust_molar_mass:  {value: 31.9,   unit: g/mol,   source: model,        doc: fan/id_fan.md}
+  inlet_underpressure: {value: 4000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}
+  total_pressure:      {value: 8000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}
+  efficiency:          {value: 0.80,   unit: "-",     source: literature,   doc: fan/id_fan.md}
+  speed:               {value: 1000.0, unit: rpm,     source: literature,   doc: fan/id_fan.md}
+  pressure_coefficient: {value: 1.0,   unit: "-",     source: model,        doc: fan/id_fan.md}
+  inlet_velocity:      {value: 25.0,   unit: m/s,     source: model,        doc: fan/id_fan.md}
+  motor_margin:        {value: 1.10,   unit: "-",     source: model,        doc: fan/id_fan.md}
+
+# ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it
 # only lays the plant out (geometry/plant_topology.md). Elevations of
 # the cyclones then follow from their CFD domains (each roof flush with

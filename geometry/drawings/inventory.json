@@ -1632,13 +1632,104 @@
       "name": "Preheater ID fan",
       "quantity": "per string",
       "connections": "C1 gas -> ID fan",
-      "dimensions": [],
-      "status_counts": {},
+      "dimensions": [
+        {
+          "key": "id_fan.per_string",
+          "value": 1,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.exhaust_flow_per_string",
+          "value": 57.526,
+          "unit": "kg/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.exhaust_T",
+          "value": 572.19,
+          "unit": "K",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.exhaust_molar_mass",
+          "value": 31.9,
+          "unit": "g/mol",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.inlet_underpressure",
+          "value": 4000.0,
+          "unit": "Pa",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.total_pressure",
+          "value": 8000.0,
+          "unit": "Pa",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.efficiency",
+          "value": 0.8,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.speed",
+          "value": 1000.0,
+          "unit": "rpm",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.pressure_coefficient",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.inlet_velocity",
+          "value": 25.0,
+          "unit": "m/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.motor_margin",
+          "value": 1.1,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 11
+      },
       "missing": [
-        "plant_topology.md: drawn as an arrow only; no dimensions"
+        "fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only"
       ],
       "cfd_solid": "",
-      "drawing": "no data: source research first"
+      "drawing": "to draw"
     }
   ]
 }
