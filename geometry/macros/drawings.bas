@@ -142,6 +142,46 @@ Const C5_TAB_5                     As String  = ""           ' parameter table r
 Const C5_TAB_6                     As String  = ""           ' parameter table rows
 Const C5_TAB_7                     As String  = ""           ' parameter table rows
 Const C5_TAB_8                     As String  = ""           ' parameter table rows
+Const CAL_D_THROAT                 As Double  = 3.130077     ' throat (kiln gas inlet) D [derived]
+Const CAL_L_THROAT                 As Double  = 3.130077     ' throat length [derived]
+Const CAL_H_CONE                   As Double  = 3.871181     ' cone height [derived]
+Const CAL_D_VESSEL                 As Double  = 6.7404       ' vessel inner D [derived]
+Const CAL_H_VESSEL                 As Double  = 30#          ' cone + cylinder [derived]
+Const CAL_H_CYL                    As Double  = 26.128819    ' cylinder height [derived]
+Const CAL_Z_CONE                   As Double  = 7.001258     ' the cone's top, z [derived]
+Const CAL_Z_ROOF                   As Double  = 33.130077    ' the roof, z [derived]
+Const CAL_D_NECK                   As Double  = 4.949747     ' gooseneck neck D [derived]
+Const CAL_PIECE                    As Double  = 4.949747     ' the neck's inclined pieces [derived]
+Const CAL_LEVEL                    As Double  = 4.949747     ' the neck's level piece [derived]
+Const CAL_Z_BEND                   As Double  = 36.630077    ' the level piece's axis, z [derived]
+Const CAL_D_LEG                    As Double  = 3.5          ' gooseneck arm D [derived]
+Const CAL_X_LEG                    As Double  = 10.78133     ' the arms' outlet faces, x [derived]
+Const CAL_Z_END                    As Double  = 23.522304    ' the arms' level runs' axis, z [derived]
+Const CAL_WIDTH                    As Double  = 21.562659    ' overall width over the arms' outlet faces, x [derived]
+Const CAL_Z_SPLIT                  As Double  = 25.705456    ' the channel's lower end, where the arms leave, z [derived]
+Const CAL_X_BEND                   As Double  = 3.78133      ' where an arm turns level, x [derived]
+Const CAL_Y_OFF                    As Double  = 12.134703    ' the channel and the arms, in front of the axis [derived]
+Const CAL_TOP                      As Double  = 39.104951    ' the neck's crown, z [derived]
+Const CAL_Y_FRONT                  As Double  = 14.609577    ' the channel's far side, forward of the axis [derived]
+Const CAL_TA_D                     As Double  = 2.4393       ' tertiary air duct D [derived]
+Const CAL_TA_Y                     As Double  = -2.10055     ' its axis, y [derived]
+Const CAL_TA_Z                     As Double  = 8.270908     ' its axis, z [derived]
+Const CAL_TA_X                     As Double  = 6.3702       ' its face, x [derived]
+Const CAL_FEED_D                   As Double  = 0.8485       ' meal pipe D [derived]
+Const CAL_FEED_X                   As Double  = 3.8702       ' meal pipe end face centre, x [derived]
+Const CAL_FEED_Z                   As Double  = 12.251519    ' meal pipe end face centre, z [derived]
+Const CAL_FUEL_D                   As Double  = 0.2828       ' fuel pipe D [derived]
+Const CAL_FUEL_Y                   As Double  = 4.236225     ' fuel pipe end face centre, y [derived]
+Const CAL_FUEL_Z                   As Double  = 11.885494    ' fuel pipe end face centre, z [derived]
+Const CAL_BOX_Y                    As Double  = 4.306925     ' the fuel pipes' far side, y [derived]
+Const calciner_TAB_1               As String  = "D_throat~Throat (kiln gas inlet) diameter~3130~mm~derived~Estimated;L_throat~Throat length~3130~mm~derived~Estimated;H_cone~Cone height~3871~mm~derived~Estimated;D_vessel~Vessel inner diameter D~6740~mm~FLS ratio~Estimated;H_cylinder~Cylinder height~26129~mm~derived~Estimated;H_vessel~Vessel height (cone + cylinder)~30000~mm~published~Verified;D_neck~Gooseneck neck diameter (both arms' area)~4950~mm~derived~Estimated;neck_slope~Neck slope~45~deg~model parameter~Estimated;neck_piece~Neck's inclined pieces (2): length~4950~mm~derived~Estimated;neck_level~Neck's level piece: length~4950~mm~derived~Estimated;channel~Vertical channel below the neck: length~7425~mm~derived~Estimated;" ' parameter table rows
+Const calciner_TAB_2               As String  = "D_leg~Gooseneck arm bore~3500~mm~published~Verified;arm_angle~Arm angle to the vertical~60~deg~model parameter~Estimated;arm_run~Arms' level run to the outlet face: length~7000~mm~derived~Estimated;y_off~Channel and arms in front of the vessel axis~12135~mm~derived~Estimated;x_leg~Barrel axis to an arm's outlet face~10781~mm~derived~Schematic;leg_end_z~Throat foot to the arms' level runs' axis (C5's inlet axis)~23522~mm~derived~Schematic;width~Overall width over the arms' outlet faces~21563~mm~derived~Schematic;top~Throat foot to the neck's crown~39105~mm~derived~Estimated;D_TA~Tertiary air duct diameter~2439~mm~FLS ratio~Estimated;" ' parameter table rows
+Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential)~-2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~848~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;" ' parameter table rows
+Const calciner_TAB_4               As String  = "u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
+Const calciner_TAB_5               As String  = ""           ' parameter table rows
+Const calciner_TAB_6               As String  = ""           ' parameter table rows
+Const calciner_TAB_7               As String  = ""           ' parameter table rows
+Const calciner_TAB_8               As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -170,6 +210,15 @@ Const TW_PLAN_Y  As Double = 0.155
 Const TW_SIDE_X  As Double = 0.38
 Const TW_DET_X   As Double = 0.55
 Const TW_DET_Y   As Double = 0.2
+' calciner (1:200): the plan at the bottom, A-A over it, the front view
+' right of A-A, the left view right of that, detail B under the left view
+Const CAL_TOP_X   As Double = 0.17
+Const CAL_TOP_Y   As Double = 0.1
+Const CAL_SEC_Y   As Double = 0.36
+Const CAL_FRONT_X As Double = 0.33
+Const CAL_LEFT_X  As Double = 0.47
+Const CAL_DET_X   As Double = 0.57
+Const CAL_DET_Y   As Double = 0.18
 
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
@@ -195,7 +244,7 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1", "C1_twin", "C4" or "C5": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4", "C5" or "calciner": what this run draws
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
@@ -244,6 +293,11 @@ Sub c5()
 End Sub
 
 
+Sub calciner()
+    Build "calciner"
+End Sub
+
+
 Private Sub Build(ByVal which As String)
 
     Dim why As String
@@ -258,6 +312,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 50#: detailD = 20#: detX = DET_X: detY = DET_Y
     ElseIf equip = "C1_twin" Then
         scaleD = 100#: detailD = 50#: detX = TW_DET_X: detY = TW_DET_Y
+    ElseIf equip = "calciner" Then
+        scaleD = 200#: detailD = 50#: detX = CAL_DET_X: detY = CAL_DET_Y
     Else
         scaleD = 100#: detailD = 20#: detX = 0.63: detY = DET_Y
         LoadVolute
@@ -329,6 +385,9 @@ Private Sub ParseTable()
         all = C4_TAB_1 & C4_TAB_2 & C4_TAB_3 & C4_TAB_4 & C4_TAB_5 & C4_TAB_6 & C4_TAB_7 & C4_TAB_8
     ElseIf equip = "C5" Then
         all = C5_TAB_1 & C5_TAB_2 & C5_TAB_3 & C5_TAB_4 & C5_TAB_5 & C5_TAB_6 & C5_TAB_7 & C5_TAB_8
+    ElseIf equip = "calciner" Then
+        all = calciner_TAB_1 & calciner_TAB_2 & calciner_TAB_3 & calciner_TAB_4 & calciner_TAB_5 & _
+              calciner_TAB_6 & calciner_TAB_7 & calciner_TAB_8
     Else
         all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
               C1_twin_TAB_7 & C1_twin_TAB_8
@@ -466,9 +525,38 @@ Private Function ExactBox(body As SldWorks.Body2) As Variant
 End Function
 
 
+' The calciner's solid (calciner.bas): its true extent, 1 cm.
+Private Sub CheckCalcinerBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    want(0) = -0.5 * CAL_WIDTH: want(3) = 0.5 * CAL_WIDTH
+    want(1) = -CAL_Y_FRONT: want(4) = CAL_BOX_Y
+    want(2) = 0#: want(5) = CAL_TOP
+    For i = 0 To 5
+        If Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's calciner has " & Num(want(i), 3) & _
+                 " -- rebuild it with calciner.bas."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
     If equip = "C1_twin" Then
         CheckTwinBox doc
+        Exit Sub
+    ElseIf equip = "calciner" Then
+        CheckCalcinerBox doc
         Exit Sub
     ElseIf equip <> "C1" Then
         CheckVoluteBox doc
@@ -580,6 +668,8 @@ Private Sub MakeViews()
         MakeViewsC1
     ElseIf equip = "C1_twin" Then
         MakeViewsTwin
+    ElseIf equip = "calciner" Then
+        MakeViewsCalciner
     Else
         MakeViewsVolute
     End If
@@ -630,6 +720,59 @@ Private Sub MakeViewsVolute()
 
     Set vDet = DetailFrom(vSec, -(R - 0.35), vHeight - vLv + 0.3, 1.25, "B")
     Note "views: left " & vLeft.Name & ", detail B " & vDet.Name
+    LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
+End Sub
+
+
+' The calciner at 1:200: the plan (x right, y up) at the bottom, A-A over
+' it (y = 0: the vessel, the throat, the neck and both legs, the meal
+' pipes), the left view right of A-A (the fuel pipes, the tertiary air
+' duct's face) and detail B of the meal and tertiary air inlets.
+Private Sub MakeViewsCalciner()
+    Dim R As Double, xa As Double, xb As Double
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long
+    R = 0.5 * CAL_D_VESSEL
+
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, CAL_TOP_X, CAL_TOP_Y, "top")
+    HiddenLinesVisible vTop
+    LogMap vTop, "top", scaleD
+
+    xa = -(0.5 * CAL_WIDTH + 1#): xb = 0.5 * CAL_WIDTH + 1#
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vTop, xb, 0#, CAL_Z_ROOF, ax, ay
+            ToSheet vTop, xa, 0#, CAL_Z_ROOF, qx, qy
+        Else
+            ToSheet vTop, xa, 0#, CAL_Z_ROOF, ax, ay
+            ToSheet vTop, xb, 0#, CAL_Z_ROOF, qx, qy
+        End If
+        Set vSec = SectionFrom(vTop, ax, ay, qx, qy, "A", 0.5 * (ax + qx), CAL_SEC_Y)
+        If Maps(vSec, 1, 0, 0, 0, 0, 1) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "right to left", "left to right") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A shows x right, z up in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    If FindEdge(vSec, "vline", -R, 0#, 20#, -R, 0#, nSeen, nFit) Is Nothing _
+       Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no vessel wall among its " & nSeen & " edges."
+    Note "views: top " & vTop.Name & ", A-A " & vSec.Name
+    LogMap vSec, "A-A", scaleD
+
+    ' the front view, seen from -y: the channel and the Y's arms stand in
+    ' front of the vessel (y = -CAL_Y_OFF), which A-A (y = 0, looking at
+    ' the half behind it) does not show
+    swDraw.EditSheet
+    Set vFront = OrientedView(1, 0, 0, 0, 0, 1, CAL_FRONT_X, CAL_SEC_Y, "front")
+    AlignHeight vFront, vSec
+    LogMap vFront, "front", scaleD
+
+    swDraw.EditSheet
+    Set vLeft = OrientedView(0, -1, 0, 0, 0, 1, CAL_LEFT_X, CAL_SEC_Y, "left")
+    AlignHeight vLeft, vSec
+    HiddenLinesVisible vLeft
+
+    Set vDet = DetailFrom(vSec, 4.2, 10.4, 3.2, "B")
+    Note "views: front " & vFront.Name & ", left " & vLeft.Name & ", detail B " & vDet.Name
     LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
 End Sub
 
@@ -948,6 +1091,8 @@ Private Sub DimensionAll()
         DimensionC1
     ElseIf equip = "C1_twin" Then
         DimensionTwin
+    ElseIf equip = "calciner" Then
+        DimensionCalciner
     Else
         DimensionVolute
     End If
@@ -1037,6 +1182,85 @@ Private Sub DimensionVolute()
         "hline", -(rx + 0.5 * t), 0, zv, 0, zv, _
         "", 0, 0, 0, 0, 0, _
         -(rx + 0.5 * t), 0, zv - 0.25
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The calciner's reference dimensions, each between edges the solid has.
+' Left view (seen from -x, +y to the left): the throat, cone and cylinder
+' by their circular edges seen edge-on, the legs' open ends, the neck, the
+' fuel pipe's end face; A-A: the width over the legs; plan: the tertiary
+' air duct's face and the meal pipe's end face (circles) and the duct's
+' place, centre to centre against the roof circle.
+Private Sub DimensionCalciner()
+    Dim R As Double, rt As Double, rl As Double, rta As Double
+    Dim zt As Double, zc As Double, zr As Double, xl As Double, ze As Double
+    R = 0.5 * CAL_D_VESSEL: rt = 0.5 * CAL_D_THROAT: rl = 0.5 * CAL_D_LEG
+    rta = 0.5 * CAL_TA_D
+    zt = CAL_L_THROAT: zc = CAL_Z_CONE: zr = CAL_Z_ROOF: xl = CAL_X_LEG: ze = CAL_Z_END
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    ' left view. The roof circle is cut away at its front by the neck's
+    ' first piece (it pierces the roof there), so its back is picked.
+    DimEdges "D_throat", CAL_D_THROAT, vLeft, _
+        "circle", 0, -rt, 0, rt, 0, _
+        "", 0, 0, 0, 0, 0, _
+        0, -rt - 0.5, -2.4
+    DimEdges "L_throat", CAL_L_THROAT, vLeft, _
+        "circle", 0, -rt, 0, rt, 0, _
+        "circle", 0, -rt, zt, rt, zt, _
+        0, -R - 2.2, 0.5 * zt
+    DimEdges "H_cone", CAL_H_CONE, vLeft, _
+        "circle", 0, -rt, zt, rt, zt, _
+        "circle", 0, -R, zc, R, zc, _
+        0, -R - 2.2, 0.5 * (zt + zc)
+    DimEdges "H_cylinder", CAL_H_CYL, vLeft, _
+        "circle", 0, -R, zc, R, zc, _
+        "circle", 0, R, zr, R, zr, _
+        0, -R - 4.4, 0.5 * (zc + zr)
+    DimEdges "H_vessel", CAL_H_VESSEL, vLeft, _
+        "circle", 0, -rt, zt, rt, zt, _
+        "circle", 0, R, zr, R, zr, _
+        0, -R - 6.6, 0.5 * (zt + zr)
+    DimEdges "D_vessel", CAL_D_VESSEL, vLeft, _
+        "circle", 0, -R, zc, R, zc, _
+        "", 0, 0, 0, 0, 0, _
+        0, R + 3.2, zc
+    ' an arm's outlet face, seen square on from -x: the near one, at x = -xl
+    DimEdges "D_leg", CAL_D_LEG, vLeft, _
+        "circle", -xl, -CAL_Y_OFF - rl, ze, rl, ze, _
+        "", 0, 0, 0, 0, 0, _
+        -xl, -CAL_Y_OFF - rl - 2.4, ze - 1.4
+    DimEdges "D_fuel", CAL_FUEL_D, vLeft, _
+        "circle", 0, CAL_FUEL_Y, CAL_FUEL_Z, 0.5 * CAL_FUEL_D, CAL_FUEL_Z, _
+        "", 0, 0, 0, 0, 0, _
+        0, R + 4.4, CAL_FUEL_Z + 2.4
+
+    ' plan: the tertiary air duct and the meal pipe
+    DimEdges "D_TA", CAL_TA_D, vTop, _
+        "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
+        "", 0, 0, 0, 0, 0, _
+        CAL_TA_X + 2.6, CAL_TA_Y - 2.4, CAL_TA_Z
+    DimEdges "ta_x", CAL_TA_X, vTop, _
+        "circle", 0, R, zr, R, zr, _
+        "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
+        0.5 * CAL_TA_X, CAL_BOX_Y + 1.6, zr, "h"
+    ' the meal pipe's end face is edge-on from the front (its normal lies
+    ' in the x-z plane): a straight edge of the pipe's diameter. (In plan it
+    ' is a tilted ellipse, which SolidWorks dimensioned as a radius.)
+    DimEdges "D_feed", CAL_FEED_D, vFront, _
+        "circle", CAL_FEED_X, 0, CAL_FEED_Z, 0.5 * CAL_FEED_D, CAL_FEED_Z, _
+        "", 0, 0, 0, 0, 0, _
+        CAL_FEED_X + 2.2, 0, CAL_FEED_Z + 2.4
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -1573,6 +1797,7 @@ Private Function TitleText() As String
     Case "C1_twin": TitleText = "TWIN CYCLONE C1 + RISER R1"
     Case "C4": TitleText = "CYCLONE C2 / C3 / C4 (SAME)"
     Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
+    Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     End Select
 End Function
 
@@ -1590,6 +1815,11 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
+    ElseIf equip = "calciner" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the throat's foot (kiln gas inlet); tertiary air along -x, tangential.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. One calciner for both strings; the arms end in vertical faces at z = " & Num(CAL_Z_END, 2) & " (CFD outlets, to C5).", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Meal pipes +-x at 60 deg, fuel pipes +-y at 30 deg.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/calciner/calciner.md", TEXT_H
     ElseIf equip <> "C1_twin" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet; the volute's duct on the +y side, gas into it along +x.", TEXT_H
         If equip = "C4" Then
@@ -1614,6 +1844,8 @@ Private Sub DrawFlows()
         DrawFlowsC1
     ElseIf equip = "C1_twin" Then
         DrawFlowsTwin
+    ElseIf equip = "calciner" Then
+        DrawFlowsCalciner
     Else
         DrawFlowsVolute
     End If
@@ -1635,6 +1867,39 @@ Private Sub DrawFlowsVolute()
     LabelM3 vSec, vExitX + 0.3, 0#, vZleg + 1#, "Gas out"
     LabelM3 vSec, 0.4, 0#, -0.8, "Meal out (to the stage below)"
     LabelM3 vTop, -R, -R - 1.2, vHeight, "Swirl clockwise seen from above"
+End Sub
+
+
+' The calciner's flows: the kiln gas up the throat, the gas out of the
+' two legs, the meal in along each pipe (A-A), the tertiary air along -x
+' (plan) and the fuel along its pipe (left view).
+Private Sub DrawFlowsCalciner()
+    Dim xl As Double, ze As Double, k As Double, sg As Double, i As Long
+    Dim fx As Double, fz As Double
+    xl = CAL_X_LEG: ze = CAL_Z_END
+    k = Sqr(3#) * 0.5
+    UseLayer L_FLOW
+    ArrowM3 vSec, 0#, 0#, -2.6, 0#, 0#, -0.3
+    For i = 0 To 1
+        sg = 1# - 2# * i
+        ' the meal pipe's axis rises outward at 60 deg: in towards the vessel
+        fx = CAL_FEED_X: fz = CAL_FEED_Z
+        ArrowM3 vSec, sg * (fx + 1.9 * 0.5), 0#, fz + 1.9 * k, sg * (fx + 0.4 * 0.5), 0#, fz + 0.4 * k
+        ' the gas out of each arm's level run, beyond its outlet face (front view)
+        ArrowM3 vFront, sg * (xl - 2.6), -CAL_Y_OFF, ze, sg * (xl + 2.4), -CAL_Y_OFF, ze
+    Next i
+    ' down the channel (front view)
+    ArrowM3 vFront, 0#, -CAL_Y_OFF, CAL_Z_ROOF - 0.5, 0#, -CAL_Y_OFF, CAL_Z_SPLIT + 1.2
+    ArrowM3 vTop, CAL_TA_X + 3#, CAL_TA_Y, CAL_TA_Z, CAL_TA_X + 0.3, CAL_TA_Y, CAL_TA_Z
+    ArrowM3 vLeft, 0#, CAL_FUEL_Y + 1.9 * k, CAL_FUEL_Z + 1.9 * 0.5, 0#, CAL_FUEL_Y + 0.4 * k, CAL_FUEL_Z + 0.4 * 0.5
+    UseLayer L_TEXT
+    LabelM3 vSec, 0.5, 0#, -2.4, "Kiln gas in"
+    LabelM3 vFront, xl + 2.6, -CAL_Y_OFF, ze - 0.4, "Gas out (to C5)"
+    LabelM3 vFront, -xl - 11.4, -CAL_Y_OFF, ze - 0.4, "Gas out (to C5)"
+    LabelM3 vSec, CAL_FEED_X + 1.5, 0#, CAL_FEED_Z + 2.8, "Meal in"
+    LabelM3 vSec, -CAL_FEED_X - 3.2, 0#, CAL_FEED_Z + 2.8, "Meal in"
+    LabelM3 vTop, CAL_TA_X + 3.2, CAL_TA_Y - 0.2, CAL_TA_Z, "Tertiary air in"
+    LabelM3 vLeft, 0#, CAL_FUEL_Y + 2.2, CAL_FUEL_Z + 1.4, "Fuel in"
 End Sub
 
 
@@ -1685,6 +1950,8 @@ Private Sub DrawAxes()
         DrawAxesC1
     ElseIf equip = "C1_twin" Then
         DrawAxesTwin
+    ElseIf equip = "calciner" Then
+        DrawAxesCalciner
     Else
         DrawAxesVolute
     End If
@@ -1702,6 +1969,30 @@ Private Sub DrawAxesVolute()
     AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ
     AxisM vTop, -R - 0.6, 0#, vHeight, vExitX + 0.6, 0#, vHeight
     AxisM vTop, 0#, -R - 0.6, vHeight, 0#, R + 0.6, vHeight
+End Sub
+
+
+' The calciner's centre lines: the vessel's axis up to the neck's top and
+' each leg's in A-A, the axis in the left view, the crosses in the plan,
+' the tertiary air duct's axis in the plan.
+Private Sub DrawAxesCalciner()
+    Dim R As Double
+    R = 0.5 * CAL_D_VESSEL
+    UseLayer L_AXIS
+    AxisM vSec, 0#, 0#, -0.6, 0#, 0#, CAL_Z_BEND + 0.6
+    ' front view: the vessel's axis and the channel's (the same line), each arm's from the
+    ' channel's lower end to where it turns level, then level beyond the outlet face
+    AxisM vFront, 0#, 0#, -0.6, 0#, 0#, CAL_TOP + 0.6
+    AxisM vFront, 0#, -CAL_Y_OFF, CAL_Z_SPLIT, CAL_X_BEND, -CAL_Y_OFF, CAL_Z_END
+    AxisM vFront, CAL_X_BEND, -CAL_Y_OFF, CAL_Z_END, CAL_X_LEG + 0.6, -CAL_Y_OFF, CAL_Z_END
+    AxisM vFront, 0#, -CAL_Y_OFF, CAL_Z_SPLIT, -CAL_X_BEND, -CAL_Y_OFF, CAL_Z_END
+    AxisM vFront, -CAL_X_BEND, -CAL_Y_OFF, CAL_Z_END, -CAL_X_LEG - 0.6, -CAL_Y_OFF, CAL_Z_END
+    AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, CAL_TOP + 0.6
+    AxisM vLeft, -CAL_Y_OFF, 0#, CAL_Z_SPLIT - 0.6, -CAL_Y_OFF, 0#, CAL_Z_ROOF + 0.6
+    AxisM vTop, -R - 0.6, 0#, CAL_Z_ROOF, R + 0.6, 0#, CAL_Z_ROOF
+    AxisM vTop, 0#, -R - 0.6, CAL_Z_ROOF, 0#, R + 0.6, CAL_Z_ROOF
+    AxisM vTop, 0#, 0#, CAL_Z_ROOF, 0#, -CAL_Y_OFF - 0.6, CAL_Z_ROOF
+    AxisM vTop, R - 0.6, CAL_TA_Y, CAL_TA_Z, CAL_TA_X + 0.6, CAL_TA_Y, CAL_TA_Z
 End Sub
 
 

@@ -25,7 +25,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from geometry import plant_geometry as pg  # noqa: E402
-from tools.drawings import cyclone, inventory, twin, volute  # noqa: E402
+from tools.drawings import calciner, cyclone, inventory, twin, volute  # noqa: E402
 
 OUT = ROOT / "geometry" / "drawings"
 LOG_DIR = ROOT / "geometry" / "output" / "2500"
@@ -40,6 +40,7 @@ EQUIPMENT = {
     "C1_twin": twin,
     "C4": volute,
     "C5": volute,
+    "calciner": calciner,
 }
 
 # Drawings made in SolidWorks and checked against their build log; the

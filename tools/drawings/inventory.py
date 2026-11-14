@@ -88,7 +88,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"C2": "C4", "C3": "C4"}
+SAME_SHEET = {"C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

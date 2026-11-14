@@ -1003,15 +1003,31 @@
           "doc": "preheater/gooseneck.md"
         },
         {
-          "key": "gooseneck.rise_over_D_neck",
-          "value": 1.25,
+          "key": "gooseneck.neck_slope",
+          "value": 45.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.neck_piece_over_D_neck",
+          "value": 1.0,
           "unit": "-",
           "source": "model",
           "status": "Estimated",
           "doc": "preheater/gooseneck.md"
         },
         {
-          "key": "gooseneck.bend_R_over_D_leg",
+          "key": "gooseneck.neck_level_over_D_neck",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.channel_over_D_neck",
           "value": 1.5,
           "unit": "-",
           "source": "model",
@@ -1019,8 +1035,16 @@
           "doc": "preheater/gooseneck.md"
         },
         {
-          "key": "gooseneck.end_at_vessel_H",
-          "value": 0.5,
+          "key": "gooseneck.arm_angle",
+          "value": 60.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/gooseneck.md"
+        },
+        {
+          "key": "gooseneck.arm_run_over_D_leg",
+          "value": 2.0,
           "unit": "-",
           "source": "model",
           "status": "Estimated",
@@ -1029,11 +1053,11 @@
       ],
       "status_counts": {
         "Verified": 1,
-        "Estimated": 3
+        "Estimated": 6
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "to draw"
+      "drawing": "drawings.bas ready, not yet run"
     },
     {
       "area": "Calciner",
@@ -1169,7 +1193,7 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "to draw"
+      "drawing": "drawings.bas ready, not yet run"
     },
     {
       "area": "Calciner",
@@ -1258,7 +1282,7 @@
         "fluid_volumes.md: duct length and route absent (drawn route is schematic)"
       ],
       "cfd_solid": "calciner.SLDPRT (3 m stub only)",
-      "drawing": "to draw"
+      "drawing": "drawings.bas ready, not yet run"
     },
     {
       "area": "Calciner",
@@ -1313,7 +1337,7 @@
       },
       "missing": [],
       "cfd_solid": "calciner.SLDPRT",
-      "drawing": "to draw"
+      "drawing": "drawings.bas ready, not yet run"
     },
     {
       "area": "Rotary kiln",

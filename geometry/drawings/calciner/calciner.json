@@ -1,0 +1,578 @@
+{
+  "equipment": "calciner",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/calciner/calciner.pdf",
+      "geometry/drawings/calciner/calciner.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_calciner_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "calciner.D_throat",
+      "label": "Throat (kiln gas inlet) diameter",
+      "value": 3.13007717954508,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity"
+      ],
+      "value_mm": 3130.07718,
+      "short": "D_throat"
+    },
+    {
+      "key": "calciner.L_throat",
+      "label": "Throat length",
+      "value": 3.13007717954508,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D"
+      ],
+      "value_mm": 3130.07718,
+      "short": "L_throat"
+    },
+    {
+      "key": "calciner.H_cone",
+      "label": "Cone height",
+      "value": 3.8711811368695823,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.cone_angle"
+      ],
+      "value_mm": 3871.181137,
+      "short": "H_cone"
+    },
+    {
+      "key": "calciner.D",
+      "label": "Vessel inner diameter D",
+      "value": 6.7404,
+      "unit": "m",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D"
+      ],
+      "value_mm": 6740.4,
+      "short": "D_vessel"
+    },
+    {
+      "key": "calciner.H_cylinder",
+      "label": "Cylinder height",
+      "value": 26.12881886313042,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.H",
+        "calciner.D",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.cone_angle"
+      ],
+      "value_mm": 26128.818863,
+      "short": "H_cylinder"
+    },
+    {
+      "key": "calciner.H",
+      "label": "Vessel height (cone + cylinder)",
+      "value": 30.0,
+      "unit": "m",
+      "source": "published",
+      "status": "Verified",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.H"
+      ],
+      "value_mm": 30000.0,
+      "short": "H_vessel"
+    },
+    {
+      "key": "gooseneck.D_neck",
+      "label": "Gooseneck neck diameter (both arms' area)",
+      "value": 4.949747468305833,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck"
+      ],
+      "value_mm": 4949.747468,
+      "short": "D_neck"
+    },
+    {
+      "key": "gooseneck.neck_slope",
+      "label": "Neck slope",
+      "value": 45.0,
+      "unit": "deg",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.neck_slope"
+      ],
+      "short": "neck_slope"
+    },
+    {
+      "key": "gooseneck.piece",
+      "label": "Neck's inclined pieces (2): length",
+      "value": 4.949747468305833,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck",
+        "gooseneck.neck_slope"
+      ],
+      "value_mm": 4949.747468,
+      "short": "neck_piece"
+    },
+    {
+      "key": "gooseneck.level",
+      "label": "Neck's level piece: length",
+      "value": 4.949747468305833,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck",
+        "gooseneck.neck_level_over_D_neck"
+      ],
+      "value_mm": 4949.747468,
+      "short": "neck_level"
+    },
+    {
+      "key": "gooseneck.channel",
+      "label": "Vertical channel below the neck: length",
+      "value": 7.424621202458749,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck",
+        "gooseneck.channel_over_D_neck"
+      ],
+      "value_mm": 7424.621202,
+      "short": "channel"
+    },
+    {
+      "key": "gooseneck.D_leg",
+      "label": "Gooseneck arm bore",
+      "value": 3.5,
+      "unit": "m",
+      "source": "published",
+      "status": "Verified",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg"
+      ],
+      "value_mm": 3500.0,
+      "short": "D_leg"
+    },
+    {
+      "key": "gooseneck.arm_angle",
+      "label": "Arm angle to the vertical",
+      "value": 60.0,
+      "unit": "deg",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.arm_angle"
+      ],
+      "short": "arm_angle"
+    },
+    {
+      "key": "gooseneck.arm_run",
+      "label": "Arms' level run to the outlet face: length",
+      "value": 7.0,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.arm_run_over_D_leg"
+      ],
+      "value_mm": 7000.0,
+      "short": "arm_run"
+    },
+    {
+      "key": "gooseneck.y_off",
+      "label": "Channel and arms in front of the vessel axis",
+      "value": 12.1347030415631,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck",
+        "gooseneck.neck_slope",
+        "gooseneck.neck_level_over_D_neck",
+        "calciner.D"
+      ],
+      "value_mm": 12134.703042,
+      "short": "y_off"
+    },
+    {
+      "key": "gooseneck.x_leg",
+      "label": "Barrel axis to an arm's outlet face",
+      "value": 10.781329541925963,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.arm_run_over_D_leg",
+        "gooseneck.arm_angle",
+        "gooseneck.channel_over_D_neck",
+        "gooseneck.neck_piece_over_D_neck",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "calciner.D",
+        "calciner.cone_angle",
+        "calciner.D_tertiary_air",
+        "calciner.tertiary_air_cone_clearance",
+        "layout.c5_over_tertiary_air",
+        "calciner.H"
+      ],
+      "value_mm": 10781.329542,
+      "short": "x_leg"
+    },
+    {
+      "key": "gooseneck.z_end",
+      "label": "Throat foot to the arms' level runs' axis (C5's inlet axis)",
+      "value": 23.522304348160695,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "calciner.D",
+        "calciner.cone_angle",
+        "calciner.D_tertiary_air",
+        "calciner.tertiary_air_cone_clearance",
+        "layout.c5_over_tertiary_air"
+      ],
+      "value_mm": 23522.304348,
+      "short": "leg_end_z"
+    },
+    {
+      "key": "gooseneck.width",
+      "label": "Overall width over the arms' outlet faces",
+      "value": 21.562659083851926,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "preheater/gooseneck.md",
+      "inputs": [
+        "gooseneck.D_leg",
+        "gooseneck.arm_run_over_D_leg",
+        "gooseneck.arm_angle",
+        "gooseneck.channel_over_D_neck",
+        "gooseneck.neck_piece_over_D_neck",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "calciner.D",
+        "calciner.cone_angle",
+        "calciner.D_tertiary_air",
+        "calciner.tertiary_air_cone_clearance",
+        "layout.c5_over_tertiary_air",
+        "calciner.H"
+      ],
+      "value_mm": 21562.659084,
+      "short": "width"
+    },
+    {
+      "key": "gooseneck.top",
+      "label": "Throat foot to the neck's crown",
+      "value": 39.104950913698,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "calciner.H",
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck",
+        "gooseneck.neck_slope"
+      ],
+      "value_mm": 39104.950914,
+      "short": "top"
+    },
+    {
+      "key": "calciner.D_tertiary_air",
+      "label": "Tertiary air duct diameter",
+      "value": 2.4393,
+      "unit": "m",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D_tertiary_air"
+      ],
+      "value_mm": 2439.3,
+      "short": "D_TA"
+    },
+    {
+      "key": "calciner.ta_y",
+      "label": "Tertiary air duct axis off the vessel axis (tangential)",
+      "value": -2.10055,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D",
+        "calciner.D_tertiary_air",
+        "calciner.tertiary_air_wall_relief"
+      ],
+      "value_mm": -2100.55,
+      "short": "ta_y"
+    },
+    {
+      "key": "calciner.ta_z",
+      "label": "Tertiary air duct axis height",
+      "value": 8.270908316414662,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "calciner.D",
+        "calciner.cone_angle",
+        "calciner.D_tertiary_air",
+        "calciner.tertiary_air_cone_clearance"
+      ],
+      "value_mm": 8270.908316,
+      "short": "ta_z"
+    },
+    {
+      "key": "calciner.ta_x",
+      "label": "Vessel axis to the duct's face",
+      "value": 6.3702000000000005,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D",
+        "calciner.tertiary_air_stub_length"
+      ],
+      "value_mm": 6370.2,
+      "short": "ta_x"
+    },
+    {
+      "key": "calciner.D_feed",
+      "label": "Meal pipe diameter (two)",
+      "value": 0.8485,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D_feed"
+      ],
+      "value_mm": 848.5,
+      "short": "D_feed"
+    },
+    {
+      "key": "calciner.feed_slope",
+      "label": "Meal pipes' slope to the horizontal",
+      "value": 60.0,
+      "unit": "deg",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "cyclone_domain.meal_slope"
+      ],
+      "short": "feed_slope"
+    },
+    {
+      "key": "calciner.D_fuel",
+      "label": "Fuel pipe diameter (two)",
+      "value": 0.2828,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D_fuel"
+      ],
+      "value_mm": 282.8,
+      "short": "D_fuel"
+    },
+    {
+      "key": "calciner.fuel_slope",
+      "label": "Fuel pipes' slope to the horizontal",
+      "value": 30.0,
+      "unit": "deg",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.fuel_slope"
+      ],
+      "short": "fuel_slope"
+    },
+    {
+      "key": "calciner.volume",
+      "label": "Volume (cone + cylinder)",
+      "value": 1009.7110536646434,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D",
+        "calciner.H",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.cone_angle"
+      ],
+      "short": "volume"
+    },
+    {
+      "key": "calciner.wet_area",
+      "label": "Wetted area (cylinder, cone, roof ring)",
+      "value": 635.9595039477697,
+      "unit": "m2",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D",
+        "calciner.H",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.cone_angle",
+        "gooseneck.D_leg",
+        "gooseneck.neck_piece_over_D_neck"
+      ],
+      "short": "wet_area"
+    },
+    {
+      "key": "calciner.shell",
+      "label": "Shell / refractory thickness",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "calciner/calciner.md: CFD fluid volume, no structure modelled",
+      "inputs": [],
+      "short": "u_wall"
+    },
+    {
+      "key": "calciner.material",
+      "label": "Material",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "calciner/calciner.md: no source",
+      "inputs": [],
+      "short": "u_material"
+    },
+    {
+      "key": "calciner.flanges",
+      "label": "Flanges / nozzles / manholes",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "calciner/calciner.md: no source",
+      "inputs": [],
+      "short": "u_flange"
+    },
+    {
+      "key": "calciner.supports",
+      "label": "Supports / hangers",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "calciner/calciner.md: no source",
+      "inputs": [],
+      "short": "u_support"
+    },
+    {
+      "key": "calciner.burner",
+      "label": "Burner / fuel inlet fittings",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "calciner/calciner.md: the fuel pipes are bare inlet ducts, no burner geometry",
+      "inputs": [],
+      "short": "u_burner"
+    }
+  ],
+  "dimensioned": [
+    "D_throat",
+    "L_throat",
+    "H_cone",
+    "D_vessel",
+    "H_cylinder",
+    "H_vessel",
+    "D_leg",
+    "D_fuel",
+    "D_TA",
+    "ta_x",
+    "D_feed"
+  ],
+  "also_the_sheet_of": []
+}
