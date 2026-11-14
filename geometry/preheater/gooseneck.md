@@ -37,23 +37,20 @@ Kolun çapı yayınlanmıştır: bir 2500 t/d hattının boynu. Tesiste **her ko
 | **Tesis: duvar alanı (iki kol)** | 656.79 m² | türetilmiş |
 <!-- END GENERATED -->
 
-**Tesis ve CFD** (kullanıcı kararı, 14 Ekim 2026). Tesiste kollar C5 girişlerine kadar iner: iniş, 45°'lik bir parça ve C5 gövdesine yatay bir bacak (çizim, [plant_topology.md](../plant_topology.md)). Twin bu hacmi kullanır. Kalsinatör CFD'si kolları gövdenin yarı yüksekliğinde keser (`end_at_vessel_H`, bir CFD sınır seçimi); "CFD" satırları o domenindir.
+**Tesis ve CFD** (kullanıcı kararı, 14 Ekim 2026). Tesiste kollar C5 girişlerine kadar iner: iniş, 45°'lik bir parça ve C5 gövdesine yatay bir bacak (çizim, [plant_topology.md](../plant_topology.md)). Twin bu hacmi kullanır. Kalsinatör CFD'si kolları yatay kolların uç yüzünde, C5'in giriş ekseninde keser; "CFD" satırları o domenindir.
 
 ## CFD Geometry
 
-Kaz boynu, kalsinatör katısının bir parçası olarak kurulur ([calciner.md](../calciner/calciner.md), [`calciner.bas`](../macros/calciner.bas)).
+CFD'de kaz boynu üç parçalı bir boyun, düşey bir kanal ve bir Y'dir (kullanıcı kararları, 12 Ekim ve 15 Kasım 2026):
+- **Boyun.** Kesiti iki kolun toplamıdır (kol çapı × √2, Ø4.950), hız korunur. Gerekçe: iki kol kalsinatör tavanına yan yana sığmaz (2 × 3.50 = 7.0 > 6.74 m). Boyun üç düz parçadır, birleşimleri mitre: tavanı 45° yukarı-öne delen eğik parça, yatay parça, 45° aşağı-öne inen parça; her biri 1 × boyun çapı. İlk parçanın kapağı gövdenin içinde kalacak kadar önden çıkar (`y_off`).
+- **Düşey kanal.** Boyunun inen ucundan aşağı, 1.5 × boyun çapı (7.425 m).
+- **Kollar.** Kanalın alt ucunda iki kol ayrılır (kot 25.705 m). Her kol x–z düzleminde düşeyden 60° dışa gider, mitre ile yatay kola döner. Yatay kol 2 kol çapı (7.000 m) uzunluğundadır, ekseni C5'in giriş eksenindedir (z 23.522 m). Kollar ayna simetriktir.
 
-CFD'de kaz boynu bir **Y**'dir (kullanıcı kararı, 12 Ekim 2026):
-- **Boyun.** Tavanın ortasından tek bir boyun çıkar. Kesiti iki kolun toplamıdır (kol çapı × √2), hız korunur. Gerekçe: iki kol kalsinatör tavanına yan yana sığmaz (karar günü: 2 × 3.50 = 7.0 > 6.74 m).
-- **Kollar.** Boynun tepesinde iki kol başlar. Her kolun başlangıç diski boynun içindedir ve kendi tarafında boynun kenarına teğettir. Kollar dışa dönüp iner. İki dirsek boynun hemen üstünde bir hacmi paylaşır.
-
-2500 t/d kalsinatöründe (29 Eylül 2026) tavandan iki ayrı kol çıkıyordu, her biri Ø2.475 (yayınlanmış Ø3.50'nin alanının yarısı); o düzen tek hat içindi.
-
-Boylar yayınlanmamıştır; yükseliş ve dirsek C1 makrosunun modelleme oranlarıdır, iniş kalsinatör gövdesinin yarı yüksekliğine kadardır (kullanıcı kararı, 29 Eylül 2026). Değerleri Geometrik Ölçüler'deki tabloda; konumları ve adım hacimleri [calciner.md](../calciner/calciner.md)'deki CFD tablosunda.
+Boylar yayınlanmamıştır; hepsi boyun ve kol çapının katı olan modelleme oranlarıdır, yalnız kol çapı yayınlanmıştır. Kollar C5'in giriş eksenine kadar iner, gövdenin yarı yüksekliğine değil (kullanıcı kararı, 15 Kasım 2026). Değerleri Geometrik Ölçüler'deki tabloda; konumları ve adım hacimleri [calciner.md](../calciner/calciner.md)'deki CFD tablosunda.
 
 ## Boundary Faces
 
-`gas_outlet_1` (+x) ve `gas_outlet_2` (−x): inen boruların aşağı bakan diskleri, her biri bir kol kesiti.
+`gas_outlet_1` (+x) ve `gas_outlet_2` (−x): yatay kolların dikey uç yüzleri (x = ±10.781 m), her biri bir kol kesiti (9.621 m²).
 
 ## Derived Properties
 

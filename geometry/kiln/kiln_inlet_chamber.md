@@ -5,7 +5,7 @@ Durum: 2500 hattı için kaynak yok. Bir kaynak ya da açık bir kullanıcı kar
 
 ## Geometrik Ölçüler
 
-Geometri: TBD
+Geometri: TBD (yayınlanmış kaynak yok; model değeri aşağıda, "Hız kontrolü" bölümünde)
 
 ## CFD Geometry
 

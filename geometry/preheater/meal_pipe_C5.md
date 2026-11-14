@@ -6,6 +6,7 @@ Bağlantı: C5 toz çıkışı → Fırın giriş odası, [kiln_inlet_chamber.md
 ## Geometrik Ölçüler
 
 Adet: 1
+("TBD": yayınlanmış kaynak yok. Model değerleri aşağıdaki "Boyutlandırma" bölümünde.)
 İç çap: TBD — Kaynak yok
 Boy: TBD — Kaynak yok
 Yatayla eğim açısı: TBD — Kaynak yok

@@ -6,6 +6,7 @@ Bağlantı: C1 toz çıkışı → Riser R2 (C3→C2), [riser_R2.md](riser_R2.md
 ## Geometrik Ölçüler
 
 Adet (her C1 siklonu için bir boru): 2
+("TBD": yayınlanmış kaynak yok. Model değerleri aşağıdaki "Boyutlandırma" bölümünde.)
 İç çap: TBD — Kaynak yok
 Boy: TBD — Kaynak yok
 Yatayla eğim açısı: TBD — Kaynak yok

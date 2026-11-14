@@ -6,6 +6,7 @@ Bağlantı: C4 toz çıkışı → Kalsinatör, [calciner.md](../calciner/calcin
 ## Geometrik Ölçüler
 
 Adet: 1
+("TBD": yayınlanmış kaynak yok. Model değerleri aşağıdaki "Boyutlandırma" bölümünde.)
 İç çap: TBD — Kaynak yok
 Boy: TBD — Kaynak yok
 Yatayla eğim açısı: TBD — Kaynak yok

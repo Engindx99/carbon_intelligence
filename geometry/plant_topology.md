@@ -71,7 +71,7 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | Soğutucu | ızgara 119.6 m² = 4 × 29.90 m, gövde 3 m | cooler.md (PF5000, FLS) |
 <!-- END GENERATED -->
 
-Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den, ya da onun ölçülerinden türetilmiş ([calciner.md](calciner/calciner.md), [kiln.md](kiln/kiln.md), [cooler.md](cooler/cooler.md); 12 Ekim 2026). Giriş odası ve başlık şematiktir, fırının çevresinde bir paydır. Twin 5000 t/d beslemesiyle çalışır; hangi ekipmanı hangi akış hacmiyle hesapladığı [fluid_volumes.md](fluid_volumes.md)'dedir.
+Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den, ya da onun ölçülerinden türetilmiş ([calciner.md](calciner/calciner.md), [kiln.md](kiln/kiln.md), [cooler.md](cooler/cooler.md); 12 Ekim 2026). Giriş odası ve başlığın ölçüsü bir hız kontrolüyle seçilmiş model değeridir (Estimated), yerleşimde fırının çevresinde bir paydır. Twin 5000 t/d beslemesiyle çalışır; hangi ekipmanı hangi akış hacmiyle hesapladığı [fluid_volumes.md](fluid_volumes.md)'dedir.
 
 **Tek kaynak** (kullanıcı kararı, 13–14 Ekim 2026). Her ana ölçü yalnız `geometry/plant_geometry.yaml`'da, kaynağıyla (yayınlanmış, FLS oranı, literatür, CFD kararı, modelleme, şematik) bir kez yazılıdır. Türetilen her şey (hacim, alan, kot, boru boyu) `geometry/plant_geometry.py`'dedir; bu çizimin `Derive`'ındaki yerleşim, R1–R4 ve kaz boynu da orada Python'a taşındı. Kopyalar üretilir:
 - `tools/gen_geometry.py`, `cyclone.bas`, `calciner.bas` ve `plant_topology_2d.bas`'ın başındaki `BEGIN GENERATED … END GENERATED` Const bloklarını ve ekipman dokümanlarındaki tabloları yazar. Bloklar elle düzenlenmez.
@@ -140,7 +140,7 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | `ID_FAN_L` | Her C1 çıkışının inen bacağından aşağı "to ID fan" okunun boyu |
 | `RM_L` | Ham farin okunun her oluğun ucundan dışarı uzadığı boy; ok başı diğerlerinin yarısı (2 mm) |
 | `KILN_AXIS_Z` | Fırın giriş ekseninin kotu |
-| `CHAMBER_MARGIN` | Giriş odası ve başlık: fırının çevresinde bu payla bir kare. Şematiktir; [kiln_inlet_chamber.md](kiln/kiln_inlet_chamber.md)'de ölçü yok |
+| `CHAMBER_MARGIN` | Giriş odası ve başlık: fırının çevresinde bu payla bir kare. Model değeri (hız kontrolü); [kiln_inlet_chamber.md](kiln/kiln_inlet_chamber.md)'de yayınlanmış ölçü yok |
 | `COOLER_W` / `COOLER_H` | Izgara genişliği ve gövde yüksekliği, FLS referans soğutucusunun (boy alandan çıkar: 29.9 m). Çizimde gövde 14 Ekim 2026'ya kadar 4.0 m'ydi; [cooler.md](cooler/cooler.md)'nin 3.0'ı tek kaynakta kaldı |
 | `COOLER_DROP` | Soğutucunun tepesinin, deşarjdaki fırın kabuğunun altında kaldığı mesafe |
 | `MEAL_INTO_CHAMBER` | C5 farininin giriş odası tavanına, odanın yan yüzünden bu kadar içeride indiği yer |

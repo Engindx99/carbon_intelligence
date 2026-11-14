@@ -25,7 +25,7 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 - Efektif iç çap: gövde × FLS `calciner_eff_over_shell` = 3.08 / 3.29.
 - Alt koni açısı: Holcim StDC 2022 siklon konisi için en az 65° ister; kalsinatör konisine de uygulandı. Koni yüksekliği (R − r_boğaz) · tan 65°, silindir gövde boyunun kalanı.
 - Boğaz ve tersiyer kanal: literatür akışı / literatür hızı, aşağıda (tersiyer kanal 6. adımda kurulur; tek, teğetsel).
-- Kaz boynu: iki kol, her biri yayınlanmış 2500 t/d boynunun çapında; ortak boyun iki kolun toplam kesitinde ([gooseneck.md](../preheater/gooseneck.md); kullanıcı kararı, 12 Ekim 2026).
+- Kaz boynu: mitreli üç parçalı ortak boyun (iki kolun toplam kesiti), düşey kanal ve 60° Y; iki kol C5 giriş eksenindeki yatay kollara varır ([gooseneck.md](../preheater/gooseneck.md); kullanıcı kararları, 12 Ekim ve 15 Kasım 2026).
 - Farin besleme boruları: iki adet, yatayla 60°; Fidaros ve diğ. 2007 (Ø0.6) × √2: boru başına farin iki katı, hız korunur.
 
 **Boğaz ve tersiyer kanal türetmesi.** Bunlar için yayınlanmış bir ölçü ya da oran bulunamadı: FLS kalsinatörü düz bir silindir olarak verir (arXiv 2504.02886 Tablo 8, koni 0), bakılan CFD makaleleri de bu ölçüleri yazmaz. Bu yüzden her biri, literatürdeki bir akışın literatürdeki bir hıza bölünmesiyle bulunur. İdeal gaz ve 1 atm varsayılır. **İkizin akışları kullanılmaz**: ikiz henüz hazır değil; örneğin tersiyer havayı 575 K veriyor, tesislerde bu değer ~1100 K (kullanıcı kararı, 29 Eylül 2026). Literatür akışları 2500 t/d sınıfı bir hattındır; 5000 t/d'de ikiye katlanır.
@@ -74,11 +74,11 @@ Kollar x–z düzleminde ayna simetriktir; başlangıç diskleri boynun içinde,
 
 Boğazın koni altındaki boyu bir tesis ölçüsü değildir. Giriş yüzünü koninin ağzına değil, düz bir parçanın üstüne koymak için seçilmiş bir modelleme parametresidir.
 
-**Y kaz boynu** (kullanıcı kararı, 12 Ekim 2026). Her kol bir hattın C5'ine iner ve o hattın bütün gazını taşır; yayınlanmış 2500 t/d boynunun çapı (Ø3.50) bu yüzden her kola düşer.
+**Kaz boynu** (kullanıcı kararları, 12 Ekim ve 15 Kasım 2026). Her kol bir hattın C5'ine iner ve o hattın bütün gazını taşır; yayınlanmış 2500 t/d boynunun çapı (Ø3.50) bu yüzden her kola düşer. Ortak boyun iki kolun toplam kesitindedir (Ø4.950).
 - **Neden tek boyun.** İki Ø3.50 boru Ø6.74'lük tavana yan yana sığmaz (7.0 > 6.74 m). Tavandan tek bir boyun çıkar; kesiti iki kolun toplamıdır (Ø4.95), hız korunur. 2500 kalsinatöründe bunun yerine iki kol tavandan ayrı çıkıyordu, her biri alanın yarısıyla (29 Eylül 2026).
-- **Ayrım.** Boynun tepesinde iki kol başlar. Her kolun başlangıç diski boynun içindedir ve kendi tarafında boynun kenarına teğettir: x = ±(r_boyun − r_kol) (tabloda). İki disk ortada üst üste biner. Disklerin örtmediği yerde (boyun kesitinin ~%24'ü, ±y'de) boynun tepesi düz bir tavandır.
-- **Ortak hacim.** İki dirsek boynun hemen üstünde bir hacmi paylaşır (tabloda). Kapalı biçimi yoktur; makro bunu 80³ noktalı orta nokta kuralıyla hesaplar (`GnBendOverlap`). Bağımsız bir Monte Carlo sağlaması 10.354 ± 0.010 m³ verdi.
-- **Boylar modelleme parametresidir.** Yükseliş 1.25 × boyun çapı, dirsek yarıçapı 1.5 × kol çapı (C1 makrosunun oranları). İnişler gövdenin yanında, **gövdenin yarı yüksekliğine** kadar sarkar: boğazın üstünden gövde boyunun yarısı (`GN_OUTLET_AT_VESSEL_H`; kullanıcı kararı, 29 Eylül 2026). Böylece çıkış yüzü dirsekten uzakta, düzelmiş bir akışın üstünde durur; C1'de düz borunun ucundaki çıkış yüzünde %38 geri akış ölçülmüştü.
+- **Boyun ve kanal.** Mitreli üç parça (45° yukarı-öne, yatay, 45° aşağı-öne; her biri 1 × boyun çapı) ve 1.5 × boyun çapında düşey kanal; ölçüler yukarıdaki CFD tablosunda (2. satır).
+- **Kollar.** Kanalın alt ucunda ayrılır, düşeyden 60° dışa gider, mitre ile yatay kola döner; yatay kol 2 kol çapıdır ve ekseni C5'in giriş eksenindedir. Konumlar tablonun 3a/3b satırlarında.
+- **Boylar modelleme parametresidir.** Yalnız kol çapı yayınlanmıştır; gerisi boyun ve kol çapının katlarıdır ([gooseneck.md](../preheater/gooseneck.md)).
 - **Yön ölçülür, varsayılmaz.** Bir extrude yanlış yöne giderse ya gövde sayısı ya da hacim bunu söyler; bir dirsek yanlış dönerse hacim ve kutunun tepesi söyler. Bu durumda feature silinir ve diğer yön denenir.
 
 **Tersiyer hava kanalı** (kullanıcı kararı, 14 Ekim 2026). Chen ve diğ.'nin 5000 t/d in-line kalsinatöründeki gibi tersiyer hava gövdenin en alt bölgesine teğetsel girer ve fırın gazıyla karışır.
@@ -107,7 +107,7 @@ Yapım adımları:
 
 `calciner_build.log` her çalıştırmada yazılır; `tests/test_plant_geometry.py` ölçüleri, adım hacimlerini ve sınır yüzü alanlarını oradan `plant_geometry.py` ile karşılaştırır.
 
-## Gaz-yalnız CFD ve farin kalma süresi (14 Ekim 2026)
+## Gaz-yalnız CFD ve farin kalma süresi (14 Ekim 2026; ESKİ KATIYLA, yeniden koşulacak)
 
 İlk koşu **tepkimesiz**dir (kullanıcı kararı): domene yalnız iki gaz girer. Yakıtın yanması ve kalsinasyonun CO₂'i yoktur; bunun etkisi sonuçta ayrıca düzeltilir.
 

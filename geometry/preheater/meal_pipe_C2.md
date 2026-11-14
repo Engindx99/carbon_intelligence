@@ -6,6 +6,7 @@ Bağlantı: C2 toz çıkışı → Riser R3 (C4→C3), [riser_R3.md](riser_R3.md
 ## Geometrik Ölçüler
 
 Adet: 1
+("TBD": yayınlanmış kaynak yok. Model değerleri aşağıdaki "Boyutlandırma" bölümünde.)
 İç çap: TBD — Kaynak yok
 Boy: TBD — Kaynak yok
 Yatayla eğim açısı: TBD — Kaynak yok
