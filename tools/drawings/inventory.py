@@ -93,12 +93,12 @@ EQUIPMENT = [
      ["cooler/cooler.md: vent outlet TBD"], "cooler.SLDPRT"),
     ("ID fan", "IDF", "Preheater ID fan", "per string",
      ["id_fan."], "C1 gas -> ID fan",
-     ["fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only"], ""),
+     ["fan/id_fan.md: a selection from the process duty (no published plant dimension); flow path from fan design literature and model values; casing, shaft, damper unknown"], "id_fan.SLDPRT"),
 ]
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

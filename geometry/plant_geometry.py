@@ -576,7 +576,9 @@ def id_fan(g):
     q = m / rho
     u = math.sqrt(2.0 * dp / (rho * v(f["pressure_coefficient"])))
     p_shaft = q * dp / eta
-    return {
+    d2 = u / (math.pi * n)
+    d1 = v(f["eye_ratio"]) * d2
+    out = {
         "per_string": int(v(f["per_string"])),
         "rho": rho,
         "q": q,
@@ -586,8 +588,229 @@ def id_fan(g):
         "p_shaft": p_shaft,
         "p_motor": p_shaft * v(f["motor_margin"]),
         "u_tip": u,
-        "D_impeller": u / (math.pi * n),
-        "D_inlet": math.sqrt(4.0 * q / (math.pi * v(f["inlet_velocity"]))),
+        "D_impeller": d2,
+        "D_inlet": d1,
+    }
+    out.update(_id_fan_flow_path(f, q, dp, rho, n, d1, d2, u))
+    return out
+
+
+def _id_fan_flow_path(f, q, dp, rho, n, d1, d2, u2):
+    """The fan's flow path from its duty and the impeller's diameters.
+
+    Impeller (single-arc plate blades, a flat back plate, a straight
+    conical shroud): the eye's axial velocity c0 = 4Q / (pi D1^2) is kept
+    into the blade row (c_m1 = c0, so b1 = Q / (pi D1 c0)); the blade
+    inlet angle is the flow angle under the blades' blockage plus the
+    incidence; z = k sin(beta2) / (1 - D1/D2). The outlet: Euler with
+    Wiesner's slip, dp = eta_h rho u2 cu2, cu2 = u2 (sigma - cm2 / (u2
+    tan beta2)), gives cm2, and continuity b2 = Q / (pi D2 cm2 tau2).
+    Leakage and the disc cavities are not in the flow path.
+
+    Volute: constant width B round the impeller, a free vortex from the
+    impeller's rim (c_u r = cu2 r2 = K, angular momentum kept). The
+    flow through the section at angle theta from the tongue is
+    Q theta / (2 pi) = B K ln(r / r3), so the outer wall is the log
+    spiral r = r3 exp(k theta), k = Q / (2 pi B K); the discharge is the
+    section at theta = 2 pi, height r_end - r3. Angles are from the
+    tangent; lengths in m."""
+
+    z_coef, t = v(f["blade_number_coeff"]), v(f["blade_thickness"])
+    b2_ang = math.radians(v(f["blade_outlet_angle"]))
+    r1, r2 = 0.5 * d1, 0.5 * d2
+    # --- blade count (from the blade angle and the diameter ratio)
+    z = round(z_coef * math.sin(b2_ang) / (1.0 - d1 / d2))
+    # --- inlet: the eye's velocity carried into the row
+    c0 = q / (math.pi * r1 ** 2)
+    b1 = q / (math.pi * d1 * c0)
+    u1 = math.pi * d1 * n
+    # blockage at the inlet depends on beta1 itself: fixed point
+    beta1_flow = math.atan(c0 / u1)
+    for _ in range(50):
+        beta1 = beta1_flow + math.radians(v(f["incidence"]))
+        tau1 = 1.0 - z * t / (math.pi * d1 * math.sin(beta1))
+        beta1_flow = math.atan(c0 / (tau1 * u1))
+    beta1 = beta1_flow + math.radians(v(f["incidence"]))
+    tau1 = 1.0 - z * t / (math.pi * d1 * math.sin(beta1))
+    # --- outlet: Euler with Wiesner's slip, then continuity
+    slip = 1.0 - math.sqrt(math.sin(b2_ang)) / z ** 0.7
+    slip_limit = math.exp(-8.16 * math.sin(b2_ang) / z)          # Wiesner's D1/D2 limit
+    cu2 = dp / (v(f["hydraulic_efficiency"]) * rho * u2)
+    cm2 = (slip * u2 - cu2) * math.tan(b2_ang)
+    tau2 = 1.0 - z * t / (math.pi * d2 * math.sin(b2_ang))
+    b2 = q / (math.pi * d2 * cm2 * tau2)
+    # --- single circular arc from (r1, beta1) to (r2, beta2), angles from the tangent
+    rb = (r2 ** 2 - r1 ** 2) / (2.0 * (r2 * math.cos(b2_ang) - r1 * math.cos(beta1)))
+    rc = math.sqrt(rb ** 2 + r2 ** 2 - 2.0 * rb * r2 * math.cos(b2_ang))
+    # blade centreline: the point at radius r sits phi(r) from the arc
+    # centre's ray, on the side where theta falls as r grows (backward
+    # against the rotation, which runs +theta: from +x towards +z)
+    def phi(r):
+        return math.acos((rc ** 2 + r ** 2 - rb ** 2) / (2.0 * rc * r))
+    sense = -1.0 if phi(r2) > phi(r1) else 1.0
+    # --- volute: a log spiral (constant angle alpha) from the tongue's
+    # circle, constant width B round the impeller. Its growth is set by
+    # the outlet: the discharge's area B h_stub carries Q at the outlet
+    # velocity, h_stub = (r_end - r3) cos(alpha) - 2 rho_t, r_end = r3
+    # exp(2 pi k), alpha = atan(k). The casing decelerates the gas from
+    # the impeller's cu2 (a free vortex would keep cu r and, at this B,
+    # leave far faster).
+    big_b = v(f["volute_width_ratio"]) * b2
+    gap = v(f["tongue_gap_ratio"]) * d2
+    rho_t = v(f["tongue_radius_ratio"]) * d2
+    r3 = r2 + gap
+    k_vortex = cu2 * r2
+    c_out = v(f["volute_outlet_velocity"])
+    h_want = q / (big_b * c_out)
+
+    def h_of(k):
+        return r3 * (math.exp(2.0 * math.pi * k) - 1.0) * math.cos(math.atan(k)) - 2.0 * rho_t
+    lo, hi = 1e-4, 2.0
+    for _ in range(200):
+        mid = 0.5 * (lo + hi)
+        if h_of(mid) < h_want:
+            lo = mid
+        else:
+            hi = mid
+    k_spiral = 0.5 * (lo + hi)
+    alpha = math.atan(k_spiral)
+    r_end = r3 * math.exp(2.0 * math.pi * k_spiral)
+    h_out = r_end - r3
+    r_mrf = r2 + v(f["mrf_gap_fraction"]) * gap
+    # Placed in the x-z plane (axis y), the impeller turning +theta (from +x
+    # towards +z): the discharge leaves at gamma above the horizontal on
+    # the -x side, d = (-cos gamma, sin gamma), the spiral's tangent at its
+    # start ray psi0 = 90 deg + alpha - gamma. The tongue's nose is a
+    # circle of radius rho_t tangent to the spiral's start P0 from outside
+    # (centre rho_t along the outward normal n = (sin gamma, cos gamma));
+    # the discharge's lower wall leaves the nose's far side T, its outer
+    # wall the spiral's end, both along d, to the outlet face normal to d.
+    gamma = math.radians(v(f["discharge_angle"]))
+    dx, dz = -math.cos(gamma), math.sin(gamma)
+    nx, nz = math.sin(gamma), math.cos(gamma)
+    psi0 = 0.5 * math.pi + alpha - gamma
+
+    def spiral(th):
+        r = r3 * math.exp(k_spiral * th)
+        return (r * math.cos(psi0 + th), r * math.sin(psi0 + th))
+    p0, pend = spiral(0.0), spiral(2.0 * math.pi)
+    tpt = (p0[0] + 2.0 * rho_t * nx, p0[1] + 2.0 * rho_t * nz)
+    h_stub = (pend[0] - tpt[0]) * nx + (pend[1] - tpt[1]) * nz      # = h_out cos(alpha) - 2 rho_t
+    l_stub = v(f["outlet_stub_ratio"]) * h_stub
+    s_exit = pend[0] * dx + pend[1] * dz + l_stub
+    e_top = (pend[0] + l_stub * dx, pend[1] + l_stub * dz)
+    s_t = s_exit - (tpt[0] * dx + tpt[1] * dz)
+    e_low = (tpt[0] + s_t * dx, tpt[1] + s_t * dz)
+    a_out = big_b * h_stub
+    # the outline's area by the shoelace sum, the spiral finely sampled
+    pts = [spiral(2.0 * math.pi * i / 20000) for i in range(20001)]
+    pts += [e_top, e_low, tpt]
+    cx, cz = p0[0] + rho_t * nx, p0[1] + rho_t * nz
+    a0 = 0.5 * math.pi - gamma
+    pts += [(cx + rho_t * math.cos(a), cz + rho_t * math.sin(a))
+            for a in (a0 - math.pi * i / 2000 for i in range(1, 2000))]
+    area = 0.5 * abs(sum(pts[i][0] * pts[i - 1][1] - pts[i - 1][0] * pts[i][1] for i in range(len(pts))))
+    x_min = min(p[0] for p in pts)
+    x_max = max(p[0] for p in pts)
+    z_min = min(p[1] for p in pts)
+    z_max = max(p[1] for p in pts)
+    nose_clear = math.hypot(cx, cz) - rho_t - r_mrf
+    # --- inlet cone (from the eye through the volute's front plate) and box
+    # on the plate's outside (axis y; the box's inlet face looks along +x)
+    d_cone = v(f["cone_inlet_ratio"]) * d1
+    y_box = big_b + v(f["side_plate_gap"])
+    l_cone = y_box - b1
+    a_eye = math.pi * r1 ** 2
+    a_box = v(f["inlet_box_area_ratio"]) * a_eye
+    h_box = v(f["inlet_box_height_ratio"]) * d_cone
+    depth_box = a_box / h_box
+    reach_box = 0.5 * d_cone + v(f["inlet_box_reach_ratio"]) * d_cone
+    # --- volumes (the macro checks its solids against these)
+    # rotor zone: eye cylinder, the shroud's cone r1..r2 (b1 -> b2), the rim ring
+    v_frustum = math.pi * (r2 - r1) * (r1 * (2 * b1 + b2) + r2 * (b1 + 2 * b2)) / 3.0
+    v_rotor = math.pi * r1 ** 2 * b1 + v_frustum + math.pi * (r_mrf ** 2 - r2 ** 2) * b2
+    # the blades, cut hub to shroud: z t times the height along the centreline
+    # (from r1 + e to r2 - e: the straight caps then stay off the eye's and
+    # the tip's circles, which keep whole edges)
+    e = v(f["blade_edge_clearance"])
+    ra0, rb0 = r1 + e, r2 - e
+    nb = 4000
+    v_blade = 0.0
+    for i in range(nb):
+        ra, rb_ = ra0 + (rb0 - ra0) * i / nb, ra0 + (rb0 - ra0) * (i + 1) / nb
+        ds = math.hypot(rb_ - ra, 0.5 * (ra + rb_) * sense * (phi(rb_) - phi(ra)))
+        rm = 0.5 * (ra + rb_)
+        v_blade += t * (b1 + (b2 - b1) * (rm - r1) / (r2 - r1)) * ds
+    v_blades = z * v_blade
+    v_volute = big_b * (area - math.pi * r_mrf ** 2)
+    v_cone = math.pi * l_cone * (r1 ** 2 + r1 * 0.5 * d_cone + (0.5 * d_cone) ** 2) / 3.0
+    v_box = h_box * depth_box * (0.5 * h_box + reach_box)
+    return {
+        "z": z,
+        "c0": c0,
+        "b1": b1,
+        "u1": u1,
+        "beta1": math.degrees(beta1),
+        "beta1_flow": math.degrees(beta1_flow),
+        "tau1": tau1,
+        "beta2": math.degrees(b2_ang),
+        "slip": slip,
+        "slip_limit": slip_limit,
+        "cu2": cu2,
+        "cm2": cm2,
+        "tau2": tau2,
+        "b2": b2,
+        "blade_t": t,
+        "blade_r_in": ra0,
+        "blade_r_out": rb0,
+        "blade_arc_R": rb,
+        "blade_arc_centre_r": rc,
+        "blade_sense": sense,
+        "blade_theta_span": math.degrees(abs(phi(r2) - phi(r1))),
+        "phi": 4.0 * q / (math.pi ** 2 * d2 ** 3 * n),
+        "psi": 2.0 * dp / (rho * u2 ** 2),
+        "B": big_b,
+        "tongue_gap": gap,
+        "tongue_radius": rho_t,
+        "r3": r3,
+        "K": k_vortex,
+        "c_out": c_out,
+        "k_spiral": k_spiral,
+        "spiral_angle": math.degrees(alpha),
+        "psi0": math.degrees(psi0),
+        "r_end": r_end,
+        "h_out": h_out,
+        "u_section": q / (big_b * h_out),
+        "h_stub": h_stub,
+        "a_out": a_out,
+        "u_out": q / a_out,
+        "l_stub": l_stub,
+        "discharge_dir": (dx, dz),
+        "s_exit": s_exit,
+        "e_top": e_top,
+        "e_low": e_low,
+        "p0": p0,
+        "pend": pend,
+        "nose_top": tpt,
+        "nose_clearance": nose_clear,
+        "volute_box": (x_min, z_min, x_max, z_max),
+        "r_mrf": r_mrf,
+        "D_cone": d_cone,
+        "L_cone": l_cone,
+        "y_box": y_box,
+        "a_eye": a_eye,
+        "a_box": a_box,
+        "u_box": q / a_box,
+        "H_box": h_box,
+        "depth_box": depth_box,
+        "reach_box": reach_box,
+        "volute_area": area,
+        "V_rotor": v_rotor,
+        "V_blades": v_blades,
+        "V_rotor_bladed": v_rotor - v_blades,
+        "V_volute": v_volute,
+        "V_cone": v_cone,
+        "V_box": v_box,
     }
 
 

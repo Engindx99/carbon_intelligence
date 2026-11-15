@@ -26,4 +26,4 @@ schematic = layout only; absent = Unknown.
 | Rotary kiln | HOOD | Kiln hood | 1 | 0 / 4 / 0 | - | to draw | 3 KI | kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid |
 | Rotary kiln | BRN | Kiln burner (JETFLEX) | 1 | 0 / 6 / 0 | - | to draw | 3 KI | kiln/kiln_burner.md: a selection from the kiln firing (no published plant dimension); burner pipe, channels, nozzles unknown; drawn as an arrow only |
 | Clinker cooler | COOL | Grate cooler | 1 | 1 / 4 / 0 | cooler.SLDPRT | drawn: geometry/drawings/cooler/ | 4 CO | cooler/cooler.md: vent outlet TBD |
-| ID fan | IDF | Preheater ID fan | per string | 0 / 11 / 0 | - | to draw | 1 PH | fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only |
+| ID fan | IDF | Preheater ID fan | per string | 0 / 29 / 0 | id_fan.SLDPRT | drawn: geometry/drawings/id_fan/ | 1 PH | fan/id_fan.md: a selection from the process duty (no published plant dimension); flow path from fan design literature and model values; casing, shaft, damper unknown |

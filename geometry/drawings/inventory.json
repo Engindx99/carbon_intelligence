@@ -1897,16 +1897,8 @@
         },
         {
           "key": "id_fan.pressure_coefficient",
-          "value": 1.0,
+          "value": 1.3,
           "unit": "-",
-          "source": "model",
-          "status": "Estimated",
-          "doc": "fan/id_fan.md"
-        },
-        {
-          "key": "id_fan.inlet_velocity",
-          "value": 25.0,
-          "unit": "m/s",
           "source": "model",
           "status": "Estimated",
           "doc": "fan/id_fan.md"
@@ -1918,19 +1910,171 @@
           "source": "model",
           "status": "Estimated",
           "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.eye_ratio",
+          "value": 0.7,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.blade_outlet_angle",
+          "value": 45.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.incidence",
+          "value": 3.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.blade_number_coeff",
+          "value": 8.5,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.blade_thickness",
+          "value": 0.012,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.blade_edge_clearance",
+          "value": 0.001,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.hydraulic_efficiency",
+          "value": 0.88,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.volute_width_ratio",
+          "value": 3.0,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.tongue_gap_ratio",
+          "value": 0.075,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.tongue_radius_ratio",
+          "value": 0.075,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.mrf_gap_fraction",
+          "value": 0.5,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.outlet_stub_ratio",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.volute_outlet_velocity",
+          "value": 30.0,
+          "unit": "m/s",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.discharge_angle",
+          "value": 45.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.cone_inlet_ratio",
+          "value": 1.3,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.side_plate_gap",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.inlet_box_area_ratio",
+          "value": 1.75,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.inlet_box_height_ratio",
+          "value": 1.1,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
+        },
+        {
+          "key": "id_fan.inlet_box_reach_ratio",
+          "value": 0.5,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "fan/id_fan.md"
         }
       ],
       "status_counts": {
-        "Estimated": 11
+        "Estimated": 29
       },
       "missing": [
-        "fan/id_fan.md: a selection from the process duty (no published plant dimension); no CFD solid, drawn as an arrow only"
+        "fan/id_fan.md: a selection from the process duty (no published plant dimension); flow path from fan design literature and model values; casing, shaft, damper unknown"
       ],
-      "cfd_solid": "",
+      "cfd_solid": "id_fan.SLDPRT",
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/id_fan/"
     }
   ]
 }

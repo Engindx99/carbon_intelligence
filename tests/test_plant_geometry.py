@@ -673,6 +673,117 @@ class TheIdFanIsTheProcessDutyTest(unittest.TestCase):
         self.assertTrue(600e3 <= fan["q_total_h"] <= 900e3, fan["q_total_h"])       # 5000 t/d, vendor range
         self.assertTrue(1500e3 <= 2 * fan["p_shaft"] <= 3000e3, fan["p_shaft"])     # both fans, guide range
 
+    def test_the_flow_path_keeps_the_volume_flow(self):
+        """Continuity at the eye, the blade row's inlet and outlet, the
+        volute's discharge and the inlet box: each carries Q."""
+        fan, q = self.fan, self.fan["q"]
+        self.assertAlmostEqual(fan["c0"] * math.pi * fan["D_inlet"] ** 2 / 4.0, q, places=9)
+        self.assertAlmostEqual(fan["c0"] * math.pi * fan["D_inlet"] * fan["b1"], q, places=9)
+        self.assertAlmostEqual(fan["cm2"] * math.pi * fan["D_impeller"] * fan["b2"] * fan["tau2"], q, places=9)
+        self.assertAlmostEqual(fan["u_section"] * fan["B"] * fan["h_out"], q, places=9)
+        self.assertAlmostEqual(fan["u_out"] * fan["B"] * fan["h_stub"], q, places=9)
+        self.assertAlmostEqual(fan["u_box"] * fan["H_box"] * fan["depth_box"], q, places=9)
+
+    def test_the_impeller_gives_the_pressure_by_euler(self):
+        """dp = eta_h rho u2 cu2, with cu2 from Wiesner's slip, inside
+        Wiesner's own D1/D2 limit; z from k sin(beta2) / (1 - D1/D2)."""
+        f, fan = self.g["id_fan"], self.fan
+        b2 = math.radians(fan["beta2"])
+        self.assertAlmostEqual(pg.v(f["hydraulic_efficiency"]) * fan["rho"] * fan["u_tip"] * fan["cu2"], fan["dp"], places=6)
+        self.assertAlmostEqual(fan["cu2"], fan["u_tip"] * (fan["slip"] - fan["cm2"] / (fan["u_tip"] * math.tan(b2))), places=9)
+        self.assertLess(fan["D_inlet"] / fan["D_impeller"], fan["slip_limit"])
+        self.assertEqual(fan["z"], round(pg.v(f["blade_number_coeff"]) * math.sin(b2) / (1.0 - pg.v(f["eye_ratio"]))))
+        self.assertTrue(0.4 <= fan["D_inlet"] / fan["D_impeller"] <= 0.7 + 1e-12)     # IJTE 2022 band
+        self.assertGreater(fan["beta1"], fan["beta1_flow"])
+        self.assertTrue(0.0 < fan["tau1"] < 1.0 and 0.0 < fan["tau2"] < 1.0)
+        # the blade arc meets both radii at its angles (angles from the tangent)
+        r1, r2, rb, rc = fan["D_inlet"] / 2, fan["D_impeller"] / 2, fan["blade_arc_R"], fan["blade_arc_centre_r"]
+        self.assertAlmostEqual(rc ** 2, rb ** 2 + r1 ** 2 - 2 * rb * r1 * math.cos(math.radians(fan["beta1"])), places=9)
+
+    def test_the_volute_carries_q_at_its_outlet_velocity(self):
+        """The spiral grows so the discharge carries Q at the chosen outlet
+        velocity; the width is in the 2-3 b2 rule; the parts nest without
+        overlap; the cone and the box clear the volute's front plate."""
+        fan = self.fan
+        self.assertAlmostEqual(fan["u_out"], pg.v(self.g["id_fan"]["volute_outlet_velocity"]), places=6)
+        self.assertLess(fan["u_out"], fan["cu2"])                  # the casing decelerates the gas
+        self.assertGreater(fan["y_box"], fan["B"])                 # the box sits outside the volute
+        self.assertAlmostEqual(fan["L_cone"], fan["y_box"] - fan["b1"], places=12)
+        self.assertTrue(2.0 <= fan["B"] / fan["b2"] <= 3.0)
+        r2 = fan["D_impeller"] / 2
+        self.assertTrue(r2 < fan["r_mrf"] < fan["r3"] < fan["r_end"])
+        self.assertTrue(0.05 <= fan["tongue_radius"] / fan["D_impeller"] <= 0.10)
+        self.assertLess(fan["b1"], fan["B"])                       # the eye's shroud sits inside the volute's width
+        self.assertLess(fan["D_cone"] / 2, fan["r_mrf"])           # the cone's mouth clears the volute
+        self.assertTrue(min(fan["V_rotor_bladed"], fan["V_volute"], fan["V_cone"], fan["V_box"]) > 0.0)
+        self.assertGreater(fan["nose_clearance"], 0.0)                # the tongue's nose clears the MRF zone
+        # the discharge runs along -x: its two walls are level, h_out cos(alpha) - 2 rho apart
+        a = math.radians(fan["spiral_angle"])
+        self.assertAlmostEqual(fan["h_stub"], fan["h_out"] * math.cos(a) - 2 * fan["tongue_radius"], places=9)
+
+    def test_the_blade_arc_meets_its_angles(self):
+        """The single arc, placed backward against the rotation, makes
+        beta1 with the circle at r1 and beta2 at r2."""
+        fan = self.fan
+        r1, r2, rb, rc, s = (fan["D_inlet"] / 2, fan["D_impeller"] / 2, fan["blade_arc_R"],
+                             fan["blade_arc_centre_r"], fan["blade_sense"])
+
+        def phi(r):
+            return math.acos((rc ** 2 + r ** 2 - rb ** 2) / (2 * rc * r))
+
+        h = 1e-7
+        for r, want in ((r1 + h, fan["beta1"]), (r2 - 2 * h, fan["beta2"])):
+            dth = s * (phi(r + h) - phi(r))
+            self.assertLess(dth, 0.0)                                   # theta falls as r grows: backward
+            self.assertAlmostEqual(math.degrees(math.atan(h / (r * abs(dth)))), want, delta=0.01)
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "id_fan_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheIdFanSolidIsTheSourcesTest(unittest.TestCase):
+    """id_fan.bas builds the fan's three zones (rotor, volute, inlet);
+    its log carries their volumes and the boundary faces, held here to
+    plant_geometry.id_fan."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "id_fan_build.log").read_text(encoding="latin-1")
+        cls.f = pg.id_fan(pg.load())
+
+    def num(self, pattern):
+        m = re.search(pattern.replace("#", r"(-?[\d.,]+)"), self.log)
+        self.assertIsNotNone(m, pattern)
+        return [float(x.replace(",", ".").rstrip(".")) for x in m.groups()]
+
+    def test_the_build_succeeded(self):
+        self.assertTrue(self.log.startswith("id_fan built"), self.log.splitlines()[0])
+
+    def test_each_zone_is_closed_and_the_sources_volume(self):
+        f = self.f
+        want = {"rotor": f["V_rotor_bladed"], "volute": f["V_volute"], "inlet": f["V_cone"] + f["V_box"]}
+        for name, v in want.items():
+            with self.subTest(name):
+                got = self.num(rf"body {name}: closed, \d+ edges, # m3")[0]
+                self.assertAlmostEqual(got, v, delta=1e-3 * v)
+
+    def test_the_boundary_faces_are_the_sources(self):
+        f = self.f
+        r1, r_mrf = f["D_inlet"] / 2, f["r_mrf"]
+        want = {
+            "fan_inlet": f["H_box"] * f["depth_box"],
+            "fan_outlet": f["a_out"],
+            "interface_eye inlet side": math.pi * r1 ** 2,
+            "interface_eye rotor side": math.pi * r1 ** 2,
+            "interface_rim rotor side": 2 * math.pi * r_mrf * f["b2"],
+            "interface_rim volute side": 2 * math.pi * r_mrf * f["B"],
+        }
+        for name, a in want.items():
+            with self.subTest(name):
+                self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], a, delta=2e-3 * a)
+        self.assertGreaterEqual(int(self.num(r"boundary blade: # faces")[0]), 2 * f["z"])
+
 
 class TheKilnBurnerIsTheKilnFiringTest(unittest.TestCase):
     """The JETFLEX burner (kiln/kiln_burner.md) takes the twin's kiln

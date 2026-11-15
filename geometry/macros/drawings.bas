@@ -220,6 +220,34 @@ Const kiln_inlet_chamber_TAB_5     As String  = ""           ' parameter table r
 Const kiln_inlet_chamber_TAB_6     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_7     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_8     As String  = ""           ' parameter table rows
+Const IDF_R1                       As Double  = 0.917989     ' the eye's circle (y = b1) [derived]
+Const IDF_R2                       As Double  = 1.311413     ' the tip's circle (y = b2) [derived]
+Const IDF_B1                       As Double  = 0.458994     ' the eye's plane y [derived]
+Const IDF_B2                       As Double  = 0.51395      ' the outlet width b2: the rim ring's top y [derived]
+Const IDF_R_MRF                    As Double  = 1.409769     ' the rotating zone's rim [derived]
+Const IDF_VOL_B                    As Double  = 1.54185      ' the volute's width, y = 0 .. B [derived]
+Const IDF_E_TOP_X                  As Double  = 0.935149     ' the outlet face's outer edge (along y), x [derived]
+Const IDF_E_TOP_Z                  As Double  = 4.426034     ' the outlet face's outer edge, z [derived]
+Const IDF_E_LOW_X                  As Double  = -0.412402    ' the outlet face's lower edge (along y), x [derived]
+Const IDF_E_LOW_Z                  As Double  = 3.078483     ' the outlet face's lower edge, z [derived]
+Const IDF_DIS_DX                   As Double  = -0.707106781 ' the discharge's direction, x [derived]
+Const IDF_DIS_DZ                   As Double  = 0.707106781  ' the discharge's direction, z [derived]
+Const IDF_X_MIN                    As Double  = -2.116387    ' the fan's x min (the volute) [derived]
+Const IDF_Z_MIN                    As Double  = -2.672116    ' the fan's z min (the volute) [derived]
+Const IDF_Z_MAX                    As Double  = 4.426034     ' the fan's z max (the outlet's outer edge) [derived]
+Const IDF_Y_BOX                    As Double  = 1.59185      ' the inlet box's floor, y [derived]
+Const IDF_BOX_H                    As Double  = 2.625448     ' the inlet box's height (z), x from -BOX_H/2 [derived]
+Const IDF_BOX_DEPTH                As Double  = 1.764653     ' the inlet box's depth (y) [derived]
+Const IDF_BOX_REACH                As Double  = 2.386771     ' the box's inlet face, x [derived]
+Const IDF_V_ROTOR                  As Double  = 2.914511     ' the bladed rotor's volume: tells today's solid from an older one [m3] [derived]
+Const id_fan_TAB_1                 As String  = "D2~Impeller diameter D2 (tip speed / pi n)~2623~mm~derived~Estimated;D1~Eye diameter D1 (0.70 D2)~1836~mm~derived~Estimated;b1~Blade height at the eye b1 (c_m1 = c0)~459~mm~derived~Estimated;b2~Outlet width b2 (Euler, Wiesner slip, continuity)~514~mm~derived~Estimated;z~Blades z = 8.5 sin(beta2) / (1 - D1/D2)~20~-~derived~Estimated;beta1~Blade inlet angle beta1 (from the tangent)~24.09~deg~derived~Estimated;beta2~Blade outlet angle~45~deg~literature~Estimated;blade_t~Blade thickness~12~mm~model parameter~Estimated;blade_arc_R~Blade: single circular arc, radius~4912~mm~derived~Estimated;B~Volute width B (3 b2)~1542~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_2                 As String  = "r3~Tongue circle r3 (r2 + 0.075 D2)~1508~mm~derived~Estimated;nose_R~Tongue nose radius~197~mm~derived~Estimated;spiral_deg~Log spiral angle (outlet at 30 m/s)~8.44~deg~derived~Estimated;r_end~Spiral end radius~3832~mm~derived~Estimated;h_stub~Outlet height (spiral end cos(alpha) - 2 nose R)~1906~mm~derived~Estimated;l_stub~Straight discharge length~1906~mm~derived~Estimated;gamma~Discharge angle up from the horizontal~45~deg~model parameter~Estimated;r_mrf~Rotating (MRF) zone radius~1410~mm~derived~Estimated;D_cone~Inlet cone mouth diameter~2387~mm~derived~Estimated;L_cone~Inlet cone length (eye to the box, through the plate)~1133~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_3                 As String  = "H_box~Inlet box height (z)~2625~mm~derived~Estimated;depth_box~Inlet box depth (y): face area 1.75 x eye~1765~mm~derived~Estimated;reach_box~Inlet box face from the axis (x)~2387~mm~derived~Estimated;q~Volume flow at the inlet (one string)~88.15~m3/s~derived~Estimated;dp~Total pressure rise~8000~Pa~model parameter~Estimated;speed~Speed~1000~rpm~literature~Estimated;u_out~Outlet velocity~30~m/s~derived~Estimated;V_rotor~Volume: rotating zone (bladed)~2.91~m3~derived~Estimated;V_volute~Volume: volute + discharge~28.51~m3~derived~Estimated;V_inlet~Volume: inlet cone + box~21.13~m3~derived~Estimated;u_casing~Casing / plate thickness~-~~no source~Unknown;" ' parameter table rows
+Const id_fan_TAB_4                 As String  = "u_shaft~Shaft, hub boss, bearings~-~~no source~Unknown;u_damper~Inlet damper / IGV (VFD assumed)~-~~no source~Unknown;u_gaps~Seal gap cone-shroud, disc cavities~-~~no source~Unknown;u_material~Material, wear liners~-~~no source~Unknown;" ' parameter table rows
+Const id_fan_TAB_5                 As String  = ""           ' parameter table rows
+Const id_fan_TAB_6                 As String  = ""           ' parameter table rows
+Const id_fan_TAB_7                 As String  = ""           ' parameter table rows
+Const id_fan_TAB_8                 As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -282,6 +310,17 @@ Const KIC_END_X   As Double = 0.14
 Const KIC_END_Y   As Double = 0.42
 Const KIC_STUB    As Double = 0.001     ' the throat disc over the roof (kiln_inlet_chamber.bas, STUB_T)
 
+' ID fan (1:50, first angle): the front view from the drive side (-y: x
+' right, z up), the plan under it, the view from +x (the inlet box's face)
+' left of the front; the rotating zone alone at 1:20, from the inlet side
+' (+y) and from +x, right of the front.
+Const IDF_FRONT_X As Double = 0.25
+Const IDF_FRONT_Y As Double = 0.4
+Const IDF_PLAN_Y  As Double = 0.18
+Const IDF_SIDE_X  As Double = 0.09
+Const IDF_ROT_X   As Double = 0.43
+Const IDF_ROT_Y   As Double = 0.4
+Const IDF_ROTS_X  As Double = 0.57
 
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
@@ -307,7 +346,7 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler" or "kiln_inlet_chamber": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler", "kiln_inlet_chamber" or "id_fan": what this run draws
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
@@ -376,6 +415,10 @@ Sub kiln_inlet_chamber()
 End Sub
 
 
+Sub id_fan()
+    Build "id_fan"
+End Sub
+
 
 Private Sub Build(ByVal which As String)
 
@@ -397,6 +440,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
+    ElseIf equip = "id_fan" Then
+        scaleD = 50#: detailD = 20#: detX = 0.63: detY = DET_Y
     ElseIf equip = "kiln_inlet_chamber" Then
         scaleD = 50#: detailD = 50#: detX = 0.63: detY = DET_Y
     Else
@@ -475,6 +520,8 @@ Private Sub ParseTable()
               calciner_TAB_6 & calciner_TAB_7 & calciner_TAB_8
     ElseIf equip = "cooler" Then
         all = cooler_TAB_1 & cooler_TAB_2 & cooler_TAB_3 & cooler_TAB_4 & cooler_TAB_5 & cooler_TAB_6 & cooler_TAB_7 & cooler_TAB_8
+    ElseIf equip = "id_fan" Then
+        all = id_fan_TAB_1 & id_fan_TAB_2 & id_fan_TAB_3 & id_fan_TAB_4 & id_fan_TAB_5 & id_fan_TAB_6 & id_fan_TAB_7 & id_fan_TAB_8
     ElseIf equip = "kiln_inlet_chamber" Then
         all = kiln_inlet_chamber_TAB_1 & kiln_inlet_chamber_TAB_2 & kiln_inlet_chamber_TAB_3 & kiln_inlet_chamber_TAB_4 & _
               kiln_inlet_chamber_TAB_5 & kiln_inlet_chamber_TAB_6 & kiln_inlet_chamber_TAB_7 & kiln_inlet_chamber_TAB_8
@@ -718,8 +765,85 @@ Private Sub CheckKicBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+' The fan's three bodies (id_fan.bas: rotor, volute, inlet), as the source:
+' their joint true extent at the outlet face (-x), the hub's plane (y = 0),
+' the box's top (+y) and the outlet's top (+z), 1 cm; and the bladed rotor's
+' volume, which tells today's blades (a millimetre off the eye's and the
+' tip's circles) from an older build.
+Private Sub CheckIdFanBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant, mp As Variant
+    Dim lo(2) As Double, hi(2) As Double, i As Long, k As Long, nRot As Long
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 2 Then Fail partPath & " has " & (UBound(bodies) + 1) & _
+        " bodies, not 3 (rotor, volute, inlet) -- rebuild it with id_fan.bas."
+    For k = 0 To 2: lo(k) = 1E+30: hi(k) = -1E+30: Next k
+    For i = 0 To 2
+        Set b = bodies(i)
+        box = ExactBox(b)
+        For k = 0 To 2
+            If box(k) < lo(k) Then lo(k) = box(k)
+            If box(k + 3) > hi(k) Then hi(k) = box(k + 3)
+        Next k
+        If IdfKind(b) = "rotor" Then
+            nRot = nRot + 1
+            mp = b.GetMassProperties(1#)
+            If Abs(mp(3) - IDF_V_ROTOR) > 0.00008 * IDF_V_ROTOR Then Fail partPath & ": the rotor is " & Num(mp(3), 6) & _
+                " m3, today's has " & Num(IDF_V_ROTOR, 6) & " -- rebuild it with id_fan.bas."
+        End If
+    Next i
+    If nRot <> 1 Then Fail partPath & ": found " & nRot & " rotor bodies, expected 1."
+    If Abs(lo(0) - IDF_X_MIN) > 0.01 Or Abs(lo(1)) > 0.01 Or Abs(hi(1) - (IDF_Y_BOX + IDF_BOX_DEPTH)) > 0.01 Or _
+       Abs(lo(2) - IDF_Z_MIN) > 0.01 Or Abs(hi(2) - IDF_Z_MAX) > 0.01 Then
+        Fail partPath & ": x min " & Num(lo(0), 3) & ", y " & Num(lo(1), 3) & " .. " & Num(hi(1), 3) & ", z " & Num(lo(2), 3) & _
+             " .. " & Num(hi(2), 3) & " m; today's fan has " & Num(IDF_X_MIN, 3) & ", 0 .. " & Num(IDF_Y_BOX + IDF_BOX_DEPTH, 3) & _
+             ", " & Num(IDF_Z_MIN, 3) & " .. " & Num(IDF_Z_MAX, 3) & " -- rebuild it with id_fan.bas."
+    End If
+    Note "part box: x " & Num(lo(0), 3) & " .. " & Num(hi(0), 3) & ", y " & Num(lo(1), 3) & " .. " & Num(hi(1), 3) & _
+         ", z " & Num(lo(2), 3) & " .. " & Num(hi(2), 3) & " m, 3 bodies (as the source)"
+End Sub
+
+
+' Which of the fan's bodies this is, by where it lies (as id_fan.bas).
+Private Function IdfKind(ByVal body As Object) As String
+    Dim bx As Variant
+    bx = body.GetBodyBox
+    If bx(4) > IDF_VOL_B + 0.5 * (IDF_Y_BOX - IDF_VOL_B) Then
+        IdfKind = "inlet"
+    ElseIf bx(0) < -(IDF_R_MRF + 0.04) Then
+        IdfKind = "volute"
+    Else
+        IdfKind = "rotor"
+    End If
+End Function
+
+
+' Shows only the fan's `kind` body in view v (IView.Bodies, a multibody part).
+Private Sub ShowOnlyBody(v As SldWorks.View, ByVal kind As String)
+    Dim pd As SldWorks.PartDoc, bodies As Variant, i As Long, n As Long
+    Dim sel(0) As Object
+    Set pd = swPart
+    bodies = pd.GetBodies2(swSolidBody, True)
+    For i = 0 To UBound(bodies)
+        If IdfKind(bodies(i)) = kind Then
+            Set sel(0) = bodies(i)
+            n = n + 1
+        End If
+    Next i
+    If n <> 1 Then Fail "found " & n & " " & kind & " bodies in the part, expected 1."
+    v.Bodies = sel
+    swModel.ForceRebuild3 False
+    Note v.Name & ": shows the " & kind & " body only"
+End Sub
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
-    If equip = "kiln_inlet_chamber" Then
+    If equip = "id_fan" Then
+        CheckIdFanBox doc
+        Exit Sub
+    ElseIf equip = "kiln_inlet_chamber" Then
         CheckKicBox doc
         Exit Sub
     ElseIf equip = "cooler" Then
@@ -850,6 +974,8 @@ Private Sub MakeViews()
         MakeViewsKiln
     ElseIf equip = "cooler" Then
         MakeViewsCooler
+    ElseIf equip = "id_fan" Then
+        MakeViewsIdFan
     ElseIf equip = "kiln_inlet_chamber" Then
         MakeViewsKic
     Else
@@ -1019,7 +1145,39 @@ Private Sub MakeViewsKic()
 End Sub
 
 
-'Private Sub MakeViewsC1()
+'' The ID fan (1:50), first-angle projection: the front view from the drive
+' side (-y: x right, z up; the volute's spiral, the discharge to -x, the
+' hub), the plan under it (x right, y up: the widths), the view from +x left
+' of it (the inlet box's face); right of the front, the rotating zone alone
+' at 1:20, seen from the inlet side (+y: -x right, z up; the eye, the shroud
+' and the blades where they meet it) and from +x (y right, z up: b1, b2).
+Private Sub MakeViewsIdFan()
+    Set vFront = OrientedView(1, 0, 0, 0, 0, 1, IDF_FRONT_X, IDF_FRONT_Y, "front")
+    LogMap vFront, "front (from -y)", scaleD
+    swDraw.EditSheet
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, IDF_FRONT_X, IDF_PLAN_Y, "plan")
+    LogMap vTop, "plan", scaleD
+    swDraw.EditSheet
+    Set vSide = OrientedView(0, 1, 0, 0, 0, 1, IDF_SIDE_X, IDF_FRONT_Y, "side")
+    LogMap vSide, "side (from +x)", scaleD
+    swDraw.EditSheet
+    scaleD = detailD
+    Set vLeft = OrientedView(-1, 0, 0, 0, 0, 1, IDF_ROT_X, IDF_ROT_Y, "rotor")
+    ShowOnlyBody vLeft, "rotor"
+    PlaceOutlineAt vLeft, IDF_ROT_X, IDF_ROT_Y
+    LogMap vLeft, "rotor (from +y)", scaleD
+    swDraw.EditSheet
+    Set vDet = OrientedView(0, 1, 0, 0, 0, 1, IDF_ROTS_X, IDF_ROT_Y, "rotor side")
+    ShowOnlyBody vDet, "rotor"
+    PlaceOutlineAt vDet, IDF_ROTS_X, IDF_ROT_Y
+    LogMap vDet, "rotor side (from +x)", scaleD
+    scaleD = 50#
+    Note "views: front " & vFront.Name & ", plan " & vTop.Name & ", side " & vSide.Name & ", rotor " & vLeft.Name & _
+         ", rotor side " & vDet.Name
+End Sub
+
+
+Private Sub MakeViewsC1()
 
     Dim R As Double, rx As Double, xa As Double, xb As Double
     Dim ax As Double, ay As Double, qx As Double, qy As Double
@@ -1149,6 +1307,21 @@ Private Function OrientedView(ByVal rx As Double, ByVal ry As Double, ByVal rz A
     Next i
     Fail "no named view shows the " & what & " view (tries in the log)."
 End Function
+
+
+' Moves a view so the centre of what it shows is at (px, py): a view showing
+' one body of a multibody part keeps its Position on the whole part's box
+' (the id_fan run: the rotor views landed 31 and 71 mm off), so the outline
+' is read and the view moved by the difference.
+Private Sub PlaceOutlineAt(v As SldWorks.View, ByVal px As Double, ByVal py As Double)
+    Dim ol As Variant, p As Variant
+    swModel.ForceRebuild3 False
+    ol = v.GetOutline
+    p = v.Position
+    PlaceAt v, p(0) + px - 0.5 * (ol(0) + ol(2)), p(1) + py - 0.5 * (ol(1) + ol(3))
+    ol = v.GetOutline
+    Note v.Name & ": outline centre at (" & Num(500# * (ol(0) + ol(2)), 1) & ", " & Num(500# * (ol(1) + ol(3)), 1) & ") mm"
+End Sub
 
 
 ' Moves a view's centre to (px, py) on the sheet. Position takes an
@@ -1342,6 +1515,8 @@ Private Sub DimensionAll()
         DimensionKiln
     ElseIf equip = "cooler" Then
         DimensionCooler
+    ElseIf equip = "id_fan" Then
+        DimensionIdFan
     ElseIf equip = "kiln_inlet_chamber" Then
         DimensionKic
     Else
@@ -1480,6 +1655,62 @@ Private Sub DimensionCooler()
         "line", xe, -hw, 0.5 * COO_H, 0, 0, _
         "", 0, 0, 0, 0, 0, _
         xe, -hw - 3#, 0.5 * COO_H
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The ID fan's reference dimensions, each between edges the solid has: the
+' outlet face's outer edge (plan: B) and its near edge (front: the height,
+' the face is normal to the discharge, 45 deg up);
+' the inlet box face's edges (side view: height, depth); on the rotor alone
+' the eye's and the tip's circles (D1, D2) and the axial offsets of the
+' rim's top circle from the hub's (b2: circle centres on the axis, the
+' horizontal distance in the side view). b1 is listed only: the shroud rises
+' from the eye (b1) to the tip (b2 > b1), so the eye's circle is hidden
+' behind the rim in every outside view (the id_fan run: MISSING).
+Private Sub DimensionIdFan()
+    Dim xm As Double, zm As Double, c45 As Double
+    xm = 0.5 * (IDF_E_TOP_X + IDF_E_LOW_X): zm = 0.5 * (IDF_E_TOP_Z + IDF_E_LOW_Z)
+    c45 = 0.70710678
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "B", IDF_VOL_B, vTop, _
+        "line", IDF_E_TOP_X, 0.5 * IDF_VOL_B, IDF_E_TOP_Z, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        IDF_X_MIN - 0.8, 0.5 * IDF_VOL_B, IDF_E_TOP_Z
+    DimEdges "h_stub", Sqr((IDF_E_TOP_X - IDF_E_LOW_X) ^ 2 + (IDF_E_TOP_Z - IDF_E_LOW_Z) ^ 2), vFront, _
+        "line", xm, 0, zm, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        xm + 1.2 * IDF_DIS_DX, 0, zm + 1.2 * IDF_DIS_DZ
+    DimEdges "H_box", IDF_BOX_H, vSide, _
+        "line", IDF_BOX_REACH, IDF_Y_BOX + IDF_BOX_DEPTH, 0, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        IDF_BOX_REACH, IDF_Y_BOX + IDF_BOX_DEPTH + 1.2, 0
+    DimEdges "depth_box", IDF_BOX_DEPTH, vSide, _
+        "line", IDF_BOX_REACH, IDF_Y_BOX + 0.5 * IDF_BOX_DEPTH, 0.5 * IDF_BOX_H, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        IDF_BOX_REACH, IDF_Y_BOX + 0.5 * IDF_BOX_DEPTH, 0.5 * IDF_BOX_H + 1.2
+    DimEdges "D2", 2# * IDF_R2, vLeft, _
+        "circle", c45 * IDF_R2, IDF_B2, c45 * IDF_R2, IDF_R2, 0, _
+        "", 0, 0, 0, 0, 0, _
+        -(IDF_R_MRF + 0.3), IDF_B2, IDF_R_MRF + 0.3
+    DimEdges "D1", 2# * IDF_R1, vLeft, _
+        "circle", c45 * IDF_R1, IDF_B1, -c45 * IDF_R1, IDF_R1, 0, _
+        "", 0, 0, 0, 0, 0, _
+        -(IDF_R_MRF + 0.3), IDF_B1, -(IDF_R_MRF + 0.3)
+    DimEdges "b2", IDF_B2, vDet, _
+        "circle", 0, 0, IDF_R_MRF, IDF_R_MRF, 0, _
+        "circle", 0, IDF_B2, IDF_R_MRF, IDF_R_MRF, 0, _
+        0, 0.5 * IDF_B2, IDF_R_MRF + 0.25, "h"
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -2115,7 +2346,7 @@ Private Sub DrawTitle()
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")")
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "id_fan", " (rotor 1:" & Fmt(detailD) & ")", IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"))
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -2191,6 +2422,7 @@ Private Function TitleText() As String
     Case "kiln": TitleText = "ROTARY KILN TUBE"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
+    Case "id_fan": TitleText = "PREHEATER ID FAN (1 PER STRING)"
     End Select
 End Function
 
@@ -2213,6 +2445,11 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.007, "4. The clinker bed is a cell zone in the box, not a body; the vent outlet has no source.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Floor: " & Num(COO_SEGMENTS, 0) & " air segments (FLS); hood opening over the first two.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/cooler/cooler.md", TEXT_H
+    ElseIf equip = "id_fan" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: y along the axis (hub y = 0, gas in towards -y), x across, z up; turns +x to +z.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. Three CFD zones: rotor (MRF, blades cut hub to shroud), volute, inlet box + cone.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Rotor views: the rotating zone alone, 1:20. One fan per string.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/fan/id_fan.md", TEXT_H
     ElseIf equip = "kiln_inlet_chamber" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: x from the calciner axis, the kiln's mouth on the +x wall; z up from the floor level.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. Flat roof at z = H with the calciner's throat; floor: one ramp, the kiln's wall to the far corner.", TEXT_H
@@ -2258,6 +2495,8 @@ Private Sub DrawFlows()
         DrawFlowsKiln
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
+    ElseIf equip = "id_fan" Then
+        DrawFlowsIdFan
     ElseIf equip = "kiln_inlet_chamber" Then
         DrawFlowsKic
     Else
@@ -2302,6 +2541,34 @@ Private Sub DrawFlowsCooler()
     LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment)"
     LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "Hood opening (to the kiln and the tertiary air)"
     LabelM3 vFront, 20#, 0#, 0.7, "Clinker travel (bed zone)"
+End Sub
+
+
+' The fan's flows: the gas into the inlet box's face along -x (plan), out of
+' the discharge, up at the discharge angle (front), and which way it turns.
+Private Sub DrawFlowsIdFan()
+    Dim xm As Double, zm As Double, ym As Double
+    xm = 0.5 * (IDF_E_TOP_X + IDF_E_LOW_X): zm = 0.5 * (IDF_E_TOP_Z + IDF_E_LOW_Z)
+    ym = IDF_Y_BOX + 0.5 * IDF_BOX_DEPTH
+    UseLayer L_FLOW
+    ArrowM3 vTop, IDF_BOX_REACH + 2.4, ym, 0#, IDF_BOX_REACH + 0.3, ym, 0#
+    ArrowM3 vFront, xm + 0.3 * IDF_DIS_DX, 0#, zm + 0.3 * IDF_DIS_DZ, xm + 2.1 * IDF_DIS_DX, 0#, zm + 2.1 * IDF_DIS_DZ
+    UseLayer L_TEXT
+    LabelM3 vTop, IDF_BOX_REACH + 0.3, ym + 0.5, 0#, "Gas in (from C1)"
+    LabelM3 vFront, xm + 2.3 * IDF_DIS_DX - 0.6, 0#, zm + 2.3 * IDF_DIS_DZ + 0.3, "Gas out"
+    LabelM3 vFront, IDF_X_MIN, 0#, IDF_Z_MIN - 1.2, "Turns counter-clockwise seen from here"
+    ' view captions under each view's lowest, leftmost point
+    Dim sx As Double, sy As Double
+    ToSheet vFront, IDF_X_MIN, 0#, IDF_Z_MIN - 0.3, sx, sy
+    LabelPH sx, sy - 0.012, "FRONT VIEW - from the drive side (-y)", TEXT_H
+    ToSheet vTop, IDF_X_MIN, 0#, 0#, sx, sy
+    LabelPH sx, sy - 0.01, "PLAN - from above", TEXT_H
+    ToSheet vSide, 0#, 0#, IDF_Z_MIN - 0.3, sx, sy
+    LabelPH sx, sy - 0.012, "FROM +X - inlet box face", TEXT_H
+    ToSheet vLeft, IDF_R_MRF, 0#, -IDF_R_MRF, sx, sy
+    LabelPH sx, sy - 0.012, "ROTOR ZONE (MRF) from the inlet side, 1:20", TEXT_H
+    ToSheet vDet, 0#, 0#, -IDF_R_MRF, sx, sy
+    LabelPH sx - 0.01, sy - 0.022, "ROTOR, FROM +X", TEXT_H
 End Sub
 
 
@@ -2427,6 +2694,8 @@ Private Sub DrawAxes()
         DrawAxesKiln
     ElseIf equip = "cooler" Then
         DrawAxesCooler
+    ElseIf equip = "id_fan" Then
+        DrawAxesIdFan
     ElseIf equip = "kiln_inlet_chamber" Then
         DrawAxesKic
     Else
@@ -2456,6 +2725,20 @@ Private Sub DrawAxesCooler()
     AxisM vTop, -1#, 0#, COO_H, COO_L + 1#, 0#, COO_H
     AxisM vLeft, -1#, 0#, 0#, COO_L + 1#, 0#, 0#
     AxisM vSide, COO_L * 0#, 0#, -0.6, COO_L * 0#, 0#, COO_H + 0.6
+End Sub
+
+
+' The fan's centre lines: the axis's cross in the front and rotor views, the
+' axis along y in the plan and the two side views.
+Private Sub DrawAxesIdFan()
+    UseLayer L_AXIS
+    AxisM vFront, -IDF_R_MRF - 0.6, 0#, 0#, IDF_R_MRF + 0.6, 0#, 0#
+    AxisM vFront, 0#, 0#, -IDF_R_MRF - 0.6, 0#, 0#, IDF_R_MRF + 0.6
+    AxisM vTop, 0#, -0.6, 0#, 0#, IDF_Y_BOX + IDF_BOX_DEPTH + 0.6, 0#
+    AxisM vSide, 0#, -0.6, 0#, 0#, IDF_Y_BOX + IDF_BOX_DEPTH + 0.6, 0#
+    AxisM vLeft, -IDF_R_MRF - 0.3, 0#, 0#, IDF_R_MRF + 0.3, 0#, 0#
+    AxisM vLeft, 0#, 0#, -IDF_R_MRF - 0.3, 0#, 0#, IDF_R_MRF + 0.3
+    AxisM vDet, 0#, -0.3, 0#, 0#, IDF_B1 + 0.3, 0#
 End Sub
 
 
@@ -2634,29 +2917,38 @@ Private Sub CalibrateSheetSketch()
     seg.Select4 False, Nothing
     swModel.EditDelete
 
-    ' Checked where it matters, on the paper: a probe line at sketch
-    ' (20 .. 30, 20) is picked at its paper midpoint (25, 20) / factor;
-    ' 1:100 and 1:50 put it 200 mm apart, inside the sheet.
-    Dim k As Variant, hit As Double
+    ' Checked where it matters, on the paper: for each candidate factor a
+    ' probe line is drawn at the paper point (0.75 .. 0.80, 0.56) m, the
+    ' frame's top right corner, empty of views on every sheet (the id_fan
+    ' run: the old fixed probe at (0.5, 0.4) m fell inside its rotor view
+    ' and nothing was picked), and picked there. The sheet's own scale is
+    ' tried first after the transform's (the id_fan run's transform read
+    ' 20, its last view's 1:20, on a 1:50 sheet).
+    Dim k As Variant, hit As Double, kk As Double
     swModel.ViewZoomtofit2
-    swSkMgr.DisplayWhenAdded = True              ' only what is drawn can be picked
-    Set seg = swSkMgr.CreateLine(20#, 20#, 0#, 30#, 20#, 0#)
-    swSkMgr.DisplayWhenAdded = False
-    swModel.GraphicsRedraw2
-    For Each k In Array(skPerM, 100#, 50#)
+    For Each k In Array(skPerM, scaleD, 100#, 50#, 200#)
+        kk = k
+        swSkMgr.DisplayWhenAdded = True              ' only what is drawn can be picked
+        Set seg = swSkMgr.CreateLine(0.75 * kk, 0.56 * kk, 0#, 0.8 * kk, 0.56 * kk, 0#)
+        swSkMgr.DisplayWhenAdded = False
+        swModel.GraphicsRedraw2
         swModel.ClearSelection2 True
-        If swModel.Extension.SelectByID2("", "SKETCHSEGMENT", 25# / k, 20# / k, 0#, False, 0, Nothing, 0) Then
-            hit = k: Exit For
+        If Not seg Is Nothing Then
+            If swModel.Extension.SelectByID2("", "SKETCHSEGMENT", 0.775, 0.56, 0#, False, 0, Nothing, 0) Then hit = kk
+            swModel.ClearSelection2 True
+            seg.Select4 False, Nothing
+            swModel.EditDelete
+            swModel.ClearSelection2 True
         End If
+        If hit > 0 Then Exit For
     Next k
-    swModel.ClearSelection2 True
-    seg.Select4 False, Nothing
-    swModel.EditDelete
     If hit > 0 Then
         Note "sheet sketch: a probe line is picked on the paper at " & Num(hit, 4) & " sketch units per metre"
         skPerM = hit
     Else
-        Note "WARNING: the probe line was not picked on the paper; using the transform's factor"
+        Note "WARNING: the probe line was not picked on the paper; using the sheet's scale 1:" & Fmt(scaleD) & _
+             " (the transform read " & Num(skPerM, 4) & ")"
+        skPerM = scaleD
     End If
     Note "sheet sketch: " & Num(skPerM, 4) & " sketch units per metre of paper"
     If skPerM < 0.001 Then Fail "the sheet sketch transform reads " & Num(skPerM, 6) & "."

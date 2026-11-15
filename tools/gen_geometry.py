@@ -359,6 +359,7 @@ def drawings_bas(g):
     out += _kiln_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
+    out += _idf_sheet_consts(g)
     return out
 
 
@@ -454,6 +455,38 @@ def _kiln_sheet_consts(g):
         der("KIL_L", k["L"], "kiln length, back end to hood end"),
     ]
     out += _table_consts("kiln", dki.params(g), dki.ORDER)
+    return out
+
+
+def _idf_sheet_consts(g):
+    """What drawings.bas needs for the ID fan sheet, under an IDF_ prefix,
+    and its table."""
+    from tools.drawings import id_fan as dif
+
+    f = pg.id_fan(g)
+    out = [
+        der("IDF_R1", 0.5 * f["D_inlet"], "the eye's circle (y = b1)"),
+        der("IDF_R2", 0.5 * f["D_impeller"], "the tip's circle (y = b2)"),
+        der("IDF_B1", f["b1"], "the eye's plane y"),
+        der("IDF_B2", f["b2"], "the outlet width b2: the rim ring's top y"),
+        der("IDF_R_MRF", f["r_mrf"], "the rotating zone's rim"),
+        der("IDF_VOL_B", f["B"], "the volute's width, y = 0 .. B"),
+        der("IDF_E_TOP_X", f["e_top"][0], "the outlet face's outer edge (along y), x"),
+        der("IDF_E_TOP_Z", f["e_top"][1], "the outlet face's outer edge, z"),
+        der("IDF_E_LOW_X", f["e_low"][0], "the outlet face's lower edge (along y), x"),
+        der("IDF_E_LOW_Z", f["e_low"][1], "the outlet face's lower edge, z"),
+        der("IDF_DIS_DX", f["discharge_dir"][0], "the discharge's direction, x", digits=9),
+        der("IDF_DIS_DZ", f["discharge_dir"][1], "the discharge's direction, z", digits=9),
+        der("IDF_X_MIN", f["volute_box"][0], "the fan's x min (the volute)"),
+        der("IDF_Z_MIN", f["volute_box"][1], "the fan's z min (the volute)"),
+        der("IDF_Z_MAX", f["volute_box"][3], "the fan's z max (the outlet's outer edge)"),
+        der("IDF_Y_BOX", f["y_box"], "the inlet box's floor, y"),
+        der("IDF_BOX_H", f["H_box"], "the inlet box's height (z), x from -BOX_H/2"),
+        der("IDF_BOX_DEPTH", f["depth_box"], "the inlet box's depth (y)"),
+        der("IDF_BOX_REACH", f["reach_box"], "the box's inlet face, x"),
+        der("IDF_V_ROTOR", f["V_rotor_bladed"], "the bladed rotor's volume: tells today's solid from an older one [m3]"),
+    ]
+    out += _table_consts("id_fan", dif.params(g), dif.ORDER)
     return out
 
 
@@ -584,6 +617,42 @@ def kiln_inlet_chamber_bas(g):
     ]
 
 
+def id_fan_bas(g):
+    f, fan = g["id_fan"], pg.id_fan(g)
+    return [
+        der("FAN_R1", 0.5 * fan["D_inlet"], "eye radius: the blades' leading edge, the shroud's inner rim"),
+        der("FAN_R2", 0.5 * fan["D_impeller"], "impeller tip radius"),
+        der("FAN_B1", fan["b1"], "blade height at r1: hub (y = 0) to the shroud, the eye's plane"),
+        der("FAN_B2", fan["b2"], "blade height at r2 (the outlet width)"),
+        der("FAN_R_MRF", fan["r_mrf"], "the rotating zone's rim"),
+        Const("FAN_Z", fan["z"], "blade count [derived]", kind="Long"),
+        src("BLADE_T", f["blade_thickness"], "plate blade thickness"),
+        der("BLADE_R_IN", fan["blade_r_in"], "the blades' inner cap: r1 + the edge clearance"),
+        der("BLADE_R_OUT", fan["blade_r_out"], "the blades' outer cap: r2 - the edge clearance"),
+        der("BLADE_RB", fan["blade_arc_R"], "the blade centreline's arc radius"),
+        der("BLADE_RC", fan["blade_arc_centre_r"], "the arc centre's distance from the axis"),
+        der("BLADE_SENSE", fan["blade_sense"], "+1: a point at radius r sits +phi(r) from the centre's ray (backward)"),
+        der("VOL_B", fan["B"], "volute width, y = 0 (back wall, the hub's plane) to B"),
+        der("VOL_R3", fan["r3"], "the spiral's start radius (tongue circle)"),
+        der("VOL_K", fan["k_spiral"], "log spiral r = R3 exp(K theta), K = tan(alpha), from the outlet velocity", digits=9),
+        der("VOL_PSI0", math.radians(fan["psi0"]), "the spiral's start ray from +x towards +z [rad]", digits=9),
+        der("NOSE_R", fan["tongue_radius"], "the tongue's nose radius"),
+        der("DIS_DX", fan["discharge_dir"][0], "the discharge's direction, x (-cos gamma)", digits=9),
+        der("DIS_DZ", fan["discharge_dir"][1], "the discharge's direction, z (sin gamma)", digits=9),
+        der("VOL_S_EXIT", fan["s_exit"], "the outlet face: the plane p . (DIS_DX, 0, DIS_DZ) = this"),
+        der("CONE_R", 0.5 * fan["D_cone"], "the inlet cone's mouth radius (r1 at y = B1)"),
+        der("CONE_L", fan["L_cone"], "the inlet cone's length, y = B1 to the box's floor (B + the front plate)"),
+        der("BOX_H", fan["H_box"], "the inlet box's height (z) and width behind the axis (x from -BOX_H/2)"),
+        der("BOX_DEPTH", fan["depth_box"], "the inlet box's depth along y"),
+        der("BOX_REACH", fan["reach_box"], "the box's inlet face, x"),
+        der("V_ROTOR", fan["V_rotor"], "rotating zone before the blades are cut [m3]"),
+        der("V_BLADES", fan["V_blades"], "the blades' volume, hub to shroud [m3]"),
+        der("V_VOLUTE", fan["V_volute"], "volute + discharge outside the rotating zone [m3]"),
+        der("V_CONE", fan["V_cone"], "inlet cone [m3]"),
+        der("V_BOX", fan["V_box"], "inlet box [m3]"),
+    ]
+
+
 def kiln_bas(g):
     k = g["kiln"]
     return [
@@ -605,6 +674,7 @@ TARGETS = {
     "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
     "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
+    "id_fan.bas": id_fan_bas,
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
     "plant_topology_2d.bas": drawing_bas,
@@ -833,8 +903,57 @@ def _id_fan_rows(g):
         row_der("Mil gücü", fan["p_shaft"] / 1e3, "kW", 0),
         row_der("Motor gücü (×1.10)", fan["p_motor"] / 1e3, "kW", 0),
         row_der("Uç hızı", fan["u_tip"], "m/s", 1),
-        row_der("Çark çapı", fan["D_impeller"], "m", 2),
-        row_der("Giriş çapı", fan["D_inlet"], "m", 2),
+        row_der("Çark çapı D2", fan["D_impeller"], "m", 3),
+        row_src("Göz oranı D1/D2", f["eye_ratio"]),
+        row_der("Göz çapı D1", fan["D_inlet"], "m", 3),
+        row_der("Göz hızı c0", fan["c0"], "m/s", 1),
+        row_der("Debi katsayısı φ", fan["phi"], "-", 4),
+        row_src("Kanat çıkış açısı β2 (teğetten)", f["blade_outlet_angle"]),
+        row_src("Kanat sayısı katsayısı k", f["blade_number_coeff"]),
+        row_der("Kanat sayısı z = k sinβ2 / (1 − D1/D2)", fan["z"], "-", 0),
+        row_src("Kanat kalınlığı", f["blade_thickness"]),
+        row_src("Kanat uçlarının göz/uç dairesine boşluğu", f["blade_edge_clearance"]),
+        row_src("Hücum açısı", f["incidence"]),
+        row_der("Kanat giriş açısı β1", fan["beta1"], "°", 1),
+        row_der("Çark giriş genişliği b1", fan["b1"], "m", 3),
+        row_src("Hidrolik verim η_h", f["hydraulic_efficiency"]),
+        row_der("Wiesner kayma katsayısı", fan["slip"], "-", 3),
+        row_der("Wiesner D1/D2 sınırı", fan["slip_limit"], "-", 3),
+        row_der("Çıkış teğetsel hızı cu2", fan["cu2"], "m/s", 1),
+        row_der("Çıkış meridyen hızı cm2", fan["cm2"], "m/s", 1),
+        row_der("Çark çıkış genişliği b2", fan["b2"], "m", 3),
+        row_der("Kanat yayı yarıçapı", fan["blade_arc_R"], "m", 2),
+        row_src("Salyangoz genişlik oranı B/b2", f["volute_width_ratio"]),
+        row_der("Salyangoz genişliği B", fan["B"], "m", 3),
+        row_src("Dil boşluğu / D2", f["tongue_gap_ratio"]),
+        row_der("Dil dairesi r3", fan["r3"], "m", 3),
+        row_src("Dil burun yarıçapı / D2", f["tongue_radius_ratio"]),
+        row_src("Salyangoz çıkış hızı", f["volute_outlet_velocity"]),
+        row_der("Spiral açısı (çıkış hızından)", fan["spiral_angle"], "°", 2),
+        row_der("Spiral sonu r_end", fan["r_end"], "m", 3),
+        row_der("Spiral sonu kesiti (yükseklik)", fan["h_out"], "m", 3),
+        row_der("Spiral sonu kesitinde hız", fan["u_section"], "m/s", 1),
+        row_der("Çıkış ağzı yüksekliği (h cosα − 2 burun)", fan["h_stub"], "m", 3, f"türetilmiş; alan {fan['a_out']:.3f} m²"),
+        row_der("Çıkış hızı (ağız)", fan["u_out"], "m/s", 1),
+        row_src("Çıkış düz parçası / yükseklik", f["outlet_stub_ratio"]),
+        row_src("Çıkış yönü (yataydan yukarı)", f["discharge_angle"]),
+        row_src("MRF kenarı (dil boşluğunun payı)", f["mrf_gap_fraction"]),
+        row_der("MRF bölgesi yarıçapı", fan["r_mrf"], "m", 3),
+        row_src("Giriş konisi ağzı / D1", f["cone_inlet_ratio"]),
+        row_src("Ön yan sac (salyangoz ile kutu arası)", f["side_plate_gap"]),
+        row_der("Giriş konisi boyu (gözden kutu tabanına)", fan["L_cone"], "m", 3),
+        row_der("Giriş konisi ağız çapı", fan["D_cone"], "m", 3),
+        row_src("Giriş kutusu alan oranı", f["inlet_box_area_ratio"]),
+        row_src("Giriş kutusu yükseklik oranı", f["inlet_box_height_ratio"]),
+        row_src("Giriş kutusu uzanım oranı", f["inlet_box_reach_ratio"]),
+        row_der("Giriş kutusu yüzü (yükseklik × derinlik)", fan["H_box"], "m", 3, f"türetilmiş; yükseklik, derinlik {fan['depth_box']:.3f} m"),
+        row_der("Giriş kutusu hızı", fan["u_box"], "m/s", 1),
+        row_der("Hacim: dönen bölge (kanatsız)", fan["V_rotor"], "m³", 3),
+        row_der("Hacim: kanatlar", fan["V_blades"], "m³", 4),
+        row_der("Hacim: dönen bölge (kanatlı)", fan["V_rotor_bladed"], "m³", 3),
+        row_der("Hacim: salyangoz + çıkış", fan["V_volute"], "m³", 3),
+        row_der("Hacim: giriş konisi", fan["V_cone"], "m³", 3),
+        row_der("Hacim: giriş kutusu", fan["V_box"], "m³", 3),
     ]
 
 

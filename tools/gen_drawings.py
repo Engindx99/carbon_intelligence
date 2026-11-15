@@ -27,7 +27,7 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from geometry import plant_geometry as pg  # noqa: E402
-from tools.drawings import calciner, cooler, cyclone, inventory, kiln, kiln_inlet_chamber, twin, volute  # noqa: E402
+from tools.drawings import calciner, cooler, cyclone, id_fan, inventory, kiln, kiln_inlet_chamber, twin, volute  # noqa: E402
 from tools.pid import encode as pid_encode, model as pid_model  # noqa: E402
 
 OUT = ROOT / "geometry" / "drawings"
@@ -47,11 +47,12 @@ EQUIPMENT = {
     "kiln": kiln,
     "cooler": cooler,
     "kiln_inlet_chamber": kiln_inlet_chamber,
+    "id_fan": id_fan,
 }
 
 # Drawings made in SolidWorks and checked against their build log; the
 # rest of EQUIPMENT is ready in drawings.bas but not yet run.
-DRAWN = ("C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler", "kiln_inlet_chamber")
+DRAWN = ("C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler", "kiln_inlet_chamber", "id_fan")
 
 
 def payload(name, g=None):
