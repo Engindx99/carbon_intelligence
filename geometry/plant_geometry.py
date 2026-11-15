@@ -655,6 +655,31 @@ def kiln_hood(g):
     }
 
 
+def chamber_roof(g):
+    """The chamber is the layout square (side 2 a, flat roof, the calciner's
+    throat in it). Its floor is one ramp across the whole plan, from the
+    kiln mouth's lower lip (a clearance under the mouth, so the mouth's
+    circle does not touch the ramp's foot) up to the far top corner, so the
+    meal slides into the kiln and no meal lies in a pit; the ramp's slope
+    follows from that, it is not an input."""
+
+    kl, cal = kiln(g), calciner(g)
+    a = 0.5 * kl["D"] + v(g["layout"]["chamber_margin"])
+    clear = v(g["kiln_inlet_chamber"]["mouth_clearance"])
+    h_lip = a - 0.5 * kl["D"] - clear
+    height = 2.0 * a
+    run = 2.0 * a
+    return {
+        "height": height,
+        "D_throat": cal["D_throat"],
+        "clear": clear,
+        "h_lip": h_lip,
+        "ramp_run": run,
+        "ramp_rise": height - h_lip,
+        "ramp_slope": math.degrees(math.atan((height - h_lip) / run)),
+    }
+
+
 def kiln_inlet_chamber(g):
     """The chamber is the same square round the kiln end: the kiln gas
     leaves the tube (inner D) into it and rises through its plan area to
@@ -666,7 +691,9 @@ def kiln_inlet_chamber(g):
     side = 2.0 * layout(g)["a_chamber"]
     q = kg["flow"] / kg["rho"]
     vmax = v(g["kiln_inlet_chamber"]["gas_velocity_max"])
+    roof = chamber_roof(g)
     return {
+        **roof,
         "q": q,
         "side": side,
         "u_kiln": q / (0.25 * math.pi * kl["D"] ** 2),
@@ -882,7 +909,7 @@ def layout(g):
 
     a_ch = 0.5 * kl["D"] + v(L["chamber_margin"])
     z_ch0 = v(L["kiln_axis_z"]) - a_ch
-    z0 = z_ch0 + 2.0 * a_ch                       # the calciner's throat foot on the chamber
+    z0 = z_ch0 + chamber_roof(g)["height"]        # the calciner's throat foot on the chamber's tapered roof
     z_cone_top = z0 + cal["z_cone_top"]
     z_roof_cal = z0 + cal["z_roof"]
     z_gn_top = z0 + gn["crown"]                   # the arch's top

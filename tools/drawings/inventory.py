@@ -80,7 +80,7 @@ EQUIPMENT = [
      "kiln inlet chamber <- clinker -> kiln hood / cooler", [], "kiln.SLDPRT"),
     ("Rotary kiln", "KIC", "Kiln inlet chamber", "1",
      ["kiln_inlet_chamber.", "layout.chamber_margin"], "C5 meal + kiln gas -> calciner throat",
-     ["kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown; no CFD solid"], ""),
+     ["kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown"], "kiln_inlet_chamber.SLDPRT"),
     ("Rotary kiln", "HOOD", "Kiln hood", "1",
      ["kiln_hood.", "layout.chamber_margin"], "cooler -> secondary air -> kiln; -> tertiary air duct",
      ["kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"], ""),
@@ -98,7 +98,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

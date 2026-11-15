@@ -1607,6 +1607,22 @@
           "doc": "kiln/kiln_inlet_chamber.md"
         },
         {
+          "key": "kiln_inlet_chamber.mouth_clearance",
+          "value": 0.2,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        },
+        {
+          "key": "kiln_inlet_chamber.gas_velocity_ref_holcim",
+          "value": 23.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        },
+        {
           "key": "layout.chamber_margin",
           "value": 1.0,
           "unit": "m",
@@ -1616,16 +1632,16 @@
         }
       ],
       "status_counts": {
-        "Estimated": 2
+        "Estimated": 4
       },
       "missing": [
-        "kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown; no CFD solid"
+        "kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown"
       ],
-      "cfd_solid": "",
+      "cfd_solid": "kiln_inlet_chamber.SLDPRT",
       "pid_sheets": [
         "3 KI"
       ],
-      "drawing": "to draw"
+      "drawing": "drawn: geometry/drawings/kiln_inlet_chamber/"
     },
     {
       "area": "Rotary kiln",

@@ -358,6 +358,7 @@ def drawings_bas(g):
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
     out += _cooler_sheet_consts(g)
+    out += _kic_sheet_consts(g)
     return out
 
 
@@ -453,6 +454,24 @@ def _kiln_sheet_consts(g):
         der("KIL_L", k["L"], "kiln length, back end to hood end"),
     ]
     out += _table_consts("kiln", dki.params(g), dki.ORDER)
+    return out
+
+
+def _kic_sheet_consts(g):
+    """What drawings.bas needs for the kiln inlet chamber sheet, under a
+    KIC_ prefix, and its table."""
+    from tools.drawings import kiln_inlet_chamber as dkc
+
+    ch = pg.kiln_inlet_chamber(g)
+    out = [
+        der("KIC_A", ch["side"], "plan: the square's side"),
+        der("KIC_H", ch["height"], "floor level to the flat roof"),
+        der("KIC_D_THROAT", ch["D_throat"], "the roof's throat (outlet)"),
+        src("KIC_D_MOUTH", g["kiln"]["D"], "the kiln's mouth on the +x wall"),
+        der("KIC_H_LIP", ch["h_lip"], "the ramp's foot on the +x wall"),
+        der("KIC_RAMP_DEG", ch["ramp_slope"], "the floor ramp's slope, foot to the far top corner"),
+    ]
+    out += _table_consts("kiln_inlet_chamber", dkc.params(g), dkc.ORDER)
     return out
 
 
@@ -554,6 +573,17 @@ def cooler_bas(g):
     ]
 
 
+def kiln_inlet_chamber_bas(g):
+    c, ch, kl = g["kiln_inlet_chamber"], pg.kiln_inlet_chamber(g), g["kiln"]
+    return [
+        der("CH_A", pg.layout(g)["a_chamber"], "half the square plan: kiln D / 2 + the layout margin"),
+        src("KILN_D", kl["D"], "the mouth's circle on the +x wall"),
+        src("CH_CLEAR", c["mouth_clearance"], "the mouth's clearance to the ramp's foot"),
+        der("CH_R_THROAT", 0.5 * ch["D_throat"], "the calciner throat's radius, the outlet disc in the roof"),
+        der("CH_H_LIP", ch["h_lip"], "the ramp's foot on the +x wall; the ramp rises to the far top corner, z = 2 CH_A"),
+    ]
+
+
 def kiln_bas(g):
     k = g["kiln"]
     return [
@@ -574,6 +604,7 @@ def pid_bas(g):
 TARGETS = {
     "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
+    "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
     "cyclone.bas": cyclone_bas,
     "calciner.bas": calciner_bas,
     "plant_topology_2d.bas": drawing_bas,
@@ -851,6 +882,13 @@ def _kiln_chamber_rows(g):
         row_der("Hız, oda kesitinde", ch["u_chamber"], "m/s", 2),
         row_der("Hız, fırın tüpünün girişinde (CFD debisi)", ch["u_kiln"], "m/s", 2),
         row_der("Ölçütün izin verdiği en küçük kenar", ch["side_min"], "m", 2),
+        row_src("Başvuru sınırı (Holcim StDC 2022; tek şirketin standardı)", c["gas_velocity_ref_holcim"]),
+        row_src("Fırın ağzı payı (ağzın dairesi rampa ayağına ve tavana değmesin)", c["mouth_clearance"]),
+        row_der("Oda yüksekliği (düz tavan; boğaz tavanda)", ch["height"], "m", 3),
+        row_der("Boğaz çapı (kalsinatörün)", ch["D_throat"], "m", 3),
+        row_der("Taban rampası: ayağı, +x duvarında (zeminden)", ch["h_lip"], "m", 3),
+        row_der("Taban rampası: yatay uzunluk (tüm plan, dudaktan karşı üst köşeye)", ch["ramp_run"], "m", 3),
+        row_der("Taban rampası eğimi (yataya; geometriden)", ch["ramp_slope"], "°", 1),
     ]
 
 

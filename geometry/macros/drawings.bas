@@ -206,6 +206,20 @@ Const cooler_TAB_5                 As String  = ""           ' parameter table r
 Const cooler_TAB_6                 As String  = ""           ' parameter table rows
 Const cooler_TAB_7                 As String  = ""           ' parameter table rows
 Const cooler_TAB_8                 As String  = ""           ' parameter table rows
+Const KIC_A                        As Double  = 6.8          ' plan: the square's side [derived]
+Const KIC_H                        As Double  = 6.8          ' floor level to the flat roof [derived]
+Const KIC_D_THROAT                 As Double  = 3.130077     ' the roof's throat (outlet) [derived]
+Const KIC_D_MOUTH                  As Double  = 4.8          ' the kiln's mouth on the +x wall [published, kiln/kiln.md]
+Const KIC_H_LIP                    As Double  = 0.8          ' the ramp's foot on the +x wall [derived]
+Const KIC_RAMP_DEG                 As Double  = 41.423666    ' the floor ramp's slope, foot to the far top corner [derived]
+Const kiln_inlet_chamber_TAB_1     As String  = "a_plan~Plan: side of the square (D + 2 margin)~6800~mm~derived~Estimated;H~Height: floor level to the flat roof (= the plan's side)~6800~mm~derived~Estimated;h_wall~Kiln's wall: ramp's foot to the roof (H - h_lip)~6000~mm~derived~Estimated;D_throat~Throat (outlet to the calciner) diameter~3130~mm~derived~Estimated;D_mouth~Kiln mouth diameter (the kiln's effective D)~4800~mm~published~Verified;margin~Margin round the kiln (plan = D + 2 margin)~1000~mm~model parameter~Estimated;clear~Mouth clearance to the ramp's foot~200~mm~model parameter~Estimated;h_lip~Ramp's foot on the kiln's wall, over the floor level~800~mm~derived~Estimated;" ' parameter table rows
+Const kiln_inlet_chamber_TAB_2     As String  = "ramp_deg~Floor ramp's slope (foot to the far top corner)~41.4237~deg~derived~Estimated;volume~Volume (to the roof)~138.72~m3~derived~Estimated;u_ports~Burner, door and inspection ports~-~~no source~Unknown;u_bypass~Gas bypass take-off~-~~no source~Unknown;u_meal~Meal entry (injected in the solver)~-~~no source~Unknown;u_shell~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
+Const kiln_inlet_chamber_TAB_3     As String  = ""           ' parameter table rows
+Const kiln_inlet_chamber_TAB_4     As String  = ""           ' parameter table rows
+Const kiln_inlet_chamber_TAB_5     As String  = ""           ' parameter table rows
+Const kiln_inlet_chamber_TAB_6     As String  = ""           ' parameter table rows
+Const kiln_inlet_chamber_TAB_7     As String  = ""           ' parameter table rows
+Const kiln_inlet_chamber_TAB_8     As String  = ""           ' parameter table rows
 ' END GENERATED
 
 ' Sheet [m on paper]: A1 landscape, ISO 5457 frame
@@ -259,6 +273,16 @@ Const COO_FLOOR_Y As Double = 0.3
 Const COO_END_X   As Double = 0.14
 Const COO_END_Y   As Double = 0.13
 
+' kiln inlet chamber (1:50, first angle): the side view (x right, z up), the plan
+' under it, the view from the kiln's wall (+x) to the left of the side view
+Const KIC_SIDE_X  As Double = 0.36
+Const KIC_SIDE_Y  As Double = 0.42
+Const KIC_PLAN_Y  As Double = 0.2
+Const KIC_END_X   As Double = 0.14
+Const KIC_END_Y   As Double = 0.42
+Const KIC_STUB    As Double = 0.001     ' the throat disc over the roof (kiln_inlet_chamber.bas, STUB_T)
+
+
 Const LINE_KEY As String = "2500"
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 Const DRAW_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\drawings\"
@@ -283,7 +307,7 @@ Dim swDraw  As SldWorks.DrawingDoc
 Dim swSkMgr As SldWorks.SketchManager
 Dim swMath  As SldWorks.MathUtility
 
-Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kiln" or "cooler": what this run draws
+Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler" or "kiln_inlet_chamber": what this run draws
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
@@ -347,6 +371,12 @@ Sub cooler()
 End Sub
 
 
+Sub kiln_inlet_chamber()
+    Build "kiln_inlet_chamber"
+End Sub
+
+
+
 Private Sub Build(ByVal which As String)
 
     Dim why As String
@@ -367,6 +397,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
+    ElseIf equip = "kiln_inlet_chamber" Then
+        scaleD = 50#: detailD = 50#: detX = 0.63: detY = DET_Y
     Else
         scaleD = 100#: detailD = 20#: detX = 0.63: detY = DET_Y
         LoadVolute
@@ -443,6 +475,9 @@ Private Sub ParseTable()
               calciner_TAB_6 & calciner_TAB_7 & calciner_TAB_8
     ElseIf equip = "cooler" Then
         all = cooler_TAB_1 & cooler_TAB_2 & cooler_TAB_3 & cooler_TAB_4 & cooler_TAB_5 & cooler_TAB_6 & cooler_TAB_7 & cooler_TAB_8
+    ElseIf equip = "kiln_inlet_chamber" Then
+        all = kiln_inlet_chamber_TAB_1 & kiln_inlet_chamber_TAB_2 & kiln_inlet_chamber_TAB_3 & kiln_inlet_chamber_TAB_4 & _
+              kiln_inlet_chamber_TAB_5 & kiln_inlet_chamber_TAB_6 & kiln_inlet_chamber_TAB_7 & kiln_inlet_chamber_TAB_8
     ElseIf equip = "kiln" Then
         all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
     Else
@@ -658,8 +693,36 @@ Private Sub CheckCoolerBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+Private Sub CheckKicBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim want(5) As Double, i As Long, nm As Variant
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    want(0) = -0.5 * KIC_A: want(3) = 0.5 * KIC_A
+    want(1) = -0.5 * KIC_A: want(4) = 0.5 * KIC_A
+    want(2) = KIC_H_LIP: want(5) = KIC_H + KIC_STUB
+    For i = 0 To 5
+        If Abs(box(i) - want(i)) > 0.01 Then
+            Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's chamber has " & Num(want(i), 3) & _
+                 " -- rebuild it with kiln_inlet_chamber.bas."
+        End If
+    Next i
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m (as the source)"
+End Sub
+
+
 Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
-    If equip = "cooler" Then
+    If equip = "kiln_inlet_chamber" Then
+        CheckKicBox doc
+        Exit Sub
+    ElseIf equip = "cooler" Then
         CheckCoolerBox doc
         Exit Sub
     ElseIf equip = "kiln" Then
@@ -787,6 +850,8 @@ Private Sub MakeViews()
         MakeViewsKiln
     ElseIf equip = "cooler" Then
         MakeViewsCooler
+    ElseIf equip = "kiln_inlet_chamber" Then
+        MakeViewsKic
     Else
         MakeViewsVolute
     End If
@@ -935,7 +1000,26 @@ Private Sub MakeViewsCooler()
 End Sub
 
 
-Private Sub MakeViewsC1()
+' The kiln inlet chamber (1:50), first-angle projection: the side view (x
+' right, z up: the ramp in profile), the plan under it (the roof: x right,
+' y up; hidden lines on show the mouth and the ramp), and to the LEFT of the
+' side view the view from the +x wall, the kiln's wall (y right, z up: the
+' mouth is a true circle).
+Private Sub MakeViewsKic()
+    Set vFront = OrientedView(1, 0, 0, 0, 0, 1, KIC_SIDE_X, KIC_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+    swDraw.EditSheet
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, KIC_SIDE_X, KIC_PLAN_Y, "plan")
+    HiddenLinesVisible vTop
+    LogMap vTop, "plan", scaleD
+    swDraw.EditSheet
+    Set vSide = OrientedView(0, 1, 0, 0, 0, 1, KIC_END_X, KIC_END_Y, "end")
+    LogMap vSide, "end", scaleD
+    Note "views: side " & vFront.Name & ", plan " & vTop.Name & ", end (from +x) " & vSide.Name
+End Sub
+
+
+'Private Sub MakeViewsC1()
 
     Dim R As Double, rx As Double, xa As Double, xb As Double
     Dim ax As Double, ay As Double, qx As Double, qy As Double
@@ -1216,8 +1300,11 @@ Private Function Maps(v As SldWorks.View, ByVal rx As Double, ByVal ry As Double
     ToSheet v, rx, ry, rz, ax, ay
     ToSheet v, ux, uy, uz, qx, qy
     ax = ax - ox: ay = ay - oy: qx = qx - ox: qy = qy - oy
+    ' (a direction along the view's own line of sight projects to a point, and
+    ' noise must not pass for a direction: both unit vectors must keep most of
+    ' their length, 1 m / scale on the sheet)
     Maps = (ax > 0.9 * Sqr(ax * ax + ay * ay)) And (qy > 0.9 * Sqr(qx * qx + qy * qy)) _
-           And (Sqr(ax * ax + ay * ay) > 0#) And (Sqr(qx * qx + qy * qy) > 0#)
+           And (Sqr(ax * ax + ay * ay) > 0.5 / scaleD) And (Sqr(qx * qx + qy * qy) > 0.5 / scaleD)
 End Function
 
 
@@ -1255,6 +1342,8 @@ Private Sub DimensionAll()
         DimensionKiln
     ElseIf equip = "cooler" Then
         DimensionCooler
+    ElseIf equip = "kiln_inlet_chamber" Then
+        DimensionKic
     Else
         DimensionVolute
     End If
@@ -1391,6 +1480,60 @@ Private Sub DimensionCooler()
         "line", xe, -hw, 0.5 * COO_H, 0, 0, _
         "", 0, 0, 0, 0, 0, _
         xe, -hw - 3#, 0.5 * COO_H
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The kiln inlet chamber's reference dimensions, each between edges the solid
+' has: the plan's side (the roof edge in the side view, the +x wall's top edge
+' in the plan), the kiln's wall from the ramp's foot to the roof (a vertical
+' edge in the side view), the throat's outlet circle (plan, a true circle at
+' the disc's top), the kiln mouth's circle (view from +x, a true circle) and
+' the ramp's slope (between the ramp's edge and the roof's, side view). The
+' near side wall (y = -a or +a) is found, not assumed.
+Private Sub DimensionKic()
+    Dim a As Double, ys As Double, zr As Double
+    a = 0.5 * KIC_A
+    zr = KIC_H
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    ys = -a
+    If FindEdge(vFront, "line", 0#, ys, zr, 0, 0, 0, 0) Is Nothing Or foundDist > SEL_TOL Then ys = a
+    Note "side view: the near wall is at y = " & Num(ys, 3) & " m"
+
+    DimEdges "a_plan", KIC_A, vFront, _
+        "line", 0, ys, zr, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        0, ys, zr + 1.8
+    DimEdges "a_plan", KIC_A, vTop, _
+        "line", a, 0, zr, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        a + 1.8, 0, zr
+    DimEdges "h_wall", KIC_H - KIC_H_LIP, vFront, _
+        "line", a, ys, 0.5 * (KIC_H + KIC_H_LIP), 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        a + 1.8, ys, 0.5 * (KIC_H + KIC_H_LIP)
+    DimEdges "ramp_deg", KIC_RAMP_DEG, vFront, _
+        "line", 0, ys, 0.5 * (zr + KIC_H_LIP), 0, 0, _
+        "line", 0, ys, zr, 0, 0, _
+        -1#, ys, zr - 0.9
+    DimEdges "D_throat", KIC_D_THROAT, vTop, _
+        "circle", 0, 0, zr + KIC_STUB, 0.5 * KIC_D_THROAT, zr + KIC_STUB, _
+        "", 0, 0, 0, 0, 0, _
+        0.5 * KIC_D_THROAT + 1.2, 0.5 * KIC_D_THROAT + 0.8, zr + KIC_STUB
+    DimEdges "D_mouth", KIC_D_MOUTH, vSide, _
+        "circle", a, 0, 0.5 * KIC_A, 0.5 * KIC_D_MOUTH, 0.5 * KIC_A, _
+        "", 0, 0, 0, 0, 0, _
+        0.5 * KIC_D_MOUTH + 1.4, 0.5 * KIC_D_MOUTH + 0.6, 0.5 * KIC_A
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -1694,7 +1837,7 @@ Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.Vi
     nDims = nDims + 1
     st = StatusOf(key)
     If st <> "Verified" And st <> "Estimated" Then Fail key & " is " & st & ": it may not be dimensioned."
-    isAngle = (key = "inlet_slope")
+    isAngle = (key = "inlet_slope" Or key = "ramp_deg")
 
     swModel.ClearSelection2 True
     If Not PickEdge(v, k1, x1, y1, z1, p11, p12, False, key & " edge 1") Then Exit Sub
@@ -1891,11 +2034,17 @@ Private Sub SheetFurniture()
     swSkMgr.AddToDB = True
     swSkMgr.DisplayWhenAdded = False
     CalibrateSheetSketch
+    phase = "drawing the frame"
     DrawFrame
+    phase = "drawing the title block"
     DrawTitle
+    phase = "drawing the parameter table"
     DrawTable
+    phase = "drawing the notes"
     DrawNotes
+    phase = "drawing the flow arrows"
     DrawFlows
+    phase = "drawing the centre lines"
     DrawAxes
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -1961,12 +2110,12 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
-    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln", "CI-RK-", IIf(equip = "cooler", "CI-CL-", "CI-PH-")) & equip & "-001"
+    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln" Or equip = "kiln_inlet_chamber", "CI-RK-", IIf(equip = "cooler", "CI-CL-", "CI-PH-")) & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"
+    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")")
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -2041,6 +2190,7 @@ Private Function TitleText() As String
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     Case "kiln": TitleText = "ROTARY KILN TUBE"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
+    Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
     End Select
 End Function
 
@@ -2063,6 +2213,11 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.007, "4. The clinker bed is a cell zone in the box, not a body; the vent outlet has no source.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Floor: " & Num(COO_SEGMENTS, 0) & " air segments (FLS); hood opening over the first two.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/cooler/cooler.md", TEXT_H
+    ElseIf equip = "kiln_inlet_chamber" Then
+        LabelPH COL_X0, y + 0.012, "3. Frame: x from the calciner axis, the kiln's mouth on the +x wall; z up from the floor level.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. Flat roof at z = H with the calciner's throat; floor: one ramp, the kiln's wall to the far corner.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Meal enters in the solver (no inlet in the solid).  Dimensions mm; first-angle projection.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln_inlet_chamber.md", TEXT_H
     ElseIf equip = "kiln" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: axis z; z = 0 at the back end (kiln inlet chamber), hood end at z = L.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. The slope (table) is installed, not built into the solid.  Dimensions mm.", TEXT_H
@@ -2103,6 +2258,8 @@ Private Sub DrawFlows()
         DrawFlowsKiln
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
+    ElseIf equip = "kiln_inlet_chamber" Then
+        DrawFlowsKic
     Else
         DrawFlowsVolute
     End If
@@ -2145,6 +2302,31 @@ Private Sub DrawFlowsCooler()
     LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment)"
     LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "Hood opening (to the kiln and the tertiary air)"
     LabelM3 vFront, 20#, 0#, 0.7, "Clinker travel (bed zone)"
+End Sub
+
+
+' The chamber's flows: the kiln gas in through the +x wall's mouth (side and
+' end views) and up out of the throat; the meal slides down the ramp and out
+' through the mouth into the kiln (the meal itself enters in the solver).
+Private Sub DrawFlowsKic()
+    Dim a As Double, zc As Double
+    a = 0.5 * KIC_A: zc = 0.5 * KIC_A
+    UseLayer L_FLOW
+    ArrowM3 vFront, a + 3.2, 0#, zc + 0.6, a + 0.4, 0#, zc + 0.6
+    ArrowM3 vFront, 0#, 0#, KIC_H + KIC_STUB + 0.3, 0#, 0#, KIC_H + KIC_STUB + 2.2
+    ArrowM3 vFront, 1.2, 0#, KIC_H_LIP + 1.6, a - 0.2, 0#, KIC_H_LIP + 0.15
+    UseLayer L_TEXT
+    LabelM3 vFront, a + 0.4, 0#, zc + 1.2, "Kiln gas in (from the kiln)"
+    LabelM3 vFront, 0.5, 0#, KIC_H + KIC_STUB + 2.6, "Gas out (to the calciner throat)"
+    ' View captions: each one's left edge under the view's left edge; the
+    ' side and end views (one row) share one baseline.
+    Dim sxS As Double, sxE As Double, sxP As Double, syRow As Double, syPlan As Double, t As Double
+    ToSheet vFront, -a, 0#, KIC_H_LIP, sxS, syRow
+    ToSheet vSide, -a, 0#, KIC_H_LIP, sxE, t
+    ToSheet vTop, -a, -a, KIC_H, sxP, syPlan
+    LabelPH sxE, syRow - 0.012, "END VIEW - from the kiln (mouth in the +x wall)", TEXT_H
+    LabelPH sxS, syRow - 0.012, "SIDE VIEW - meal slides down the ramp into the kiln", TEXT_H
+    LabelPH sxP, syPlan - 0.012, "PLAN - throat (outlet) in the roof", TEXT_H
 End Sub
 
 
@@ -2245,6 +2427,8 @@ Private Sub DrawAxes()
         DrawAxesKiln
     ElseIf equip = "cooler" Then
         DrawAxesCooler
+    ElseIf equip = "kiln_inlet_chamber" Then
+        DrawAxesKic
     Else
         DrawAxesVolute
     End If
@@ -2272,6 +2456,22 @@ Private Sub DrawAxesCooler()
     AxisM vTop, -1#, 0#, COO_H, COO_L + 1#, 0#, COO_H
     AxisM vLeft, -1#, 0#, 0#, COO_L + 1#, 0#, 0#
     AxisM vSide, COO_L * 0#, 0#, -0.6, COO_L * 0#, 0#, COO_H + 0.6
+End Sub
+
+
+' The chamber's centre lines: the throat's axis in the side view and the
+' cross in the plan, the kiln's axis in the side view and the mouth's cross in
+' the view from +x.
+Private Sub DrawAxesKic()
+    Dim a As Double, zc As Double
+    a = 0.5 * KIC_A: zc = 0.5 * KIC_A
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, KIC_H_LIP - 0.6, 0#, 0#, KIC_H + KIC_STUB + 0.6
+    AxisM vFront, -a - 0.6, 0#, zc, a + 1#, 0#, zc
+    AxisM vTop, -a - 0.6, 0#, KIC_H, a + 0.6, 0#, KIC_H
+    AxisM vTop, 0#, -a - 0.6, KIC_H, 0#, a + 0.6, KIC_H
+    AxisM vSide, a, -0.5 * KIC_D_MOUTH - 0.6, zc, a, 0.5 * KIC_D_MOUTH + 0.6, zc
+    AxisM vSide, a, 0#, zc - 0.5 * KIC_D_MOUTH - 0.6, a, 0#, zc + 0.5 * KIC_D_MOUTH + 0.6
 End Sub
 
 
@@ -2348,6 +2548,12 @@ Private Sub AxisM(v As SldWorks.View, ByVal xa As Double, ByVal ya As Double, By
     Dim ax As Double, ay As Double, qx As Double, qy As Double
     ToSheet v, xa, ya, za, ax, ay
     ToSheet v, xb, yb, zb, qx, qy
+    ' a line along the view's own direction projects to a point: left out and logged
+    If Sqr((qx - ax) ^ 2 + (qy - ay) ^ 2) < 0.0002 Then
+        Note "centre line left out: it projects to a point in view " & v.Name & " (model (" & Num(xa, 2) & ", " & Num(ya, 2) & ", " & Num(za, 2) & _
+             ") to (" & Num(xb, 2) & ", " & Num(yb, 2) & ", " & Num(zb, 2) & "))"
+        Exit Sub
+    End If
     LineP ax, ay, qx, qy
 End Sub
 
@@ -2391,7 +2597,10 @@ End Sub
 ' Sheet sketch primitives [m on paper]
 '------------------------------------------------------------------
 Private Sub LineP(ByVal a As Double, ByVal b As Double, ByVal c As Double, ByVal d As Double)
-    If swSkMgr.CreateLine(skPerM * a, skPerM * b, 0#, skPerM * c, skPerM * d, 0#) Is Nothing Then Fail "CreateLine failed."
+    If swSkMgr.CreateLine(skPerM * a, skPerM * b, 0#, skPerM * c, skPerM * d, 0#) Is Nothing Then
+        Fail "CreateLine failed from (" & Format(1000# * a, "0.0") & ", " & Format(1000# * b, "0.0") & _
+             ") to (" & Format(1000# * c, "0.0") & ", " & Format(1000# * d, "0.0") & ") mm on the sheet."
+    End If
 End Sub
 
 Private Sub RectP(ByVal a As Double, ByVal b As Double, ByVal c As Double, ByVal d As Double)

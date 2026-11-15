@@ -217,6 +217,7 @@ Const CROSS_GAP      As Double = 0.5      ' a meal pipe is broken this far eithe
 '    COOLER_H: cooler casing height [m]
 '    COOLER_DROP: cooler top below the kiln shell at discharge [m]
 Const MEAL_INTO_CHAMBER As Double = 1#    ' C5 meal lands this far in from the chamber's side [m]
+Const C5_ARROW_FROM_END As Double = 5#    ' the two C5 pipes' arrows: this far back from the throat, so both stand alike [m]
 Const MIN_SEG        As Double = 0.05     ' a wall piece beside an opening shorter than this is left out [m]
 Const CLINKER_OUT_Z  As Double = 3.5      ' clinker transport drawn this far below ground [m]
 Const VENT_IN        As Double = 3#       ' cooler vent this far in from the cooler's end [m]
@@ -916,9 +917,10 @@ Private Sub DrawPlant()
         BendEnd col(4), zDust(4) - C4_MEAL_DROP, sd * rCalc, zFeed, xe, zc
         PathM "meal: C4 " & side & " -> calciner", Array(col(4), zDust(4), col(4), zDust(4) - C4_MEAL_DROP, _
               xe, zc, sd * rCalc, zFeed)
-        BendEnd xi, zDust(5) - C5_MEAL_DROP, sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh, xe, zc
-        PathM "meal: C5 " & side & " -> kiln inlet chamber", Array(xi, zDust(5), xi, zDust(5) - C5_MEAL_DROP, _
-              xe, zc, sd * (aCh - MEAL_INTO_CHAMBER), zCh0 + 2# * aCh)
+        ' into the middle of the throat's cylinder, a few metres over the chamber's roof
+        BendEnd xi, zDust(5) - C5_MEAL_DROP, sd * rThroat, zThroat + 0.5 * CALC_THROAT_D, xe, zc
+        PathM "meal: C5 " & side & " -> calciner throat", Array(xi, zDust(5), xi, zDust(5) - C5_MEAL_DROP, _
+              xe, zc, sd * rThroat, zThroat + 0.5 * CALC_THROAT_D), C5_ARROW_FROM_END
         UseLayer L_GAS
     Next k
 
@@ -1515,7 +1517,7 @@ End Sub
 ' the parts inside, and CROSS_GAP either side, are not drawn. Edges it
 ' only starts or ends on (its dust outlet, the wall it enters) do not
 ' count. The arrow rides on the longest part drawn.
-Private Sub PathM(ByVal what As String, pts As Variant)
+Private Sub PathM(ByVal what As String, pts As Variant, Optional ByVal arrowFromEnd As Double = -1#)
     Dim n As Long, i As Long, j As Long, m As Long, q As Long, nb As Long
     Dim xa As Double, za As Double, dx As Double, dz As Double, L As Double
     Dim ex As Double, ez As Double, den As Double, t As Double, u As Double, tg As Double
@@ -1573,6 +1575,15 @@ Private Sub PathM(ByVal what As String, pts As Variant)
         Next j
     Next i
     If inBody Then Fail what & " ends behind an outline."
+    If arrowFromEnd >= 0# Then
+        ' the arrow a fixed distance back from the end on the last run, not on the longest drawn part
+        dx = pts(2 * n - 2) - pts(2 * n - 4): dz = pts(2 * n - 1) - pts(2 * n - 3)
+        L = Sqr(dx * dx + dz * dz)
+        If arrowFromEnd > L Then Fail what & ": the arrow's distance from the end is longer than its last run."
+        bdx = dx / L: bdz = dz / L
+        bx = pts(2 * n - 2) - arrowFromEnd * bdx: bz = pts(2 * n - 1) - arrowFromEnd * bdz
+        bl = 1#
+    End If
     If bl > 0# Then ArrowAt bx, bz, bdx, bdz
     Note "-- " & what & IIf(nb > 0, " (broken behind " & nb \ 2 & " outlines)", "")
 End Sub

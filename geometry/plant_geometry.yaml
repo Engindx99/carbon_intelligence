@@ -245,6 +245,8 @@ kiln_hood:
   air_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
 kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
+  mouth_clearance:     {value: 0.2,    unit: m,      source: model,       doc: kiln/kiln_inlet_chamber.md}   # the kiln mouth's circle stands this far clear of the roof's start and the ramp's lip (no tangent split line); no source
+  gas_velocity_ref_holcim: {value: 23.0, unit: m/s,  source: literature,  doc: kiln/kiln_inlet_chamber.md}   # Holcim StDC 2022, one company's standard: reported, not the check
 
 # ---------------------------------------------------------------------
 # Meal pipes C1-C5 (user decision, 16 Nov 2026: scale the one literature

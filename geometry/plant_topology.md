@@ -251,6 +251,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `MEAL_BEND` | 1 | çizimin kendi Const'u |
 | `CROSS_GAP` | 0.5 | çizimin kendi Const'u |
 | `MEAL_INTO_CHAMBER` | 1 | çizimin kendi Const'u |
+| `C5_ARROW_FROM_END` | 5 | çizimin kendi Const'u |
 | `MIN_SEG` | 0.05 | çizimin kendi Const'u |
 | `CLINKER_OUT_Z` | 3.5 | çizimin kendi Const'u |
 | `VENT_IN` | 3 | çizimin kendi Const'u |
