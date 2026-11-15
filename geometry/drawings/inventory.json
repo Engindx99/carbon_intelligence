@@ -1667,7 +1667,7 @@
         "Estimated": 4
       },
       "missing": [
-        "kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown"
+        "kiln/kiln_inlet_chamber.md: no published size; shape is the user-approved model (layout square passing the velocity check, one ramp, flat roof); bypass and lining unknown; no twin volume"
       ],
       "cfd_solid": "kiln_inlet_chamber.SLDPRT",
       "pid_sheets": [

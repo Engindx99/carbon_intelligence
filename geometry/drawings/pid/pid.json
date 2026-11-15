@@ -957,10 +957,10 @@
       "sheet": "KI",
       "from": "KIC.gas_out",
       "to": "OPC-04",
-      "size_ref": "absent",
-      "size_m": null,
-      "size_text": "-",
-      "status": "Unknown",
+      "size_ref": "derived:calciner().D_throat",
+      "size_m": 3.13007717954508,
+      "size_text": "D 3.130 E",
+      "status": "Estimated",
       "inputs": []
     },
     {

@@ -110,10 +110,11 @@ lines:
   A303: {service: air_hot, sheet: KI, from: HOOD.sec_out, to: KILN.air_in, size: absent}
   A304: {service: air_hot, sheet: KI, from: OPC-07, to: HOOD.ter_in, size: absent}
   A305: {service: air_hot, sheet: KI, from: HOOD.ter_out, to: OPC-05, size: absent}
-  M301: {service: meal_hot, sheet: KI, from: OPC-03, to: KIC.meal_in, size: "derived:meal_pipes()[5].D"}
+  M301: {service: meal_hot, sheet: KI, from: OPC-03, to: KIC.meal_in, size: "derived:meal_pipes()[5].D",
+         note: "the C5 pipes enter the calciner throat (approved topology); the meal falls against the kiln gas into the chamber; the twin hands it straight to the kiln"}
   M302: {service: meal_hot, sheet: KI, from: KIC.meal_out, to: KILN.meal_in, size: absent}
   G302: {service: gas, sheet: KI, from: KILN.gas_out, to: KIC.gas_in, size: "yaml:kiln.D"}
-  G303: {service: gas, sheet: KI, from: KIC.gas_out, to: OPC-04, size: absent}
+  G303: {service: gas, sheet: KI, from: KIC.gas_out, to: OPC-04, size: "derived:calciner().D_throat"}
   K301: {service: clinker, sheet: KI, from: KILN.clinker_out, to: OPC-08, size: absent}
   # ================= sheet 4: cooler =================
   A401: {service: air_cooler, sheet: CO, from: SRC.cooler_air, to: COOL.grate_air, size: absent}
@@ -126,7 +127,7 @@ lines:
 connectors:        # one per stream that changes sheet; ends one line, starts one
   OPC-01: {service: gas,       from_sheet: CA, to_sheet: PH, label: "GOOSENECK GAS TO C5"}
   OPC-02: {service: meal_hot,  from_sheet: PH, to_sheet: CA, label: "C4 MEAL TO CALCINER"}
-  OPC-03: {service: meal_hot,  from_sheet: PH, to_sheet: KI, label: "C5 MEAL TO KILN INLET CHAMBER"}
+  OPC-03: {service: meal_hot,  from_sheet: PH, to_sheet: KI, label: "C5 MEAL VIA THROAT TO KILN INLET CHAMBER"}
   OPC-04: {service: gas,       from_sheet: KI, to_sheet: CA, label: "KILN GAS TO CALCINER THROAT"}
   OPC-05: {service: air_hot,   from_sheet: KI, to_sheet: CA, label: "TERTIARY AIR FROM HOOD"}
   OPC-06: {service: air_hot,   from_sheet: CO, to_sheet: KI, label: "SECONDARY AIR FROM COOLER"}

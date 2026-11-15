@@ -122,7 +122,7 @@ Hat ölçüsü durumu çizimlerdeki gibidir: yayınlanmış → Verified, türet
 | F301 | fuel | SRC.fuel_kiln | BRN.fuel_in | KI | - | Unknown |
 | G301 | gas | BRN.flame_out | KILN.burner_in | KI | - | Unknown |
 | G302 | gas | KILN.gas_out | KIC.gas_in | KI | D 4.800 | Verified |
-| G303 | gas | KIC.gas_out | OPC-04 | KI | - | Unknown |
+| G303 | gas | KIC.gas_out | OPC-04 | KI | D 3.130 E | Estimated |
 | K301 | clinker | KILN.clinker_out | OPC-08 | KI | - | Unknown |
 | M301 | meal_hot | OPC-03 | KIC.meal_in | KI | D 0.694 E | Estimated |
 | M302 | meal_hot | KIC.meal_out | KILN.meal_in | KI | - | Unknown |
