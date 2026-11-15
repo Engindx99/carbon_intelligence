@@ -864,6 +864,11 @@ def _kiln_rows(g):
         row_src("Eğim", k["slope"]),
         row_src("Geçiş bölgesi (arka uç)", k["transition_L"]),
         row_der("Yanma bölgesi", kk["burning_L"], "m", 2),
+        row_src("Sac kabuk kalınlığı", k["shell_t"], digits=3),
+        row_src("Tuğla (astar) kalınlığı", k["lining_t"], digits=3),
+        row_src("Coating, yanma bölgesi", k["burning_coating_t"], digits=3,
+                note="kabuk 190–220 °C (Sadighi 2011)"),
+        row_src("Coating, geçiş bölgesi", k["transition_coating_t"], digits=3, note="kaynak yok"),
         row_der("**Ekipman hacmi**", kk["volume"], "m³", 2),
         row_der("**Duvar alanı**", kk["wall_area"], "m²", 2),
     ]

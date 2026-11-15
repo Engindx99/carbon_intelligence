@@ -112,10 +112,10 @@ class Burning:
         #
         # Faz 6: the single (thickness, conductivity, h_ext)
         # triple is replaced by the layer stack in physics.shell.
-        # refractory_thickness survives only as the wall's
-        # thermal-mass thickness (V_wall below) and is now read
-        # off the stack, so the mass and the resistance cannot
-        # describe different walls.
+        # refractory_thickness is the stack's total thickness; the
+        # wall's thermal mass is the stack's own (shell.C_cell),
+        # so the mass and the resistance cannot describe
+        # different walls.
         # ======================================================
         self.wall_stack = wall_stack(cfg, self.zone)
 
@@ -165,12 +165,12 @@ class Burning:
         # ======================================================
         self.rho_g = 0.30
         self.rho_s = 1100.0
-        self.rho_wall = 3000.0
 
         self.Cp_g = 1150.0
         # Solid Cp and enthalpy: physics.cp_solid / h_solid, one
         # definition for every solid stream in the plant.
-        self.Cp_wall = 1000.0
+        # The wall's heat capacity is the layer stack's own
+        # (rho_j cp_j over each annulus, physics.shell), set below.
 
         # ======================================================
         # MOTION
@@ -324,13 +324,15 @@ class Burning:
             * self.Cp_g
         )
 
-        self.V_wall_cell = self.V_wall / self.N
-
-        self._rho_wall_Vwall_cell_Cp = (
-            self.rho_wall
-            * self.V_wall_cell
-            * self.Cp_wall
-        )
+        # [J/K] per cell: coating + brick + steel, each with its
+        # own rho cp over its own annulus -- the same wall the
+        # shell resistance is built from.
+        self._rho_wall_Vwall_cell_Cp = self.shell.C_cell
+        if self._rho_wall_Vwall_cell_Cp is None:
+            raise ValueError(
+                f"wall_stack.{self.zone}: every layer needs rho and "
+                "cp -- the kiln's wall mass is the stack's own"
+            )
 
 
     # ======================================================

@@ -524,6 +524,13 @@ def kiln(g):
         "L": L,
         "slope": v(k["slope"]),
         "transition_L": v(k["transition_L"]),
+        # the wall stack's thicknesses, hot face outward (physics.shell)
+        "lining": {
+            "steel_shell": v(k["shell_t"]),
+            "brick": v(k["lining_t"]),
+            "coating_burning": v(k["burning_coating_t"]),
+            "coating_transition": v(k["transition_coating_t"]),
+        },
         "burning_L": L - v(k["transition_L"]),
         "volume": 0.25 * math.pi * D * D * L,
         "wall_area": math.pi * D * L,
@@ -1309,7 +1316,7 @@ def gooseneck_plant(g):
 # The config keys that are geometry: they come from here and must not
 # be written in configs/twin_cfg.yaml.
 TWIN_KEYS = {
-    "kiln": ("length", "diameter"),
+    "kiln": ("length", "diameter", "lining"),
     "transition": ("length",),
     "motion": ("inclination_pct",),
     "calciner": ("length", "diameter", "zone_segments"),
@@ -1360,7 +1367,7 @@ def twin_sections(g=None):
     n5 = strings * c5["per_string"]
 
     return {
-        "kiln": {"length": k["L"], "diameter": k["D"]},
+        "kiln": {"length": k["L"], "diameter": k["D"], "lining": dict(k["lining"])},
         "transition": {"length": k["transition_L"]},
         "motion": {"inclination_pct": k["slope"]},
         "calciner": {

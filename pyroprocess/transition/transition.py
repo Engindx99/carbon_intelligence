@@ -82,9 +82,6 @@ class Transition:
 
         self.refractory_thickness = self.wall_stack.thickness
 
-        self.V_wall = self.A_wall * self.refractory_thickness
-        self.V_wall_cell = self.V_wall / self.N
-
         self.shell = self.wall_stack.geometry(
             r_inner=0.5 * self.D,
             L_cell=self.dz,
@@ -98,12 +95,12 @@ class Transition:
         # ================= PROPERTIES =================
         self.rho_g = 0.30
         self.rho_s = 1100.0
-        self.rho_wall = 3000.0
 
         self.Cp_g = 1150.0
         # Solid Cp and enthalpy: physics.cp_solid / h_solid, one
         # definition for every solid stream in the plant.
-        self.Cp_wall = 1000.0
+        # The wall's heat capacity is the layer stack's own
+        # (rho_j cp_j over each annulus, physics.shell).
 
         # ================= BED =================
         # fill_fraction used to be pinned here at 0.10 and nothing
@@ -144,7 +141,12 @@ class Transition:
 
         # ================= CACHE =================
         self._rho_g_Vcell_Cp_g = self.rho_g * self.V_cell * self.Cp_g
-        self._rho_wall_Vwall_cell_Cp = self.rho_wall * self.V_wall_cell * self.Cp_wall
+        self._rho_wall_Vwall_cell_Cp = self.shell.C_cell
+        if self._rho_wall_Vwall_cell_Cp is None:
+            raise ValueError(
+                f"wall_stack.{self.zone}: every layer needs rho and "
+                "cp -- the kiln's wall mass is the stack's own"
+            )
 
 
     # ======================================================

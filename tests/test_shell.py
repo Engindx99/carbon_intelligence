@@ -544,12 +544,13 @@ class PlantWallStackTest(unittest.TestCase):
 
     # Hot-face temperature each surface sees, and the band its
     # outer skin is expected to land in [K]. The rotary zones are
-    # BARE steel (350-670 K, the refractory-anchor limit); the
+    # BARE steel: from Sadighi et al. 2011's lower operating edge,
+    # 190 C (463.15 K), to the refractory-anchor limit, 670 K. The
     # other three are lagged casings that have to stay near
     # touchable (310-420 K).
     CASES = {
-        "burning": (1650.0, 480.0, 670.0),
-        "transition": (1620.0, 480.0, 670.0),
+        "burning": (1650.0, 463.15, 670.0),
+        "transition": (1620.0, 463.15, 670.0),
         "calciner": (1600.0, 310.0, 420.0),
         "preheater": (1500.0, 310.0, 420.0),
         "cooler": (1100.0, 310.0, 420.0),
@@ -608,10 +609,16 @@ class PlantWallStackTest(unittest.TestCase):
         calibration factor, is what puts the model there.
         """
 
+        # The burning zone's coating is sized to hold the shell at
+        # Sadighi et al. 2011's 190-220 C (plant_geometry.yaml
+        # kiln.burning_coating_t); at that skin the film carries
+        # ~3 kW/m^2, so the lower edge is 2.5 kW/m^2 there.
+        bands = {"burning": (2.5e3, 8e3), "transition": (3e3, 8e3)}
+
         for zone in ("burning", "transition"):
             with self.subTest(zone=zone):
                 _, geom = self.build(zone)
-                R_total, _, info = shell_closure(
+                R_total, T_s, info = shell_closure(
                     self.CASES[zone][0], geom, 300.0
                 )
                 flux = (
@@ -619,10 +626,52 @@ class PlantWallStackTest(unittest.TestCase):
                     / R_total
                     / geom.A_outer_cell
                 )
-                self.assertTrue(3e3 < flux < 8e3, f"{zone}: {flux:.0f}")
+                lo, hi = bands[zone]
+                self.assertTrue(lo < flux < hi, f"{zone}: {flux:.0f}")
                 self.assertFalse(info["Ra_limit_exceeded"])
 
-    def test_lagged_vessels_lose_an_order_of_magnitude_less(self):
+    def test_burning_shell_in_sadighi_band_and_bare_brick_check(self):
+        """
+        At a 1400 C hot face on the twin's bore the coated stack
+        holds the shell in Sadighi's 190-220 C; without coating the
+        same brick and film give Mosci's 415-434 C (bare 200-250 mm
+        linings at 1400 C), which checks the brick k and the film.
+        """
+
+        stack = wall_stack(None, "burning")
+        geom = stack.geometry(2.4, 1.0, 4.8 + 2.0 * stack.thickness)
+        _, T_s, _ = shell_closure(1673.15, geom, 300.0)
+        self.assertTrue(463.15 <= T_s <= 493.15, f"{T_s - 273.15:.1f} C")
+
+        bare = WallStack(
+            "burning", stack.layers[1:], stack.emissivity, stack.orientation
+        )
+        g_bare = bare.geometry(2.4, 1.0, 4.8 + 2.0 * bare.thickness)
+        _, T_b, _ = shell_closure(1673.15, g_bare, 300.0)
+        self.assertTrue(
+            688.15 - 15.0 <= T_b <= 707.15 + 15.0, f"{T_b - 273.15:.1f} C"
+        )
+
+    def test_kiln_heat_capacity_is_the_annuli(self):
+
+        stack = wall_stack(None, "burning")
+        r, L = 2.4, 1.0
+        geom = stack.geometry(r, L, 5.0)
+        expected = 0.0
+        for layer in stack.layers:
+            expected += (
+                layer.density * layer.specific_heat * math.pi
+                * ((r + layer.thickness) ** 2 - r * r) * L
+            )
+            r += layer.thickness
+        self.assertAlmostEqual(geom.C_cell / expected, 1.0, places=12)
+
+        # a 3-element layer still loads and leaves no heat capacity
+        self.assertIsNone(
+            wall_stack(None, "cooler").planar_geometry(1.0, 1.0, 3.0).C_cell
+        )
+
+    def test_lagged_vessels_lose_less_than_the_kiln(self):
 
         _, kiln = self.build("burning")
         _, tower = self.build("calciner")
@@ -639,7 +688,11 @@ class PlantWallStackTest(unittest.TestCase):
             / tower.A_outer_cell
         )
 
-        self.assertGreater(q_kiln / q_tower, 3.0)
+        # Only the certain direction is checked: a bare kiln shell
+        # loses more per unit area than a lagged casing. The tower
+        # stacks (calciner, preheater, cooler) are not sourced yet,
+        # so no ratio threshold is set until they are.
+        self.assertGreater(q_kiln, q_tower)
 
     def test_horizontal_zones_stay_inside_the_correlation(self):
 

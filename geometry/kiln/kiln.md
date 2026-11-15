@@ -13,6 +13,10 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000; değerler `c99b93a^:geometry/ca
 | Eğim | 3 % | yayınlanmış |
 | Geçiş bölgesi (arka uç) | 30.83 m | modelleme |
 | Yanma bölgesi | 43.17 m | türetilmiş |
+| Sac kabuk kalınlığı | 0.030 m | literatür |
+| Tuğla (astar) kalınlığı | 0.220 m | literatür |
+| Coating, yanma bölgesi | 0.200 m | modelleme; kabuk 190–220 °C (Sadighi 2011) |
+| Coating, geçiş bölgesi | 0.050 m | modelleme; kaynak yok |
 | **Ekipman hacmi** | 1339.07 m³ | türetilmiş |
 | **Duvar alanı** | 1115.89 m² | türetilmiş |
 <!-- END GENERATED -->

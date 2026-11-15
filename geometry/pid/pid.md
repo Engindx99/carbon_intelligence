@@ -142,20 +142,20 @@ Tek "kontrol" `solver/setpoint.py`'daki ters çözümdür (`solve_fuel_rate`): s
 | Etiket | Değişken | Twin anahtarı | Durum | Referans değer (SI) | Yer |
 |---|---|---|---|---|---|
 | FT-101 | raw meal feed | cfg:feed.Feed_rate_kg_s | Input | - | M101 |
-| TT-103 | C1 meal outlet T | stage:4.solid_outlet_temperature | Modelled | 572.6 | M103 |
-| TT-105 | C2 meal outlet T | stage:3.solid_outlet_temperature | Modelled | 746.9 | M105 |
-| TT-107 | C3 meal outlet T | stage:2.solid_outlet_temperature | Modelled | 878.5 | M107 |
-| TT-109 | C4 meal outlet T | stage:1.solid_outlet_temperature | Modelled | 987.2 | M109 |
-| TT-104 | C4 gas outlet T | stage:1.gas_outlet_temperature | Modelled | 979.8 | G104 |
-| TT-106 | C3 gas outlet T | stage:2.gas_outlet_temperature | Modelled | 877 | G106 |
-| TT-108 | C2 gas outlet T | stage:3.gas_outlet_temperature | Modelled | 744.7 | G108 |
-| TT-110 | C1 gas outlet (exhaust) T | stage:4.gas_outlet_temperature | Modelled | 572.2 | G110 |
+| TT-103 | C1 meal outlet T | stage:4.solid_outlet_temperature | Modelled | 573 | M103 |
+| TT-105 | C2 meal outlet T | stage:3.solid_outlet_temperature | Modelled | 747.5 | M105 |
+| TT-107 | C3 meal outlet T | stage:2.solid_outlet_temperature | Modelled | 879.4 | M107 |
+| TT-109 | C4 meal outlet T | stage:1.solid_outlet_temperature | Modelled | 988.3 | M109 |
+| TT-104 | C4 gas outlet T | stage:1.gas_outlet_temperature | Modelled | 980.9 | G104 |
+| TT-106 | C3 gas outlet T | stage:2.gas_outlet_temperature | Modelled | 877.8 | G106 |
+| TT-108 | C2 gas outlet T | stage:3.gas_outlet_temperature | Modelled | 745.3 | G108 |
+| TT-110 | C1 gas outlet (exhaust) T | stage:4.gas_outlet_temperature | Modelled | 572.6 | G110 |
 | AT-110 | stack O2 target | cfg:fuel.O2 | Input | - | G110 |
 | FT-103 | preheater gas flow | mass:m_dot_g_preheater | Modelled | 112.5 | G104 |
 | FT-111 | exhaust flow | mass:m_dot_exhaust | Modelled | 115.1 | G111 |
-| FT-102 | C5 dust escaping to C4 | mass:m_dot_s_C5_dust | Modelled | 7.497 | G102 |
+| FT-102 | C5 dust escaping to C4 | mass:m_dot_s_C5_dust | Modelled | 7.364 | G102 |
 | FT-105 | C1 dust returned with the feed | attr:preheater.m_dot_dust_return | Modelled | - | D101 |
-| FT-112 | C5 meal to the kiln | mass:m_dot_s_calciner_out | Modelled | 68.15 | M112 |
+| FT-112 | C5 meal to the kiln | mass:m_dot_s_calciner_out | Modelled | 66.95 | M112 |
 | TI-101 | preheater shell T (max) | state:Preheater_T_shell_max | Modelled | - | C4A |
 | PDI-102 | C5 dP (Euler) | diag:gas_pressure_losses.rows[C5].dP | Report-only | - | C5A |
 | PDI-103 | C4 dP (Euler) | diag:gas_pressure_losses.rows[C4].dP | Report-only | - | C4A |
@@ -166,7 +166,7 @@ Tek "kontrol" `solver/setpoint.py`'daki ters çözümdür (`solve_fuel_rate`): s
 | FT-201 | calciner fuel | mass:m_dot_fuel_calciner | Modelled | 3.418 | F201 |
 | FT-202 | tertiary air | mass:m_dot_tertiary_air | Modelled | 47.58 | A202 |
 | TT-204 | tertiary air T | state:Tg_tertiary_air | Modelled | - | A202 |
-| FT-204 | meal into the calciner | mass:m_dot_s_calciner_in | Modelled | 94.68 | M202 |
+| FT-204 | meal into the calciner | mass:m_dot_s_calciner_in | Modelled | 94.54 | M202 |
 | FT-203 | calciner gas flow | mass:m_dot_g_calciner | Modelled | 112.5 | G203 |
 | TT-202 | calciner gas T (zone profile) | state:Tg_calciner | Modelled | - | ILC |
 | TI-205 | calciner shell T (max) | state:Calciner_T_shell_max | Modelled | - | ILC |
@@ -179,11 +179,11 @@ Tek "kontrol" `solver/setpoint.py`'daki ters çözümdür (`solve_fuel_rate`): s
 | TT-301 | gas T into the burning zone | state:Tg_burning_in | Modelled | - | G301 |
 | TT-302 | meal T into the burning zone | state:Ts_burning_in | Modelled | - | M302 |
 | ST-301 | kiln speed (clipped to rpm_min..rpm_max) | cfg:motion.rpm_default | Input | - | KILN |
-| TT-303 | kiln gas T at the back end | state:Tg_transition[0] | Modelled | 1347 | G303 |
+| TT-303 | kiln gas T at the back end | state:Tg_transition[0] | Modelled | 1381 | G303 |
 | FT-304 | kiln gas flow, burning zone out | mass:m_dot_g_burning_out | Modelled | 31.26 | G301 |
-| FT-305 | kiln gas flow to the calciner | mass:m_dot_g_transition | Modelled | 35.01 | G303 |
+| FT-305 | kiln gas flow to the calciner | mass:m_dot_g_transition | Modelled | 33.94 | G303 |
 | FT-306 | clinker from the burning zone | mass:m_dot_s_burning | Modelled | 56.9 | K301 |
-| TT-304 | clinker T at the kiln outlet | state:Ts_burning[-1] | Modelled | 1908 | K301 |
+| TT-304 | clinker T at the kiln outlet | state:Ts_burning[-1] | Modelled | 2012 | K301 |
 | TI-307 | transition shell T (max) | state:Transition_T_shell_max | Modelled | - | KILN |
 | TI-308 | burning shell T (max) | state:Burning_T_shell_max | Modelled | - | KILN |
 | FT-401 | cooler air | mass:m_dot_air_cooler | Modelled | 125.2 | A401 |
@@ -192,7 +192,7 @@ Tek "kontrol" `solver/setpoint.py`'daki ters çözümdür (`solve_fuel_rate`): s
 | TT-402 | secondary air T | state:Tg_secondary_air | Modelled | - | A402 |
 | FT-402 | cooler vent air | mass:m_dot_vent_air | Modelled | 51.36 | A404 |
 | TT-404 | vent air T | state:Tg_vent_air | Modelled | - | A404 |
-| TT-403 | clinker T at the cooler outlet | state:Ts_cooler[-1] | Modelled | 492 | K402 |
+| TT-403 | clinker T at the cooler outlet | state:Ts_cooler[-1] | Modelled | 508 | K402 |
 | FT-403 | clinker out | mass:m_dot_clinker | Modelled | 56.9 | K402 |
 | AT-401 | free lime in the clinker | diag:free_lime.free_lime_pct | Report-only | - | COOL |
 | TI-405 | cooler shell T (max) | state:Cooler_T_shell_max | Modelled | - | COOL |
@@ -205,7 +205,7 @@ Tek "kontrol" `solver/setpoint.py`'daki ters çözümdür (`solve_fuel_rate`): s
 |---|---|---|---|---|
 | OPC-01 | gas | CA | PH | GOOSENECK GAS TO C5 |
 | OPC-02 | meal_hot | PH | CA | C4 MEAL TO CALCINER |
-| OPC-03 | meal_hot | PH | KI | C5 MEAL TO KILN INLET CHAMBER |
+| OPC-03 | meal_hot | PH | KI | C5 MEAL VIA THROAT TO KILN INLET CHAMBER |
 | OPC-04 | gas | KI | CA | KILN GAS TO CALCINER THROAT |
 | OPC-05 | air_hot | KI | CA | TERTIARY AIR FROM HOOD |
 | OPC-06 | air_hot | CO | KI | SECONDARY AIR FROM COOLER |

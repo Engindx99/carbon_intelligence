@@ -1578,11 +1578,43 @@
           "source": "model",
           "status": "Estimated",
           "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.shell_t",
+          "value": 0.03,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.lining_t",
+          "value": 0.22,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.burning_coating_t",
+          "value": 0.2,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.transition_coating_t",
+          "value": 0.05,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
         }
       ],
       "status_counts": {
         "Verified": 3,
-        "Estimated": 1
+        "Estimated": 5
       },
       "missing": [],
       "cfd_solid": "kiln.SLDPRT",

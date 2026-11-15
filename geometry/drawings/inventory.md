@@ -21,7 +21,7 @@ schematic = layout only; absent = Unknown.
 | Calciner | ILC | In-line calciner (ILC) vessel | 1 | 2 / 13 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | 2 CA | - |
 | Calciner | TAD | Tertiary air duct | 1 | 0 / 9 / 0 | calciner.SLDPRT (3 m stub only) | drawn: geometry/drawings/calciner/ | 2 CA | fluid_volumes.md: duct length and route absent (drawn route is schematic) |
 | Calciner | NOZ | Calciner meal and fuel inlet pipes | 2 + 2 | 0 / 5 / 0 | calciner.SLDPRT | drawn: geometry/drawings/calciner/ | 2 CA | - |
-| Rotary kiln | KILN | Rotary kiln tube | 1 | 3 / 1 / 0 | kiln.SLDPRT | drawn: geometry/drawings/kiln/ | 3 KI | - |
+| Rotary kiln | KILN | Rotary kiln tube | 1 | 3 / 5 / 0 | kiln.SLDPRT | drawn: geometry/drawings/kiln/ | 3 KI | - |
 | Rotary kiln | KIC | Kiln inlet chamber | 1 | 0 / 4 / 0 | kiln_inlet_chamber.SLDPRT | drawn: geometry/drawings/kiln_inlet_chamber/ | 3 KI | kiln/kiln_inlet_chamber.md: only a velocity check of the layout square (no published size); depth, bypass, shape unknown |
 | Rotary kiln | HOOD | Kiln hood | 1 | 0 / 4 / 0 | - | to draw | 3 KI | kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid |
 | Rotary kiln | BRN | Kiln burner (JETFLEX) | 1 | 0 / 6 / 0 | - | to draw | 3 KI | kiln/kiln_burner.md: a selection from the kiln firing (no published plant dimension); burner pipe, channels, nozzles unknown; drawn as an arrow only |

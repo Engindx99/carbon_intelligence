@@ -286,11 +286,31 @@ def radiative_coefficient(T_surface, T_amb, emissivity):
 # LAYER STACK
 # ======================================================
 class WallLayer:
-    """One material layer of the wall, hot face outward."""
+    """
+    One material layer of the wall, hot face outward.
 
-    __slots__ = ("name", "thickness", "conductivity")
+    density [kg/m^3] and specific_heat [J/(kg K)] are optional: a
+    layer without them still carries its conduction resistance, but
+    the stack then has no heat capacity of its own and the zone
+    keeps its lumped wall mass (ShellGeometry.C_cell is None).
+    """
 
-    def __init__(self, name, thickness, conductivity):
+    __slots__ = (
+        "name",
+        "thickness",
+        "conductivity",
+        "density",
+        "specific_heat",
+    )
+
+    def __init__(
+        self,
+        name,
+        thickness,
+        conductivity,
+        density=None,
+        specific_heat=None,
+    ):
 
         if thickness <= 0.0:
             raise ValueError(
@@ -304,9 +324,37 @@ class WallLayer:
                 f"> 0 W/(m K), got {conductivity}"
             )
 
+        if (density is None) != (specific_heat is None):
+            raise ValueError(
+                f"wall layer {name!r}: give density and specific "
+                "heat together, or neither"
+            )
+
+        if density is not None and not (
+            density > 0.0 and specific_heat > 0.0
+        ):
+            raise ValueError(
+                f"wall layer {name!r}: density and specific heat "
+                f"must be > 0, got {density} kg/m3, "
+                f"{specific_heat} J/(kg K)"
+            )
+
         self.name = str(name)
         self.thickness = float(thickness)
         self.conductivity = float(conductivity)
+        self.density = None if density is None else float(density)
+        self.specific_heat = (
+            None if specific_heat is None else float(specific_heat)
+        )
+
+    @property
+    def volumetric_heat_capacity(self):
+        """rho cp [J/(m^3 K)], or None when not given."""
+
+        if self.density is None:
+            return None
+
+        return self.density * self.specific_heat
 
     def __repr__(self):
 
@@ -399,6 +447,7 @@ class ShellGeometry:
         "R_cond",
         "A_outer_cell",
         "A_inner_cell",
+        "C_cell",
     )
 
     def __init__(self, stack, r_inner, L_cell, L_char, A_cell=None):
@@ -436,12 +485,24 @@ class ShellGeometry:
         # insulation layer on a 0.3 m duct, where the two forms
         # differ by a factor of 1.5.
         # ==================================================
+        # The heat capacity is summed over the SAME annuli, so the
+        # wall that stores heat is the wall that conducts it:
+        #   C_j = rho_j cp_j pi (r_{j+1}^2 - r_j^2) L_cell
         R_cond = 0.0
+        C_cell = 0.0
         r = float(r_inner)
 
         for layer in stack.layers:
 
             r_next = r + layer.thickness
+
+            rho_cp = layer.volumetric_heat_capacity
+            if rho_cp is None:
+                C_cell = None
+            elif C_cell is not None:
+                C_cell += (
+                    rho_cp * np.pi * (r_next * r_next - r * r) * L_cell
+                )
 
             R_cond += (
                 np.log(r_next / r)
@@ -464,6 +525,9 @@ class ShellGeometry:
 
         self.A_outer_cell = 2.0 * np.pi * self.r_outer * L_cell
         self.A_inner_cell = 2.0 * np.pi * self.r_inner * L_cell
+
+        # [J/K] per cell, or None if any layer has no rho cp
+        self.C_cell = None if C_cell is None else float(C_cell)
 
     def _init_planar(self, stack, L_cell, L_char, A_cell):
 
@@ -494,6 +558,18 @@ class ShellGeometry:
         )
         self.A_outer_cell = float(A_cell)
         self.A_inner_cell = float(A_cell)
+
+        rho_cp = [layer.volumetric_heat_capacity for layer in stack.layers]
+        self.C_cell = (
+            None
+            if any(x is None for x in rho_cp)
+            else float(
+                sum(
+                    x * layer.thickness * A_cell
+                    for x, layer in zip(rho_cp, stack.layers)
+                )
+            )
+        )
 
     def __repr__(self):
 
@@ -876,27 +952,46 @@ def shell_temperature_from_resistance(
 # CONFIG
 # ======================================================
 #
-# Layer stacks per zone. Every number is a MATERIAL or GEOMETRIC
-# property of the wall, not a knob: thicknesses are standard
-# linings, conductivities are hot-face values for the named
-# material, emissivities are for the named surface finish.
+# Layer stacks per zone, hot face outward. A layer is
+#   (name, thickness, k [W/(m K)])  or
+#   (name, thickness, k, rho [kg/m^3], cp [J/(kg K)]).
+# A thickness given as a STRING is a key into the kiln's lining
+# (geometry/plant_geometry.yaml kiln.shell_t, lining_t,
+# burning_coating_t, transition_coating_t, put in the config as
+# cfg["kiln"]["lining"]): the kiln's dimensions live once, there.
 #
-# The rotary zones (burning, transition) carry a CLINKER COATING
-# as their first layer. That layer is real and load-bearing on the
-# result: a bare basic brick gives an effective lining resistance
-# near 0.10 m^2 K/W and a shell flux around 9 kW/m^2, while
-# measured kiln shells run 4-6 kW/m^2. The difference is the
-# 0.05-0.20 m of sintered clinker that a burning zone always
-# carries -- it is what protects the brick, and a kiln running
-# without it is losing its lining. 0.10 m at 1.0 W/(m K) is the
-# middle of the reported range; it is the single most uncertain
-# entry in this table and is stated here rather than buried.
+# KILN (burning, transition), sources (15 Nov 2026):
+#   magnesia-spinel brick  k 3.0 W/(m K) at 1000 C (4.5 at 500 C),
+#       rho 2930 kg/m^3: RHI Magnesita ANKRAL R1 datasheet.
+#       cp 950 J/(kg K): Alturki & Ficzere 2025, Design of Machines
+#       and Structures 15(1) 14-23, doi 10.32972/dms.2025.002, Table 1
+#       (a modelling value, not a measurement).
+#   alumina brick (70 % Al2O3)  k 2.0 W/(m K): supplier brochure
+#       values of 1.7-2.2 W/(m K) at 1000 C for 70 % Al2O3 grades;
+#       rho 2600 kg/m^3 from the same brochure. cp 1000 J/(kg K) has
+#       NO source (an aluminosilicate brick's order of magnitude).
+#   clinker coating  k 0.74 W/(m K): Sadighi et al. 2011, Can. J.
+#       Chem. Eng., doi 10.1002/cjce.20365. rho 2800, cp 850:
+#       Alturki & Ficzere 2025 Table 1.
+#   steel shell  k 45, rho 7850, cp 480: carbon steel (Alturki &
+#       Ficzere 2025 Table 1; Sadighi 2011 uses the same k).
+# The burning coating thickness is DERIVED: it is what holds the
+# shell at Sadighi's 190-220 C operating band on this stack. Without
+# coating the same stack gives 418-434 C at a 1400-1450 C hot face,
+# and Mosci ("Lining thickness") reports 415-434 C for bare
+# 200-250 mm linings at 1400 C, which checks the brick k and the
+# external film below. Excluded: tyre wrapper plates, brick wear,
+# coating cycling, the radial transient inside the wall (the zones
+# keep one lumped wall node per cell, whose heat capacity is now
+# the stack's own, ShellGeometry.C_cell).
 #
 # The non-rotating zones are LAGGED: castable refractory, mineral
 # wool or ceramic fibre, then a thin steel casing. That is why
 # their skin runs near 370-400 K while a kiln shell runs near
 # 550 K, and why they lose about a tenth of the flux per unit
-# area.
+# area. Their thicknesses and k are NOT sourced yet, and they carry
+# no rho cp: those zones keep their lumped 3000 kg/m^3 x
+# 1000 J/(kg K) wall mass.
 #
 # NOTE (Faz 3 / Faz 6 items 2-4): the calciner, preheater and
 # cooler still carry rotary-cylinder GEOMETRY (D = 4.2 m,
@@ -912,9 +1007,9 @@ DEFAULT_WALL_STACKS = {
         "orientation": "horizontal",
         "shell_emissivity": 0.80,       # oxidised carbon steel
         "layers": [
-            ("clinker coating", 0.100, 1.00),
-            ("magnesia-spinel brick", 0.225, 2.80),
-            ("steel shell", 0.025, 45.0),
+            ("clinker coating", "coating_burning", 0.74, 2800.0, 850.0),
+            ("magnesia-spinel brick", "brick", 3.00, 2930.0, 950.0),
+            ("steel shell", "steel_shell", 45.0, 7850.0, 480.0),
         ],
     },
 
@@ -922,9 +1017,9 @@ DEFAULT_WALL_STACKS = {
         "orientation": "horizontal",
         "shell_emissivity": 0.80,
         "layers": [
-            ("clinker coating", 0.050, 1.00),
-            ("alumina brick", 0.200, 2.00),
-            ("steel shell", 0.025, 45.0),
+            ("clinker coating", "coating_transition", 0.74, 2800.0, 850.0),
+            ("alumina brick", "brick", 2.00, 2600.0, 1000.0),
+            ("steel shell", "steel_shell", 45.0, 7850.0, 480.0),
         ],
     },
 
@@ -964,6 +1059,37 @@ DEFAULT_WALL_STACKS = {
 }
 
 
+def _kiln_lining(cfg):
+    """The kiln's lining thicknesses [m]: from the config when the
+    geometry has been put in (main.load_cfg), else from the source."""
+
+    lining = ((cfg or {}).get("kiln") or {}).get("lining")
+
+    if lining is None:
+        from geometry import plant_geometry
+
+        lining = plant_geometry.kiln(plant_geometry.load())["lining"]
+
+    return lining
+
+
+def _thickness(cfg, zone, thickness):
+    """A layer thickness: a number, or a key into the kiln lining."""
+
+    if not isinstance(thickness, str):
+        return thickness
+
+    lining = _kiln_lining(cfg)
+
+    if thickness not in lining:
+        raise KeyError(
+            f"wall_stack.{zone}: no kiln lining entry {thickness!r}; "
+            f"known are {sorted(lining)}"
+        )
+
+    return lining[thickness]
+
+
 def wall_stack(cfg, zone):
     """
     Build the WallStack for one zone from a loaded config dict.
@@ -985,8 +1111,8 @@ def wall_stack(cfg, zone):
     spec.update(section.get(zone, {}) or {})
 
     layers = [
-        WallLayer(name, thickness, conductivity)
-        for name, thickness, conductivity in spec["layers"]
+        WallLayer(layer[0], _thickness(cfg, zone, layer[1]), *layer[2:])
+        for layer in spec["layers"]
     ]
 
     return WallStack(
