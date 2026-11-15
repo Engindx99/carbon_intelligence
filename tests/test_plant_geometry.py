@@ -640,23 +640,32 @@ class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
 
 
 class TheIdFanIsTheProcessDutyTest(unittest.TestCase):
-    """The ID fan (fan/id_fan.md) is sized from the twin's exhaust, by
-    fan laws; the source's duty stays tied to the twin reference."""
+    """The ID fan (fan/id_fan.md) is sized by fan laws from a design
+    duty: the twin's exhaust when the CFD solid was built, frozen there
+    (user decision, 15 Nov 2026). The twin must stay near that duty."""
+
+    # Band within which the twin's exhaust may drift before the fan's
+    # duty has to be revisited (user decision, 15 Nov 2026; no source).
+    T_BAND = 5.0          # K
+    FLOW_BAND = 0.02      # relative
 
     @classmethod
     def setUpClass(cls):
         cls.g = pg.load()
         cls.fan = pg.id_fan(cls.g)
 
-    def test_the_duty_is_the_twins_exhaust(self):
+    def test_the_twin_runs_at_the_fans_duty(self):
         import json
 
         with open(REPO_ROOT / "tests" / "data" / "twin_state_reference.json", encoding="utf-8") as handle:
             snap = json.load(handle)["snapshot"]
         f = self.g["id_fan"]
         strings = pg.v(self.g["plant"]["strings"])
-        self.assertAlmostEqual(pg.v(f["exhaust_flow_per_string"]) * strings, snap["mass_flow_m_dot_exhaust"], delta=0.01)
-        self.assertAlmostEqual(pg.v(f["exhaust_T"]), snap["stage4_gas_outlet_temperature"], delta=0.01)
+        flow = pg.v(f["exhaust_flow_per_string"]) * strings
+        self.assertAlmostEqual(flow, snap["mass_flow_m_dot_exhaust"], delta=self.FLOW_BAND * flow,
+                               msg="the twin's exhaust left the ID fan's design duty: revisit the fan")
+        self.assertAlmostEqual(pg.v(f["exhaust_T"]), snap["stage4_gas_outlet_temperature"], delta=self.T_BAND,
+                               msg="the twin's exhaust left the ID fan's design duty: revisit the fan")
 
     def test_the_size_follows_from_the_duty(self):
         fan = self.fan

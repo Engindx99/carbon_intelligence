@@ -1875,15 +1875,15 @@
           "key": "id_fan.exhaust_flow_per_string",
           "value": 57.526,
           "unit": "kg/s",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "fan/id_fan.md"
         },
         {
           "key": "id_fan.exhaust_T",
-          "value": 572.99,
+          "value": 572.19,
           "unit": "K",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "fan/id_fan.md"
         },

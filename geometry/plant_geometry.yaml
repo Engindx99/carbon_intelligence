@@ -225,13 +225,17 @@ cooler:
 
 # ---------------------------------------------------------------------
 # Preheater ID fan (user decision, 16 Nov 2026: one per string, 8 kPa):
-# the duty point is the twin's exhaust (model), the fan's size follows
-# from it by fan laws. No plant dimension is published (fan/id_fan.md).
+# the duty point is the twin's exhaust as it stood when the CFD solid
+# was built (77c15ba, 15 Nov 2026), FROZEN there as a design duty
+# (user decision, 15 Nov 2026): the fan's size follows from it by fan
+# laws and no longer moves with every twin change. The twin is only
+# checked to stay within +-5 K / +-2 % of it (tests/test_plant_geometry.py).
+# No plant dimension is published (fan/id_fan.md).
 # ---------------------------------------------------------------------
 id_fan:
   per_string:          {value: 1,      unit: "-",     source: cfd_decision, doc: fan/id_fan.md}
-  exhaust_flow_per_string: {value: 57.526, unit: kg/s, source: model,       doc: fan/id_fan.md}
-  exhaust_T:           {value: 572.99, unit: K,       source: model,        doc: fan/id_fan.md}
+  exhaust_flow_per_string: {value: 57.526, unit: kg/s, source: cfd_decision, doc: fan/id_fan.md}
+  exhaust_T:           {value: 572.19, unit: K,       source: cfd_decision, doc: fan/id_fan.md}
   exhaust_molar_mass:  {value: 31.9,   unit: g/mol,   source: model,        doc: fan/id_fan.md}
   inlet_underpressure: {value: 4000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}
   total_pressure:      {value: 8000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}

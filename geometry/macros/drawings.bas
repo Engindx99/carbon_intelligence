@@ -220,29 +220,29 @@ Const kiln_inlet_chamber_TAB_5     As String  = ""           ' parameter table r
 Const kiln_inlet_chamber_TAB_6     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_7     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_8     As String  = ""           ' parameter table rows
-Const IDF_R1                       As Double  = 0.91863      ' the eye's circle (y = b1) [derived]
-Const IDF_R2                       As Double  = 1.312329     ' the tip's circle (y = b2) [derived]
-Const IDF_B1                       As Double  = 0.459315     ' the eye's plane y [derived]
-Const IDF_B2                       As Double  = 0.513935     ' the outlet width b2: the rim ring's top y [derived]
-Const IDF_R_MRF                    As Double  = 1.410754     ' the rotating zone's rim [derived]
-Const IDF_VOL_B                    As Double  = 1.541804     ' the volute's width, y = 0 .. B [derived]
-Const IDF_E_TOP_X                  As Double  = 0.93549      ' the outlet face's outer edge (along y), x [derived]
-Const IDF_E_TOP_Z                  As Double  = 4.431387     ' the outlet face's outer edge, z [derived]
-Const IDF_E_LOW_X                  As Double  = -0.413985    ' the outlet face's lower edge (along y), x [derived]
-Const IDF_E_LOW_Z                  As Double  = 3.081911     ' the outlet face's lower edge, z [derived]
+Const IDF_R1                       As Double  = 0.917989     ' the eye's circle (y = b1) [derived]
+Const IDF_R2                       As Double  = 1.311413     ' the tip's circle (y = b2) [derived]
+Const IDF_B1                       As Double  = 0.458994     ' the eye's plane y [derived]
+Const IDF_B2                       As Double  = 0.51395      ' the outlet width b2: the rim ring's top y [derived]
+Const IDF_R_MRF                    As Double  = 1.409769     ' the rotating zone's rim [derived]
+Const IDF_VOL_B                    As Double  = 1.54185      ' the volute's width, y = 0 .. B [derived]
+Const IDF_E_TOP_X                  As Double  = 0.935149     ' the outlet face's outer edge (along y), x [derived]
+Const IDF_E_TOP_Z                  As Double  = 4.426034     ' the outlet face's outer edge, z [derived]
+Const IDF_E_LOW_X                  As Double  = -0.412402    ' the outlet face's lower edge (along y), x [derived]
+Const IDF_E_LOW_Z                  As Double  = 3.078483     ' the outlet face's lower edge, z [derived]
 Const IDF_DIS_DX                   As Double  = -0.707106781 ' the discharge's direction, x [derived]
 Const IDF_DIS_DZ                   As Double  = 0.707106781  ' the discharge's direction, z [derived]
-Const IDF_X_MIN                    As Double  = -2.118143    ' the fan's x min (the volute) [derived]
-Const IDF_Z_MIN                    As Double  = -2.674581    ' the fan's z min (the volute) [derived]
-Const IDF_Z_MAX                    As Double  = 4.431387     ' the fan's z max (the outlet's outer edge) [derived]
-Const IDF_Y_BOX                    As Double  = 1.591804     ' the inlet box's floor, y [derived]
-Const IDF_BOX_H                    As Double  = 2.627283     ' the inlet box's height (z), x from -BOX_H/2 [derived]
-Const IDF_BOX_DEPTH                As Double  = 1.765886     ' the inlet box's depth (y) [derived]
-Const IDF_BOX_REACH                As Double  = 2.388439     ' the box's inlet face, x [derived]
-Const IDF_V_ROTOR                  As Double  = 2.919833     ' the bladed rotor's volume: tells today's solid from an older one [m3] [derived]
-Const id_fan_TAB_1                 As String  = "D2~Impeller diameter D2 (tip speed / pi n)~2625~mm~derived~Estimated;D1~Eye diameter D1 (0.70 D2)~1837~mm~derived~Estimated;b1~Blade height at the eye b1 (c_m1 = c0)~459~mm~derived~Estimated;b2~Outlet width b2 (Euler, Wiesner slip, continuity)~514~mm~derived~Estimated;z~Blades z = 8.5 sin(beta2) / (1 - D1/D2)~20~-~derived~Estimated;beta1~Blade inlet angle beta1 (from the tangent)~24.08~deg~derived~Estimated;beta2~Blade outlet angle~45~deg~literature~Estimated;blade_t~Blade thickness~12~mm~model parameter~Estimated;blade_arc_R~Blade: single circular arc, radius~4921~mm~derived~Estimated;B~Volute width B (3 b2)~1542~mm~derived~Estimated;" ' parameter table rows
-Const id_fan_TAB_2                 As String  = "r3~Tongue circle r3 (r2 + 0.075 D2)~1509~mm~derived~Estimated;nose_R~Tongue nose radius~197~mm~derived~Estimated;spiral_deg~Log spiral angle (outlet at 30 m/s)~8.45~deg~derived~Estimated;r_end~Spiral end radius~3837~mm~derived~Estimated;h_stub~Outlet height (spiral end cos(alpha) - 2 nose R)~1908~mm~derived~Estimated;l_stub~Straight discharge length~1908~mm~derived~Estimated;gamma~Discharge angle up from the horizontal~45~deg~model parameter~Estimated;r_mrf~Rotating (MRF) zone radius~1411~mm~derived~Estimated;D_cone~Inlet cone mouth diameter~2388~mm~derived~Estimated;L_cone~Inlet cone length (eye to the box, through the plate)~1132~mm~derived~Estimated;" ' parameter table rows
-Const id_fan_TAB_3                 As String  = "H_box~Inlet box height (z)~2627~mm~derived~Estimated;depth_box~Inlet box depth (y): face area 1.75 x eye~1766~mm~derived~Estimated;reach_box~Inlet box face from the axis (x)~2388~mm~derived~Estimated;q~Volume flow at the inlet (one string)~88.27~m3/s~derived~Estimated;dp~Total pressure rise~8000~Pa~model parameter~Estimated;speed~Speed~1000~rpm~literature~Estimated;u_out~Outlet velocity~30~m/s~derived~Estimated;V_rotor~Volume: rotating zone (bladed)~2.92~m3~derived~Estimated;V_volute~Volume: volute + discharge~28.58~m3~derived~Estimated;V_inlet~Volume: inlet cone + box~21.17~m3~derived~Estimated;u_casing~Casing / plate thickness~-~~no source~Unknown;" ' parameter table rows
+Const IDF_X_MIN                    As Double  = -2.116387    ' the fan's x min (the volute) [derived]
+Const IDF_Z_MIN                    As Double  = -2.672116    ' the fan's z min (the volute) [derived]
+Const IDF_Z_MAX                    As Double  = 4.426034     ' the fan's z max (the outlet's outer edge) [derived]
+Const IDF_Y_BOX                    As Double  = 1.59185      ' the inlet box's floor, y [derived]
+Const IDF_BOX_H                    As Double  = 2.625448     ' the inlet box's height (z), x from -BOX_H/2 [derived]
+Const IDF_BOX_DEPTH                As Double  = 1.764653     ' the inlet box's depth (y) [derived]
+Const IDF_BOX_REACH                As Double  = 2.386771     ' the box's inlet face, x [derived]
+Const IDF_V_ROTOR                  As Double  = 2.914511     ' the bladed rotor's volume: tells today's solid from an older one [m3] [derived]
+Const id_fan_TAB_1                 As String  = "D2~Impeller diameter D2 (tip speed / pi n)~2623~mm~derived~Estimated;D1~Eye diameter D1 (0.70 D2)~1836~mm~derived~Estimated;b1~Blade height at the eye b1 (c_m1 = c0)~459~mm~derived~Estimated;b2~Outlet width b2 (Euler, Wiesner slip, continuity)~514~mm~derived~Estimated;z~Blades z = 8.5 sin(beta2) / (1 - D1/D2)~20~-~derived~Estimated;beta1~Blade inlet angle beta1 (from the tangent)~24.09~deg~derived~Estimated;beta2~Blade outlet angle~45~deg~literature~Estimated;blade_t~Blade thickness~12~mm~model parameter~Estimated;blade_arc_R~Blade: single circular arc, radius~4912~mm~derived~Estimated;B~Volute width B (3 b2)~1542~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_2                 As String  = "r3~Tongue circle r3 (r2 + 0.075 D2)~1508~mm~derived~Estimated;nose_R~Tongue nose radius~197~mm~derived~Estimated;spiral_deg~Log spiral angle (outlet at 30 m/s)~8.44~deg~derived~Estimated;r_end~Spiral end radius~3832~mm~derived~Estimated;h_stub~Outlet height (spiral end cos(alpha) - 2 nose R)~1906~mm~derived~Estimated;l_stub~Straight discharge length~1906~mm~derived~Estimated;gamma~Discharge angle up from the horizontal~45~deg~model parameter~Estimated;r_mrf~Rotating (MRF) zone radius~1410~mm~derived~Estimated;D_cone~Inlet cone mouth diameter~2387~mm~derived~Estimated;L_cone~Inlet cone length (eye to the box, through the plate)~1133~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_3                 As String  = "H_box~Inlet box height (z)~2625~mm~derived~Estimated;depth_box~Inlet box depth (y): face area 1.75 x eye~1765~mm~derived~Estimated;reach_box~Inlet box face from the axis (x)~2387~mm~derived~Estimated;q~Volume flow at the inlet (one string)~88.15~m3/s~derived~Estimated;dp~Total pressure rise~8000~Pa~model parameter~Estimated;speed~Speed~1000~rpm~literature~Estimated;u_out~Outlet velocity~30~m/s~derived~Estimated;V_rotor~Volume: rotating zone (bladed)~2.91~m3~derived~Estimated;V_volute~Volume: volute + discharge~28.51~m3~derived~Estimated;V_inlet~Volume: inlet cone + box~21.13~m3~derived~Estimated;u_casing~Casing / plate thickness~-~~no source~Unknown;" ' parameter table rows
 Const id_fan_TAB_4                 As String  = "u_shaft~Shaft, hub boss, bearings~-~~no source~Unknown;u_damper~Inlet damper / IGV (VFD assumed)~-~~no source~Unknown;u_gaps~Seal gap cone-shroud, disc cavities~-~~no source~Unknown;u_material~Material, wear liners~-~~no source~Unknown;" ' parameter table rows
 Const id_fan_TAB_5                 As String  = ""           ' parameter table rows
 Const id_fan_TAB_6                 As String  = ""           ' parameter table rows
