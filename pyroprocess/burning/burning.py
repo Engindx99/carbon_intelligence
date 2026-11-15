@@ -312,6 +312,11 @@ class Burning:
                 f"got {self.kiln_fuel_fraction}"
             )
 
+        # The kiln flame's O2 [vol %, wet]; it sizes the kiln air
+        # (main._update_steady_state_mass_flow). None keeps the old
+        # rule, the kiln getting kiln_fraction of the plant air.
+        self.kiln_O2_wet = fuel_cfg.get("kiln_O2_wet")
+
         # ======================================================
         # BUFFERS & CACHE
         # ======================================================

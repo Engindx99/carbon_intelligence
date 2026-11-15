@@ -17,7 +17,7 @@
     {
       "key": "id_fan.D2",
       "label": "Impeller diameter D2 (tip speed / pi n)",
-      "value": 2.622825331157232,
+      "value": 2.623306589823077,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -31,13 +31,13 @@
         "id_fan.pressure_coefficient",
         "id_fan.speed"
       ],
-      "value_mm": 2622.825331,
+      "value_mm": 2623.30659,
       "short": "D2"
     },
     {
       "key": "id_fan.D1",
       "label": "Eye diameter D1 (0.70 D2)",
-      "value": 1.8359777318100623,
+      "value": 1.8363146128761538,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -52,13 +52,13 @@
         "id_fan.speed",
         "id_fan.eye_ratio"
       ],
-      "value_mm": 1835.977732,
+      "value_mm": 1836.314613,
       "short": "D1"
     },
     {
       "key": "id_fan.b1",
       "label": "Blade height at the eye b1 (c_m1 = c0)",
-      "value": 0.45899443295251563,
+      "value": 0.45907865321903846,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -73,13 +73,13 @@
         "id_fan.speed",
         "id_fan.eye_ratio"
       ],
-      "value_mm": 458.994433,
+      "value_mm": 459.078653,
       "short": "b1"
     },
     {
       "key": "id_fan.b2",
       "label": "Outlet width b2 (Euler, Wiesner slip, continuity)",
-      "value": 0.5139500627633241,
+      "value": 0.5139460121376691,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -99,7 +99,7 @@
         "id_fan.incidence",
         "id_fan.hydraulic_efficiency"
       ],
-      "value_mm": 513.950063,
+      "value_mm": 513.946012,
       "short": "b2"
     },
     {
@@ -172,7 +172,7 @@
     {
       "key": "id_fan.blade_arc_R",
       "label": "Blade: single circular arc, radius",
-      "value": 4.912299945189651,
+      "value": 4.914504813654921,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -192,13 +192,13 @@
         "id_fan.incidence",
         "id_fan.hydraulic_efficiency"
       ],
-      "value_mm": 4912.299945,
+      "value_mm": 4914.504814,
       "short": "blade_arc_R"
     },
     {
       "key": "id_fan.B",
       "label": "Volute width B (3 b2)",
-      "value": 1.5418501882899722,
+      "value": 1.5418380364130073,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -219,13 +219,13 @@
         "id_fan.hydraulic_efficiency",
         "id_fan.volute_width_ratio"
       ],
-      "value_mm": 1541.850188,
+      "value_mm": 1541.838036,
       "short": "B"
     },
     {
       "key": "id_fan.r3",
       "label": "Tongue circle r3 (r2 + 0.075 D2)",
-      "value": 1.5081245654154085,
+      "value": 1.5084012891482692,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -240,13 +240,13 @@
         "id_fan.speed",
         "id_fan.tongue_gap_ratio"
       ],
-      "value_mm": 1508.124565,
+      "value_mm": 1508.401289,
       "short": "r3"
     },
     {
       "key": "id_fan.nose_R",
       "label": "Tongue nose radius",
-      "value": 0.1967118998367924,
+      "value": 0.19674799423673076,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -261,7 +261,7 @@
         "id_fan.speed",
         "id_fan.tongue_radius_ratio"
       ],
-      "value_mm": 196.7119,
+      "value_mm": 196.747994,
       "short": "nose_R"
     },
     {
@@ -296,7 +296,7 @@
     {
       "key": "id_fan.r_end",
       "label": "Spiral end radius",
-      "value": 3.8324630822002193,
+      "value": 3.833540304479916,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -320,13 +320,13 @@
         "id_fan.tongue_radius_ratio",
         "id_fan.volute_outlet_velocity"
       ],
-      "value_mm": 3832.463082,
+      "value_mm": 3833.540304,
       "short": "r_end"
     },
     {
       "key": "id_fan.h_stub",
       "label": "Outlet height (spiral end cos(alpha) - 2 nose R)",
-      "value": 1.9057244116810388,
+      "value": 1.906438858754524,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -350,13 +350,13 @@
         "id_fan.tongue_radius_ratio",
         "id_fan.volute_outlet_velocity"
       ],
-      "value_mm": 1905.724412,
+      "value_mm": 1906.438859,
       "short": "h_stub"
     },
     {
       "key": "id_fan.l_stub",
       "label": "Straight discharge length",
-      "value": 1.9057244116810388,
+      "value": 1.906438858754524,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -381,7 +381,7 @@
         "id_fan.volute_outlet_velocity",
         "id_fan.outlet_stub_ratio"
       ],
-      "value_mm": 1905.724412,
+      "value_mm": 1906.438859,
       "short": "l_stub"
     },
     {
@@ -400,7 +400,7 @@
     {
       "key": "id_fan.r_mrf",
       "label": "Rotating (MRF) zone radius",
-      "value": 1.4097686154970122,
+      "value": 1.410027292029904,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -416,13 +416,13 @@
         "id_fan.tongue_gap_ratio",
         "id_fan.mrf_gap_fraction"
       ],
-      "value_mm": 1409.768615,
+      "value_mm": 1410.027292,
       "short": "r_mrf"
     },
     {
       "key": "id_fan.D_cone",
       "label": "Inlet cone mouth diameter",
-      "value": 2.386771051353081,
+      "value": 2.387208996739,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -438,13 +438,13 @@
         "id_fan.eye_ratio",
         "id_fan.cone_inlet_ratio"
       ],
-      "value_mm": 2386.771051,
+      "value_mm": 2387.208997,
       "short": "D_cone"
     },
     {
       "key": "id_fan.L_cone",
       "label": "Inlet cone length (eye to the box, through the plate)",
-      "value": 1.1328557553374567,
+      "value": 1.1327593831939688,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -466,13 +466,13 @@
         "id_fan.volute_width_ratio",
         "id_fan.side_plate_gap"
       ],
-      "value_mm": 1132.855755,
+      "value_mm": 1132.759383,
       "short": "L_cone"
     },
     {
       "key": "id_fan.H_box",
       "label": "Inlet box height (z)",
-      "value": 2.6254481564883894,
+      "value": 2.6259298964129,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -489,13 +489,13 @@
         "id_fan.cone_inlet_ratio",
         "id_fan.inlet_box_height_ratio"
       ],
-      "value_mm": 2625.448156,
+      "value_mm": 2625.929896,
       "short": "H_box"
     },
     {
       "key": "id_fan.depth_box",
       "label": "Inlet box depth (y): face area 1.75 x eye",
-      "value": 1.7646529318558828,
+      "value": 1.7649767256310822,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -513,13 +513,13 @@
         "id_fan.inlet_box_height_ratio",
         "id_fan.inlet_box_area_ratio"
       ],
-      "value_mm": 1764.652932,
+      "value_mm": 1764.976726,
       "short": "depth_box"
     },
     {
       "key": "id_fan.reach_box",
       "label": "Inlet box face from the axis (x)",
-      "value": 2.386771051353081,
+      "value": 2.387208996739,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -536,13 +536,13 @@
         "id_fan.cone_inlet_ratio",
         "id_fan.inlet_box_reach_ratio"
       ],
-      "value_mm": 2386.771051,
+      "value_mm": 2387.208997,
       "short": "reach_box"
     },
     {
       "key": "id_fan.q",
       "label": "Volume flow at the inlet (one string)",
-      "value": 88.15,
+      "value": 88.18,
       "unit": "m3/s",
       "source": "derived",
       "status": "Estimated",
@@ -613,7 +613,7 @@
     {
       "key": "id_fan.V_rotor",
       "label": "Volume: rotating zone (bladed)",
-      "value": 2.9145113409111314,
+      "value": 2.915908028592211,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -639,7 +639,7 @@
     {
       "key": "id_fan.V_volute",
       "label": "Volume: volute + discharge",
-      "value": 28.512524485858222,
+      "value": 28.529181374963176,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -670,7 +670,7 @@
     {
       "key": "id_fan.V_inlet",
       "label": "Volume: inlet cone + box",
-      "value": 21.128658508385893,
+      "value": 21.139219607657445,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",

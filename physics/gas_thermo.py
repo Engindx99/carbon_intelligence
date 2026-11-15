@@ -331,6 +331,51 @@ def burn_in(flows, m_dot_fuel, fuel_composition):
     return flows
 
 
+def air_for_wet_O2(m_dot_fuel, O2_wet, fuel_composition):
+    """Dry air [kg/s] that burns m_dot_fuel completely and leaves
+    the products at O2_wet [mol/mol] of oxygen, wet basis.
+
+    Exact, not iterated: after burning, the O2 moles and the total
+    moles of burned(m_air, ...) are both affine in m_air (the fuel's
+    demand and products do not depend on it), so
+        x = (a m - d) / (b m + e)   ->   m = (d + x e) / (a - x b),
+    with a, b, d, e read off two evaluations of burned() itself, so
+    the air is consistent with the products the zone computes."""
+
+    m_fuel = float(m_dot_fuel)
+    x = float(O2_wet)
+
+    if not (0.0 <= x < 0.2):
+        raise ValueError(f"O2_wet must be in [0, 0.2), got {x}")
+
+    if m_fuel <= 0.0:
+        return 0.0
+
+    def moles(m_air):
+        f = burned(m_air, m_fuel, fuel_composition)
+        n = {s: f[s] / MOLAR_MASS[s] for s in SPECIES}
+        return n["O2"], sum(n.values())
+
+    # Two points with excess air (any two give the same line).
+    n_O2_st = (
+        fuel_composition["C"] / 0.012011
+        + fuel_composition["H"] / (4.0 * 0.001008)
+        + fuel_composition["S"] / 0.032065
+        - fuel_composition["O"] / (2.0 * 0.015999)
+    ) * 2.0 * 0.015999 * m_fuel
+    m1 = 2.0 * n_O2_st / AIR["O2"]
+    m2 = 3.0 * n_O2_st / AIR["O2"]
+
+    o1, t1 = moles(m1)
+    o2, t2 = moles(m2)
+    a = (o2 - o1) / (m2 - m1)
+    b = (t2 - t1) / (m2 - m1)
+    d = a * m1 - o1
+    e = t1 - b * m1
+
+    return (d + x * e) / (a - x * b)
+
+
 def add(*flows):
     """Sum of species flow dicts."""
 

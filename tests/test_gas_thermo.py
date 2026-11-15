@@ -20,6 +20,8 @@ from physics.gas_thermo import MOLAR_MASS
 from physics.gas_thermo import add
 from physics.gas_thermo import air
 from physics.gas_thermo import burned
+from physics.gas_thermo import air_for_wet_O2
+from physics.gas_thermo import mole_fraction
 
 
 NIST_H = {   # T [K]: H - H298.15 [kJ/mol]
@@ -112,6 +114,31 @@ class CompositionTest(unittest.TestCase):
     def test_add(self):
         total = add(air(1.0), {"CO2": 0.5})
         self.assertAlmostEqual(sum(total.values()), 1.5, places=12)
+
+
+
+class AirForWetO2Test(unittest.TestCase):
+    """The kiln air sized by its flame's wet O2 (fuel.kiln_O2_wet)."""
+
+    def test_round_trip_through_the_products(self):
+        for x in (0.005, 0.015, 0.031, 0.08):
+            with self.subTest(O2=x):
+                m = air_for_wet_O2(2.0949, x, FUEL_COMPOSITION)
+                got = mole_fraction(burned(m, 2.0949, FUEL_COMPOSITION), "O2")
+                self.assertAlmostEqual(got, x, places=12)
+
+    def test_zero_O2_is_stoichiometric(self):
+        m = air_for_wet_O2(1.0, 0.0, FUEL_COMPOSITION)
+        self.assertAlmostEqual(
+            burned(m, 1.0, FUEL_COMPOSITION)["O2"], 0.0, places=9
+        )
+        with self.assertRaises(ValueError):
+            burned(0.999 * m, 1.0, FUEL_COMPOSITION)
+
+    def test_scales_with_the_fuel(self):
+        a = air_for_wet_O2(1.0, 0.015, FUEL_COMPOSITION)
+        b = air_for_wet_O2(3.0, 0.015, FUEL_COMPOSITION)
+        self.assertAlmostEqual(b / a, 3.0, places=10)
 
 
 if __name__ == "__main__":

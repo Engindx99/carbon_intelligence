@@ -231,7 +231,7 @@ cooler:
 id_fan:
   per_string:          {value: 1,      unit: "-",     source: cfd_decision, doc: fan/id_fan.md}
   exhaust_flow_per_string: {value: 57.526, unit: kg/s, source: model,       doc: fan/id_fan.md}
-  exhaust_T:           {value: 572.19, unit: K,       source: model,        doc: fan/id_fan.md}
+  exhaust_T:           {value: 572.40, unit: K,       source: model,        doc: fan/id_fan.md}
   exhaust_molar_mass:  {value: 31.9,   unit: g/mol,   source: model,        doc: fan/id_fan.md}
   inlet_underpressure: {value: 4000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}
   total_pressure:      {value: 8000.0, unit: Pa,      source: model,        doc: fan/id_fan.md}
@@ -271,7 +271,7 @@ id_fan:
 kiln_burner:
   fuel_flow:           {value: 2.09494, unit: kg/s,  source: model,       doc: kiln/kiln_burner.md}
   fuel_LHV:            {value: 32.0,    unit: MJ/kg, source: model,       doc: kiln/kiln_burner.md}
-  kiln_air_flow:       {value: 29.1625, unit: kg/s,  source: model,       doc: kiln/kiln_burner.md}
+  kiln_air_flow:       {value: 26.3993, unit: kg/s,  source: model,       doc: kiln/kiln_burner.md}
   primary_air_fraction: {value: 0.10,   unit: "-",   source: model,       doc: kiln/kiln_burner.md}
   primary_air_T:       {value: 293.15,  unit: K,     source: model,       doc: kiln/kiln_burner.md}
   momentum_per_MW:     {value: 9.0,     unit: N/MW,  source: literature,  doc: kiln/kiln_burner.md}
@@ -293,11 +293,11 @@ kiln_inlet_chamber:
 # ---------------------------------------------------------------------
 # Meal pipes C1-C5 (user decision, 16 Nov 2026: scale the one literature
 # pipe, the calciner's feed pipe, by equal mass flux). The flows are the
-# twin's (feed 89.7 kg/s over 2 strings; C5's meal to the kiln 60.66 kg/s).
+# twin's (feed 89.7 kg/s over 2 strings; C5's meal to the kiln 59.93 kg/s).
 # ---------------------------------------------------------------------
 meal_pipe:
   feed_per_string:     {value: 44.85,   unit: kg/s,  source: model,       doc: preheater/meal_pipe_C4.md}
-  c5_meal_per_string:  {value: 30.3288, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
+  c5_meal_per_string:  {value: 29.9657, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
 
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it

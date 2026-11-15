@@ -25,7 +25,7 @@ from physics.physics import FUEL_COMPOSITION
 # The two masses sum to mass_flow.m_dot_air_kiln, NOT to
 # state.m_dot_air. This comment used to say m_dot_air and was
 # wrong: main.py:853-863 makes m_dot_air the PLANT total and
-# m_dot_air_kiln = kiln_fraction * m_dot_air, while
+# m_dot_air_kiln is sized by fuel.kiln_O2_wet (15 Nov 2026), while
 # main.py:1074-1082 builds primary and secondary from
 # m_dot_air_kiln. At the committed point that is 13.9204 kg/s,
 # not 34.8011. physics/steady_state_mass.py:208 carried the

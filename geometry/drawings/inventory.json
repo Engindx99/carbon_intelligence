@@ -70,7 +70,7 @@
         },
         {
           "key": "meal_pipe.c5_meal_per_string",
-          "value": 30.3288,
+          "value": 29.9657,
           "unit": "kg/s",
           "source": "model",
           "status": "Estimated",
@@ -1752,7 +1752,7 @@
         },
         {
           "key": "kiln_burner.kiln_air_flow",
-          "value": 29.1625,
+          "value": 26.3993,
           "unit": "kg/s",
           "source": "model",
           "status": "Estimated",
@@ -1881,7 +1881,7 @@
         },
         {
           "key": "id_fan.exhaust_T",
-          "value": 572.19,
+          "value": 572.4,
           "unit": "K",
           "source": "model",
           "status": "Estimated",

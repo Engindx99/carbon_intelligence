@@ -36,11 +36,11 @@ Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model*
 | Ölçü | Değer | Kaynak |
 |---|---|---|
 | Boru sayısı (hat başına) | 1 | yerleşim kararı |
-| Hat başına farin debisi | 30.3288 kg/s | modelleme |
-| Bir borunun debisi | 30.33 kg/s | türetilmiş |
+| Hat başına farin debisi | 29.9657 kg/s | modelleme |
+| Bir borunun debisi | 29.97 kg/s | türetilmiş |
 | Kütle akışı (kalsinatör borusunun) | 79.3 kg/(m² s) | türetilmiş |
-| İç çap | 0.698 m | kütle akışı ölçeği |
-| Kesit alanı | 0.382 m² | türetilmiş |
+| İç çap | 0.694 m | kütle akışı ölçeği |
+| Kesit alanı | 0.378 m² | türetilmiş |
 | Yatayla eğim | 60 ° | literatür (kalsinatör borusu) |
 | Siklonun toz çıkışı çapı (arayüz, boru çapı değil) | 0.836 m | türetilmiş |
 <!-- END GENERATED -->

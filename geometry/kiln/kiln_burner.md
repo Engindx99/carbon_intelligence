@@ -11,17 +11,17 @@ Bu tesisin yakıcısı için yayınlanmış bir ölçü yok. Yakıcı **prosese 
 |---|---|---|
 | Kiln yakıtı | 2.09494 kg/s | modelleme |
 | Yakıt alt ısıl değeri | 32 MJ/kg | modelleme |
-| Fırın yanma havası | 29.1625 kg/s | modelleme |
+| Fırın yanma havası | 26.3993 kg/s | modelleme |
 | Birincil hava payı | 0.1 | modelleme |
 | Birincil hava sıcaklığı | 293.15 K | modelleme |
 | Alev momentumu | 9 N/MW | literatür |
 | Isıl güç | 67.04 MW | türetilmiş |
-| Birincil hava debisi | 2.916 kg/s | türetilmiş |
+| Birincil hava debisi | 2.640 kg/s | türetilmiş |
 | Jet momentumu | 603 N | türetilmiş |
-| Ortalama jet hızı | 207 m/s | türetilmiş |
+| Ortalama jet hızı | 229 m/s | türetilmiş |
 | Birincil hava yoğunluğu | 1.204 kg/m³ | türetilmiş |
-| Jet toplam alanı | 0.0117 m² | türetilmiş |
-| Jet eşdeğer çapı | 122 mm | türetilmiş |
+| Jet toplam alanı | 0.0096 m² | türetilmiş |
+| Jet eşdeğer çapı | 111 mm | türetilmiş |
 <!-- END GENERATED -->
 
 ## Dayanak

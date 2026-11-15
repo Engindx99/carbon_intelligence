@@ -43,7 +43,7 @@ from pyroprocess.precalciner import Calciner
 from pyroprocess.preheater import Preheater
 from pyroprocess.cooler import Cooler
 
-from physics.physics import gas_mass_balance
+from pyroprocess.burning import burner
 from chemistry import parcels
 from pyroprocess.transition import calcination as transition_calcination
 from physics.steady_state_mass import SteadyStateMassFlow
@@ -926,27 +926,28 @@ class Twin:
         # The total air is still sized from the TOTAL fuel
         # against the dry stack O2 target -- that target is a
         # plant-level measurement and both firings share the
-        # same exhaust. The air is then partitioned in the same
-        # ratio as the fuel, which gives each firing the same
-        # excess-air level and keeps the stack figure exact.
+        # same exhaust. The kiln then takes the air its flame
+        # needs for fuel.kiln_O2_wet, the calciner the rest; the
+        # stack figure stays exact.
         # ======================================================
 
-        kiln_fraction = self.burning.kiln_fuel_fraction
+        # One definition, shared with the burning zone's own gas
+        # flow (pyroprocess/burning/burner.kiln_air).
+        (
+            m_dot_fuel_kiln,
+            m_dot_air_kiln,
+            m_dot_air,
+        ) = burner.kiln_air(self.burning, m_dot_fuel, inputs["O2"])
 
-        m_dot_fuel_kiln = kiln_fraction * m_dot_fuel
         m_dot_fuel_calciner = m_dot_fuel - m_dot_fuel_kiln
 
-        m_dot_air = (
-            gas_mass_balance(
-                fuel_rate_total=m_dot_fuel,
-                O2=inputs["O2"],
-                eps=self.eps,
-            )
-            - m_dot_fuel
-        )
-
-        m_dot_air_kiln = kiln_fraction * m_dot_air
         m_dot_air_calciner = m_dot_air - m_dot_air_kiln
+
+        if m_dot_air_calciner <= 0.0:
+            raise ValueError(
+                f"kiln air {m_dot_air_kiln:.4g} kg/s takes the whole "
+                f"plant air {m_dot_air:.4g} kg/s"
+            )
 
         # The kiln burner now carries only its own share.
         m_dot_g_burning = (

@@ -322,6 +322,19 @@ fuel:
   # specific heat consumption.
   kiln_fraction: 0.380
 
+  # The kiln burner's combustion air: the air that leaves the kiln
+  # flame's products at this O2 [vol %, wet] (gas_thermo.air_for_wet_O2).
+  # The VDZ BAT reference plant's kiln gas E-100 carries 1.5 % O2 wet
+  # (CEMCAP D3.2 rev 2, Table 3.9). The calciner gets the rest of the
+  # plant air, which is still sized from the stack O2 above.
+  # That 1.5 % is measured on the whole kiln gas, which also holds the
+  # kiln's calcination CO2 and false air; here it is applied to the
+  # burner's products alone. Neither is modelled in the kiln.
+  # Before 15 Nov 2026 the kiln got kiln_fraction of the plant air
+  # (the same excess air as the stack), about 3.1 % O2 wet and a
+  # secondary air of 0.46 kg/kg clinker against VDZ's 0.30.
+  kiln_O2_wet: 1.5
+
 
 burning:
   primary_air_fraction: 0.10   # fraction of kiln combustion air carried in with the fuel (ambient T)
