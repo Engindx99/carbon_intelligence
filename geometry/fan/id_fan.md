@@ -11,24 +11,24 @@ Bu tesisin fanı için yayınlanmış bir ölçü yok. Fan **prosese göre seçi
 |---|---|---|
 | Fan sayısı (hat başına) | 1 | CFD kararı |
 | Egzoz debisi (hat başına) | 57.526 kg/s | modelleme |
-| Egzoz sıcaklığı | 572.4 K | modelleme |
+| Egzoz sıcaklığı | 572.99 K | modelleme |
 | Gaz mol kütlesi | 31.9 g/mol | modelleme |
 | Fan girişi, atmosferin altında | 4000 Pa | modelleme |
 | Toplam basınç artışı | 8000 Pa | modelleme |
 | Verim | 0.8 | literatür |
 | Dönme hızı | 1000 dev/dk | literatür |
 | Giriş gaz yoğunluğu | 0.652 kg/m³ | türetilmiş |
-| Hacimsel debi (hat başına) | 88.18 m³/s | türetilmiş |
-| Hacimsel debi (hat başına) | 317457 m³/h | türetilmiş |
-| Hacimsel debi (iki hat) | 634915 m³/h | türetilmiş |
-| Mil gücü | 882 kW | türetilmiş |
-| Motor gücü (×1.10) | 970 kW | türetilmiş |
+| Hacimsel debi (hat başına) | 88.27 m³/s | türetilmiş |
+| Hacimsel debi (hat başına) | 317785 m³/h | türetilmiş |
+| Hacimsel debi (iki hat) | 635569 m³/h | türetilmiş |
+| Mil gücü | 883 kW | türetilmiş |
+| Motor gücü (×1.10) | 971 kW | türetilmiş |
 | Uç hızı | 137.4 m/s | türetilmiş |
-| Çark çapı D2 | 2.623 m | türetilmiş |
+| Çark çapı D2 | 2.625 m | türetilmiş |
 | Göz oranı D1/D2 | 0.7 | literatür |
-| Göz çapı D1 | 1.836 m | türetilmiş |
+| Göz çapı D1 | 1.837 m | türetilmiş |
 | Göz hızı c0 | 33.3 m/s | türetilmiş |
-| Debi katsayısı φ | 0.1188 - | türetilmiş |
+| Debi katsayısı φ | 0.1187 - | türetilmiş |
 | Kanat çıkış açısı β2 (teğetten) | 45 ° | literatür |
 | Kanat sayısı katsayısı k | 8.5 | literatür |
 | Kanat sayısı z = k sinβ2 / (1 − D1/D2) | 20 - | türetilmiş |
@@ -43,38 +43,38 @@ Bu tesisin fanı için yayınlanmış bir ölçü yok. Fan **prosese göre seçi
 | Çıkış teğetsel hızı cu2 | 101.5 m/s | türetilmiş |
 | Çıkış meridyen hızı cm2 | 21.7 m/s | türetilmiş |
 | Çark çıkış genişliği b2 | 0.514 m | türetilmiş |
-| Kanat yayı yarıçapı | 4.91 m | türetilmiş |
+| Kanat yayı yarıçapı | 4.92 m | türetilmiş |
 | Salyangoz genişlik oranı B/b2 | 3 | literatür |
 | Salyangoz genişliği B | 1.542 m | türetilmiş |
 | Dil boşluğu / D2 | 0.075 | literatür |
-| Dil dairesi r3 | 1.508 m | türetilmiş |
+| Dil dairesi r3 | 1.509 m | türetilmiş |
 | Dil burun yarıçapı / D2 | 0.075 | literatür |
 | Salyangoz çıkış hızı | 30 m/s | modelleme |
-| Spiral açısı (çıkış hızından) | 8.44 ° | türetilmiş |
-| Spiral sonu r_end | 3.834 m | türetilmiş |
-| Spiral sonu kesiti (yükseklik) | 2.325 m | türetilmiş |
+| Spiral açısı (çıkış hızından) | 8.45 ° | türetilmiş |
+| Spiral sonu r_end | 3.837 m | türetilmiş |
+| Spiral sonu kesiti (yükseklik) | 2.327 m | türetilmiş |
 | Spiral sonu kesitinde hız | 24.6 m/s | türetilmiş |
-| Çıkış ağzı yüksekliği (h cosα − 2 burun) | 1.906 m | türetilmiş; alan 2.939 m² |
+| Çıkış ağzı yüksekliği (h cosα − 2 burun) | 1.908 m | türetilmiş; alan 2.942 m² |
 | Çıkış hızı (ağız) | 30.0 m/s | türetilmiş |
 | Çıkış düz parçası / yükseklik | 1 | modelleme |
 | Çıkış yönü (yataydan yukarı) | 45 ° | modelleme |
 | MRF kenarı (dil boşluğunun payı) | 0.5 | modelleme |
-| MRF bölgesi yarıçapı | 1.410 m | türetilmiş |
+| MRF bölgesi yarıçapı | 1.411 m | türetilmiş |
 | Giriş konisi ağzı / D1 | 1.3 | modelleme |
 | Ön yan sac (salyangoz ile kutu arası) | 0.05 m | modelleme |
-| Giriş konisi boyu (gözden kutu tabanına) | 1.133 m | türetilmiş |
-| Giriş konisi ağız çapı | 2.387 m | türetilmiş |
+| Giriş konisi boyu (gözden kutu tabanına) | 1.132 m | türetilmiş |
+| Giriş konisi ağız çapı | 2.388 m | türetilmiş |
 | Giriş kutusu alan oranı | 1.75 | modelleme |
 | Giriş kutusu yükseklik oranı | 1.1 | modelleme |
 | Giriş kutusu uzanım oranı | 0.5 | modelleme |
-| Giriş kutusu yüzü (yükseklik × derinlik) | 2.626 m | türetilmiş; yükseklik, derinlik 1.765 m |
+| Giriş kutusu yüzü (yükseklik × derinlik) | 2.627 m | türetilmiş; yükseklik, derinlik 1.766 m |
 | Giriş kutusu hızı | 19.0 m/s | türetilmiş |
-| Hacim: dönen bölge (kanatsız) | 2.994 m³ | türetilmiş |
-| Hacim: kanatlar | 0.0777 m³ | türetilmiş |
-| Hacim: dönen bölge (kanatlı) | 2.916 m³ | türetilmiş |
-| Hacim: salyangoz + çıkış | 28.529 m³ | türetilmiş |
-| Hacim: giriş konisi | 3.990 m³ | türetilmiş |
-| Hacim: giriş kutusu | 17.149 m³ | türetilmiş |
+| Hacim: dönen bölge (kanatsız) | 2.998 m³ | türetilmiş |
+| Hacim: kanatlar | 0.0778 m³ | türetilmiş |
+| Hacim: dönen bölge (kanatlı) | 2.920 m³ | türetilmiş |
+| Hacim: salyangoz + çıkış | 28.576 m³ | türetilmiş |
+| Hacim: giriş konisi | 3.993 m³ | türetilmiş |
+| Hacim: giriş kutusu | 17.176 m³ | türetilmiş |
 <!-- END GENERATED -->
 
 ## Dayanak

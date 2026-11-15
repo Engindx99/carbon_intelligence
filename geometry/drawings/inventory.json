@@ -70,7 +70,7 @@
         },
         {
           "key": "meal_pipe.c5_meal_per_string",
-          "value": 29.9657,
+          "value": 29.5162,
           "unit": "kg/s",
           "source": "model",
           "status": "Estimated",
@@ -1881,7 +1881,7 @@
         },
         {
           "key": "id_fan.exhaust_T",
-          "value": 572.4,
+          "value": 572.99,
           "unit": "K",
           "source": "model",
           "status": "Estimated",
