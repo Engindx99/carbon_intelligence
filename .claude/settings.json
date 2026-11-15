@@ -1,0 +1,31 @@
+{
+  "permissions": {
+    "deny": [
+      "Read(geometry/drawings/**/*.dxf)",
+      "Read(geometry/output/**/*.SLDPRT)",
+      "Read(geometry/output/**/*.sldprt)",
+      "Read(geometry/output/**/*.SLDDRW)",
+      "Read(geometry/output/**/*.slddrw)",
+      "Read(geometry/output/**/*.step)",
+      "Read(geometry/output/**/*.STEP)",
+      "Read(geometry/output/**/*.stl)",
+      "Read(geometry/output/**/*.STL)",
+      "Read(geometry/output/**/*.dxf)",
+      "Read(geometry/output/**/*.DXF)",
+      "Bash(git push*)",
+      "Bash(git reset --hard*)",
+      "Bash(git clean*)",
+      "Bash(rm -rf *)"
+    ]
+  },
+  "hooks": {
+    "PostToolUse": [
+      {
+        "matcher": "Edit|Write",
+        "hooks": [
+          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/geometry_check.py\"" }
+        ]
+      }
+    ]
+  }
+}

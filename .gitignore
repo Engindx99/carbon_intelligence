@@ -2,3 +2,9 @@ __pycache__/
 *.pyc
 geometry/output/
 geometry/macros/*.swp
+.claude/settings.local.json
+.claude/worktrees/
+.pytest_cache/
+*.out
+*.trn
+*.log
