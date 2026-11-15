@@ -272,9 +272,11 @@ class ChemistryModel:
     # residence time tau at a time) and the dynamic parcel train
     # (chemistry/parcels.py, a parcel's time in a cell within one
     # step). Both apply it to species amounts: a flow [kg/s] or a
-    # parcel [kg]. Every reaction here is first order in an
-    # amount (or the min of amounts), so the result scales with
-    # the amount and the two uses are the same operation.
+    # parcel [kg]. Every reaction here scales linearly with the
+    # amount: calcination, alite, C3A and C4AF are first order in
+    # an amount (or the min of amounts), and belite's Jander law
+    # reads its conversion off composition RATIOS, so its reacted
+    # amount scales too. The two uses are the same operation.
     # ======================================================
     def burning_rates(self, T):
         """Rate [1/s] of each clinkering reaction at T, and of
@@ -386,10 +388,24 @@ class ChemistryModel:
         # substeps per cell on a hot bed and minutes per sweep.
         live = self._live_clinkering(flow)
 
+        # Belite follows a diffusion (Jander) law, not first order:
+        # its coefficient k is not a decay rate, and at kiln
+        # temperatures it is orders of magnitude above what the
+        # silica actually does in a substep. What bounds the split
+        # error is the share of reactant taken per substep, so
+        # belite enters the count through its first-order
+        # equivalent over this length (BeliteModel.substep_rate).
+        def split_rate(model):
+            if model is self.belite:
+                return self.belite.substep_rate(
+                    flow, rate[model], length
+                )
+            return rate[model]
+
         n_sub = max(
             1,
             math.ceil(
-                max((rate[model] for model in live), default=0.0)
+                max((split_rate(model) for model in live), default=0.0)
                 * length
                 / self._MAX_RATE_SUBSTEP
             ),

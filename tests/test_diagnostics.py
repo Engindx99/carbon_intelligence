@@ -720,10 +720,12 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
         def g(n):
             return float(getattr(state, n, 0.0))
 
+        # Transition_Q_sink is the transition's whole reaction heat
+        # (calcination + the clinkering reactions run there).
         disjoint = (
             g("Preheater_Q_sink")
             + g("Calciner_Q_sink")
-            + g("Calcination_Q_transition")
+            + g("Transition_Q_sink")
             + g("Burning_Q_sink")
         )
 

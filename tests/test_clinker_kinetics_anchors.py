@@ -19,9 +19,10 @@ from chemistry.composition import RAW_MEAL_COMPOSITION
 R = 8.314
 
 # Mastorakos et al. (1999), via Ritschel et al. 2024 Table A.1 and
-# Svensen et al. 2025 Table 5 [J/mol]
+# Svensen et al. 2025 Table 5 [J/mol]. Belite is no longer one of
+# them: it follows the measured Jander law of Alonso et al. 2019
+# (tests/test_belite_kinetics.py).
 MASTORAKOS_EA = {
-    BeliteModel: 240e3,
     AliteModel: 420e3,
     C3AModel: 310e3,
     C4AFModel: 330e3,
@@ -62,18 +63,19 @@ class TheShapeIsMastorakosTest(unittest.TestCase):
 
 
 class TheSolidStateReactionsAreDoneBelow1300CTest(unittest.TestCase):
-    """Belite, aluminate and ferrite form from 650-900 C and are
-    "complete below 1300 C" (cementkilns.co.uk)."""
+    """Aluminate and ferrite form from 650-900 C and are "complete
+    below 1300 C" (cementkilns.co.uk). Belite's law is measured now
+    (tests/test_belite_kinetics.py)."""
 
     def test_the_anchor_holds(self):
-        for cls in (BeliteModel, C3AModel, C4AFModel):
+        for cls in (C3AModel, C4AFModel):
             with self.subTest(reaction=cls.__name__):
                 self.assertAlmostEqual(
                     _conversion(cls(), 1473.0, 600.0), 0.99, places=9
                 )
 
     def test_nothing_forms_below_onset(self):
-        for cls, T0 in ((BeliteModel, 923.0), (C3AModel, 973.0), (C4AFModel, 973.0)):
+        for cls, T0 in ((C3AModel, 973.0), (C4AFModel, 973.0)):
             with self.subTest(reaction=cls.__name__):
                 self.assertEqual(float(cls().reaction_rate(T0 - 1.0)), 0.0)
 

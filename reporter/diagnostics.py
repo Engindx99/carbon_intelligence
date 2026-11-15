@@ -1069,11 +1069,15 @@ def thermal_demand_vs_supply(twin):
     # calcination as well, and adding it to a calcination term
     # would count the same reaction twice -- once at the feed's
     # full extent and once again at the kiln's.
-    clinkering = (
-        float(getattr(state, "Belite_Q_sink", 0.0))
-        + float(getattr(state, "Alite_Q_sink", 0.0))
-        + float(getattr(state, "C3A_Q_sink", 0.0))
-        + float(getattr(state, "C4AF_Q_sink", 0.0))
+    # Summed over both kiln zones: the clinkering reactions run in
+    # the transition too (Transition_<reaction>_Q_sink).
+    clinkering = sum(
+        float(getattr(state, f"{zone}_Q_sink", 0.0))
+        for zone in (
+            "Belite", "Alite", "C3A", "C4AF",
+            "Transition_belite", "Transition_alite",
+            "Transition_c3a", "Transition_c4af",
+        )
     )
 
     fixed_terms = (
@@ -1139,7 +1143,7 @@ def thermal_demand_vs_supply(twin):
 # must come from the disjoint set
 #
 #   Preheater_Q_sink + Calciner_Q_sink
-#     + Calcination_Q_transition + Burning_Q_sink
+#     + Transition_Q_sink + Burning_Q_sink
 #
 # because several of the published reaction scalars OVERLAP:
 # Calciner_Q_sink already contains Dehydroxylation_Q_sink, and
@@ -1197,7 +1201,7 @@ def plant_thermal_ledger(twin):
     reactions = (
         g("Preheater_Q_sink")
         + g("Calciner_Q_sink")
-        + g("Calcination_Q_transition")
+        + g("Transition_Q_sink")
         + g("Burning_Q_sink")
     )
 

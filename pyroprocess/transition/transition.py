@@ -7,9 +7,9 @@ from physics.closure_config import closure_settings
 from physics.shell import wall_stack
 
 from chemistry.phases import copy_solid_phases
-from chemistry.phases import get_cell_solid_flow
 from chemistry.phases import set_cell_solid_flow
 from chemistry.calcination import CalcinationModel
+from chemistry.reactions import ChemistryModel
 from pyroprocess.precalciner import c5_cyclone
 
 from . import gas_phase
@@ -33,6 +33,18 @@ class Transition:
         self.dz = L / N
 
         self.chemistry = CalcinationModel()
+
+        # The clinkering reactions run here too (15 Nov 2026). With
+        # the measured belite kinetics (chemistry/belite.py, Alonso
+        # et al. 2019) most of the silica combines at this zone's
+        # 1090-1350 K, as the VDZ reference kiln shows (CEMCAP D3.2
+        # Fig. 3.4: free SiO2 gone by ~40 % of the kiln length);
+        # running calcination alone here deferred all of it, and
+        # its heat, to one burning-zone cell. Same march as the
+        # burning zone (ChemistryModel.react_burning), sharing THIS
+        # zone's calcination model so the two cannot diverge.
+        self.clinker_chemistry = ChemistryModel()
+        self.clinker_chemistry.calcination = self.chemistry
 
         # ================= ZONE =================
         self.zone = "transition"
@@ -359,14 +371,12 @@ class Transition:
         # ======================================================
         # STEADY-STATE SOLID SPECIES FLOWS [kg/s]
         #
-        # Inlet: the flow leaving the last calciner cell.
-        # Residual in-flight calcination is converted
-        # cumulatively along the CaCO3 flow marched by
-        # calcination.resolve_transition_calcination(); the
-        # flow leaving the last cell is what Burning receives.
+        # Inlet: C5's underflow of the last calciner cell. The
+        # species leaving each cell come from the transition's
+        # reaction march (calcination.march_transition: residual
+        # calcination plus the clinkering reactions); the flow
+        # leaving the last cell is what Burning receives.
         # ======================================================
-
-        calciner_solid_flows = state.material_flows["calciner"].solids
 
         if calcination.kiln_dynamic(state):
             # Dynamic step: what crossed each cell's outlet face
@@ -384,17 +394,18 @@ class Transition:
                 step.dm_CO2_cells
             )
         else:
-            self.chemistry.solid_flow_profile(
-                c5_cyclone.underflow(
-                    get_cell_solid_flow(
-                        calciner_solid_flows,
-                        calciner_solid_flows.CaCO3.size - 1,
-                    ),
-                    state,
-                ),
-                state.m_dot_CaCO3_out_transition_cells,
-                state.material_flows["transition"].solids,
-                state.material_flows["transition"].gases,
+            # Steady: the species leaving each cell of the same
+            # march the converged rows used (calcination plus the
+            # clinkering reactions, heat_transfer publishes it).
+            for i, face in enumerate(state.Transition_face_species):
+                set_cell_solid_flow(
+                    state.material_flows["transition"].solids,
+                    i,
+                    face,
+                )
+
+            state.material_flows["transition"].gases.CO2[:] = (
+                state.Transition_dm_CO2_cells
             )
 
         # ======================================================
@@ -428,7 +439,7 @@ class Transition:
             - state.Hgas_transition_out
             - state.Hsolid_transition_out
             - state.Wall_loss_transition
-            - state.Calcination_Q_transition
+            - state.Transition_Q_sink
         )
 
         return state

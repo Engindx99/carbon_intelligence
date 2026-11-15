@@ -6,7 +6,6 @@ from physics.physics import h_gas
 from physics.gas_thermo import CO2_GAS
 from physics.gas_thermo import GasMixture
 from physics.gas_thermo import cell_species
-from pyroprocess.precalciner import c5_cyclone
 from physics.physics import h_solid
 from physics.physics import T_solid_from_h
 from physics.physics import outlet_face_value
@@ -352,48 +351,27 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         # same conversion.
         # ==================================================
 
-        # C5's underflow share of the calciner's CaCO3 outflow.
-        m_dot_CaCO3_transition_in = c5_cyclone.separation_efficiency(
-            state
-        ) * getattr(
-            state,
-            "m_dot_CaCO3_out_calciner",
-            0.0,
-        )
-
+        # The whole species stream from C5's underflow, through
+        # calcination AND the clinkering reactions
+        # (calcination.march_transition). Q_calcination_cells is
+        # the solid row's sink, so it carries the WHOLE reaction
+        # heat; its slope stays calcination-only, as in the
+        # burning zone (chemistry/reactions.py, apply_burning).
         dm_gas_cells = np.zeros(N)
         Q_calcination_cells = np.zeros(N)
         dQ_dTs_cells = np.zeros(N)
 
-        m_CaCO3_in_cell = m_dot_CaCO3_transition_in
+        if not dynamic:
 
-        for i in range(0 if dynamic else N):
-
-            (
-                _k_reaction,
-                m_CaCO3_out_cell,
-                m_CaCO3_reacted_cell,
-                Q_calcination_cell,
-                dQ_dTs_cell,
-            ) = calcination.compute_cell_calcination(
-                transition,
-                Ts_iter[i],
-                m_CaCO3_in_cell,
-                transition.dz,
-                u_s,
+            march = calcination.march_transition(
+                transition, state, Ts_iter, u_s
             )
 
-            m_dot_CaCO3_out_cells[i] = m_CaCO3_out_cell
-
-            dm_gas_cells[i] = (
-                m_CaCO3_reacted_cell
-                * transition.chemistry.CO2_ratio
-            )
-
-            Q_calcination_cells[i] = Q_calcination_cell
-            dQ_dTs_cells[i] = dQ_dTs_cell
-
-            m_CaCO3_in_cell = m_CaCO3_out_cell
+            m_dot_CaCO3_transition_in = march["CaCO3_in"]
+            m_dot_CaCO3_out_cells[:] = march["CaCO3_out_cells"]
+            dm_gas_cells = march["dm_CO2_cells"].copy()
+            Q_calcination_cells = march["Q_cells"].copy()
+            dQ_dTs_cells = march["Q_calcination_slope_cells"].copy()
 
         # ==================================================
         # SLOPE GUARD
@@ -416,7 +394,8 @@ def thermal_step(transition, Tg, Ts, Tw, state):
                 transition, state, Ts_iter, u_s
             )
             dm_gas_cells = step.dm_CO2_cells
-            Q_calcination_cells = step.Q_calcination_cells
+            # The whole reaction heat (calcination + clinkering).
+            Q_calcination_cells = step.Q_cells
             dQ_dTs_cells = step.Q_calcination_slope_cells
             m_dot_CaCO3_out_cells[:] = [
                 face.get("CaCO3", 0.0) for face in step.face_species[1:]
@@ -793,6 +772,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         m_dot_CaCO3_out_transition,
         X_calcination_transition,
         cell_conversion,
+        reactions,
     ) = (
         calcination.resolve_transition_calcination_dynamic
         if dynamic
@@ -1036,6 +1016,13 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         * np.sum(q_ws_cell)
     )
 
+    # The zone's WHOLE reaction heat: calcination plus the
+    # clinkering reactions that now run here (march_transition).
+    # This, not the calcination part alone, is what the solid
+    # rows absorbed, so it is what the zone balance must book.
+    Q_reaction_cells = np.asarray(reactions["Q_cells"], dtype=float)
+    Q_reaction_transition = float(np.sum(Q_reaction_cells))
+
     # ======================================================
     # ENERGY BALANCE
     # ======================================================
@@ -1054,7 +1041,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         - Hg_out
         - Hs_out
         - wall_loss
-        - Q_calcination_transition
+        - Q_reaction_transition
         - Q_stored_solid
         - Q_stored_wall
     )
@@ -1068,7 +1055,7 @@ def thermal_step(transition, Tg, Ts, Tw, state):
         Hg_out
         + Hs_out
         + wall_loss
-        + Q_calcination_transition
+        + Q_reaction_transition
         + Q_stored_solid
         + Q_stored_wall
     )
@@ -1142,6 +1129,23 @@ def thermal_step(transition, Tg, Ts, Tw, state):
     state.Calcination_Q_transition = float(
         Q_calcination_transition
     )
+
+    # Whole reaction sink of the zone, and each clinkering term.
+    # Calcination_Q_transition above stays calcination only.
+    state.Transition_Q_sink = Q_reaction_transition
+    state.Transition_Q_sink_cells = Q_reaction_cells.copy()
+    for name, value in reactions["clinkering_heat"].items():
+        setattr(state, f"Transition_{name}_Q_sink", float(value))
+
+    # The species leaving each cell and the CO2 each released, for
+    # the burning zone's inlet (Transition.apply writes them into
+    # material_flows["transition"]).
+    state.Transition_face_species = [
+        dict(face) for face in reactions["face_species"]
+    ]
+    state.Transition_dm_CO2_cells = np.asarray(
+        reactions["dm_CO2_cells"], dtype=float
+    ).copy()
 
     state.X_CaCO3_transition = float(
         X_calcination_transition

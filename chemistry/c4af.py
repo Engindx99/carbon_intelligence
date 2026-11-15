@@ -68,7 +68,8 @@ class C4AFModel(ReactionBase):
         # Incipient ferrite forms in the solid from 700-900 C and
         # is complete below 1300 C (it then melts and re-freezes,
         # which is the melt's heat, not this reaction's). Onset
-        # as a 1 K step at 973 K (700 C); same anchor as belite.
+        # as a 1 K step at 973 K (700 C); same anchor belite used to
+        # have (it now follows a measured Jander law, chemistry/belite.py).
         self.T_start = 973.0
         self.T_end = 974.0
 

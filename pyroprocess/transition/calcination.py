@@ -75,95 +75,143 @@ def compute_cell_calcination(transition, Ts_cell, m_CaCO3_in_cell, dz, u_s):
 
 
 # ======================================================
-# TRANSITION CALCINATION (CONVERGED PROFILE)
+# THE TRANSITION'S REACTION MARCH (STEADY)
 #
-# Moved from Transition.thermal_step() (pyroprocess/transition.py),
-# the post-convergence calcination pass. Logic is unchanged;
-# `self` was renamed to `transition`.
+# The whole species dict from C5's underflow, cell by cell,
+# through the burning zone's own step (ChemistryModel.
+# react_burning): calcination plus the four clinkering
+# reactions, at the cell's bed temperature for its residence
+# dz/u_s. Calcination still runs through this zone's
+# CalcinationModel (Transition.clinker_chemistry shares it), so
+# the CaCO3 profile is what compute_cell_calcination gives,
+# exactly; what is new is that belite, C3A and C4AF form where
+# the bed reaches them (chemistry/belite.py).
+#
+# Returned per cell: the total reaction heat [W] (the solid
+# row's sink), the calcination part and its slope dQ/dTs (the
+# only part linearised, as in the burning zone), the CO2
+# released [kg/s], the CaCO3 entering/leaving, the species
+# leaving, and each clinkering reaction's zone total.
 # ======================================================
-def resolve_transition_calcination(transition, state, Ts, u_s):
+def transition_inlet_species(state):
+    """C5's underflow: the solid entering the transition [kg/s]."""
+
+    solids = state.material_flows["calciner"].solids
+
+    return dict(
+        c5_cyclone.underflow(
+            get_cell_solid_flow(solids, solids.CaCO3.size - 1),
+            state,
+        )
+    )
+
+
+def march_transition(transition, state, Ts, u_s):
+
+    chem = transition.clinker_chemistry
 
     N = len(Ts)
-    dz = transition.dz
+
+    tau = transition.dz / max(float(u_s), transition.eps)
+
+    flow = transition_inlet_species(state)
+
+    heat = {
+        chem.belite: 0.0,
+        chem.alite: 0.0,
+        chem.c3a: 0.0,
+        chem.c4af: 0.0,
+    }
+
+    Q_cells = np.zeros(N)
+    Q_calc_cells = np.zeros(N)
+    slope_cells = np.zeros(N)
+    dm_CO2_cells = np.zeros(N)
+    CaCO3_in_cells = np.zeros(N)
+    CaCO3_out_cells = np.zeros(N)
+    faces = []
+
+    CaCO3_inlet = float(flow.get("CaCO3", 0.0))
+
+    for i in range(N):
+
+        T_i = max(float(Ts[i]), 1.0)
+
+        CaCO3_in_cells[i] = float(flow["CaCO3"])
+
+        rate, rate_calcination = chem.burning_rates(T_i)
+
+        Q, Q_calc, dm_CO2 = chem.react_burning(
+            flow, T_i, tau, rate, rate_calcination, heat
+        )
+
+        Q_cells[i] = Q
+        Q_calc_cells[i] = Q_calc
+        dm_CO2_cells[i] = dm_CO2
+
+        slope_cells[i] = chem.calcination.reaction_heat_slope(
+            CaCO3_in_cells[i], T_i, tau
+        )
+
+        CaCO3_out_cells[i] = float(flow["CaCO3"])
+
+        faces.append(dict(flow))
+
+    return {
+        "CaCO3_in": CaCO3_inlet,
+        "Q_cells": Q_cells,
+        "Q_calcination_cells": Q_calc_cells,
+        "Q_calcination_slope_cells": slope_cells,
+        "dm_CO2_cells": dm_CO2_cells,
+        "CaCO3_in_cells": CaCO3_in_cells,
+        "CaCO3_out_cells": CaCO3_out_cells,
+        "face_species": faces,
+        "clinkering_heat": {
+            "belite": heat[chem.belite],
+            "alite": heat[chem.alite],
+            "c3a": heat[chem.c3a],
+            "c4af": heat[chem.c4af],
+        },
+    }
+
+
+# ======================================================
+# TRANSITION CALCINATION (CONVERGED PROFILE)
+#
+# The post-convergence pass: re-marches the converged bed
+# temperatures through march_transition (calcination plus the
+# clinkering reactions since 15 Nov 2026).
+# ======================================================
+def resolve_transition_calcination(transition, state, Ts, u_s):
+    """The converged profile, from the same march the Picard loop
+    ran (march_transition). Returns the calcination arrays as
+    before plus `reactions`: the march itself, whose Q_cells is
+    the zone's WHOLE reaction heat."""
+
     eps = transition.eps
 
-    # C5's underflow share of the calciner's CaCO3 outflow.
-    m_dot_CaCO3_transition_in = c5_cyclone.separation_efficiency(
-        state
-    ) * getattr(
-        state,
-        "m_dot_CaCO3_out_calciner",
-        0.0,
+    march = march_transition(transition, state, Ts, u_s)
+
+    m_dot_CaCO3_transition_in = march["CaCO3_in"]
+    m_dot_CaCO3_in_cells = march["CaCO3_in_cells"]
+    m_dot_CaCO3_out_cells = march["CaCO3_out_cells"]
+    m_dot_CaCO3_reacted_cells = m_dot_CaCO3_in_cells - m_dot_CaCO3_out_cells
+    reaction_heat_cells = march["Q_calcination_cells"].copy()
+
+    reaction_rate_cells = np.array(
+        [float(transition.chemistry.reaction_rate(max(float(T), 1.0))) for T in Ts]
     )
 
-    m_dot_CaCO3_in_cells = np.zeros(N)
-    m_dot_CaCO3_reacted_cells = np.zeros(N)
-    m_dot_CaCO3_out_cells = np.zeros(N)
-    reaction_heat_cells = np.zeros(N)
-    reaction_rate_cells = np.zeros(N)
+    Q_calcination_transition = float(np.sum(reaction_heat_cells))
 
-    if m_dot_CaCO3_transition_in > eps:
-        m_dot_CaCO3_in_cells[0] = (
-            m_dot_CaCO3_transition_in
-        )
+    m_dot_CaCO3_out_transition = float(m_dot_CaCO3_out_cells[-1])
 
-        for i in range(N):
-
-            m_in = max(
-                float(m_dot_CaCO3_in_cells[i]),
-                0.0,
-            )
-
-            (
-                k_reaction,
-                m_out,
-                m_reacted,
-                Q_cell,
-                _dQ_dTs_cell,
-            ) = compute_cell_calcination(
-                transition,
-                Ts[i],
-                m_in,
-                dz,
-                u_s,
-            )
-
-            reaction_rate_cells[i] = k_reaction
-
-            m_dot_CaCO3_out_cells[i] = m_out
-            m_dot_CaCO3_reacted_cells[i] = m_reacted
-
-            reaction_heat_cells[i] = Q_cell
-
-            if i + 1 < N:
-                m_dot_CaCO3_in_cells[i + 1] = m_out
-
-    Q_calcination_transition = np.sum(
-        reaction_heat_cells
+    X_calcination_transition = 1.0 - (
+        m_dot_CaCO3_out_transition / max(m_dot_CaCO3_transition_in, eps)
     )
 
-    m_dot_CaCO3_out_transition = (
-        m_dot_CaCO3_out_cells[-1]
-    )
-
-    X_calcination_transition = (
-        1.0
-        - (
-            m_dot_CaCO3_out_transition
-            / max(
-                m_dot_CaCO3_transition_in,
-                eps,
-            )
-        )
-    )
-
-    cell_conversion = (
-        1.0
-        - m_dot_CaCO3_out_cells
-        / np.maximum(
-            m_dot_CaCO3_in_cells,
-            eps
-        )
+    cell_conversion = 1.0 - m_dot_CaCO3_out_cells / np.maximum(
+        m_dot_CaCO3_in_cells, eps
     )
 
     return (
@@ -177,12 +225,20 @@ def resolve_transition_calcination(transition, state, Ts, u_s):
         m_dot_CaCO3_out_transition,
         X_calcination_transition,
         cell_conversion,
+        march,
     )
 
 
 # ======================================================
 # SOLID PHASE STATE UPDATE
 # CaCO3 -> CaO
+#
+# The held-up INVENTORY (state.materials) only: calcination,
+# not the clinkering reactions that the flow march now runs in
+# this zone. Nothing in the steady or dynamic solve reads this
+# inventory (the burning zone takes its inlet from
+# material_flows, which carries the full species); it is kept
+# for the inventory interface only.
 #
 # Moved from Transition.thermal_step() (pyroprocess/transition.py).
 # Logic is unchanged; `self` was renamed to `transition`.
@@ -301,7 +357,7 @@ def transition_train_step(transition, state, Ts, u_s):
         np.asarray(Ts, dtype=float),
         u_s / transition.dz,
         dt,
-        lambda T: parcels.CalcinationReactor(transition.chemistry, T),
+        lambda T: parcels.BurningReactor(transition.clinker_chemistry, T),
     )
 
     state.kiln_step_transition = step
@@ -361,4 +417,16 @@ def resolve_transition_calcination_dynamic(transition, state, Ts, u_s):
         m_dot_CaCO3_out_transition,
         X_calcination_transition,
         cell_conversion,
+        {
+            "Q_cells": step.Q_cells.copy(),
+            "dm_CO2_cells": step.dm_CO2_cells.copy(),
+            "face_species": [dict(f) for f in step.face_species[1:]],
+            "clinkering_heat": {
+                name: float(sum(
+                    v for m, v in step.clinkering_heat.items()
+                    if m is getattr(transition.clinker_chemistry, name)
+                ))
+                for name in ("belite", "alite", "c3a", "c4af")
+            },
+        },
     )

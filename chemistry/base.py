@@ -23,10 +23,12 @@ R_GAS = 8.314
 # temperature, each from a plant-chemistry source
 # (cementkilns.co.uk, "Thermochemistry of clinker burning"):
 #
-#   belite, aluminate, ferrite  form from 650-900 C and are
+#   aluminate, ferrite  form from 650-900 C and are
 #       "complete below 1300 C": 99 % in 600 s at 1473 K
 #       (600 s, about a third of the kiln transit, is this
-#       model's reading of "before 1300 C", not a quote)
+#       model's reading of "before 1300 C", not a quote).
+#       Belite USED this anchor; since 15 Nov 2026 it follows the
+#       measured Jander law of Alonso et al. 2019 (chemistry/belite.py)
 #   alite  "only begins to form when liquid is formed", the
 #       liquid appearing over 1300-1425 C; the burning zone
 #       holds the clinker "perhaps 10-20 minutes": free lime

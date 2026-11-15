@@ -373,7 +373,7 @@ class Twin:
         )
 
         Q_reaction_total = (
-            state.Calcination_Q_transition
+            getattr(state, "Transition_Q_sink", 0.0)
             + state.Calciner_Q_sink
             + state.Preheater_Q_sink
             + state.Burning_Q_sink
@@ -381,6 +381,7 @@ class Twin:
 
         print("\n========== GLOBAL REACTION DEBUG ==========")
         print(f"Calcination_Q_transition = {state.Calcination_Q_transition:.12e} W")
+        print(f"Transition_Q_sink        = {getattr(state, 'Transition_Q_sink', 0.0):.12e} W")
         print(f"Calciner_Q_sink          = {state.Calciner_Q_sink:.12e} W")
         print(f"Preheater_Q_sink         = {state.Preheater_Q_sink:.12e} W")
         print(f"Burning_Q_sink           = {state.Burning_Q_sink:.12e} W")
@@ -1861,7 +1862,7 @@ class Twin:
                 )
                 print(
                     f"Transition reaction   = "
-                    f"{self.state.Calcination_Q_transition:.12e} W"
+                    f"{getattr(self.state, 'Transition_Q_sink', 0.0):.12e} W"
                 )
                 print(
                     f"Preheater reaction    = "
@@ -2298,8 +2299,8 @@ class Twin:
         Ts_transition = np.asarray(state.Ts_transition, dtype=float)
 
         def transition_reactor(T):
-            return parcels.CalcinationReactor(
-                self.transition.chemistry, T
+            return parcels.BurningReactor(
+                self.transition.clinker_chemistry, T
             )
 
         train_transition = parcels.steady_train(
