@@ -43,4 +43,6 @@ Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model*
 | Kesit alanı | 0.378 m² | türetilmiş |
 | Yatayla eğim | 60 ° | literatür (kalsinatör borusu) |
 | Siklonun toz çıkışı çapı (arayüz, boru çapı değil) | 0.836 m | türetilmiş |
+| Toz çıkışındaki kütle akışı (aynı debi) | 54.7 kg/(m² s) | türetilmiş |
+| Toz çıkışı akışı / boru akışı | 0.69 | türetilmiş |
 <!-- END GENERATED -->

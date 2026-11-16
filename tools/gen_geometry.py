@@ -1030,6 +1030,8 @@ def _meal_pipe_rows(g, stage):
         row_der("Kesit alanı", mp["area"], "m²", 3),
         row_der("Yatayla eğim", mp["slope"], "°", 0, "literatür (kalsinatör borusu)"),
         row_der("Siklonun toz çıkışı çapı (arayüz, boru çapı değil)", mp["D_dust"], "m", 3),
+        row_der("Toz çıkışındaki kütle akışı (aynı debi)", mp["flux_dust"], "kg/(m² s)", 1),
+        row_der("Toz çıkışı akışı / boru akışı", mp["dust_over_pipe"], "", 2),
     ]
 
 

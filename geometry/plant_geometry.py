@@ -942,7 +942,14 @@ def meal_pipes(g):
     pipes per string (each half the string's meal), C2-C4 one (the string's
     meal), C5 one (the meal leaving the calciner for the kiln). The slope is
     the calciner pipe's (cyclone_domain.meal_slope); length, route and flap
-    position are the layout's and unknown."""
+    position are the layout's and unknown.
+
+    flux_dust is the same meal through the cyclone's dust outlet (an FLS
+    ratio, cyclone(g).D_dust), dust_over_pipe its ratio to the pipe's
+    flux. The two sizes rest on different sources and are kept apart:
+    C1's outlet (FLS dust_D/D ~0.092, against ~0.13 for C2-C5) carries
+    ~2.25x the pipe's flux. No source gives a design flux for a preheater
+    cyclone's outlet; the CFD and the twin see it only as a boundary."""
 
     m = g["meal_pipe"]
     m_feed = v(m["feed_per_string"])
@@ -955,6 +962,8 @@ def meal_pipes(g):
     out = {}
     for s_, mdot in flows.items():
         area = mdot / flux
+        d_dust = cyclone(g, f"C{s_}")["D_dust"]
+        flux_dust = mdot / (0.25 * math.pi * d_dust ** 2)
         out[s_] = {
             "count_per_string": count[s_],
             "m": mdot,
@@ -962,7 +971,9 @@ def meal_pipes(g):
             "D": math.sqrt(4.0 * area / math.pi),
             "area": area,
             "slope": slope,
-            "D_dust": cyclone(g, f"C{s_}")["D_dust"],
+            "D_dust": d_dust,
+            "flux_dust": flux_dust,
+            "dust_over_pipe": flux_dust / flux,
         }
     return out
 

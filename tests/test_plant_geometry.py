@@ -922,3 +922,18 @@ class TheMealPipesAreTheCalcinersPipeScaledByFluxTest(unittest.TestCase):
     def test_the_slope_is_the_calciners_literature_value(self):
         for p in self.mp.values():
             self.assertEqual(p["slope"], pg.v(self.g["cyclone_domain"]["meal_slope"]))
+
+    def test_the_dust_outlet_flux_is_the_same_meal_through_the_outlet(self):
+        for s, p in self.mp.items():
+            with self.subTest(stage=s):
+                self.assertAlmostEqual(p["flux_dust"], p["m"] / (0.25 * math.pi * p["D_dust"] ** 2), places=6)
+                self.assertAlmostEqual(p["dust_over_pipe"], p["flux_dust"] / p["flux"], places=12)
+
+    def test_c1s_outlet_is_loaded_harder_than_its_pipe(self):
+        """Known and kept (user decision, 16 Nov 2026): C1's FLS outlet
+        carries ~2.25x the pipe's flux; C2-C4's outlets are within 10 %
+        of their pipes. A change that moves these is a sizing change."""
+        self.assertGreater(self.mp[1]["dust_over_pipe"], 2.0)
+        for s in (2, 3, 4):
+            with self.subTest(stage=s):
+                self.assertLess(abs(self.mp[s]["dust_over_pipe"] - 1.0), 0.10)

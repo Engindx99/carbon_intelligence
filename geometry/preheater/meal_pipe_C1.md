@@ -32,6 +32,8 @@ Ekipman hacmi: —
 
 Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model** değeridir (Estimated), yayınlanmış bir ölçü değildir. Elimizdeki tek literatür boru kalsinatörün farin besleme borusudur (Ø0.8485 m, Fidaros 2007 × √2, [calciner.md](../calciner/calciner.md)); bir hattın C4 farinini taşır. Bütün meal pipe'lar o borunun kütle akışıyla (tabloda) boyutlanır. Eğim kalsinatör borusunun literatür değeridir (60°). **Boy, güzergâh ve klape konumu yerleşime bağlıdır, kaynak yok: listelenir, boyutlandırılmaz.**
 
+C1'in toz çıkışı (Ø0.400 m, FLS oranı dust_D/D ≈ 0.092; C2–C5'te ≈ 0.13) bu borudan dardır ve aynı farini boru akışının ~2.25 katıyla taşır (tabloda). İki ölçü farklı kaynaklara dayandığı için ayrı tutulur (kullanıcı kararı, 16 Kasım 2026): preheater siklonunun çıkışı için bir tasarım akışı veren kaynak bulunamadı; CFD'de toz çıkışı duvar sınır koşuludur, twin bu çapı kullanmaz.
+
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|
@@ -43,4 +45,6 @@ Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model*
 | Kesit alanı | 0.283 m² | türetilmiş |
 | Yatayla eğim | 60 ° | literatür (kalsinatör borusu) |
 | Siklonun toz çıkışı çapı (arayüz, boru çapı değil) | 0.400 m | türetilmiş |
+| Toz çıkışındaki kütle akışı (aynı debi) | 178.5 kg/(m² s) | türetilmiş |
+| Toz çıkışı akışı / boru akışı | 2.25 | türetilmiş |
 <!-- END GENERATED -->
