@@ -5,7 +5,7 @@ rows_*(p, g)  the generated tables of geometry/pid/pid.md
 
 The macro reads, per sheet SH, the strings PID_<SH>_1 .. PID_<SH>_16
 (rows ';', fields '~', as drawings.bas's parameter table) and PID_<SH>_NO,
-PID_<SH>_TITLE. A record's first field is its type:
+PID_<SH>_TITLE, PID_<SH>_HASH (sheet_hash). A record's first field is its type:
 
   E~id~tag~symbol~col~row~w~h~qty~extra~label
   L~no~service~fromId~fromPort~toId~toPort~sizeText~status~via
@@ -88,6 +88,27 @@ def sheet_rows(p, g, sh):
     return rows
 
 
+def macro_code():
+    """pid.bas without its generated block: the drawing code, whose
+    changes also change what the sheet shows."""
+    from tools.gen_geometry import BEGIN, END, MACROS
+    text = (MACROS / "pid.bas").read_text(encoding="latin-1")
+    head, _, rest = text.partition(BEGIN)
+    _, _, tail = rest.partition(END)
+    return "\n".join(l.rstrip() for l in (head + tail).splitlines())
+
+
+def sheet_hash(p, g, sh):
+    """Fingerprint of everything sheet `sh` is drawn from: its number,
+    title and records, and the macro's drawing code. pid.bas writes it
+    next to the PDF (pid_<SH>.stamp); a stamp that differs means the
+    committed sheet was drawn from an older source."""
+    import hashlib
+    s = p["sheets"][sh]
+    text = "\n".join([str(s["num"]), s["title"], *sheet_rows(p, g, sh), macro_code()])
+    return hashlib.sha256(text.encode("ascii", "replace")).hexdigest()[:16]
+
+
 def consts(p, g):
     from tools.gen_geometry import Const
 
@@ -105,6 +126,7 @@ def consts(p, g):
         chunks += [""] * (CHUNKS - len(chunks))
         out.append(Const(f"PID_{sh}_NO", s["num"], f"sheet {sh} number", kind="Long"))
         out.append(Const(f"PID_{sh}_TITLE", _field(s["title"]), f"sheet {sh} title", kind="String"))
+        out.append(Const(f"PID_{sh}_HASH", sheet_hash(p, g, sh), f"sheet {sh} source fingerprint", kind="String"))
         out += [Const(f"PID_{sh}_{i + 1}", c, "P&ID records", kind="String") for i, c in enumerate(chunks)]
     return out
 

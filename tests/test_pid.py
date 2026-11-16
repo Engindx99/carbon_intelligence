@@ -80,6 +80,26 @@ class TheMacroRecordsAreTheSourceTest(unittest.TestCase):
             got = [r for r in "".join(chunks).split(";") if r]
             self.assertEqual(got, [r.rstrip(";") for r in encode.sheet_rows(p, g, sh)])
 
+    def test_the_macro_holds_each_sheets_fingerprint(self):
+        text = (gen_geometry.MACROS / "pid.bas").read_text(encoding="latin-1")
+        p, g = model.load(), pg.load()
+        for sh in p["sheets"]:
+            with self.subTest(sheet=sh):
+                got = re.findall(rf'^Const PID_{sh}_HASH\s+As String\s+=\s+"(\w+)"', text, re.M)
+                self.assertEqual(got, [encode.sheet_hash(p, g, sh)])
+                self.assertIn(f'Case "{sh}": SheetHash = PID_{sh}_HASH', text)
+
+    def test_the_fingerprint_follows_the_records_and_the_code(self):
+        import copy
+        from unittest import mock
+        p, g = model.load(), pg.load()
+        base = encode.sheet_hash(p, g, "KI")
+        q = copy.deepcopy(p)
+        q["connectors"]["OPC-03"]["label"] += " X"
+        self.assertNotEqual(encode.sheet_hash(q, g, "KI"), base)
+        with mock.patch.object(encode, "macro_code", return_value=encode.macro_code() + "\n' edit"):
+            self.assertNotEqual(encode.sheet_hash(p, g, "KI"), base)
+
     def test_module_declarations_come_before_the_first_procedure(self):
         """VBA: only comments may follow an End Sub, so a module-level
         Dim or Const after the first procedure does not compile."""
@@ -158,6 +178,24 @@ class TheValidatorCatchesTest(unittest.TestCase):
 
     def test_a_broken_gas_path(self):
         self.assertTrue(self._broken(lambda p: p["lines"].pop("G108")))
+
+
+class TheCommittedSheetsAreCurrentTest(unittest.TestCase):
+    """pid.bas writes geometry/drawings/pid/pid_<SH>.stamp (committed, next
+    to the PDF) with the fingerprint it drew from. Unlike the build log it
+    is in the repository, so a sheet left stale after a source change
+    fails here on every machine."""
+
+    MACRO = {"PH": "preheater", "CA": "calciner", "KI": "kiln", "CO": "cooler"}
+
+    def test_each_stamp_is_the_current_source(self):
+        p, g = model.load(), pg.load()
+        for sh in p["sheets"]:
+            stamp = model.ROOT / "geometry" / "drawings" / "pid" / f"pid_{sh}.stamp"
+            hint = f"pid_{sh}.pdf is stale: run geometry/macros/pid.bas -> {self.MACRO[sh]} and commit pdf, dxf, stamp"
+            with self.subTest(sheet=sh):
+                self.assertTrue(stamp.exists(), hint)
+                self.assertEqual(stamp.read_text(encoding="latin-1").strip(), encode.sheet_hash(p, g, sh), hint)
 
 
 class TheSheetsWereBuiltTest(unittest.TestCase):
