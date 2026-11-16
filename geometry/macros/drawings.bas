@@ -472,7 +472,7 @@ Private Sub Build(ByVal which As String)
 
     buildLog = "drawings " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified" & vbLf & buildLog
     WriteLog
-    MsgBox "Drawing " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified." & vbLf & _
+    Tell "Drawing " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified." & vbLf & _
            "Full log: " & LogPath(), vbInformation, "Equipment drawings"
     Exit Sub
 
@@ -480,9 +480,18 @@ Failed:
     why = Err.Description
     buildLog = "drawings " & equip & " ABORTED while " & phase & ": " & why & vbLf & buildLog
     WriteLog
-    MsgBox "Drawing " & equip & " ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
+    Tell "Drawing " & equip & " ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
            vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Equipment drawings"
 End Sub
+
+' The closing message box, left out when OUT_ROOT\quiet.flag exists: a run
+' started from WSL (tools/sw_run.py) must not wait on a click; the log
+' carries the same text.
+Private Sub Tell(ByVal msg As String, ByVal style As Long, ByVal caption As String)
+    If Dir(OUT_ROOT & "quiet.flag") <> "" Then Exit Sub
+    MsgBox msg, style, caption
+End Sub
+
 
 
 '==================================================================
@@ -1694,10 +1703,14 @@ Private Sub DimensionIdFan()
         "line", IDF_E_TOP_X, 0.5 * IDF_VOL_B, IDF_E_TOP_Z, 0, 0, _
         "", 0, 0, 0, 0, 0, _
         IDF_X_MIN - 0.8, 0.5 * IDF_VOL_B, IDF_E_TOP_Z
+    ' (the gas-out arrow runs from the face's middle: the text slides 0.5 m
+    ' along the face towards its outer edge, its 0.84 m inside the 1.9 m;
+    ' 16 Nov sheet check)
     DimEdges "h_stub", Sqr((IDF_E_TOP_X - IDF_E_LOW_X) ^ 2 + (IDF_E_TOP_Z - IDF_E_LOW_Z) ^ 2), vFront, _
         "line", xm, 0, zm, 0, 0, _
         "", 0, 0, 0, 0, 0, _
-        xm + 1.2 * IDF_DIS_DX, 0, zm + 1.2 * IDF_DIS_DZ
+        xm + 1.2 * IDF_DIS_DX + 0.5 * (IDF_E_TOP_X - IDF_E_LOW_X) / Sqr((IDF_E_TOP_X - IDF_E_LOW_X) ^ 2 + (IDF_E_TOP_Z - IDF_E_LOW_Z) ^ 2), 0, _
+        zm + 1.2 * IDF_DIS_DZ + 0.5 * (IDF_E_TOP_Z - IDF_E_LOW_Z) / Sqr((IDF_E_TOP_X - IDF_E_LOW_X) ^ 2 + (IDF_E_TOP_Z - IDF_E_LOW_Z) ^ 2)
     DimEdges "H_box", IDF_BOX_H, vSide, _
         "line", IDF_BOX_REACH, IDF_Y_BOX + IDF_BOX_DEPTH, 0, 0, 0, _
         "", 0, 0, 0, 0, 0, _
@@ -1748,10 +1761,11 @@ Private Sub DimensionKic()
     If FindEdge(vFront, "line", 0#, ys, zr, 0, 0, 0, 0) Is Nothing Or foundDist > SEL_TOL Then ys = a
     Note "side view: the near wall is at y = " & Num(ys, 3) & " m"
 
+    ' (text off the middle, where the gas-out arrow rises; 16 Nov sheet check)
     DimEdges "a_plan", KIC_A, vFront, _
         "line", 0, ys, zr, 0, 0, _
         "", 0, 0, 0, 0, 0, _
-        0, ys, zr + 1.8
+        -0.3 * a, ys, zr + 1.8
     DimEdges "a_plan", KIC_A, vTop, _
         "line", a, 0, zr, 0, 0, _
         "", 0, 0, 0, 0, 0, _
@@ -1759,7 +1773,7 @@ Private Sub DimensionKic()
     DimEdges "h_wall", KIC_H - KIC_H_LIP, vFront, _
         "line", a, ys, 0.5 * (KIC_H + KIC_H_LIP), 0, 0, _
         "", 0, 0, 0, 0, 0, _
-        a + 1.8, ys, 0.5 * (KIC_H + KIC_H_LIP)
+        a + 1.8, ys, KIC_H_LIP + 1#                 ' text low on the line: the kiln-gas arrow crosses it higher up (16 Nov sheet check)
     DimEdges "ramp_deg", KIC_RAMP_DEG, vFront, _
         "line", 0, ys, 0.5 * (zr + KIC_H_LIP), 0, 0, _
         "line", 0, ys, zr, 0, 0, _
@@ -1833,10 +1847,11 @@ Private Sub DimensionCalciner()
 
     ' left view. The roof circle is cut away at its front by the neck's
     ' first piece (it pierces the roof there), so its back is picked.
+    ' (text right of the extension line, not on it; 16 Nov sheet check)
     DimEdges "D_throat", CAL_D_THROAT, vLeft, _
         "circle", 0, -rt, 0, rt, 0, _
         "", 0, 0, 0, 0, 0, _
-        0, -rt - 0.5, -2.4
+        0, -rt - 2.2, -2.4
     DimEdges "L_throat", CAL_L_THROAT, vLeft, _
         "circle", 0, -rt, 0, rt, 0, _
         "circle", 0, -rt, zt, rt, zt, _
@@ -1862,16 +1877,21 @@ Private Sub DimensionCalciner()
         "circle", -xl, -CAL_Y_OFF - rl, ze, rl, ze, _
         "", 0, 0, 0, 0, 0, _
         -xl, -CAL_Y_OFF - rl - 2.4, ze - 1.4
+    ' (the 283 mm face is 1.4 mm on the sheet, the text 2.9 m: placed 2.5 m out
+    ' along the pipe's axis (cos 30, sin 30), past the air arrow, and 2.0 m to
+    ' the side so it stands outside the extension lines; 16 Nov sheet check)
     DimEdges "D_fuel", CAL_FUEL_D, vLeft, _
         "circle", 0, CAL_FUEL_Y, CAL_FUEL_Z, 0.5 * CAL_FUEL_D, CAL_FUEL_Z, _
         "", 0, 0, 0, 0, 0, _
-        0, R + 4.4, CAL_FUEL_Z + 2.4
+        0, CAL_FUEL_Y + 2.5 * Sqr(3#) * 0.5 - 2# * 0.5, CAL_FUEL_Z + 2.5 * 0.5 + 2# * Sqr(3#) * 0.5
 
     ' plan: the tertiary air duct and the meal pipe
+    ' (text 3.1 m long at 1:200, centred on its point: wholly under the duct
+    ' and its air arrow, clear of section A-A's arrow; 16 Nov sheet check)
     DimEdges "D_TA", CAL_TA_D, vTop, _
         "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
         "", 0, 0, 0, 0, 0, _
-        CAL_TA_X + 2.6, CAL_TA_Y - 2.4, CAL_TA_Z
+        CAL_TA_X + 0.8, CAL_TA_Y - 3#, CAL_TA_Z
     DimEdges "ta_x", CAL_TA_X, vTop, _
         "circle", 0, R, zr, R, zr, _
         "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
@@ -2040,7 +2060,7 @@ Private Sub DimensionC1()
     DimEdges "H_inlet", C1_H_INLET, vSec, _
         "line", 0.5 * (C1_FACE_TOP_X + C1_FACE_BOT_X), yi, 0.5 * (C1_FACE_TOP_Z + C1_FACE_BOT_Z), 0, 0, _
         "", 0, 0, 0, 0, 0, _
-        0.5 * (C1_FACE_TOP_X + C1_FACE_BOT_X) - 1#, 0, 0.5 * (C1_FACE_TOP_Z + C1_FACE_BOT_Z)
+        0.5 * (C1_FACE_TOP_X + C1_FACE_BOT_X) - 1#, 0, 0.5 * (C1_FACE_TOP_Z + C1_FACE_BOT_Z) + 0.6   ' over the gas arrow (16 Nov sheet check)
     s = 0.5 * (-R - C1_FACE_BOT_X) / dx
     mx = C1_FACE_BOT_X + s * dx: mz = C1_FACE_BOT_Z + s * dz
     DimEdges "inlet_slope", C1_INLET_SLOPE_DEG, vSec, _
@@ -2611,7 +2631,8 @@ Private Sub DrawFlowsKic()
     ArrowM3 vFront, 0#, 0#, KIC_H + KIC_STUB + 0.3, 0#, 0#, KIC_H + KIC_STUB + 2.2
     ArrowM3 vFront, 1.2, 0#, KIC_H_LIP + 1.6, a - 0.2, 0#, KIC_H_LIP + 0.15
     UseLayer L_TEXT
-    LabelM3 vFront, a + 0.4, 0#, zc + 1.2, "Kiln gas in (from the kiln)"
+    ' (right of h_wall's dimension line at a + 1.8, not across it; 16 Nov sheet check)
+    LabelM3 vFront, a + 2.3, 0#, zc + 1.2, "Kiln gas in (from the kiln)"
     LabelM3 vFront, 0.5, 0#, KIC_H + KIC_STUB + 2.6, "Gas out (to the calciner throat)"
     ' View captions: each one's left edge under the view's left edge; the
     ' side and end views (one row) share one baseline.
@@ -2669,8 +2690,15 @@ Private Sub DrawFlowsCalciner()
     LabelM3 vFront, -xl - 11.4, -CAL_Y_OFF, ze - 0.4, "Gas out (to C5)"
     LabelM3 vSec, CAL_FEED_X + 1.5, 0#, CAL_FEED_Z + 2.8, "Meal in"
     LabelM3 vSec, -CAL_FEED_X - 3.2, 0#, CAL_FEED_Z + 2.8, "Meal in"
-    LabelM3 vTop, CAL_TA_X + 3.2, CAL_TA_Y - 0.2, CAL_TA_Z, "Tertiary air in"
-    LabelM3 vLeft, 0#, CAL_FUEL_Y + 2.2, CAL_FUEL_Z + 1.4, "Fuel in"
+    ' (16 Nov sheet check: the label, 4.0 m long, sat across section A-A's
+    ' arrow; now over the duct, outside the vessel, ending before the face's
+    ' dimension. "Fuel in" (2.0 m) crossed the pipe and its dimension: now
+    ' under the pipe's end, running in towards it. Run 2: the label crossed
+    ' the duct face's extension line (the 6370 dimension): now over the
+    ' arrow, right of that line, between section A-A's line and the 2439
+    ' dimension's extension line)
+    LabelM3 vTop, CAL_TA_X + 0.2, CAL_TA_Y + 2#, CAL_TA_Z, "Tertiary air in"
+    LabelM3 vLeft, 0#, CAL_FUEL_Y + 3#, CAL_FUEL_Z - 0.4, "Fuel in"
     ' SolidWorks leaves the scale off this section's label even with the
     ' section's scale set (C1, C4, C5 print it): the second line by hand,
     ' under "KESIT A-A" (centred on the axis, its top 20-24 mm under the
@@ -2696,13 +2724,15 @@ Private Sub DrawFlowsTwin()
     UseLayer L_FLOW
     ' (the arrow stops above R1_D's dimension line, 1.6 m under R1's floor)
     ArrowM3 vFront, 0#, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 1#, 0#, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 0.15
-    ArrowM3 vFront, S2, 0#, -0.2, S2, 0#, -1.4
-    ArrowM3 vFront, -S2, 0#, -0.2, -S2, 0#, -1.4
+    ' (beside the dust outlets' axes, not on them: detail C's letter sits on
+    ' the right one's axis just outside the circle; 16 Nov sheet check)
+    ArrowM3 vFront, S2 + 0.45, 0#, -0.2, S2 + 0.45, 0#, -1.4
+    ArrowM3 vFront, -S2 - 0.45, 0#, -0.2, -S2 - 0.45, 0#, -1.4
     ArrowM3 vSide, 0#, C1_LEG_X, C1_HEIGHT - 0.2, 0#, C1_LEG_X, C1_HEIGHT - 1.6
     UseLayer L_TEXT
     LabelM3 vFront, 2.1, 0#, TW_Z_SPLIT - TW_R1_STUB_L - 1.5, "Gas + meal in (R1, from C2)"
-    LabelM3 vFront, S2 + 0.4, 0#, -1#, "Meal out"
-    LabelM3 vFront, -S2 - 2.6, 0#, -1#, "Meal out"
+    LabelM3 vFront, S2 + 0.85, 0#, -1#, "Meal out"
+    LabelM3 vFront, -S2 - 3.05, 0#, -1#, "Meal out"
     ' (in the left view +y is leftwards: the text runs on from here to the right, past the arrow)
     LabelM3 vSide, 0#, C1_LEG_X - 0.6, C1_HEIGHT - 1#, "Gas out (to fan)"
     LabelM3 vPlan, -S2 - TW_C1_R, 6#, TW_Z_CUT, "C1 A swirl clockwise, C1 B anticlockwise (seen from above)"
