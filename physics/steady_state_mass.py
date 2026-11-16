@@ -56,6 +56,7 @@ class SteadyStateMassFlow:
     # ================= SECONDARY / TERTIARY AIR =================
     m_dot_air_cooler: float = 0.0
     m_dot_primary_air: float = 0.0
+    m_dot_seal_air: float = 0.0       # kiln outlet seal leak, ambient
     m_dot_secondary_air: float = 0.0
     m_dot_tertiary_air: float = 0.0
     m_dot_vent_air: float = 0.0
@@ -226,7 +227,7 @@ class SteadyStateMassFlow:
         """
         Global steady-state mass balance:
 
-            raw meal + fuel + primary_air + air_cooler
+            raw meal + fuel + primary_air + seal_air + air_cooler
             -
             clinker - exhaust - vent_air
             = 0
@@ -254,6 +255,7 @@ class SteadyStateMassFlow:
             self.m_dot_raw_meal
             + self.m_dot_fuel
             + self.m_dot_primary_air
+            + self.m_dot_seal_air
             + self.m_dot_air_cooler
         )
 

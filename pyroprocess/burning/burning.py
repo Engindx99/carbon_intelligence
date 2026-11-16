@@ -277,6 +277,25 @@ class Burning:
                 f"got {self.primary_air_fraction}"
             )
 
+        # Kiln-air share leaking in at ambient T through the kiln
+        # outlet seal (configs/twin_cfg.yaml, sourced there). It
+        # displaces secondary air: secondary = kiln air - primary
+        # - seal (main._update_steady_state_mass_flow).
+        self.kiln_seal_air_fraction = float(burning_cfg.get(
+            "kiln_seal_air_fraction",
+            0.0,
+        ))
+
+        if not (
+            0.0 <= self.kiln_seal_air_fraction
+            < 1.0 - self.primary_air_fraction
+        ):
+            raise ValueError(
+                "burning.kiln_seal_air_fraction must be in "
+                "[0, 1 - primary_air_fraction), got "
+                f"{self.kiln_seal_air_fraction}"
+            )
+
         # Under-relaxation on the kiln's own calcination CO2.
         # Numerical only: at the fixed point the blend is the
         # identity, so this cannot change the converged answer.

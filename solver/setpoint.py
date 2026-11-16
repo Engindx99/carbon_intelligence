@@ -168,7 +168,11 @@ def fuel_upper_bound(twin):
 
     per_kg = air_per_kg_fuel(inputs["O2"], twin.eps)
 
-    demand_fraction = 1.0 - primary * kiln_fraction
+    # Primary air and the kiln outlet seal's leak enter the kiln
+    # without passing the cooler, so they are not cooler demand.
+    seal = float(getattr(twin.burning, "kiln_seal_air_fraction", 0.0))
+
+    demand_fraction = 1.0 - (primary + seal) * kiln_fraction
 
     denominator = per_kg * demand_fraction
 

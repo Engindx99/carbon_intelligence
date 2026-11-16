@@ -339,6 +339,24 @@ fuel:
 burning:
   primary_air_fraction: 0.10   # fraction of kiln combustion air carried in with the fuel (ambient T)
 
+  # Share of the kiln's combustion air that LEAKS in cold through the
+  # kiln outlet (hood-side) seal instead of arriving hot from the
+  # cooler (16 Nov 2026). The kiln's total air is still fixed by
+  # fuel.kiln_O2_wet, so the leak displaces secondary air.
+  # Derived from the VDZ BAT reference kiln (CEMCAP D3.2 rev 2,
+  # zenodo 1257112): the N2 of the kiln gas E-100 (61 411 kg/h,
+  # 70.5 % N2, Table 3.9) is 14.76 kg/s of air; the cooler's
+  # secondary air (0.23 Nm3/kg clinker, Table 3.8) is 10.33 kg/s
+  # and this model's primary air 10 % (1.48 kg/s), leaving
+  # 2.96 kg/s = 0.200 of the kiln air (0.085 kg/kg clinker)
+  # entering at ambient temperature. Cross-check: D3.2 section
+  # 3.8.2 gives ~6 % false air (dry volume) at the preheater outlet
+  # of a BAT plant after maintenance, rising to ~10 % as the
+  # rotating-part seals wear over the year. NOT modelled: the kiln
+  # INLET seal (it leaks into the riser, which E-100 does not
+  # resolve), the preheater and the calciner (~0 in VDZ's E-200).
+  kiln_seal_air_fraction: 0.20
+
 
 cooler_air:
   cooling_air_rate_kg_per_kg_clinker: 2.2   # total cooler (fan) air, kg air / kg clinker

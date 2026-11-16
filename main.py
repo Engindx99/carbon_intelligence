@@ -327,9 +327,10 @@ class Twin:
         # part of H_air_in. Derived from already-computed fields
         # rather than recomputing m_dot_primary_air * h_gas(...)
         # a second time: state.Hgas_burning_in = H_primary +
-        # H_secondary (pyroprocess/burning/gas_phase.py), so
-        # subtracting the secondary share recovers H_primary
-        # exactly.
+        # H_secondary + H_seal (pyroprocess/burning/gas_phase.py),
+        # so subtracting the secondary share recovers the burner
+        # end's ambient intakes (primary air and the kiln outlet
+        # seal's leak) exactly.
         H_primary_in = (
             state.Hgas_burning_in
             - getattr(state, "Hgas_cooler_secondary", 0.0)
@@ -1192,9 +1193,19 @@ class Twin:
             * self.mass_flow.m_dot_air_kiln
         )
 
+        # Air leaking in cold through the kiln outlet seal
+        # (burning.kiln_seal_air_fraction): part of the kiln's air,
+        # so it displaces the cooler's secondary air rather than
+        # adding to the kiln gas.
+        self.mass_flow.m_dot_seal_air = (
+            self.burning.kiln_seal_air_fraction
+            * self.mass_flow.m_dot_air_kiln
+        )
+
         self.mass_flow.m_dot_secondary_air = (
             self.mass_flow.m_dot_air_kiln
             - self.mass_flow.m_dot_primary_air
+            - self.mass_flow.m_dot_seal_air
         )
 
         # Tertiary air IS the precalciner's combustion air, so it
@@ -1222,6 +1233,7 @@ class Twin:
 
         self.state.m_dot_air_cooler = self.mass_flow.m_dot_air_cooler
         self.state.m_dot_primary_air = self.mass_flow.m_dot_primary_air
+        self.state.m_dot_seal_air = self.mass_flow.m_dot_seal_air
         self.state.m_dot_secondary_air = self.mass_flow.m_dot_secondary_air
         self.state.m_dot_tertiary_air = self.mass_flow.m_dot_tertiary_air
         self.state.m_dot_vent_air = self.mass_flow.m_dot_vent_air

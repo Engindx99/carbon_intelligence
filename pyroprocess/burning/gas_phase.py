@@ -55,7 +55,18 @@ def resolve_gas_inlet(burning, state):
         )
     )
 
-    state.Hgas_burning_in = H_primary + H_secondary
+    # Air leaking in through the kiln outlet seal: ambient air
+    # too, entering the burner end with the secondary air.
+    H_seal = (
+        float(getattr(state, "m_dot_seal_air", 0.0))
+        * float(
+            AIR_MIXTURE.h(
+                float(burning.T_amb),
+                burning.T_ref,
+            )
+        )
+    )
+    state.Hgas_burning_in = H_primary + H_secondary + H_seal
 
     state.Tg_burning_in = gas_inlet_temperature_from_enthalpy(
         burning,

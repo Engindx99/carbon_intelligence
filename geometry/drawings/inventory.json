@@ -70,7 +70,7 @@
         },
         {
           "key": "meal_pipe.c5_meal_per_string",
-          "value": 29.5162,
+          "value": 29.988,
           "unit": "kg/s",
           "source": "model",
           "status": "Estimated",
