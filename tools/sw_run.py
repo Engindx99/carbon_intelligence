@@ -32,13 +32,22 @@ RUN_ERRORS = {6: "procedure not found in the module", 22: "module not found in t
 
 
 def _ps1(module, proc):
-    """A PowerShell script that runs one procedure; prints ok and the error code."""
+    """A PowerShell script that runs one procedure, then closes the documents
+    it left open (only those: a drawing still open from the last run made
+    the next C1 sheet's left view lose its outlet circle, 16 Nov); prints
+    what it closed, then ok and the error code."""
     return (
         "$sw = [Runtime.InteropServices.Marshal]::GetActiveObject('SldWorks.Application')\r\n"
         "$T = [System.__ComObject]; $F = [Reflection.BindingFlags]::InvokeMethod\r\n"
+        "function Titles { $d = $T.InvokeMember('GetDocuments', $F, $null, $sw, $null); "
+        "if ($d) { $d | ForEach-Object { $T.InvokeMember('GetTitle', $F, $null, $_, $null) } } }\r\n"
+        "$before = @(Titles)\r\n"
         f"$a = [object[]]@('{LOADER}', '{module}', '{proc}', [int]0, [int]0)\r\n"
         "$m = New-Object Reflection.ParameterModifier 5; $m[4] = $true\r\n"
         "$ok = $T.InvokeMember('RunMacro2', $F, $null, $sw, $a, [Reflection.ParameterModifier[]]@($m), $null, $null)\r\n"
+        # not $t: PowerShell names ignore case, $t would overwrite $T
+        "foreach ($doc in @(Titles)) { if ($before -notcontains $doc) { "
+        "[void]$T.InvokeMember('CloseDoc', $F, $null, $sw, @($doc)); Write-Output \"closed $doc\" } }\r\n"
         "Write-Output (\"$ok \" + $a[4])\r\n"
     )
 
@@ -52,6 +61,9 @@ def _run(module, proc):
     r = subprocess.run(["powershell.exe", "-NoProfile", "-ExecutionPolicy", "Bypass", "-File", win],
                        capture_output=True, timeout=TIMEOUT, cwd="/mnt/c/")
     out = (r.stdout + r.stderr).decode("cp1254", "replace").replace("\r", "").strip()
+    for line in out.splitlines()[:-1]:
+        if line.startswith("closed "):
+            print("    " + line)
     last = out.splitlines()[-1].split() if out else []
     if len(last) == 2 and last[0] in ("True", "False") and last[1].lstrip("-").isdigit():
         code = int(last[1])
