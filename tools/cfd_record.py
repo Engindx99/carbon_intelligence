@@ -37,7 +37,8 @@ def read_report(path):
     """{name: [values]} of a Fluent report file (steady.out)."""
     cols, rows = None, []
     for line in path.read_text(errors="replace").splitlines():
-        if line.startswith('("Iteration"'):
+        # steady runs report per "Iteration", transient ones per "Time Step"
+        if line.startswith('("Iteration"') or line.startswith('("Time Step"'):
             cols = re.findall(r'"([^"]+)"', line)
         elif cols and re.match(r"^\s*\d+\s", line):
             v = line.split()
@@ -48,12 +49,13 @@ def read_report(path):
     return {c: [r[i] for r in rows] for i, c in enumerate(cols)}
 
 
-def solve_numbers(rep, y_co2):
+def solve_numbers(rep, y_co2, tail_n=TAIL):
+    step = "Iteration" if "Iteration" in rep else "Time Step"
     last = {k: v[-1] for k, v in rep.items()}
-    n = min(TAIL, len(rep["Iteration"]))
+    n = min(tail_n, len(rep[step]))
     tail = {k: v[-n:] for k, v in rep.items()}
     out = {
-        "iterations": int(last["Iteration"]),
+        "iterations" if step == "Iteration" else "time_steps": int(last[step]),
         "last": last,
         "tail_n": n,
         "tail_mean": {k: statistics.fmean(v) for k, v in tail.items()},
@@ -243,7 +245,7 @@ def md_line(rec):
             "{s1} / {s2} | {cont} | {dpm} |").format(
         name=rec["name"], date=rec["date"][:10], note=rec.get("note", ""),
         poly=mesh.get("poly_cells", "-"), nodes=mesh.get("nodes", "-"),
-        oq=f(mesh.get("min_orthogonal_quality_last"), 3), it=s.get("iterations", "-"),
+        oq=f(mesh.get("min_orthogonal_quality_last"), 3), it=s.get("iterations", "-") if "time_steps" not in s else f"{s['time_steps']} steps",
         m1=f(-m.get("m_out1", float("nan")) if m else None), m2=f(-m.get("m_out2", float("nan")) if m else None),
         t1=f(m.get("t_out1")), t2=f(m.get("t_out2")),
         s1=f(sh.get("outlet_1"), 3), s2=f(sh.get("outlet_2"), 3),
@@ -271,6 +273,8 @@ def main():
     ap.add_argument("--dpm-set", help="Fluent settings file the DPM run used")
     ap.add_argument("--dpm-load", type=float, help="meal mass flow per pipe the injections carry [kg/s]")
     ap.add_argument("--coupling", default="", help="one-way | two-way momentum | two-way")
+    ap.add_argument("--tail", type=int, default=TAIL,
+                    help="last rows of the report the means are taken over (a transient run: its averaging window)")
     a = ap.parse_args()
 
     d = Path(a.run_dir)
@@ -279,7 +283,7 @@ def main():
            "git": git_head(), "solid_step_sha256_16": sha(STEP), "inputs": inp}
 
     if (d / a.report).exists():
-        rec["solve"] = solve_numbers(read_report(d / a.report), y_co2)
+        rec["solve"] = solve_numbers(read_report(d / a.report), y_co2, a.tail)
     tr = Path(a.transcript) if a.transcript else None
     if tr is None:
         cands = sorted(d.glob("fluent-2*.trn"), key=lambda p: p.stat().st_mtime, reverse=True)
