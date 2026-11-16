@@ -195,7 +195,7 @@ instruments:
   TT-404: {var: "vent air T",                       key: "state:Tg_vent_air", status: Modelled, at: A404, mount: F}
   TT-403: {var: "clinker T at the cooler outlet",   key: "state:Ts_cooler[-1]", status: Modelled, at: K402, mount: F}
   FT-403: {var: "clinker out",                      key: "mass:m_dot_clinker", status: Modelled, at: K402, mount: F}
-  AT-401: {var: "free lime in the clinker",         key: "diag:free_lime.free_lime_pct", status: Report-only, at: COOL, mount: P, side: right, along: 0.4}
+  AT-401: {var: "free lime in the clinker",         key: "diag:free_lime.free_lime_pct", status: Report-only, at: COOL, mount: P, side: right, along: 0.6}   # 0.4 sat on TT-403 / FT-403 at K402 (16 Nov sheet check)
   TI-405: {var: "cooler shell T (max)",             key: "state:Cooler_T_shell_max", status: Modelled, at: COOL, mount: F}
 
 # The only "control" in the twin: an inverse solve, not a loop (solver/setpoint.py).
