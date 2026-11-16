@@ -45,6 +45,9 @@ def validate(p, g=None, cfg=None, snapshot=None):
     if nos != list(range(1, len(nos) + 1)):
         err.append(f"sheet numbers {nos} are not 1..n")
     sheet_no = {k: s["num"] for k, s in sheets.items()}
+    for k, s in sheets.items():
+        if not str(s.get("scope", "")).strip():
+            err.append(f"sheet {k}: no scope (the title block's 'as the twin models it, <scope>')")
 
     # ---- equipment
     tags = {row[1] for row in inv.EQUIPMENT}

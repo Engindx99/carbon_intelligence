@@ -35,25 +35,29 @@
       "code": "PH",
       "num": 1,
       "title": "PREHEATER, STRING A (STRING B IDENTICAL)",
-      "area": "Preheater"
+      "area": "Preheater",
+      "scope": "string A"
     },
     {
       "code": "CA",
       "num": 2,
       "title": "ILC CALCINER, GOOSENECK AND TERTIARY AIR",
-      "area": "Calciner"
+      "area": "Calciner",
+      "scope": "one for both strings"
     },
     {
       "code": "KI",
       "num": 3,
       "title": "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER",
-      "area": "Rotary kiln"
+      "area": "Rotary kiln",
+      "scope": "one for both strings"
     },
     {
       "code": "CO",
       "num": 4,
       "title": "GRATE COOLER",
-      "area": "Clinker cooler"
+      "area": "Clinker cooler",
+      "scope": "one for both strings"
     }
   ],
   "equipment": [

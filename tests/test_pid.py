@@ -89,6 +89,21 @@ class TheMacroRecordsAreTheSourceTest(unittest.TestCase):
                 self.assertEqual(got, [encode.sheet_hash(p, g, sh)])
                 self.assertIn(f'Case "{sh}": SheetHash = PID_{sh}_HASH', text)
 
+    def test_each_sheet_says_which_strings_it_draws(self):
+        """The title block's 'as the twin models it, <scope>': string A only
+        where the sheet draws string A's equipment (ids ending in A); the
+        calciner, kiln and cooler are one for both strings (16 Nov sheet
+        check: every sheet said "string A")."""
+        text = (gen_geometry.MACROS / "pid.bas").read_text(encoding="latin-1")
+        p = model.load()
+        for sh, s in p["sheets"].items():
+            with self.subTest(sheet=sh):
+                ids = [i for i, e in p["equipment"].items() if e["sheet"] == sh]
+                self.assertEqual("string A" in s["scope"], all(i.endswith("A") for i in ids))
+                self.assertRegex(text, rf'Const PID_{sh}_SCOPE\s+As String\s+=\s+"{re.escape(s["scope"])}"')
+                self.assertIn(f'Case "{sh}": SheetScope = PID_{sh}_SCOPE', text)
+        self.assertNotIn('"as the twin models it, string A"', text)
+
     def test_the_fingerprint_follows_the_records_and_the_code(self):
         import copy
         from unittest import mock
