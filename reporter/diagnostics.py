@@ -1215,6 +1215,8 @@ def plant_thermal_ledger(twin):
     primary_in = (
         g("Hgas_burning_in")
         - g("Hgas_cooler_secondary")
+        # The kiln inlet seal and riser leak, ambient too.
+        + g("Hgas_riser_seal_air")
     )
 
     total_in = (
@@ -1522,6 +1524,7 @@ def calciner_energy_budget(twin):
     terms_in = [
         ("kiln gas", g("Hgas_transition_out")),
         ("tertiary air", g("Hgas_cooler_tertiary")),
+        ("seal leak (ambient)", g("Hgas_riser_seal_air")),
         ("fuel", g("Q_calciner")),
         ("meal in", g("Hsolid_calciner_in")),
     ]

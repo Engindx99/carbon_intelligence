@@ -57,6 +57,7 @@ class SteadyStateMassFlow:
     m_dot_air_cooler: float = 0.0
     m_dot_primary_air: float = 0.0
     m_dot_seal_air: float = 0.0       # kiln outlet seal leak, ambient
+    m_dot_riser_seal_air: float = 0.0 # kiln inlet seal + riser leak, ambient
     m_dot_secondary_air: float = 0.0
     m_dot_tertiary_air: float = 0.0
     m_dot_vent_air: float = 0.0
@@ -168,6 +169,7 @@ class SteadyStateMassFlow:
         self,
         m_dot_CO2_generated,
         m_dot_tertiary_air=0.0,
+        m_dot_riser_seal_air=0.0,
         m_dot_H2O_generated=0.0,
         m_dot_fuel_calciner=0.0,
         c5_separation_efficiency=1.0,
@@ -187,6 +189,8 @@ class SteadyStateMassFlow:
         self.m_dot_CO2_generated = float(m_dot_CO2_generated)
         self.m_dot_H2O_generated_calciner = float(m_dot_H2O_generated)
         self.m_dot_tertiary_air = float(m_dot_tertiary_air)
+        # The kiln inlet seal and riser leak joins the same gas.
+        self.m_dot_riser_seal_air = float(m_dot_riser_seal_air)
         self.m_dot_fuel_calciner = float(m_dot_fuel_calciner)
 
         self.m_dot_s_calciner_out = (
@@ -215,6 +219,7 @@ class SteadyStateMassFlow:
             + self.m_dot_CO2_generated
             + self.m_dot_H2O_generated_calciner
             + self.m_dot_tertiary_air
+            + self.m_dot_riser_seal_air
             + self.m_dot_fuel_calciner
         )
 
@@ -227,7 +232,7 @@ class SteadyStateMassFlow:
         """
         Global steady-state mass balance:
 
-            raw meal + fuel + primary_air + seal_air + air_cooler
+            raw meal + fuel + primary_air + seal_air + riser_seal_air + air_cooler
             -
             clinker - exhaust - vent_air
             = 0
@@ -256,6 +261,7 @@ class SteadyStateMassFlow:
             + self.m_dot_fuel
             + self.m_dot_primary_air
             + self.m_dot_seal_air
+            + self.m_dot_riser_seal_air
             + self.m_dot_air_cooler
         )
 

@@ -73,6 +73,24 @@ class Calciner:
                 f"{self.c5_separation_efficiency}"
             )
 
+        # ================= SEAL LEAK =================
+        # Share of the calciner's combustion air leaking in at
+        # ambient through the kiln inlet seal and the riser
+        # (configs/twin_cfg.yaml, calciner.seal_air_fraction: the
+        # VDZ N2 balance). It displaces tertiary air: tertiary =
+        # calciner air - leak (main._update_steady_state_mass_flow).
+        self.seal_air_fraction = float(
+            ((cfg or {}).get("calciner", {}) or {}).get(
+                "seal_air_fraction", 0.0
+            )
+        )
+
+        if not 0.0 <= self.seal_air_fraction < 1.0:
+            raise ValueError(
+                "calciner.seal_air_fraction must be in [0, 1), got "
+                f"{self.seal_air_fraction}"
+            )
+
         # ================= GEOMETRY =================
         # The vessel's own diameter, read the way the kiln reads its
         # bore (burning.py): `calciner.diameter`, the 5000 t/d plant's

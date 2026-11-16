@@ -667,6 +667,8 @@ class DiagnosticsOnConvergedTwinTest(unittest.TestCase):
             / (
                 state.m_dot_g_transition
                 + mf.m_dot_tertiary_air
+                # the kiln inlet seal and riser leak
+                + mf.m_dot_riser_seal_air
                 + mf.m_dot_fuel_calciner
             ),
             1.0,

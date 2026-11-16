@@ -39,10 +39,10 @@ Const LINE_KEY As String = "2500"
 ' change the source and run: python3 tools/gen_geometry.py
 Const PID_PH_NO                    As Long    = 1            ' sheet PH number
 Const PID_PH_TITLE                 As String  = "PREHEATER, STRING A (STRING B IDENTICAL)" ' sheet PH title
-Const PID_PH_HASH                  As String  = "2a8a5fcec6a96e91" ' sheet PH source fingerprint
+Const PID_PH_HASH                  As String  = "d11c32388d14e2f9" ' sheet PH source fingerprint
 Const PID_PH_1                     As String  = "E~FEEDA~FEED~feed_chute~29~14~2~2~-~-~FEED;E~R1A~R1~riser~29~19.8~2~6~-~-~R1;E~C1A~C1~cyclone~32~18~3~6~2~-~C1;E~C2A~C2~cyclone~25~15~3~6~-~-~C2;E~C3A~C3~cyclone~18~12~3~6~-~-~C3;E~C4A~C4~cyclone~11~9~3~6~-~-~C4;E~C5A~C5~cyclone~4~6~3~6~-~-~C5;E~R2A~R2-R3~riser~22~18.3~2~3~-~-~R2;E~R3A~R2-R3~riser~15~15.3~2~3~-~-~R3;E~R4A~R4~riser~8~12.3~2~3~-~-~R4;E~MP1A~MP~flap_valve~33~16~1~1~-~-~MP;E~MP2A~MP~flap_valve~26~13~1~1~-~-~MP;E~MP3A~MP~flap_valve~19~10~1~1~-~-~MP;E~MP4A~MP~flap_valve~12~7~1~1~-~-~MP;E~MP5A~MP~flap_valve~5~4~1~1~-~-~MP;E~IDFA~IDF~fan~37~29~3~3~1 per string~-~IDF;L~G101~gas~OPC-01~-~C5A~gas_in~D 3.500~Verified~-;L~G102~gas~C5A~gas_out~R4A~gas_in~D 4.777 E~Estimated~-;" ' P&ID records
 Const PID_PH_2                     As String  = "L~G103~gas~R4A~gas_out~C4A~gas_in~D 4.777 E~Estimated~-;L~G104~gas~C4A~gas_out~R3A~gas_in~D 4.630 E~Estimated~-;L~G105~gas~R3A~gas_out~C3A~gas_in~D 4.630 E~Estimated~-;L~G106~gas~C3A~gas_out~R2A~gas_in~D 4.630 E~Estimated~-;L~G107~gas~R2A~gas_out~C2A~gas_in~D 4.630 E~Estimated~-;L~G108~gas~C2A~gas_out~R1A~gas_in~D 4.630 E~Estimated~-;L~G109~gas~R1A~gas_out~C1A~gas_in~D 3.070~Verified~-;L~G110~gas~C1A~gas_out~IDFA~gas_in~D 2.400 E~Estimated~-;L~G111~gas~IDFA~gas_out~SNK~stack~-~Unknown~-;L~M101~meal_raw~SRC~raw_meal~FEEDA~in~-~Unknown~-;L~M102~meal_raw~FEEDA~out~R1A~meal_in~D 0.600 E~Estimated~-;L~M103~meal_hot~C1A~dust_out~MP1A~in~D 0.600 E~Estimated~-;" ' P&ID records
-Const PID_PH_3                     As String  = "L~M104~meal_hot~MP1A~out~R2A~meal_in~D 0.600 E~Estimated~33.5,10/23,10;L~M105~meal_hot~C2A~dust_out~MP2A~in~D 0.849 E~Estimated~-;L~M106~meal_hot~MP2A~out~R3A~meal_in~D 0.849 E~Estimated~26.5,7.5/16,7.5;L~M107~meal_hot~C3A~dust_out~MP3A~in~D 0.849 E~Estimated~-;L~M108~meal_hot~MP3A~out~R4A~meal_in~D 0.849 E~Estimated~19.5,5/9,5;L~M109~meal_hot~C4A~dust_out~MP4A~in~D 0.849 E~Estimated~-;L~M110~meal_hot~MP4A~out~OPC-02~-~D 0.849 E~Estimated~-;L~M111~meal_hot~C5A~dust_out~MP5A~in~D 0.690 E~Estimated~-;L~M112~meal_hot~MP5A~out~OPC-03~-~D 0.690 E~Estimated~-;L~D101~dust~C1A~dust_esc~FEEDA~dust_in~-~Unknown~37,22.8/37,15;I~FT-101~Input~M101~P~raw meal feed~top~0;" ' P&ID records
+Const PID_PH_3                     As String  = "L~M104~meal_hot~MP1A~out~R2A~meal_in~D 0.600 E~Estimated~33.5,10/23,10;L~M105~meal_hot~C2A~dust_out~MP2A~in~D 0.849 E~Estimated~-;L~M106~meal_hot~MP2A~out~R3A~meal_in~D 0.849 E~Estimated~26.5,7.5/16,7.5;L~M107~meal_hot~C3A~dust_out~MP3A~in~D 0.849 E~Estimated~-;L~M108~meal_hot~MP3A~out~R4A~meal_in~D 0.849 E~Estimated~19.5,5/9,5;L~M109~meal_hot~C4A~dust_out~MP4A~in~D 0.849 E~Estimated~-;L~M110~meal_hot~MP4A~out~OPC-02~-~D 0.849 E~Estimated~-;L~M111~meal_hot~C5A~dust_out~MP5A~in~D 0.696 E~Estimated~-;L~M112~meal_hot~MP5A~out~OPC-03~-~D 0.696 E~Estimated~-;L~D101~dust~C1A~dust_esc~FEEDA~dust_in~-~Unknown~37,22.8/37,15;I~FT-101~Input~M101~P~raw meal feed~top~0;" ' P&ID records
 Const PID_PH_4                     As String  = "I~TT-103~Modelled~M103~F~C1 meal outlet T~top~0;I~TT-105~Modelled~M105~F~C2 meal outlet T~top~0;I~TT-107~Modelled~M107~F~C3 meal outlet T~top~0;I~TT-109~Modelled~M109~F~C4 meal outlet T~top~0;I~TT-104~Modelled~G104~F~C4 gas outlet T~top~0;I~TT-106~Modelled~G106~F~C3 gas outlet T~top~0;I~TT-108~Modelled~G108~F~C2 gas outlet T~top~0;I~TT-110~Modelled~G110~F~C1 gas outlet (exhaust) T~top~0;I~AT-110~Input~G110~P~stack O2 target~top~0;I~FT-103~Modelled~G104~F~preheater gas flow~top~0;I~FT-111~Modelled~G111~F~exhaust flow~top~0;I~FT-102~Modelled~G102~F~C5 dust escaping to C4~top~0;I~FT-105~Modelled~D101~F~C1 dust returned with the feed~top~0;I~FT-112~Modelled~M112~F~C5 meal to the kiln~top~0;" ' P&ID records
 Const PID_PH_5                     As String  = "I~TI-101~Modelled~C4A~F~preheater shell T (max)~top~0;I~PDI-102~Report-only~C5A~P~C5 dP (Euler)~top~0;I~PDI-103~Report-only~C4A~P~C4 dP (Euler)~top~0;I~PDI-105~Report-only~C3A~P~C3 dP (Euler)~top~0;I~PDI-107~Report-only~C2A~P~C2 dP (Euler)~top~0;I~PDI-109~Report-only~C1A~P~C1 dP (Euler)~top~0;I~JI-101~Report-only~IDFA~P~hydraulic power of the CFD dP~top~0;O~OPC-01~G101~in~2~gas~GOOSENECK GAS TO C5;O~OPC-02~M110~out~2~meal_hot~C4 MEAL TO CALCINER;O~OPC-03~M112~out~3~meal_hot~C5 MEAL VIA THROAT TO KILN INLET CHAMBER;" ' P&ID records
 Const PID_PH_6                     As String  = ""           ' P&ID records
@@ -58,7 +58,7 @@ Const PID_PH_15                    As String  = ""           ' P&ID records
 Const PID_PH_16                    As String  = ""           ' P&ID records
 Const PID_CA_NO                    As Long    = 2            ' sheet CA number
 Const PID_CA_TITLE                 As String  = "ILC CALCINER, GOOSENECK AND TERTIARY AIR" ' sheet CA title
-Const PID_CA_HASH                  As String  = "01106c1d59203e4e" ' sheet CA source fingerprint
+Const PID_CA_HASH                  As String  = "60458630c3532b84" ' sheet CA source fingerprint
 Const PID_CA_1                     As String  = "E~ILC~ILC~vessel~18~6~5~20~-~-~ILC;E~GN~GN~gooseneck~18~27~8~4~-~-~GN;E~TAD~TAD~duct~6~11~8~2~-~-~TAD;E~NOZM~NOZ~nozzle_meal~28~15~3~2~2~-~NOZ meal;E~NOZF~NOZ~nozzle_fuel~28~12~3~2~2~-~NOZ fuel;L~G201~gas~OPC-04~-~ILC~kiln_gas_inlet~D 3.130 E~Estimated~-;L~A201~air_hot~OPC-05~-~TAD~air_in~D 2.439 E~Estimated~-;L~A202~air_hot~TAD~air_out~ILC~tertiary_air_inlet~D 2.439 E~Estimated~-;L~M201~meal_hot~OPC-02~-~NOZM~meal_in~D 0.849 E~Estimated~-;L~M202~meal_hot~NOZM~meal_out~ILC~meal_feed~D 0.849 E~Estimated~-;L~F201~fuel~SRC~fuel_calciner~NOZF~fuel_in~-~Unknown~-;L~F202~fuel~NOZF~fuel_out~ILC~fuel_inlet~D 0.283 E~Estimated~-;L~G202~gas~ILC~gas_outlet~GN~gas_in~D 4.950 E~Estimated~-;" ' P&ID records
 Const PID_CA_2                     As String  = "L~G203~gas~GN~gas_out~OPC-01~-~D 3.500~Verified~-;I~FT-201~Modelled~F201~F~calciner fuel~top~0;I~FT-202~Modelled~A202~F~tertiary air~top~0;I~TT-204~Modelled~A202~F~tertiary air T~top~0;I~FT-204~Modelled~M202~F~meal into the calciner~top~0;I~FT-203~Modelled~G203~F~calciner gas flow~top~0;I~TT-202~Modelled~ILC~F~calciner gas T (zone profile)~right~0.92;I~TI-205~Modelled~ILC~F~calciner shell T (max)~right~0.82;I~PDI-201~Report-only~ILC~P~calciner dP (Euler)~right~0.72;O~OPC-01~G203~out~1~gas~GOOSENECK GAS TO C5;O~OPC-02~M201~in~1~meal_hot~C4 MEAL TO CALCINER;O~OPC-04~G201~in~3~gas~KILN GAS TO CALCINER THROAT;O~OPC-05~A201~in~3~air_hot~TERTIARY AIR FROM HOOD;" ' P&ID records
 Const PID_CA_3                     As String  = ""           ' P&ID records
@@ -77,8 +77,8 @@ Const PID_CA_15                    As String  = ""           ' P&ID records
 Const PID_CA_16                    As String  = ""           ' P&ID records
 Const PID_KI_NO                    As Long    = 3            ' sheet KI number
 Const PID_KI_TITLE                 As String  = "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER" ' sheet KI title
-Const PID_KI_HASH                  As String  = "35eb67f77616d846" ' sheet KI source fingerprint
-Const PID_KI_1                     As String  = "E~KIC~KIC~chamber~4~14~5~8~-~-~KIC;E~KILN~KILN~rotary_kiln~12~15~15~4~-~zones=2,split=0.4166~KILN;E~HOOD~HOOD~hood~33~11~5~12~-~-~HOOD;E~BRN~BRN~burner~39~16~2~2~-~-~BRN;L~A301~air_primary~SRC~primary_air~BRN~air_in~-~Unknown~-;L~F301~fuel~SRC~fuel_kiln~BRN~fuel_in~-~Unknown~-;L~G301~gas~BRN~flame_out~KILN~burner_in~-~Unknown~-;L~A302~air_hot~OPC-06~-~HOOD~sec_in~-~Unknown~-;L~A303~air_hot~HOOD~sec_out~KILN~air_in~-~Unknown~-;L~A304~air_hot~OPC-07~-~HOOD~ter_in~-~Unknown~-;L~A305~air_hot~HOOD~ter_out~OPC-05~-~-~Unknown~-;L~M301~meal_hot~OPC-03~-~KIC~meal_in~D 0.690 E~Estimated~-;L~M302~meal_hot~KIC~meal_out~KILN~meal_in~-~Unknown~-;L~G302~gas~KILN~gas_out~KIC~gas_in~D 4.800~Verified~-;" ' P&ID records
+Const PID_KI_HASH                  As String  = "cd10d8d35495c122" ' sheet KI source fingerprint
+Const PID_KI_1                     As String  = "E~KIC~KIC~chamber~4~14~5~8~-~-~KIC;E~KILN~KILN~rotary_kiln~12~15~15~4~-~zones=2,split=0.4166~KILN;E~HOOD~HOOD~hood~33~11~5~12~-~-~HOOD;E~BRN~BRN~burner~39~16~2~2~-~-~BRN;L~A301~air_primary~SRC~primary_air~BRN~air_in~-~Unknown~-;L~F301~fuel~SRC~fuel_kiln~BRN~fuel_in~-~Unknown~-;L~G301~gas~BRN~flame_out~KILN~burner_in~-~Unknown~-;L~A302~air_hot~OPC-06~-~HOOD~sec_in~-~Unknown~-;L~A303~air_hot~HOOD~sec_out~KILN~air_in~-~Unknown~-;L~A304~air_hot~OPC-07~-~HOOD~ter_in~-~Unknown~-;L~A305~air_hot~HOOD~ter_out~OPC-05~-~-~Unknown~-;L~M301~meal_hot~OPC-03~-~KIC~meal_in~D 0.696 E~Estimated~-;L~M302~meal_hot~KIC~meal_out~KILN~meal_in~-~Unknown~-;L~G302~gas~KILN~gas_out~KIC~gas_in~D 4.800~Verified~-;" ' P&ID records
 Const PID_KI_2                     As String  = "L~G303~gas~KIC~gas_out~OPC-04~-~D 3.130 E~Estimated~-;L~K301~clinker~KILN~clinker_out~OPC-08~-~-~Unknown~-;I~FT-301~Modelled~F301~F~kiln fuel~top~0;I~FY-301~Input~F301~P~kiln share of the total fuel~top~0;I~FT-302~Modelled~A301~F~primary air~top~0;I~FY-302~Input~A301~P~primary air share of kiln air~top~0;I~FT-303~Modelled~A303~F~secondary air~top~0;I~TT-301~Modelled~G301~F~gas T into the burning zone~top~0;I~TT-302~Modelled~M302~F~meal T into the burning zone~top~0;I~ST-301~Input~KILN~P~kiln speed (clipped to rpm_min..rpm_max)~top~0;I~TT-303~Modelled~G303~F~kiln gas T at the back end~top~0;I~FT-304~Modelled~G301~F~kiln gas flow, burning zone out~top~0;" ' P&ID records
 Const PID_KI_3                     As String  = "I~FT-305~Modelled~G303~F~kiln gas flow to the calciner~top~0;I~FT-306~Modelled~K301~F~clinker from the burning zone~top~0;I~TT-304~Modelled~K301~F~clinker T at the kiln outlet~top~0;I~TI-307~Modelled~KILN~F~transition shell T (max)~top~0;I~TI-308~Modelled~KILN~F~burning shell T (max)~top~0;O~OPC-03~M301~in~1~meal_hot~C5 MEAL VIA THROAT TO KILN INLET CHAMBER;O~OPC-04~G303~out~2~gas~KILN GAS TO CALCINER THROAT;O~OPC-05~A305~out~2~air_hot~TERTIARY AIR FROM HOOD;O~OPC-06~A302~in~4~air_hot~SECONDARY AIR FROM COOLER;O~OPC-07~A304~in~4~air_hot~TERTIARY AIR FROM COOLER;O~OPC-08~K301~out~4~clinker~CLINKER TO COOLER;S~SP-1~AT-401~cfg:fuel.Fuel_rate_total~free_lime_spec (1.5 %);" ' P&ID records
 Const PID_KI_4                     As String  = ""           ' P&ID records
@@ -96,9 +96,9 @@ Const PID_KI_15                    As String  = ""           ' P&ID records
 Const PID_KI_16                    As String  = ""           ' P&ID records
 Const PID_CO_NO                    As Long    = 4            ' sheet CO number
 Const PID_CO_TITLE                 As String  = "GRATE COOLER" ' sheet CO title
-Const PID_CO_HASH                  As String  = "2e2935d228064b85" ' sheet CO source fingerprint
+Const PID_CO_HASH                  As String  = "005fd1861d9445d8" ' sheet CO source fingerprint
 Const PID_CO_1                     As String  = "E~COOL~COOL~grate_cooler~8~10~26~8~-~seg=10,hood=2~COOL;L~A401~air_cooler~SRC~cooler_air~COOL~grate_air~-~Unknown~-;L~A402~air_hot~COOL~hood_1~OPC-06~-~-~Unknown~-;L~A403~air_hot~COOL~hood_2~OPC-07~-~-~Unknown~-;L~A404~air_hot~COOL~vent_outlet~SNK~cooler_vent~-~Unknown~-;L~K401~clinker~OPC-08~-~COOL~clinker_in~-~Unknown~-;L~K402~clinker~COOL~clinker_out~SNK~clinker~-~Unknown~-;I~FT-401~Modelled~A401~F~cooler air~top~0;I~FY-401~Input~A401~P~cooler air per kg clinker~top~0;I~ST-401~Input~COOL~P~grate speed~top~0;I~TT-402~Modelled~A402~F~secondary air T~top~0;I~FT-402~Modelled~A404~F~cooler vent air~top~0;I~TT-404~Modelled~A404~F~vent air T~top~0;" ' P&ID records
-Const PID_CO_2                     As String  = "I~TT-403~Modelled~K402~F~clinker T at the cooler outlet~top~0;I~FT-403~Modelled~K402~F~clinker out~top~0;I~AT-401~Report-only~COOL~P~free lime in the clinker~right~0.4;I~TI-405~Modelled~COOL~F~cooler shell T (max)~top~0;O~OPC-06~A402~out~3~air_hot~SECONDARY AIR FROM COOLER;O~OPC-07~A403~out~3~air_hot~TERTIARY AIR FROM COOLER;O~OPC-08~K401~in~3~clinker~CLINKER TO COOLER;" ' P&ID records
+Const PID_CO_2                     As String  = "I~TT-403~Modelled~K402~F~clinker T at the cooler outlet~top~0;I~FT-403~Modelled~K402~F~clinker out~top~0;I~AT-401~Report-only~COOL~P~free lime in the clinker~right~0.6;I~TI-405~Modelled~COOL~F~cooler shell T (max)~top~0;O~OPC-06~A402~out~3~air_hot~SECONDARY AIR FROM COOLER;O~OPC-07~A403~out~3~air_hot~TERTIARY AIR FROM COOLER;O~OPC-08~K401~in~3~clinker~CLINKER TO COOLER;" ' P&ID records
 Const PID_CO_3                     As String  = ""           ' P&ID records
 Const PID_CO_4                     As String  = ""           ' P&ID records
 Const PID_CO_5                     As String  = ""           ' P&ID records
@@ -126,7 +126,11 @@ Const BUB_R   As Double = 0.005      ' instrument bubble radius
 Const BUB_OFF As Double = 0.014      ' bubble centre off its line
 Const LBL_H     As Double = 0.0028     ' equipment labels
 Const SM      As Double = 0.002      ' line flags, instrument tags, tables
-Const CHAR_W  As Double = 0.0012     ' text width per character at SM, for placing a flag
+Const CHAR_W  As Double = 0.0017     ' text width per character at SM, for placing a flag (measured on the PDFs: 1.4-1.7 mm)
+Const TXT_PAD As Double = 0.0008     ' clear gap kept around a placed text, so two texts do not read as one
+Const STAT_H  As Double = 0.0016     ' the M / I / R letter at a bubble's lower right
+Const BUB_GAP As Double = 0.014      ' least centre distance of two bubbles on one line (2 BUB_R + 4 mm)
+Const OCC_MAX As Long = 600          ' boxes the placed texts, bubbles and stems take
 Const ARROW_L As Double = 0.004
 Const CAP_H   As Double = 0.002
 Const MAXN    As Long = 80
@@ -197,6 +201,11 @@ Dim noteWarned As Boolean
 Dim buildLog As String
 Dim phase As String
 Dim yNext As Double                               ' where the next list starts, going down the right column
+' What is already on the drawing field, for placing flags and connector
+' labels where nothing is (16 Nov 2026 review, item 6): one box per text,
+' bubble and stem. Equipment boxes and the lines are checked from their own arrays.
+Dim occN As Long
+Dim occX0(1 To OCC_MAX) As Double, occY0(1 To OCC_MAX) As Double, occX1(1 To OCC_MAX) As Double, occY1(1 To OCC_MAX) As Double
 
 
 '==================================================================
@@ -230,7 +239,7 @@ Private Sub Build(ByVal which As String)
     sheetKey = which
     buildLog = ""
     phase = "starting up"
-    nNotes = 0: noteWarned = False
+    nNotes = 0: noteWarned = False: occN = 0
     For i = 0 To LAYER_N - 1
         nLine(i) = 0: nArc(i) = 0
     Next i
@@ -272,10 +281,14 @@ Private Sub Build(ByVal which As String)
     phase = "routing the lines"
     RouteLines
     DrawLines
-    DrawTerminals
+    ' instruments before the connectors' labels and the line flags, which
+    ' are placed where no bubble, stem or text is yet
     phase = "placing the instruments"
     DrawInstruments
     DrawSetpoints
+    phase = "placing the connectors and the line flags"
+    DrawTerminals
+    DrawFlags
     phase = "drawing the frame, lists and title block"
     DrawFrame
     DrawLegend
@@ -696,11 +709,74 @@ Private Sub DrawLines()
         dx = lPx(i, n) - lPx(i, n - 1): dy = lPy(i, n) - lPy(i, n - 1)
         d = Sqr(dx * dx + dy * dy)
         ArrowP lPx(i, n), lPy(i, n), dx / d, dy / d, ARROW_L
-        ' the line flag: its number and size, beside the longest piece
-        s = LongestSeg(i)
-        FlagOn i, s
     Next i
 End Sub
+
+
+' The line flags (number and size), each beside its line's longest piece,
+' placed last, where no text, bubble, stem, equipment box or line is.
+Private Sub DrawFlags()
+    Dim i As Long
+    For i = 1 To nL
+        FlagOn i, LongestSeg(i)
+    Next i
+End Sub
+
+
+' A box now taken on the drawing field [m on paper].
+Private Sub Occupy(ByVal x0 As Double, ByVal y0 As Double, ByVal x1 As Double, ByVal y1 As Double)
+    If occN >= OCC_MAX Then Exit Sub
+    occN = occN + 1
+    occX0(occN) = x0: occY0(occN) = y0: occX1(occN) = x1: occY1(occN) = y1
+End Sub
+
+
+' True when the box lies inside the frame and meets no taken box, no
+' equipment box (each kept TXT_PAD clear) and no line.
+Private Function SpotFree(ByVal x0 As Double, ByVal y0 As Double, ByVal x1 As Double, ByVal y1 As Double) As Boolean
+    Dim k As Long, j As Long
+    SpotFree = False
+    If x0 < FR_X0 + 0.003 Or x1 > FR_X1 - 0.003 Or y0 < FR_Y0 + 0.003 Or y1 > FR_Y1 - 0.003 Then Exit Function
+    For k = 1 To occN
+        If x1 + TXT_PAD > occX0(k) And x0 - TXT_PAD < occX1(k) And y1 + TXT_PAD > occY0(k) And y0 - TXT_PAD < occY1(k) Then Exit Function
+    Next k
+    For k = 1 To nE
+        If x1 + TXT_PAD > eX0(k) And x0 - TXT_PAD < eX1(k) And y1 + TXT_PAD > eY0(k) And y0 - TXT_PAD < eY1(k) Then Exit Function
+    Next k
+    For k = 1 To nL
+        For j = 1 To lNp(k) - 1
+            If SegHitsBox(lPx(k, j), lPy(k, j), lPx(k, j + 1), lPy(k, j + 1), x0, y0, x1, y1) Then Exit Function
+        Next j
+    Next k
+    SpotFree = True
+End Function
+
+
+' The segment a-b enters the box (Liang-Barsky clipping).
+Private Function SegHitsBox(ByVal sx0 As Double, ByVal sy0 As Double, ByVal sx1 As Double, ByVal sy1 As Double, _
+                            ByVal x0 As Double, ByVal y0 As Double, ByVal x1 As Double, ByVal y1 As Double) As Boolean
+    Dim t0 As Double, t1 As Double, ddx As Double, ddy As Double, k As Long
+    Dim p(3) As Double, q(3) As Double, r As Double
+    ddx = sx1 - sx0: ddy = sy1 - sy0
+    p(0) = -ddx: q(0) = sx0 - x0
+    p(1) = ddx: q(1) = x1 - sx0
+    p(2) = -ddy: q(2) = sy0 - y0
+    p(3) = ddy: q(3) = y1 - sy0
+    t0 = 0#: t1 = 1#
+    For k = 0 To 3
+        If Abs(p(k)) < 1E-12 Then
+            If q(k) < 0# Then SegHitsBox = False: Exit Function
+        Else
+            r = q(k) / p(k)
+            If p(k) < 0# Then
+                If r > t0 Then t0 = r
+            Else
+                If r < t1 Then t1 = r
+            End If
+        End If
+    Next k
+    SegHitsBox = (t0 < t1)
+End Function
 
 
 Private Function LongestSeg(ByVal li As Long) As Long
@@ -714,18 +790,62 @@ Private Function LongestSeg(ByVal li As Long) As Long
 End Function
 
 
+' A line's flag beside its run s: below (level run) or left (vertical run)
+' of the middle first, then stepping along the run either way, then the
+' other side. A run too short for the flag (a riser's gas run into its
+' cyclone) gets it in two lines over the run's upstream end, inside the
+' box the line leaves.
 Private Sub FlagOn(ByVal li As Long, ByVal s As Long)
-    Dim mx As Double, my As Double, txt As String, tw As Double
-    mx = 0.5 * (lPx(li, s) + lPx(li, s + 1))
-    my = 0.5 * (lPy(li, s) + lPy(li, s + 1))
+    Const STEP_ALONG As Double = 0.003
+    Dim txt As String, tw As Double, side As Long, j As Long, off As Double
+    Dim ax As Double, ay As Double, ex As Double, ey As Double
+    Dim lo As Double, hi As Double, px As Double, pt As Double
+    ax = lPx(li, s): ay = lPy(li, s): ex = lPx(li, s + 1): ey = lPy(li, s + 1)
     txt = lNo(li)
     If lSize(li) <> "-" Then txt = txt & " " & lSize(li)
     tw = Len(txt) * CHAR_W
     UseLayer L_TEXT
-    If Abs(lPy(li, s + 1) - lPy(li, s)) < 0.0000001 Then
-        LabelPH mx - 0.5 * tw, my - 0.0012, txt, SM                    ' below a level run
+    If Abs(ey - ay) < 0.0000001 Then
+        lo = IIf(ax < ex, ax, ex): hi = IIf(ax < ex, ex, ax)
+        For side = 0 To 1
+            pt = IIf(side = 0, ay - 0.0012, ay + 0.0012 + SM)
+            For j = 0 To 16
+                off = STEP_ALONG * ((j + 1) \ 2) * IIf(j Mod 2 = 1, 1#, -1#)
+                px = 0.5 * (lo + hi) - 0.5 * tw + off
+                If px >= lo + 0.001 And px + tw <= hi - 0.001 Then
+                    If SpotFree(px, pt - SM, px + tw, pt) Then
+                        LabelPH px, pt, txt, SM: Occupy px, pt - SM, px + tw, pt
+                        Exit Sub
+                    End If
+                End If
+            Next j
+        Next side
+        ' no clear place along the run: two lines over its upstream end
+        Dim w2 As Double, x2 As Double
+        w2 = IIf(Len(lNo(li)) > Len(lSize(li)), Len(lNo(li)), Len(lSize(li))) * CHAR_W
+        x2 = IIf(ex >= ax, lo - 0.0015 - w2, hi + 0.0015)
+        LabelPH x2, ay + 0.0012 + 2# * SM + 0.0008, lNo(li), SM
+        If lSize(li) <> "-" Then LabelPH x2, ay + 0.0012 + SM, lSize(li), SM
+        Occupy x2, ay + 0.0012, x2 + w2, ay + 0.0012 + 2# * SM + 0.0008
+        Note "flag " & lNo(li) & ": its run is too short; written in two lines over the run's upstream end"
     Else
-        LabelPH mx - tw - 0.002, my + 0.5 * SM, txt, SM                ' left of a vertical one
+        lo = IIf(ay < ey, ay, ey): hi = IIf(ay < ey, ey, ay)
+        For side = 0 To 1
+            px = IIf(side = 0, ax - tw - 0.002, ax + 0.002)
+            For j = 0 To 16
+                off = STEP_ALONG * ((j + 1) \ 2) * IIf(j Mod 2 = 1, 1#, -1#)
+                pt = 0.5 * (lo + hi) + 0.5 * SM + off
+                If pt - SM >= lo + 0.001 And pt <= hi - 0.001 Then
+                    If SpotFree(px, pt - SM, px + tw, pt) Then
+                        LabelPH px, pt, txt, SM: Occupy px, pt - SM, px + tw, pt
+                        Exit Sub
+                    End If
+                End If
+            Next j
+        Next side
+        px = ax - tw - 0.002: pt = 0.5 * (lo + hi) + 0.5 * SM
+        LabelPH px, pt, txt, SM: Occupy px, pt - SM, px + tw, pt
+        Note "flag " & lNo(li) & ": no clear place beside its run; left of its middle"
     End If
 End Sub
 
@@ -772,6 +892,7 @@ Private Sub EquipLabel(ByVal i As Long)
     Select Case eSym(i)
     Case "flap_valve"
         LabelPH eX1(i) + 0.002, 0.5 * (eY0(i) + eY1(i)) + 0.5 * LBL_H, txt, LBL_H
+        Occupy eX1(i) + 0.002, 0.5 * (eY0(i) + eY1(i)) - 0.5 * LBL_H, eX1(i) + 0.002 + tw, 0.5 * (eY0(i) + eY1(i)) + 0.5 * LBL_H
     Case "fan"
         LabelPH 0.5 * (eX0(i) + eX1(i)) - 0.5 * tw, 0.5 * (eY0(i) + eY1(i)) + 0.5 * LBL_H, txt, LBL_H
     Case Else
@@ -899,19 +1020,16 @@ Private Sub Bar(ByVal li As Long, ByVal txt As String)
     tw = Len(txt) * CHAR_W
     If lTerm(li) = 2 Then s = 1# Else s = -1#     ' the label on the far side from the line
     UseLayer L_TEXT
+    Dim bx0 As Double, btop As Double
     If Abs(lUx(li)) > 0.5 Then
-        If s * lUx(li) > 0# Then
-            LabelPH lTx(li) + 0.002, lTy(li) + 0.5 * SM, txt, SM
-        Else
-            LabelPH lTx(li) - tw - 0.002, lTy(li) + 0.5 * SM, txt, SM
-        End If
+        btop = lTy(li) + 0.5 * SM
+        If s * lUx(li) > 0# Then bx0 = lTx(li) + 0.002 Else bx0 = lTx(li) - tw - 0.002
     Else
-        If s * lUy(li) > 0# Then
-            LabelPH lTx(li) - 0.5 * tw, lTy(li) + 0.002 + SM, txt, SM
-        Else
-            LabelPH lTx(li) - 0.5 * tw, lTy(li) - 0.002, txt, SM
-        End If
+        bx0 = lTx(li) - 0.5 * tw
+        If s * lUy(li) > 0# Then btop = lTy(li) + 0.002 + SM Else btop = lTy(li) - 0.002
     End If
+    LabelPH bx0, btop, txt, SM
+    Occupy bx0, btop - SM, bx0 + tw, btop
     UseLayer L_EQUIP
 End Sub
 
@@ -937,17 +1055,42 @@ Private Sub Pentagon(ByVal li As Long, ByVal id As String)
     LineP ex - vx * HW, ey - vy * HW, p0x - vx * HW, p0y - vy * HW
     LineP p0x - vx * HW, p0y - vy * HW, p0x + vx * HW, p0y + vy * HW
 
+    Occupy IIf(p0x < p1x, p0x, p1x) - HW, IIf(p0y < p1y, p0y, p1y) - HW, IIf(p0x > p1x, p0x, p1x) + HW, IIf(p0y > p1y, p0y, p1y) + HW
+
+    ' The two-line label (connector and sheet, what goes there): over the
+    ' symbol (a level connector) or right of it (an upright one) as before,
+    ' unless something is there: then under it, or shifted to end at the
+    ' symbol's tip, or left of it (16 Nov 2026 review, item 6).
+    Dim l1 As String, w As Double, c As Long, lx As Double, lt As Double, ok As Boolean
     For k = 1 To nO
         If oId(k) = id Then
             cx = 0.5 * (p0x + p1x): cy = 0.5 * (p0y + p1y)
-            UseLayer L_TEXT
-            If Abs(ux) > 0.5 Then
-                LabelPH cx - 0.008, cy + HW + 0.0075, id & "  SHT " & oOther(k), SM
-                LabelPH cx - 0.008, cy + HW + 0.0049, oLabel(k), SM
-            Else
-                LabelPH cx + HW + 0.002, cy + 0.003, id & "  SHT " & oOther(k), SM
-                LabelPH cx + HW + 0.002, cy + 0.0004, oLabel(k), SM
+            l1 = id & "  SHT " & oOther(k)
+            w = IIf(Len(l1) > Len(oLabel(k)), Len(l1), Len(oLabel(k))) * CHAR_W
+            ok = False
+            For c = 0 To 3
+                If Abs(ux) > 0.5 Then
+                    lx = IIf(c Mod 2 = 0, cx - 0.008, cx + 0.008 - w)
+                    lt = IIf(c < 2, cy + HW + 0.0075, cy - HW - 0.0015)
+                Else
+                    lx = IIf(c Mod 2 = 0, cx + HW + 0.002, cx - HW - 0.002 - w)
+                    lt = IIf(c < 2, cy + 0.003, cy - 0.0015 - 0.0026 - SM)
+                End If
+                ' a connector at the frame edge: its label slides inside the frame
+                If lx < FR_X0 + 0.004 Then lx = FR_X0 + 0.004
+                If lx + w > FR_X1 - 0.004 Then lx = FR_X1 - 0.004 - w
+                If SpotFree(lx, lt - 0.0026 - SM, lx + w, lt) Then ok = True: Exit For
+            Next c
+            If Not ok Then
+                lx = IIf(Abs(ux) > 0.5, cx - 0.008, cx + HW + 0.002)
+                lt = IIf(Abs(ux) > 0.5, cy + HW + 0.0075, cy + 0.003)
+                If lx < FR_X0 + 0.004 Then lx = FR_X0 + 0.004
+                Note "connector " & id & ": no clear place for its label; over / right of the symbol"
             End If
+            UseLayer L_TEXT
+            LabelPH lx, lt, l1, SM
+            LabelPH lx, lt - 0.0026, oLabel(k), SM
+            Occupy lx, lt - 0.0026 - SM, lx + w, lt
             UseLayer L_EQUIP
         End If
     Next k
@@ -975,16 +1118,28 @@ Private Sub DrawInstruments()
         UseLayer L_INST
         If li > 0 Then
             s = LongestSeg(li)
-            t = k / (n + 1#)
+            ' evenly along the run, but never closer than BUB_GAP (two bubbles
+            ' on a short run touched, their tags ran together: TT-104 / FT-103)
+            Dim segL As Double
+            segL = Abs(lPx(li, s + 1) - lPx(li, s)) + Abs(lPy(li, s + 1) - lPy(li, s))
+            If segL / (n + 1#) >= BUB_GAP Or segL <= 0# Then
+                t = k / (n + 1#)
+            Else
+                t = (0.5 * segL + (k - 0.5 * (n + 1#)) * BUB_GAP) / segL
+                If t < 0# Then t = 0#
+                If t > 1# Then t = 1#
+            End If
             px = lPx(li, s) + (lPx(li, s + 1) - lPx(li, s)) * t
             py = lPy(li, s) + (lPy(li, s + 1) - lPy(li, s)) * t
             horiz = Abs(lPy(li, s + 1) - lPy(li, s)) < 0.0000001
             If horiz Then
                 cx = px: cy = py + BUB_OFF
                 LineP px, py, cx, cy - BUB_R
+                Occupy px - 0.0004, py, px + 0.0004, cy - BUB_R
             Else
                 cx = px + BUB_OFF: cy = py
                 LineP px, py, cx - BUB_R, cy
+                Occupy px, py - 0.0004, cx - BUB_R, py + 0.0004
             End If
         Else
             ei = EqIndex(iAt(i))
@@ -993,14 +1148,17 @@ Private Sub DrawInstruments()
                 cy = eY0(ei) + iAlong(i) * (eY1(ei) - eY0(ei))
                 cx = eX1(ei) + 0.012 + BUB_R
                 LineP eX1(ei), cy, cx - BUB_R, cy
+                Occupy eX1(ei), cy - 0.0004, cx - BUB_R, cy + 0.0004
             Case "left"
                 cy = eY0(ei) + iAlong(i) * (eY1(ei) - eY0(ei))
                 cx = eX0(ei) - 0.012 - BUB_R
                 LineP eX0(ei), cy, cx + BUB_R, cy
+                Occupy cx + BUB_R, cy - 0.0004, eX0(ei), cy + 0.0004
             Case Else                                             ' over the top, right of the gas outlet's line
                 cx = 0.5 * (eX0(ei) + eX1(ei)) + 0.010 + (k - 1) * 0.014
                 cy = eY1(ei) + BUB_OFF
                 LineP cx, eY1(ei), cx, cy - BUB_R
+                Occupy cx - 0.0004, eY1(ei), cx + 0.0004, cy - BUB_R
             End Select
         End If
         Bubble cx, cy, iTag(i), iStat(i), iMount(i)
@@ -1010,12 +1168,27 @@ End Sub
 
 ' ISA 5.1: a circle, a line across it for a panel / soft value; the tag
 ' over it, then M modelled, I input, R report-only.
+' ISA 5.1: the tag inside the bubble, its letters over the middle and its
+' number under it (a panel bubble's line between them); the twin's status
+' (M modelled, I input, R report-only) small at the lower right, outside.
+' Nothing of the tag is outside the circle, so tags do not run into one
+' another or into the line flags (16 Nov 2026 review, item 6).
 Private Sub Bubble(ByVal cx As Double, ByVal cy As Double, ByVal tag As String, ByVal stat As String, ByVal mount As String)
+    Dim k As Long, ltr As String, num As String
     UseLayer L_INST
     CircleP cx, cy, BUB_R
     If mount = "P" Then LineP cx - BUB_R, cy, cx + BUB_R, cy
+    k = InStr(tag, "-")
+    If k > 0 Then
+        ltr = Left(tag, k - 1): num = Mid(tag, k + 1)
+    Else
+        ltr = tag: num = ""
+    End If
     UseLayer L_TEXT
-    LabelPH cx - 0.5 * Len(tag & " " & Left(stat, 1)) * CHAR_W, cy + BUB_R + 0.0045, tag & " " & Left(stat, 1), SM
+    LabelPH cx - 0.5 * Len(ltr) * CHAR_W, cy + 0.0005 + SM, ltr, SM
+    If num <> "" Then LabelPH cx - 0.5 * Len(num) * CHAR_W, cy - 0.0005, num, SM
+    LabelPH cx + 0.75 * BUB_R, cy - 0.75 * BUB_R, Left(stat, 1), STAT_H
+    Occupy cx - BUB_R, cy - BUB_R - STAT_H, cx + BUB_R + CHAR_W, cy + BUB_R
 End Sub
 
 
@@ -1111,7 +1284,7 @@ Private Sub DrawLegend()
     UseLayer L_TEXT
     LabelPH COL_X0 + 0.017, y, "panel / soft value (input or report-only)", SM
     y = y - RH
-    LabelPH COL_X0, y, "tag letter after the tag: M modelled, I input, R report-only", SM
+    LabelPH COL_X0, y, "tag inside the bubble (ISA 5.1); letter at its lower right: M modelled, I input, R report-only", SM
     yNext = y - 0.012
 End Sub
 

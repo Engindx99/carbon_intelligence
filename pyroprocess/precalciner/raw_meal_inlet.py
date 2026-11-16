@@ -2,6 +2,7 @@ from physics.physics import h_gas
 from physics.physics import T_gas_from_h
 from physics.physics import T_solid_from_h
 from physics.physics import FUEL_COMPOSITION
+from physics.gas_thermo import AIR_MIXTURE
 from physics.gas_thermo import GasMixture
 from physics.gas_thermo import add
 from physics.gas_thermo import air
@@ -27,6 +28,7 @@ def inlet_gas_flow(state):
     return (
         state.m_dot_g_transition
         + state.m_dot_tertiary_air
+        + getattr(state, "m_dot_riser_seal_air", 0.0)
         + getattr(state, "m_dot_fuel_calciner", 0.0)
     )
 
@@ -51,7 +53,15 @@ def calciner_inlet_species(state):
         kiln_gas = inlet_species(state)
 
     return burn_in(
-        add(kiln_gas, air(float(state.m_dot_tertiary_air))),
+        add(
+            kiln_gas,
+            # Tertiary air and the cold leak through the kiln
+            # inlet seal and riser are the same air.
+            air(
+                float(state.m_dot_tertiary_air)
+                + float(getattr(state, "m_dot_riser_seal_air", 0.0))
+            ),
+        ),
         float(getattr(state, "m_dot_fuel_calciner", 0.0)),
         FUEL_COMPOSITION,
     )
@@ -153,9 +163,19 @@ def solid_temperature_from_enthalpy(
 # ======================================================
 def resolve_inlet_conditions(calciner, state):
 
+    # The kiln inlet seal and riser leak enters at ambient
+    # (calciner.seal_air_fraction), on the same AIR_MIXTURE curve
+    # the cooler's air uses. Published so the global balance and
+    # the ledger count it as an ambient intake.
+    state.Hgas_riser_seal_air = (
+        float(getattr(state, "m_dot_riser_seal_air", 0.0))
+        * AIR_MIXTURE.h(float(calciner.T_amb), float(calciner.T_ref))
+    )
+
     state.Hgas_calciner_in = (
         state.Hgas_transition_out
         + getattr(state, "Hgas_cooler_tertiary", 0.0)
+        + state.Hgas_riser_seal_air
     )
 
     state.Hsolid_calciner_in = (

@@ -101,15 +101,36 @@ calciner:
   # and comes back through C4's underflow
   # (pyroprocess/precalciner/c5_cyclone.py).
   # The loaded MM lower bound (0.895-0.900 at an even split), less what
-  # the calciner's uneven meal split costs. The CFD at the twin's flows
-  # (one-way DPM, 15 Oct 2026, geometry/calciner/calciner.md) sends 35 %
-  # of the meal, mostly the fines, to string 1 and 65 %, nearly all the
-  # coarse, to string 2. That holds whichever pipe the meal came from.
-  # String 1's C5 then runs at c0 0.41 on fine meal (eta 0.81-0.82),
-  # string 2's at c0 0.77 on coarse (0.94): -0.0085 weighted
-  # (C:/Users/engin/c4/mm/c5_split.py; cyclone_C5.md). The twin still
-  # solves one string, so only this mean reaches it.
-  c5_separation_efficiency: 0.89
+  # the calciner's uneven meal split costs. The new-solid calciner CFD
+  # (two-way URANS baseline, 16 Nov 2026, C:/Users/engin/calciner_v2
+  # record dpm2w_m9_urans, 13-17 s window) sends 47.2 % of the meal to
+  # string 1, each size class 35-50 % (fines ~50 %, 172 um 35 %).
+  # String 1's C5 then runs at c0 0.55 (eta 0.889-0.894), string 2's at
+  # c0 0.62 (0.916-0.920): -0.0009 to -0.0010 weighted
+  # (C:/Users/engin/c4/mm/c5_split.py with that run's class shares), so
+  # 0.894-0.899. The one-way DPM on the old solid (15 Oct, 35/65 with
+  # the coarse in string 2) cost -0.0085 and gave 0.89; two-way coupling
+  # removed that segregation. The twin still solves one string, so only
+  # this mean reaches it.
+  c5_separation_efficiency: 0.90
+
+  # Share of the calciner's combustion air that LEAKS in cold through
+  # the kiln INLET seal and the riser (16 Nov 2026) instead of arriving
+  # hot as tertiary air. The plant's total air is still fixed by the
+  # dry stack O2 (fuel.O2) and the kiln's by fuel.kiln_O2_wet, so the
+  # leak displaces tertiary air: tertiary = calciner air - leak
+  # (main._update_steady_state_mass_flow).
+  # Derived from the VDZ BAT reference plant (CEMCAP D3.2 rev 2,
+  # zenodo 1257112) by an N2 balance over the riser, Table 3.9 and
+  # Table 3.8 (clinker 125 t/h, tertiary 0.58 Nm3/kg at STP 0 C):
+  #   E-200 N2 4067 kmol/h - E-100 N2 1432 - tertiary N2 2526
+  #   = 109 kmol/h N2 = 1.12 kg/s air (0.032 kg/kg clinker),
+  # i.e. 1.12 / (26.05 + 1.12) = 0.041 of the calciner's air. The
+  # coal's own N (~0.04 kg/s) is under 1 % of that. NOT modelled
+  # here: the preheater's leak (E-300 - E-200, 2.00 kg/s), a separate
+  # step, and the drift over the year (seal leaks double, D3.2
+  # section 3.8.2).
+  seal_air_fraction: 0.041
 
   # THE ZONE'S FLUID VOLUME (user decision, 13 Oct 2026): the calciner
   # zone runs from the vessel through the gooseneck to the C5s, gas and
@@ -169,12 +190,17 @@ pressure:
   # and adds the risers' hold-up and acceleration; neither is here.
   #
   # Calciner + gooseneck to the CFD outlet faces: total-pressure loss
-  # 180.9 Pa over the vessel's superficial velocity of its outlet gas
-  # (392.9 m3/s at 1209 K on the 35.68 m2 bore, 1/2 rho v^2 17.96 Pa).
+  # over the vessel's superficial velocity of its outlet gas. New solid,
+  # gas-only (C:/Users/engin/calciner_v2 calc_m9_2500, mesh 9, 16 Nov
+  # 2026): mass-weighted 263.0 Pa in, 87.5 Pa out, 175.5 Pa (old solid
+  # 180.9); 392.8 m3/s at 1209 K on the 35.68 m2 bore, 1/2 rho v^2
+  # 17.95 Pa. With the meal (two-way URANS baseline dpm2w_m9_urans,
+  # 0.77 kg/kg, 13-17 s mean) the same loss is ~487 Pa: hold-up and
+  # acceleration, not in this gas-only number.
   # Two inlets mix there, so the split between the kiln-gas and the
   # tertiary-air paths depends on their flow ratio and does not carry
   # (geometry/calciner/calciner.md, CFD section).
-  calciner_euler: 10.07
+  calciner_euler: 9.78
   # Cyclones, static dP over the inlet duct's velocity: C1
   # (geometry/preheater/cyclone_C1.md, plant flow), C4 with the 1.70 D_x
   # outlet (cyclone_C4.md). C2, C3 and C5 are C4's geometric twins.

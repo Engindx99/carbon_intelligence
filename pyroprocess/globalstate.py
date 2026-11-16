@@ -119,6 +119,7 @@ class GlobalState:
     m_dot_air_cooler: float = 0.0
     m_dot_primary_air: float = 0.0
     m_dot_seal_air: float = 0.0   # kiln outlet seal leak [kg/s], ambient T
+    m_dot_riser_seal_air: float = 0.0   # kiln inlet seal + riser leak [kg/s], ambient T
     m_dot_secondary_air: float = 0.0
     m_dot_tertiary_air: float = 0.0
     m_dot_vent_air: float = 0.0

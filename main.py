@@ -344,10 +344,16 @@ class Twin:
         Q_burning = state.Q_burning
         Q_calciner = getattr(state, "Q_calciner", 0.0)
 
+        # The kiln inlet seal and riser leak: an ambient intake
+        # that never passes the cooler (raw_meal_inlet.
+        # resolve_inlet_conditions).
+        H_riser_seal_in = getattr(state, "Hgas_riser_seal_air", 0.0)
+
         global_energy_in = (
             H_rawmeal_in
             + H_air_in
             + H_primary_in
+            + H_riser_seal_in
             + Q_burning
             + Q_calciner
         )
@@ -691,6 +697,7 @@ class Twin:
             mass_flow.m_dot_exhaust
             - mass_flow.m_dot_g_burning
             - mass_flow.m_dot_tertiary_air
+            - mass_flow.m_dot_riser_seal_air
             - mass_flow.m_dot_fuel_calciner
             - mass_flow.m_dot_H2O_generated
             - mass_flow.m_dot_H2O_generated_calciner
@@ -1087,6 +1094,7 @@ class Twin:
         ) = self.mass_flow.calculate_calciner_flow(
             m_dot_CO2_generated=m_dot_CO2_generated,
             m_dot_tertiary_air=self.state.m_dot_tertiary_air,
+            m_dot_riser_seal_air=self.state.m_dot_riser_seal_air,
             m_dot_H2O_generated=m_dot_H2O_generated_dehydroxylation,
             m_dot_fuel_calciner=self.mass_flow.m_dot_fuel_calciner,
             c5_separation_efficiency=self.calciner.c5_separation_efficiency,
@@ -1213,8 +1221,18 @@ class Twin:
         # independent fraction of the cooler flow. Reading
         # cooler_air.tertiary_air_fraction as well would
         # over-determine the split and break the stack O2 target.
+        #
+        # Part of it leaks in cold through the kiln inlet seal and
+        # the riser (calciner.seal_air_fraction, VDZ N2 balance)
+        # and so never passes the cooler.
+        self.mass_flow.m_dot_riser_seal_air = (
+            self.calciner.seal_air_fraction
+            * self.mass_flow.m_dot_air_calciner
+        )
+
         self.mass_flow.m_dot_tertiary_air = (
             self.mass_flow.m_dot_air_calciner
+            - self.mass_flow.m_dot_riser_seal_air
         )
 
         self.mass_flow.m_dot_vent_air = (
@@ -1234,6 +1252,7 @@ class Twin:
         self.state.m_dot_air_cooler = self.mass_flow.m_dot_air_cooler
         self.state.m_dot_primary_air = self.mass_flow.m_dot_primary_air
         self.state.m_dot_seal_air = self.mass_flow.m_dot_seal_air
+        self.state.m_dot_riser_seal_air = self.mass_flow.m_dot_riser_seal_air
         self.state.m_dot_secondary_air = self.mass_flow.m_dot_secondary_air
         self.state.m_dot_tertiary_air = self.mass_flow.m_dot_tertiary_air
         self.state.m_dot_vent_air = self.mass_flow.m_dot_vent_air

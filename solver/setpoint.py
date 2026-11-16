@@ -172,7 +172,17 @@ def fuel_upper_bound(twin):
     # without passing the cooler, so they are not cooler demand.
     seal = float(getattr(twin.burning, "kiln_seal_air_fraction", 0.0))
 
-    demand_fraction = 1.0 - (primary + seal) * kiln_fraction
+    # The same for the calciner's share leaking in at the kiln
+    # inlet seal and riser (calciner.seal_air_fraction).
+    riser = float(
+        getattr(getattr(twin, "calciner", None), "seal_air_fraction", 0.0)
+    )
+
+    demand_fraction = (
+        1.0
+        - (primary + seal) * kiln_fraction
+        - riser * (1.0 - kiln_fraction)
+    )
 
     denominator = per_kg * demand_fraction
 
