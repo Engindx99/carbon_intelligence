@@ -267,8 +267,8 @@ def thermal_step(
     #
     # reaction_heat_cells[i] : W
     #
-    # Each cell receives the actual local
-    # calcination heat sink.
+    # Each cell receives the actual local reaction
+    # heat sink: calcination, dehydroxylation, belite.
     # ======================================================
 
     if reaction_heat_cells is None:
@@ -300,14 +300,10 @@ def thermal_step(
                 "non-finite values."
             )
 
-        if np.any(
-            reaction_heat_cells < 0.0
-        ):
-
-            raise ValueError(
-                "reaction_heat_cells cannot "
-                "contain negative values."
-            )
+        # SIGNED: belite formation (ChemistryModel.
+        # react_calciner_belite) is exothermic, and where the
+        # calcination is nearly done a cell can release more than
+        # it absorbs. The solid row takes the sink with its sign.
 
     # ======================================================
     # REACTION SLOPE DISTRIBUTION

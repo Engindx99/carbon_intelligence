@@ -1069,14 +1069,16 @@ def thermal_demand_vs_supply(twin):
     # calcination as well, and adding it to a calcination term
     # would count the same reaction twice -- once at the feed's
     # full extent and once again at the kiln's.
-    # Summed over both kiln zones: the clinkering reactions run in
-    # the transition too (Transition_<reaction>_Q_sink).
+    # Summed over every zone they run in: both kiln zones
+    # (Transition_<reaction>_Q_sink) and, for belite, the
+    # calciner (Calciner_belite_Q_sink).
     clinkering = sum(
         float(getattr(state, f"{zone}_Q_sink", 0.0))
         for zone in (
             "Belite", "Alite", "C3A", "C4AF",
             "Transition_belite", "Transition_alite",
             "Transition_c3a", "Transition_c4af",
+            "Calciner_belite",
         )
     )
 
@@ -1526,6 +1528,9 @@ def calciner_energy_budget(twin):
     terms_out = [
         ("calcination", g("Calcination_Q_sink")),
         ("dehydroxylation", g("Dehydroxylation_Q_sink")),
+        # Exothermic, so a negative sink (ChemistryModel.
+        # react_calciner_belite).
+        ("belite", g("Calciner_belite_Q_sink")),
         ("wall loss", g("Wall_loss_calciner")),
         ("gas out", g("Hgas_calciner_out")),
         ("meal out", g("Hsolid_calciner_out")),

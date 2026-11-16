@@ -178,6 +178,7 @@ class ChemistryModel:
         m_dot_CaCO3_in=None,
         m_dot_BoundH2O_in=None,
         gas_in=None,
+        inlet_flow=None,
     ):
 
         # Dehydroxylation runs first: it only touches Bound_H2O,
@@ -215,12 +216,115 @@ class ChemistryModel:
             gas_in=gas_in,
         )
 
+        # Belite after calcination, on the CaO it just released.
+        # inlet_flow [kg/s species dict]: the solid entering the
+        # riser; without it (callers that only want calcination)
+        # no belite is formed and the published terms are zero.
+        state = self.react_calciner_belite(state, dz, u_s, inlet_flow)
+
         state.Calciner_Q_sink = (
             state.Calcination_Q_sink
             + state.Dehydroxylation_Q_sink
+            + state.Calciner_belite_Q_sink
         )
 
         return state
+
+    # ------------------------------------------------------
+    # BELITE IN THE CALCINER (steady, species flows [kg/s])
+    #
+    # CEMCAP D3.2 Fig. 3.4 (the VDZ reference kiln) has ~30 % of
+    # the silica already combined at the kiln inlet, i.e. formed
+    # in the calciner and C5. Alonso et al. 2019's Jander law
+    # (chemistry/belite.py) was fitted at 815-920 C, which is the
+    # calciner's own temperature, so here it is used INSIDE its
+    # measured range.
+    #
+    # Each cell sees the CaO calcination has released up to its
+    # outlet (operator split: calcination first, then belite over
+    # the same tau = dz/u_s at the cell's Ts). The Jander
+    # conversion counts calcium in every form, so the split only
+    # matters through the CaO cap.
+    #
+    # Excluded, and why: C5's own residence (a few seconds at the
+    # riser outlet temperature, not modelled as a reactor here);
+    # C3A and C4AF, which the twin starts at 973 K but whose
+    # anchors are kiln residence times; the held-up inventory
+    # (state.materials), which no zone reads for the kiln inlet
+    # any more -- the transition takes material_flows.
+    #
+    # The heat is EXOTHERMIC (negative sink) and enters the solid
+    # row's source only, not its diagonal: a negative dQ/dTs would
+    # remove the diagonal dominance the slope exists to add
+    # (thermal_solver). The transition treats its belite the same
+    # way (calcination slope only).
+    # ------------------------------------------------------
+    def react_calciner_belite(self, state, dz, u_s, inlet_flow):
+
+        T = np.asarray(state.Ts_calciner, dtype=float)
+        N = len(T)
+
+        reacted_cells = np.zeros(N)
+        Q_cells = np.zeros(N)
+
+        if inlet_flow is not None:
+
+            belite = self.belite
+            calc = self.calcination
+            tau = float(dz) / float(u_s)
+
+            CaCO3_in = float(inlet_flow.get("CaCO3", 0.0))
+            CaCO3_out = np.asarray(state.m_dot_CaCO3_out_cells, dtype=float)
+
+            cumulative = 0.0
+
+            for i in range(N):
+
+                flow = dict(inlet_flow)
+                calcined = max(CaCO3_in - min(float(CaCO3_out[i]), CaCO3_in), 0.0)
+                flow["CaCO3"] = CaCO3_in - calcined
+                flow["CaO"] = (
+                    float(inlet_flow.get("CaO", 0.0))
+                    + calcined * calc.CaO_ratio
+                    - cumulative * belite.CaO_required
+                )
+                flow["SiO2"] = float(inlet_flow.get("SiO2", 0.0)) - cumulative
+                flow["C2S"] = (
+                    float(inlet_flow.get("C2S", 0.0))
+                    + cumulative * belite.C2S_produced
+                )
+
+                k = float(belite.reaction_rate(float(T[i])))
+
+                reacted = belite.jander_reacted(flow, k, tau)
+
+                reacted_cells[i] = reacted
+                Q_cells[i] = float(belite.heat_sink(reacted))
+
+                cumulative += reacted
+
+        state.Calciner_belite_SiO2_reacted_cells = reacted_cells
+        state.Calciner_belite_Q_cells = Q_cells
+        state.Calciner_belite_Q_sink = float(np.sum(Q_cells))
+
+        return state
+
+    def calciner_belite_flow_profile(self, state, solids):
+        """Write the belite march into the calciner's species flows
+        (after calcination's and dehydroxylation's profiles): cell i
+        carries everything cells 0..i formed. Solid mass is
+        conserved, since CaO_required + 1 = C2S_produced."""
+
+        cumulative = np.cumsum(
+            np.asarray(state.Calciner_belite_SiO2_reacted_cells, dtype=float)
+        )
+
+        for i, done in enumerate(cumulative):
+            flow = get_cell_solid_flow(solids, i)
+            flow["SiO2"] -= done
+            flow["CaO"] -= done * self.belite.CaO_required
+            flow["C2S"] += done * self.belite.C2S_produced
+            set_cell_solid_flow(solids, i, flow)
 
 
 

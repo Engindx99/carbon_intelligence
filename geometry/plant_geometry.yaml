@@ -297,11 +297,11 @@ kiln_inlet_chamber:
 # ---------------------------------------------------------------------
 # Meal pipes C1-C5 (user decision, 16 Nov 2026: scale the one literature
 # pipe, the calciner's feed pipe, by equal mass flux). The flows are the
-# twin's (feed 89.7 kg/s over 2 strings; C5's meal to the kiln 59.98 kg/s).
+# twin's (feed 89.7 kg/s over 2 strings; C5's meal to the kiln 59.38 kg/s).
 # ---------------------------------------------------------------------
 meal_pipe:
   feed_per_string:     {value: 44.85,   unit: kg/s,  source: model,       doc: preheater/meal_pipe_C4.md}
-  c5_meal_per_string:  {value: 29.9880, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
+  c5_meal_per_string:  {value: 29.6884, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
 
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it

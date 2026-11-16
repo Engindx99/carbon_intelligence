@@ -678,6 +678,7 @@ class Calciner:
                 m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
                 m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
                 gas_in=calciner_gas_in,
+                inlet_flow=calciner_inlet_flow,
             )
 
             Q_reaction = float(
@@ -734,6 +735,7 @@ class Calciner:
                 reaction_heat_cells=(
                     state.Calcination_Q_cells
                     + state.Dehydroxylation_Q_sink_cells
+                    + state.Calciner_belite_Q_cells
                 ),
                 # Both reactions respond to the same solid
                 # temperature, so their slopes add exactly as
@@ -741,6 +743,9 @@ class Calciner:
                 reaction_heat_slope_cells=(
                     state.Calcination_Q_slope_cells
                     + state.Dehydroxylation_Q_slope_cells
+                    # Belite is exothermic: its negative slope
+                    # stays out of the diagonal (react_calciner_
+                    # belite); its heat is in the cells above.
                 ),
                 q_fuel_cells=q_fuel_cells,
                 Q_calciner=Q_calciner,
@@ -881,6 +886,7 @@ class Calciner:
             m_dot_CaCO3_in=calciner_inlet_flow["CaCO3"],
             m_dot_BoundH2O_in=calciner_inlet_flow["Bound_H2O"],
             gas_in=calciner_gas_in,
+            inlet_flow=calciner_inlet_flow,
         )
 
         # ======================================================
@@ -905,6 +911,14 @@ class Calciner:
             state.m_dot_BoundH2O_out_cells,
             state.material_flows["calciner"].solids,
             state.material_flows["calciner"].gases,
+        )
+
+        # Belite formed along the riser (ChemistryModel.
+        # react_calciner_belite): SiO2 + CaO -> C2S, written last
+        # because it reads the CaO the calcination profile put in.
+        self.chemistry.calciner_belite_flow_profile(
+            state,
+            state.material_flows["calciner"].solids,
         )
 
         # ======================================================
