@@ -30,13 +30,12 @@
     {
       "key": "C5.D_barrel",
       "label": "Barrel inner diameter D",
-      "value": 6.500000000000001,
+      "value": 6.5,
       "unit": "m",
-      "source": "derived",
+      "source": "published",
       "status": "Verified",
       "doc": "preheater/cyclone_C5.md",
       "inputs": [
-        "cyclones.C4.D_barrel",
         "cyclones.C5.D_barrel_published"
       ],
       "value_mm": 6500.0,
@@ -373,9 +372,9 @@
       "status": "Estimated",
       "doc": "preheater/cyclone_C5.md",
       "inputs": [
-        "cyclones.C4.D_barrel",
         "cyclones.C5.D_barrel_published",
         "cyclones.C4.H_barrel",
+        "cyclones.C4.D_barrel",
         "cyclones.C4.H_cone",
         "cyclones.C4.D_dust"
       ],
@@ -390,9 +389,9 @@
       "status": "Estimated",
       "doc": "preheater/cyclone_C5.md",
       "inputs": [
-        "cyclones.C4.D_barrel",
         "cyclones.C5.D_barrel_published",
         "cyclones.C4.H_barrel",
+        "cyclones.C4.D_barrel",
         "cyclones.C4.H_cone",
         "cyclones.C4.D_dust",
         "cyclones.C4.D_vortex"

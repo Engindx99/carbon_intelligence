@@ -134,7 +134,7 @@ Const C5_OUT_RUN                   As Double  = 4.776984     ' outlet run after 
 Const C5_EXIT_X                    As Double  = 9.553968     ' barrel axis to the gas outlet face [derived]
 Const C5_Z_LEG                     As Double  = 26.929603    ' the outlet run's axis, z [derived]
 Const C5_TOP                       As Double  = 29.318095    ' top of the outlet pipe [derived]
-Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~derived~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4777~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
+Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~published~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4777~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
 Const C5_TAB_2                     As String  = "inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;outlet_turn~Outlet bend angle~90~deg~derived~Estimated;outlet_rise~Outlet pipe rise over the roof~8121~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~4777~mm~derived~Estimated;outlet_run~Outlet run after the bend~4777~mm~derived~Estimated;outlet_axis~Roof to the outlet run's axis~12898~mm~derived~Estimated;exit_x~Barrel axis to the gas outlet face~9554~mm~derived~Estimated;" ' parameter table rows
 Const C5_TAB_3                     As String  = "top~Dust outlet to the top of the outlet pipe~29318~mm~derived~Estimated;volume~Volume (barrel + cone)~311.09~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~240.71~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C5_TAB_4                     As String  = ""           ' parameter table rows
@@ -213,7 +213,7 @@ Const KIC_D_MOUTH                  As Double  = 4.8          ' the kiln's mouth 
 Const KIC_H_LIP                    As Double  = 0.8          ' the ramp's foot on the +x wall [derived]
 Const KIC_RAMP_DEG                 As Double  = 41.423666    ' the floor ramp's slope, foot to the far top corner [derived]
 Const kiln_inlet_chamber_TAB_1     As String  = "a_plan~Plan: side of the square (D + 2 margin)~6800~mm~derived~Estimated;H~Height: floor level to the flat roof (= the plan's side)~6800~mm~derived~Estimated;h_wall~Kiln's wall: ramp's foot to the roof (H - h_lip)~6000~mm~derived~Estimated;D_throat~Throat (outlet to the calciner) diameter~3130~mm~derived~Estimated;D_mouth~Kiln mouth diameter (the kiln's effective D)~4800~mm~published~Verified;margin~Margin round the kiln (plan = D + 2 margin)~1000~mm~model parameter~Estimated;clear~Mouth clearance to the ramp's foot~200~mm~model parameter~Estimated;h_lip~Ramp's foot on the kiln's wall, over the floor level~800~mm~derived~Estimated;" ' parameter table rows
-Const kiln_inlet_chamber_TAB_2     As String  = "ramp_deg~Floor ramp's slope (foot to the far top corner)~41.4237~deg~derived~Estimated;volume~Volume (to the roof)~138.72~m3~derived~Estimated;u_ports~Burner, door and inspection ports~-~~no source~Unknown;u_bypass~Gas bypass take-off~-~~no source~Unknown;u_meal~Meal entry (injected in the solver)~-~~no source~Unknown;u_shell~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
+Const kiln_inlet_chamber_TAB_2     As String  = "ramp_deg~Floor ramp's slope (foot to the far top corner)~41.4~deg~derived~Estimated;volume~Volume (to the roof)~138.72~m3~derived~Estimated;u_ports~Burner, door and inspection ports~-~~no source~Unknown;u_bypass~Gas bypass take-off~-~~no source~Unknown;u_meal~Meal entry (injected in the solver)~-~~no source~Unknown;u_shell~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
 Const kiln_inlet_chamber_TAB_3     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_4     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_5     As String  = ""           ' parameter table rows
@@ -240,8 +240,8 @@ Const IDF_BOX_H                    As Double  = 2.625448     ' the inlet box's h
 Const IDF_BOX_DEPTH                As Double  = 1.764653     ' the inlet box's depth (y) [derived]
 Const IDF_BOX_REACH                As Double  = 2.386771     ' the box's inlet face, x [derived]
 Const IDF_V_ROTOR                  As Double  = 2.914511     ' the bladed rotor's volume: tells today's solid from an older one [m3] [derived]
-Const id_fan_TAB_1                 As String  = "D2~Impeller diameter D2 (tip speed / pi n)~2623~mm~derived~Estimated;D1~Eye diameter D1 (0.70 D2)~1836~mm~derived~Estimated;b1~Blade height at the eye b1 (c_m1 = c0)~459~mm~derived~Estimated;b2~Outlet width b2 (Euler, Wiesner slip, continuity)~514~mm~derived~Estimated;z~Blades z = 8.5 sin(beta2) / (1 - D1/D2)~20~-~derived~Estimated;beta1~Blade inlet angle beta1 (from the tangent)~24.09~deg~derived~Estimated;beta2~Blade outlet angle~45~deg~literature~Estimated;blade_t~Blade thickness~12~mm~model parameter~Estimated;blade_arc_R~Blade: single circular arc, radius~4912~mm~derived~Estimated;B~Volute width B (3 b2)~1542~mm~derived~Estimated;" ' parameter table rows
-Const id_fan_TAB_2                 As String  = "r3~Tongue circle r3 (r2 + 0.075 D2)~1508~mm~derived~Estimated;nose_R~Tongue nose radius~197~mm~derived~Estimated;spiral_deg~Log spiral angle (outlet at 30 m/s)~8.44~deg~derived~Estimated;r_end~Spiral end radius~3832~mm~derived~Estimated;h_stub~Outlet height (spiral end cos(alpha) - 2 nose R)~1906~mm~derived~Estimated;l_stub~Straight discharge length~1906~mm~derived~Estimated;gamma~Discharge angle up from the horizontal~45~deg~model parameter~Estimated;r_mrf~Rotating (MRF) zone radius~1410~mm~derived~Estimated;D_cone~Inlet cone mouth diameter~2387~mm~derived~Estimated;L_cone~Inlet cone length (eye to the box, through the plate)~1133~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_1                 As String  = "D2~Impeller diameter D2 (tip speed / pi n)~2623~mm~derived~Estimated;D1~Eye diameter D1 (0.70 D2)~1836~mm~derived~Estimated;b1~Blade height at the eye b1 (c_m1 = c0)~459~mm~derived~Estimated;b2~Outlet width b2 (Euler, Wiesner slip, continuity)~514~mm~derived~Estimated;z~Blades z = 8.5 sin(beta2) / (1 - D1/D2)~20~-~derived~Estimated;beta1~Blade inlet angle beta1 (from the tangent)~24.1~deg~derived~Estimated;beta2~Blade outlet angle~45~deg~literature~Estimated;blade_t~Blade thickness~12~mm~model parameter~Estimated;blade_arc_R~Blade: single circular arc, radius~4912~mm~derived~Estimated;B~Volute width B (3 b2)~1542~mm~derived~Estimated;" ' parameter table rows
+Const id_fan_TAB_2                 As String  = "r3~Tongue circle r3 (r2 + 0.075 D2)~1508~mm~derived~Estimated;nose_R~Tongue nose radius~197~mm~derived~Estimated;spiral_deg~Log spiral angle (outlet at 30 m/s)~8.4~deg~derived~Estimated;r_end~Spiral end radius~3832~mm~derived~Estimated;h_stub~Outlet height (spiral end cos(alpha) - 2 nose R)~1906~mm~derived~Estimated;l_stub~Straight discharge length~1906~mm~derived~Estimated;gamma~Discharge angle up from the horizontal~45~deg~model parameter~Estimated;r_mrf~Rotating (MRF) zone radius~1410~mm~derived~Estimated;D_cone~Inlet cone mouth diameter~2387~mm~derived~Estimated;L_cone~Inlet cone length (eye to the box, through the plate)~1133~mm~derived~Estimated;" ' parameter table rows
 Const id_fan_TAB_3                 As String  = "H_box~Inlet box height (z)~2625~mm~derived~Estimated;depth_box~Inlet box depth (y): face area 1.75 x eye~1765~mm~derived~Estimated;reach_box~Inlet box face from the axis (x)~2387~mm~derived~Estimated;q~Volume flow at the inlet (one string)~88.15~m3/s~derived~Estimated;dp~Total pressure rise~8000~Pa~model parameter~Estimated;speed~Speed~1000~rpm~literature~Estimated;u_out~Outlet velocity~30~m/s~derived~Estimated;V_rotor~Volume: rotating zone (bladed)~2.91~m3~derived~Estimated;V_volute~Volume: volute + discharge~28.51~m3~derived~Estimated;V_inlet~Volume: inlet cone + box~21.13~m3~derived~Estimated;u_casing~Casing / plate thickness~-~~no source~Unknown;" ' parameter table rows
 Const id_fan_TAB_4                 As String  = "u_shaft~Shaft, hub boss, bearings~-~~no source~Unknown;u_damper~Inlet damper / IGV (VFD assumed)~-~~no source~Unknown;u_gaps~Seal gap cone-shroud, disc cavities~-~~no source~Unknown;u_material~Material, wear liners~-~~no source~Unknown;" ' parameter table rows
 Const id_fan_TAB_5                 As String  = ""           ' parameter table rows
@@ -423,7 +423,7 @@ End Sub
 
 Private Sub Build(ByVal which As String)
 
-    Dim why As String
+    Dim why As String, frameWas As Long, sepWas As Boolean, sepChrWas As String
 
     equip = which
     buildLog = ""
@@ -454,6 +454,22 @@ Private Sub Build(ByVal which As String)
     Set swApp = Application.SldWorks
     If swApp Is Nothing Then Fail "SolidWorks is not running."
     Set swMath = swApp.GetMathUtility
+    ' A minimized SolidWorks draws no view: no hidden lines, no tangent
+    ' edges, and a dimension to such an edge finds nothing (16 Nov, runs
+    ' from WSL with the window minimized: C1 12/13). Restored for the run.
+    frameWas = swApp.FrameState
+    If frameWas = swWindowMinimized Then
+        swApp.FrameState = swWindowNormal
+        Note "SolidWorks was minimized: restored for the run"
+    End If
+    ' A decimal point in the dimensions, as in the table and the notes:
+    ' the system's separator is a comma on a Turkish Windows (KIC's ramp
+    ' printed 41,4 against the table's 41.4, 16 Nov). A system option, so
+    ' set for the run and put back.
+    sepWas = swApp.GetUserPreferenceToggle(swUseSystemSeparatorForDims)
+    sepChrWas = swApp.GetUserPreferenceStringValue(swSeparatorCharacterForDims)
+    swApp.SetUserPreferenceToggle swUseSystemSeparatorForDims, False
+    swApp.SetUserPreferenceStringValue swSeparatorCharacterForDims, "."
 
     phase = "reading the parameter table"
     ParseTable
@@ -472,6 +488,7 @@ Private Sub Build(ByVal which As String)
 
     buildLog = "drawings " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified" & vbLf & buildLog
     WriteLog
+    RestoreSession frameWas, sepWas, sepChrWas
     Tell "Drawing " & equip & " built: " & nDimsOk & " of " & nDims & " dimensions verified." & vbLf & _
            "Full log: " & LogPath(), vbInformation, "Equipment drawings"
     Exit Sub
@@ -480,8 +497,17 @@ Failed:
     why = Err.Description
     buildLog = "drawings " & equip & " ABORTED while " & phase & ": " & why & vbLf & buildLog
     WriteLog
+    If Not swApp Is Nothing Then RestoreSession frameWas, sepWas, sepChrWas
     Tell "Drawing " & equip & " ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
            vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Equipment drawings"
+End Sub
+
+' The window state and dimension separator Build changed, put back.
+Private Sub RestoreSession(ByVal frameWas As Long, ByVal sepWas As Boolean, ByVal sepChrWas As String)
+    On Error Resume Next
+    swApp.SetUserPreferenceToggle swUseSystemSeparatorForDims, sepWas
+    If sepChrWas <> "" Then swApp.SetUserPreferenceStringValue swSeparatorCharacterForDims, sepChrWas
+    If frameWas = swWindowMinimized Then swApp.FrameState = swWindowMinimized
 End Sub
 
 ' The closing message box, left out when OUT_ROOT\quiet.flag exists: a run
@@ -1451,6 +1477,15 @@ Private Sub HiddenLinesVisible(v As SldWorks.View)
     v.SetDisplayMode3 False, swHIDDEN_GREYED, False, True
     If Err.Number <> 0 Then Note "WARNING: " & v.Name & ": could not show hidden lines (" & Err.Description & ")."
     Err.Clear
+    ' tangent edges shown, not left to the session's default: C1's outlet
+    ' pipe meets its bend in a tangent edge that outlet_rise is measured to
+    ' (16 Nov: a session that hid them lost the dimension and the sheets'
+    ' hidden lines); both read back into the log
+    v.SetDisplayTangentEdges2 swTangentEdgesVisible
+    If Err.Number <> 0 Then Note "WARNING: " & v.Name & ": could not show tangent edges (" & Err.Description & ")."
+    Err.Clear
+    Note v.Name & ": display mode " & v.GetDisplayMode2 & ", tangent edges " & v.GetDisplayTangentEdges2
+    Err.Clear
 End Sub
 
 
@@ -2138,6 +2173,10 @@ Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.Vi
     End If
     dd.GetAnnotation.Layer = L_DIM
 
+    ' an angle that is not whole shows 0.1 deg, as the table prints it
+    ' (16 Nov sheet check: KIC's ramp printed 41 deg, the table 41.4237)
+    If isAngle And Abs(want - CLng(want)) > 0.000000001 Then dd.SetPrecision3 1, -1, -1, -1
+
     got = dd.GetDimension2(0).SystemValue
     If isAngle Then
         got = got * 180# / PI
@@ -2508,7 +2547,7 @@ Private Sub DrawNotes()
         If equip = "C4" Then
             LabelPH COL_X0, y + 0.007, "4. C2 and C3 are this cyclone (same geometry); 1 per string.  Dimensions mm.", TEXT_H
         Else
-            LabelPH COL_X0, y + 0.007, "4. C4 x 6.50/6.30; finder wall, tongue, duct length unscaled; 1 per string.  mm.", TEXT_H
+            LabelPH COL_X0, y + 0.007, "4. C4 x 6.50/6.30; finder wall, tongue, duct length unscaled; 1 per string.  Dimensions mm.", TEXT_H
         End If
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_" & equip & ".md", TEXT_H
     Else
@@ -2753,6 +2792,48 @@ Private Sub DrawFlowsC1()
     LabelM vSec, C1_LEG_X + 0.4, C1_HEIGHT - 1#, "Gas out (to fan)"
     LabelM vSec, 0.4, -0.8, "Meal out (to the stage below)"
     LabelM vTop, -R, -R - 0.8, "Swirl clockwise seen from above"
+    ' SolidWorks puts A-A's label under the section, against the plan's
+    ' 860 dimension: read as the plan's label (16 Nov sheet check). Beside
+    ' the cone instead, in the empty field right of it.
+    MoveViewLabel vSec, "A-A", R + 0.6, 0.55 * C1_H_CONE
+End Sub
+
+
+' Move the label SolidWorks gave view v (the note holding `tag`, e.g.
+' "A-A") to model point (x, z) of v, its upper left corner. The view's
+' own notes are searched, then the sheet's; what is found is logged.
+Private Sub MoveViewLabel(v As SldWorks.View, ByVal tag As String, ByVal x As Double, ByVal z As Double)
+    Dim pass As Long, owner As SldWorks.View, nt As Object, txt As String, seen As String
+    Dim linked As String, isLabel As Boolean
+    Dim sx As Double, sy As Double, pos As Variant
+    ToSheet v, x, 0#, z, sx, sy
+    For pass = 0 To 1
+        If pass = 0 Then Set owner = v Else Set owner = swDraw.GetFirstView
+        Set nt = owner.GetFirstNote
+        Do While Not nt Is Nothing
+            txt = nt.GetText
+            linked = ""
+            On Error Resume Next
+            linked = CallByName(nt, "PropertyLinkedText", VbGet)
+            On Error GoTo 0
+            seen = seen & " [" & Replace(txt, vbLf, "/") & " | " & Replace(linked, vbLf, "/") & "]"
+            ' the view's label: its lines are linked fields, so GetText reads
+            ' them blank; the linked text is "<VLNAME> <VLLABEL>/<VLSCALE>
+            ' <VLSCALEV>" (C1 runs, 16 Nov)
+            isLabel = InStr(1, txt, tag, vbTextCompare) > 0
+            If Not isLabel And pass = 0 Then isLabel = InStr(1, linked, "<VLLABEL>", vbTextCompare) > 0
+            If isLabel Then
+                pos = nt.GetAnnotation.GetPosition
+                nt.GetAnnotation.SetPosition2 sx, sy, 0#
+                Note "view label '" & Replace(txt, vbLf, " / ") & "' (linked '" & Replace(linked, vbLf, " / ") & "') of " & v.Name & " moved from (" & _
+                     Num(1000 * pos(0), 1) & ", " & Num(1000 * pos(1), 1) & ") to (" & _
+                     Num(1000 * sx, 1) & ", " & Num(1000 * sy, 1) & ") mm"
+                Exit Sub
+            End If
+            Set nt = nt.GetNext
+        Loop
+    Next pass
+    Note "WARNING: no note holding '" & tag & "' on " & v.Name & " or the sheet; notes seen:" & Left(seen, 300)
 End Sub
 
 

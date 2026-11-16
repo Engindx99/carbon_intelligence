@@ -168,6 +168,14 @@ def cyclone_dim(g, name, dim, label):
         return p
     if "scaled_from" in node:
         base = node["scaled_from"]
+        if dim == "D_barrel":
+            # the scale is set by this cyclone's own published D: that row
+            # is the published value, not a scaled one (16 Nov sheet check:
+            # C5 printed D 6500 as "derived" though Verified)
+            p = primary(g, f"cyclones.{name}.D_barrel_published", label, key=f"{name}.D_barrel")
+            assert abs(p.value - pg.cyclone(g, name)["D_barrel"]) < 1e-9, (name, p.value)
+            p.doc = node["per_string"]["doc"]
+            return p
         parts = [
             primary(g, f"cyclones.{base}.{dim}", label),
             primary(g, f"cyclones.{name}.D_barrel_published", label),

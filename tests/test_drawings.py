@@ -124,6 +124,24 @@ class TheTableRoundsAsTheDimensionsTest(unittest.TestCase):
                              status="Estimated", doc="-", inputs=["x"])
                 self.assertEqual(cyclone.cell(p), want)
 
+    def test_an_angle_is_whole_or_to_a_tenth(self):
+        """drawings.bas shows a non-whole angle to 0.1 deg (KIC's ramp
+        41.4237 printed 41 on the view; 16 Nov sheet check)."""
+        from tools.drawings import cyclone, provenance as pv
+        for value, want in [(41.423666, "41.4"), (5.0, "5"), (90.0, "90"), (24.09, "24.1"), (8.45, "8.5")]:
+            with self.subTest(value=value):
+                p = pv.Param(key="k", label="k", value=value, unit="deg", source="derived",
+                             status="Estimated", doc="-", inputs=["x"])
+                self.assertEqual(cyclone.cell(p), want)
+
+    def test_a_scaled_cyclones_own_diameter_is_published(self):
+        """C5 = C4 x 6.50 / 6.30: its D is the published 6.50 that sets the
+        scale, a Verified primary value, not a derived one."""
+        rows = _table_rows("C5")
+        self.assertEqual(rows["D_barrel"], "6500")
+        d = next(p for p in _payload("C5")["params"] if p["short"] == "D_barrel")
+        self.assertEqual((d["source"], d["status"]), ("published", "Verified"))
+
     def test_the_pid_size_rounds_the_same_way(self):
         from tools.pid import model
         self.assertEqual(model.size_text(0.8485, "Estimated"), "D 0.849 E")

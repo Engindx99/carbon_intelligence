@@ -106,6 +106,12 @@ def cell(p):
         return pv.fmt_half_up(p.mm, 0)
     if p.unit in ("m3", "m2"):
         return pv.fmt_half_up(p.value, 2)
+    if p.unit == "deg":
+        # whole degrees as they are; any other angle to 0.1 deg, as
+        # drawings.bas sets an angle dimension's precision (KIC 41.4237)
+        if abs(p.value - round(p.value)) < 1e-9:
+            return str(int(round(p.value)))
+        return pv.fmt_half_up(p.value, 1)
     return f"{p.value:g}"
 
 
