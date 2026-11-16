@@ -104,6 +104,20 @@ class TheMacroRecordsAreTheSourceTest(unittest.TestCase):
                 self.assertIn(f'Case "{sh}": SheetScope = PID_{sh}_SCOPE', text)
         self.assertNotIn('"as the twin models it, string A"', text)
 
+    def test_each_sheet_carries_its_document_number(self):
+        """CI-<area>-PID-<sheet no>, beside the equipment sheets'
+        CI-<area>-<equipment>-001 (16 Nov sheet review, item 9)."""
+        from tools.pid import validate
+        text = (gen_geometry.MACROS / "pid.bas").read_text(encoding="latin-1")
+        p = model.load()
+        self.assertEqual([e for e in validate.validate(p) if " id " in e], [])
+        ids = [s["id"] for s in p["sheets"].values()]
+        self.assertEqual(len(set(ids)), len(ids))
+        for sh, s in p["sheets"].items():
+            with self.subTest(sheet=sh):
+                self.assertRegex(text, rf'Const PID_{sh}_ID\s+As String\s+=\s+"{s["id"]}"')
+                self.assertIn(f'Case "{sh}": SheetId = PID_{sh}_ID', text)
+
     def test_the_fingerprint_follows_the_records_and_the_code(self):
         import copy
         from unittest import mock

@@ -48,6 +48,9 @@ def validate(p, g=None, cfg=None, snapshot=None):
     for k, s in sheets.items():
         if not str(s.get("scope", "")).strip():
             err.append(f"sheet {k}: no scope (the title block's 'as the twin models it, <scope>')")
+        want = re.compile(rf"^CI-[A-Z]{{2}}-PID-{s['num']:03d}$")
+        if not want.match(str(s.get("id", ""))):
+            err.append(f"sheet {k}: id {s.get('id')!r} is not CI-<area>-PID-{s['num']:03d}")
 
     # ---- equipment
     tags = {row[1] for row in inv.EQUIPMENT}

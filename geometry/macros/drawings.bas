@@ -2409,8 +2409,8 @@ Private Sub DrawTitle()
     LineP 0.781, 0.019, 0.781, 0.028
     LineP 0.806, 0.019, 0.806, 0.028
     LineP 0.816, 0.019, 0.816, 0.028
-    Cell COL_X0, 0.055, "Created qy", "drawings.bas"
-    Cell 0.711, 0.055, "Approved qy", "-"
+    Cell COL_X0, 0.055, "Created by", "drawings.bas"
+    Cell 0.711, 0.055, "Approved by", "-"
     Cell 0.771, 0.055, "Document type", "Engineering drawing"
     Cell COL_X0, 0.046, "Legal owner", "Karbon Zekasi"
     Cell 0.711, 0.046, "Technical reference", "plant_geometry.yaml"
@@ -2418,7 +2418,9 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
-    Cell 0.771, 0.037, "Identification number", IIf(equip = "kiln" Or equip = "kiln_inlet_chamber", "CI-RK-", IIf(equip = "cooler", "CI-CL-", "CI-PH-")) & equip & "-001"
+    ' CI-<area>-<equipment>-001; the calciner is its own area, CA (16 Nov
+    ' sheet review, item 9: it was numbered in the preheater's, PH)
+    Cell 0.771, 0.037, "Identification number", "CI-" & AreaCode() & "-" & equip & "-001"
     CellS 0.771, 0.028, "Rev.", "A"
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
@@ -2428,6 +2430,18 @@ Private Sub DrawTitle()
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
 End Sub
+
+
+' The process area in the document number: PH preheater (the cyclones,
+' the twin C1, the ID fan), CA calciner, RK rotary kiln, CL clinker cooler.
+Private Function AreaCode() As String
+    Select Case equip
+    Case "calciner": AreaCode = "CA"
+    Case "kiln", "kiln_inlet_chamber": AreaCode = "RK"
+    Case "cooler": AreaCode = "CL"
+    Case Else: AreaCode = "PH"
+    End Select
+End Function
 
 
 Private Sub Cell(ByVal x As Double, ByVal yTop As Double, ByVal cap As String, ByVal v As String)

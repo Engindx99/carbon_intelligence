@@ -40,7 +40,8 @@ Const LINE_KEY As String = "2500"
 Const PID_PH_NO                    As Long    = 1            ' sheet PH number
 Const PID_PH_TITLE                 As String  = "PREHEATER, STRING A (STRING B IDENTICAL)" ' sheet PH title
 Const PID_PH_SCOPE                 As String  = "string A"   ' sheet PH: which string(s) it draws
-Const PID_PH_HASH                  As String  = "8fb1c3643d85ffac" ' sheet PH source fingerprint
+Const PID_PH_ID                    As String  = "CI-PH-PID-001" ' sheet PH document number
+Const PID_PH_HASH                  As String  = "20b944edd29086a2" ' sheet PH source fingerprint
 Const PID_PH_1                     As String  = "E~FEEDA~FEED~feed_chute~29~14~2~2~-~-~FEED;E~R1A~R1~riser~29~19.8~2~6~-~-~R1;E~C1A~C1~cyclone~32~18~3~6~2~-~C1;E~C2A~C2~cyclone~25~15~3~6~-~-~C2;E~C3A~C3~cyclone~18~12~3~6~-~-~C3;E~C4A~C4~cyclone~11~9~3~6~-~-~C4;E~C5A~C5~cyclone~4~6~3~6~-~-~C5;E~R2A~R2-R3~riser~22~18.3~2~3~-~-~R2;E~R3A~R2-R3~riser~15~15.3~2~3~-~-~R3;E~R4A~R4~riser~8~12.3~2~3~-~-~R4;E~MP1A~MP~flap_valve~33~16~1~1~-~-~MP;E~MP2A~MP~flap_valve~26~13~1~1~-~-~MP;E~MP3A~MP~flap_valve~19~10~1~1~-~-~MP;E~MP4A~MP~flap_valve~12~7~1~1~-~-~MP;E~MP5A~MP~flap_valve~5~4~1~1~-~-~MP;E~IDFA~IDF~fan~37~29~3~3~1 per string~-~IDF;L~G101~gas~OPC-01~-~C5A~gas_in~D 3.500~Verified~-;L~G102~gas~C5A~gas_out~R4A~gas_in~D 4.777 E~Estimated~-;" ' P&ID records
 Const PID_PH_2                     As String  = "L~G103~gas~R4A~gas_out~C4A~gas_in~D 4.777 E~Estimated~-;L~G104~gas~C4A~gas_out~R3A~gas_in~D 4.630 E~Estimated~-;L~G105~gas~R3A~gas_out~C3A~gas_in~D 4.630 E~Estimated~-;L~G106~gas~C3A~gas_out~R2A~gas_in~D 4.630 E~Estimated~-;L~G107~gas~R2A~gas_out~C2A~gas_in~D 4.630 E~Estimated~-;L~G108~gas~C2A~gas_out~R1A~gas_in~D 4.630 E~Estimated~-;L~G109~gas~R1A~gas_out~C1A~gas_in~D 3.070~Verified~-;L~G110~gas~C1A~gas_out~IDFA~gas_in~D 2.400 E~Estimated~-;L~G111~gas~IDFA~gas_out~SNK~stack~-~Unknown~-;L~M101~meal_raw~SRC~raw_meal~FEEDA~in~-~Unknown~-;L~M102~meal_raw~FEEDA~out~R1A~meal_in~D 0.600 E~Estimated~-;L~M103~meal_hot~C1A~dust_out~MP1A~in~D 0.600 E~Estimated~-;" ' P&ID records
 Const PID_PH_3                     As String  = "L~M104~meal_hot~MP1A~out~R2A~meal_in~D 0.600 E~Estimated~33.5,10/23,10;L~M105~meal_hot~C2A~dust_out~MP2A~in~D 0.849 E~Estimated~-;L~M106~meal_hot~MP2A~out~R3A~meal_in~D 0.849 E~Estimated~26.5,7.5/16,7.5;L~M107~meal_hot~C3A~dust_out~MP3A~in~D 0.849 E~Estimated~-;L~M108~meal_hot~MP3A~out~R4A~meal_in~D 0.849 E~Estimated~19.5,5/9,5;L~M109~meal_hot~C4A~dust_out~MP4A~in~D 0.849 E~Estimated~-;L~M110~meal_hot~MP4A~out~OPC-02~-~D 0.849 E~Estimated~-;L~M111~meal_hot~C5A~dust_out~MP5A~in~D 0.696 E~Estimated~-;L~M112~meal_hot~MP5A~out~OPC-03~-~D 0.696 E~Estimated~-;L~D101~dust~C1A~dust_esc~FEEDA~dust_in~-~Unknown~37,22.8/37,15;I~FT-101~Input~M101~P~raw meal feed~top~0;" ' P&ID records
@@ -60,7 +61,8 @@ Const PID_PH_16                    As String  = ""           ' P&ID records
 Const PID_CA_NO                    As Long    = 2            ' sheet CA number
 Const PID_CA_TITLE                 As String  = "ILC CALCINER, GOOSENECK AND TERTIARY AIR" ' sheet CA title
 Const PID_CA_SCOPE                 As String  = "one for both strings" ' sheet CA: which string(s) it draws
-Const PID_CA_HASH                  As String  = "65266406a0a5916d" ' sheet CA source fingerprint
+Const PID_CA_ID                    As String  = "CI-CA-PID-002" ' sheet CA document number
+Const PID_CA_HASH                  As String  = "6f05540aa18676ce" ' sheet CA source fingerprint
 Const PID_CA_1                     As String  = "E~ILC~ILC~vessel~18~6~5~20~-~-~ILC;E~GN~GN~gooseneck~18~27~8~4~-~-~GN;E~TAD~TAD~duct~6~11~8~2~-~-~TAD;E~NOZM~NOZ~nozzle_meal~28~15~3~2~2~-~NOZ meal;E~NOZF~NOZ~nozzle_fuel~28~12~3~2~2~-~NOZ fuel;L~G201~gas~OPC-04~-~ILC~kiln_gas_inlet~D 3.130 E~Estimated~-;L~A201~air_hot~OPC-05~-~TAD~air_in~D 2.439 E~Estimated~-;L~A202~air_hot~TAD~air_out~ILC~tertiary_air_inlet~D 2.439 E~Estimated~-;L~M201~meal_hot~OPC-02~-~NOZM~meal_in~D 0.849 E~Estimated~-;L~M202~meal_hot~NOZM~meal_out~ILC~meal_feed~D 0.849 E~Estimated~-;L~F201~fuel~SRC~fuel_calciner~NOZF~fuel_in~-~Unknown~-;L~F202~fuel~NOZF~fuel_out~ILC~fuel_inlet~D 0.283 E~Estimated~-;L~G202~gas~ILC~gas_outlet~GN~gas_in~D 4.950 E~Estimated~-;" ' P&ID records
 Const PID_CA_2                     As String  = "L~G203~gas~GN~gas_out~OPC-01~-~D 3.500~Verified~-;I~FT-201~Modelled~F201~F~calciner fuel~top~0;I~FT-202~Modelled~A202~F~tertiary air~top~0;I~TT-204~Modelled~A202~F~tertiary air T~top~0;I~FT-204~Modelled~M202~F~meal into the calciner~top~0;I~FT-203~Modelled~G203~F~calciner gas flow~top~0;I~TT-202~Modelled~ILC~F~calciner gas T (zone profile)~right~0.92;I~TI-205~Modelled~ILC~F~calciner shell T (max)~right~0.82;I~PDI-201~Report-only~ILC~P~calciner dP (Euler)~right~0.72;O~OPC-01~G203~out~1~gas~GOOSENECK GAS TO C5;O~OPC-02~M201~in~1~meal_hot~C4 MEAL TO CALCINER;O~OPC-04~G201~in~3~gas~KILN GAS TO CALCINER THROAT;O~OPC-05~A201~in~3~air_hot~TERTIARY AIR FROM HOOD;" ' P&ID records
 Const PID_CA_3                     As String  = ""           ' P&ID records
@@ -80,7 +82,8 @@ Const PID_CA_16                    As String  = ""           ' P&ID records
 Const PID_KI_NO                    As Long    = 3            ' sheet KI number
 Const PID_KI_TITLE                 As String  = "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER" ' sheet KI title
 Const PID_KI_SCOPE                 As String  = "one for both strings" ' sheet KI: which string(s) it draws
-Const PID_KI_HASH                  As String  = "b926637a643b7fe2" ' sheet KI source fingerprint
+Const PID_KI_ID                    As String  = "CI-RK-PID-003" ' sheet KI document number
+Const PID_KI_HASH                  As String  = "6c01d566073bcffd" ' sheet KI source fingerprint
 Const PID_KI_1                     As String  = "E~KIC~KIC~chamber~4~14~5~8~-~-~KIC;E~KILN~KILN~rotary_kiln~12~15~15~4~-~zones=2,split=0.4166~KILN;E~HOOD~HOOD~hood~33~11~5~12~-~-~HOOD;E~BRN~BRN~burner~39~16~2~2~-~-~BRN;L~A301~air_primary~SRC~primary_air~BRN~air_in~-~Unknown~-;L~F301~fuel~SRC~fuel_kiln~BRN~fuel_in~-~Unknown~-;L~G301~gas~BRN~flame_out~KILN~burner_in~-~Unknown~-;L~A302~air_hot~OPC-06~-~HOOD~sec_in~-~Unknown~-;L~A303~air_hot~HOOD~sec_out~KILN~air_in~-~Unknown~-;L~A304~air_hot~OPC-07~-~HOOD~ter_in~-~Unknown~-;L~A305~air_hot~HOOD~ter_out~OPC-05~-~-~Unknown~-;L~M301~meal_hot~OPC-03~-~KIC~meal_in~D 0.696 E~Estimated~-;L~M302~meal_hot~KIC~meal_out~KILN~meal_in~-~Unknown~-;L~G302~gas~KILN~gas_out~KIC~gas_in~D 4.800~Verified~-;" ' P&ID records
 Const PID_KI_2                     As String  = "L~G303~gas~KIC~gas_out~OPC-04~-~D 3.130 E~Estimated~-;L~K301~clinker~KILN~clinker_out~OPC-08~-~-~Unknown~-;I~FT-301~Modelled~F301~F~kiln fuel~top~0;I~FY-301~Input~F301~P~kiln share of the total fuel~top~0;I~FT-302~Modelled~A301~F~primary air~top~0;I~FY-302~Input~A301~P~primary air share of kiln air~top~0;I~FT-303~Modelled~A303~F~secondary air~top~0;I~TT-301~Modelled~G301~F~gas T into the burning zone~top~0;I~TT-302~Modelled~M302~F~meal T into the burning zone~top~0;I~ST-301~Input~KILN~P~kiln speed (clipped to rpm_min..rpm_max)~top~0;I~TT-303~Modelled~G303~F~kiln gas T at the back end~top~0;I~FT-304~Modelled~G301~F~kiln gas flow, burning zone out~top~0;" ' P&ID records
 Const PID_KI_3                     As String  = "I~FT-305~Modelled~G303~F~kiln gas flow to the calciner~top~0;I~FT-306~Modelled~K301~F~clinker from the burning zone~top~0;I~TT-304~Modelled~K301~F~clinker T at the kiln outlet~top~0;I~TI-307~Modelled~KILN~F~transition shell T (max)~top~0;I~TI-308~Modelled~KILN~F~burning shell T (max)~top~0;O~OPC-03~M301~in~1~meal_hot~C5 MEAL VIA THROAT TO KILN INLET CHAMBER;O~OPC-04~G303~out~2~gas~KILN GAS TO CALCINER THROAT;O~OPC-05~A305~out~2~air_hot~TERTIARY AIR FROM HOOD;O~OPC-06~A302~in~4~air_hot~SECONDARY AIR FROM COOLER;O~OPC-07~A304~in~4~air_hot~TERTIARY AIR FROM COOLER;O~OPC-08~K301~out~4~clinker~CLINKER TO COOLER;S~SP-1~AT-401~cfg:fuel.Fuel_rate_total~free_lime_spec (1.5 %);" ' P&ID records
@@ -100,7 +103,8 @@ Const PID_KI_16                    As String  = ""           ' P&ID records
 Const PID_CO_NO                    As Long    = 4            ' sheet CO number
 Const PID_CO_TITLE                 As String  = "GRATE COOLER" ' sheet CO title
 Const PID_CO_SCOPE                 As String  = "one for both strings" ' sheet CO: which string(s) it draws
-Const PID_CO_HASH                  As String  = "c244fa81c434375b" ' sheet CO source fingerprint
+Const PID_CO_ID                    As String  = "CI-CL-PID-004" ' sheet CO document number
+Const PID_CO_HASH                  As String  = "b7b879a5de4fd048" ' sheet CO source fingerprint
 Const PID_CO_1                     As String  = "E~COOL~COOL~grate_cooler~8~10~26~8~-~seg=10,hood=2~COOL;L~A401~air_cooler~SRC~cooler_air~COOL~grate_air~-~Unknown~-;L~A402~air_hot~COOL~hood_1~OPC-06~-~-~Unknown~-;L~A403~air_hot~COOL~hood_2~OPC-07~-~-~Unknown~-;L~A404~air_hot~COOL~vent_outlet~SNK~cooler_vent~-~Unknown~-;L~K401~clinker~OPC-08~-~COOL~clinker_in~-~Unknown~-;L~K402~clinker~COOL~clinker_out~SNK~clinker~-~Unknown~-;I~FT-401~Modelled~A401~F~cooler air~top~0;I~FY-401~Input~A401~P~cooler air per kg clinker~top~0;I~ST-401~Input~COOL~P~grate speed~top~0;I~TT-402~Modelled~A402~F~secondary air T~top~0;I~FT-402~Modelled~A404~F~cooler vent air~top~0;I~TT-404~Modelled~A404~F~vent air T~top~0;" ' P&ID records
 Const PID_CO_2                     As String  = "I~TT-403~Modelled~K402~F~clinker T at the cooler outlet~top~0;I~FT-403~Modelled~K402~F~clinker out~top~0;I~AT-401~Report-only~COOL~P~free lime in the clinker~right~0.6;I~TI-405~Modelled~COOL~F~cooler shell T (max)~top~0;O~OPC-06~A402~out~3~air_hot~SECONDARY AIR FROM COOLER;O~OPC-07~A403~out~3~air_hot~TERTIARY AIR FROM COOLER;O~OPC-08~K401~in~3~clinker~CLINKER TO COOLER;" ' P&ID records
 Const PID_CO_3                     As String  = ""           ' P&ID records
@@ -370,6 +374,17 @@ Private Function SheetScope() As String
     Case "CA": SheetScope = PID_CA_SCOPE
     Case "KI": SheetScope = PID_KI_SCOPE
     Case "CO": SheetScope = PID_CO_SCOPE
+    End Select
+End Function
+
+
+' The sheet's document number (pid.yaml: CI-<area>-PID-<no>).
+Private Function SheetId() As String
+    Select Case sheetKey
+    Case "PH": SheetId = PID_PH_ID
+    Case "CA": SheetId = PID_CA_ID
+    Case "KI": SheetId = PID_KI_ID
+    Case "CO": SheetId = PID_CO_ID
     End Select
 End Function
 
@@ -1434,18 +1449,20 @@ Private Sub DrawTitle()
     LineP 0.806, 0.019, 0.806, 0.028
     LineP 0.816, 0.019, 0.816, 0.028
 
-    TCell bx0, 0.055, "Created by", ""
-    TCell 0.711, 0.055, "Approved by", ""
+    TCell bx0, 0.055, "Created by", "pid.bas"
+    TCell 0.711, 0.055, "Approved by", "-"
     TCell 0.771, 0.055, "Document type", "P&ID"
-    TCell bx0, 0.046, "Responsible department", ""
-    TCell 0.711, 0.046, "Technical reference", "pid.bas"
+    TCell bx0, 0.046, "Legal owner", "Karbon Zekasi"
+    TCell 0.711, 0.046, "Technical reference", "pid.yaml"
     TCell 0.771, 0.046, "Document status", "draft, schematic"
     LabelPH bx0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH bx0 + 0.0015, 0.0335, "PYROPROCESS P&ID", 0.0028
     LabelPH bx0 + 0.0015, 0.0283, SheetTitle(), 0.002
     LabelPH bx0 + 0.0015, 0.0248, "as the twin models it, " & SheetScope(), 0.002
-    TCell 0.771, 0.037, "Identification number", ""
-    TCellS 0.771, 0.028, "Rev.", ""
+    ' (16 Nov sheet review, item 9: number and revision were blank; the
+    ' cells as on the equipment sheets)
+    TCell 0.771, 0.037, "Identification number", SheetId()
+    TCellS 0.771, 0.028, "Rev.", "A"
     TCellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     TCellS 0.806, 0.028, "Lang.", "EN"
     TCellS 0.816, 0.028, "Sheet", SheetNo() & "/4"

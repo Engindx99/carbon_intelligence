@@ -20,7 +20,10 @@
 # Equipment tags are the inventory's (tools/drawings/inventory.py).
 # Plant: two identical strings; string A is drawn, string B is identical.
 # The calciner, the kiln and the cooler are one for both strings: a sheet's
-# scope (the title block's second line) says which.
+# scope (the title block's second line) says which. id: the document
+# number, CI-<area>-PID-<sheet no> beside the equipment sheets'
+# CI-<area>-<equipment>-001 (PH preheater, CA calciner, RK rotary kiln,
+# CL clinker cooler).
 #
 # Line numbers: <service letter><sheet no><seq>; G gas, M meal, D dust,
 # A air, F fuel, K clinker. A stream that changes sheet ends at an
@@ -28,10 +31,10 @@
 # sheet's own number.
 
 sheets:
-  PH: {num: 1, title: "PREHEATER, STRING A (STRING B IDENTICAL)", area: Preheater, scope: "string A"}
-  CA: {num: 2, title: "ILC CALCINER, GOOSENECK AND TERTIARY AIR", area: Calciner, scope: "one for both strings"}
-  KI: {num: 3, title: "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER", area: "Rotary kiln", scope: "one for both strings"}
-  CO: {num: 4, title: "GRATE COOLER", area: "Clinker cooler", scope: "one for both strings"}
+  PH: {num: 1, title: "PREHEATER, STRING A (STRING B IDENTICAL)", area: Preheater, scope: "string A", id: CI-PH-PID-001}
+  CA: {num: 2, title: "ILC CALCINER, GOOSENECK AND TERTIARY AIR", area: Calciner, scope: "one for both strings", id: CI-CA-PID-002}
+  KI: {num: 3, title: "ROTARY KILN, INLET CHAMBER, HOOD AND BURNER", area: "Rotary kiln", scope: "one for both strings", id: CI-RK-PID-003}
+  CO: {num: 4, title: "GRATE COOLER", area: "Clinker cooler", scope: "one for both strings", id: CI-CL-PID-004}
 
 equipment:
   # ---- sheet 1: preheater, string A

@@ -371,6 +371,13 @@ Add Local Sizing → Body of Influence → yalnızca BOI gövdesini seç → 0.0
 * Hangi uç yüzün öne düştüğü varsayılmaz, `FindEdge` ile bulunur (`DimensionCooler`).
 * Sayfa ölçeğinden farklı bir görünüş (1:50 uç görünüşü) `scaleD`'yi yalnız o görünümün kurulumu için değiştirerek yapılır.
 * Çizim makrosu CFD katısını salt okunur açar, sonda dosya damgasını doğrular; boyutlar katının kenarlarından okunur ve yaml ile karşılaştırılır (`MISMATCH`/`MISSING`).
+* Küçültülmüş SolidWorks görünüm çizmez: gizli çizgiler ve teğet kenarlar kaybolur, onlara bağlı ölçü `MISSING` olur. `drawings.bas` pencereyi çalışma süresince açar, sonra geri küçültür. Ölçülerde ondalık ayırıcı nokta: Türkçe Windows'ta sistem ayırıcısı virgüldür, makro bu sistem ayarını çalışma süresince değiştirip geri alır.
+* Her paftanın altındaki "SOLIDWORKS Eğitim Ürünü. Yalnızca Eğitim Amaçlı Kullanım İçindir." yazısını SolidWorks'ün eğitim lisansı basar; makro kaldıramaz. Ticari lisanslı bir SolidWorks'te makrolar yeniden çalıştırılınca kaybolur. `tools/sheet_overlaps.py` bu satırı çakışma sayımına katmaz.
+* Belge numarası: ekipman paftaları `CI-<alan>-<ekipman>-001`, P&ID paftaları `CI-<alan>-PID-<pafta no>` (`pid.yaml`'daki `id`); alan PH ön ısıtıcı (siklonlar, ikiz C1, ID fan), CA kalsinatör, RK döner fırın, CL soğutucu.
+
+## Makroları WSL'den çalıştırmak
+
+SolidWorks açıkken `python3 tools/sw_run.py drawings.c5 pid.kiln ...` makroları WSL'den çalıştırır. Bir kerelik kurulum: SolidWorks'te yeni bir makro `geometry/output/loader.swp` olarak kaydedilir ve içine yalnız `loader.bas` (`sw_loader` modülü) alınır. Her çalıştırmada önce `sw_loader.reload` güncel `drawings.bas` ve `pid.bas`'ı bu projeye yeniden alır ve kaydeder; elle import gerekmez. Çalışma süresince `geometry/output/quiet.flag` makroların kapanış penceresini atlatır; her işin açtığı belgeler iş bitince kapatılır.
 
 ## Çizimi olmayan seçimler (16 Kasım 2026)
 
