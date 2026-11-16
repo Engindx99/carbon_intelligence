@@ -258,6 +258,7 @@ Const PAPER_H  As Double = 0.594
 Const FR_X0 As Double = 0.02, FR_X1 As Double = 0.831, FR_Y0 As Double = 0.01, FR_Y1 As Double = 0.584
 Const COL_X0 As Double = 0.651          ' the right-hand column: notes, legend, table, title block
 Const TEXT_H As Double = 0.0025
+Const VIEW_LETTER_H As Double = 0.0035     ' ISO 128-3 view letters, 1.4 x TEXT_H
 Const CAP_H  As Double = 0.0018
 
 ' Where the views go on the sheet [m]: the top view's centre; A-A is
@@ -1061,6 +1062,12 @@ Private Sub MakeViewsCalciner()
         If tries = 1 Then Fail "section A-A shows x right, z up in neither direction: " & MapText(vSec)
         DeleteView vSec
     Next tries
+    ' SectionFrom leaves the section on the sheet's scale, and this sheet's
+    ' label then went without its scale (C1, C4, C5 show it): set it as
+    ' every OrientedView does; the same 1:scaleD, so nothing moves.
+    vSec.ScaleDecimal = 1# / scaleD
+    swModel.ForceRebuild3 False
+    Note "section A-A scale set to 1:" & Fmt(scaleD)
     If FindEdge(vSec, "vline", -R, 0#, 20#, -R, 0#, nSeen, nFit) Is Nothing _
        Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no vessel wall among its " & nSeen & " edges."
     Note "views: top " & vTop.Name & ", A-A " & vSec.Name
@@ -2541,6 +2548,16 @@ Private Sub DrawFlowsCooler()
     LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment)"
     LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "Hood opening (to the kiln and the tertiary air)"
     LabelM3 vFront, 20#, 0#, 0.7, "Clinker travel (bed zone)"
+    ' ISO 128-3: the floor view (under the plan: in first angle it would
+    ' stand over the side view) looks from below, arrow A, right of the box
+    ' so it is not read as one of the air arrows; the end view (1:50, lower
+    ' left) looks from the hot end along +x, arrow B
+    ViewArrow vFront, COO_L + 1.5, 0#, -2.5, COO_L + 1.5, 0#, -0.3, "A"
+    ViewArrow vFront, -5#, 0#, 0.5 * COO_H, -0.5, 0#, 0.5 * COO_H, "B"
+    ViewTitle vLeft, "A", "above", 0.004, VIEW_LETTER_H
+    ViewTitle vSide, "B (1:" & Fmt(detailD) & ")", "above", 0.055, VIEW_LETTER_H
+    ViewTitle vFront, "SIDE VIEW", "right", 0.03, TEXT_H
+    ViewTitle vTop, "PLAN - roof (from above)", "right", 0.03, TEXT_H
 End Sub
 
 
@@ -2608,6 +2625,11 @@ Private Sub DrawFlowsKiln()
     LabelM3 vFront, -2.4, 0#, 17#, "Meal (back end to hood)"
     LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, 0#, "Back end (kiln inlet chamber)"
     LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, KIL_L - 14#, "Hood end"
+    ' ISO 128-3: the end view (1:50, under the side view, not in its
+    ' projected place) looks from the hood end along -z: arrow A
+    ViewArrow vFront, 0.5 * KIL_D + 1.5, 0#, KIL_L + 6#, 0.5 * KIL_D + 1.5, 0#, KIL_L + 1#, "A"
+    ViewTitle vTop, "A (1:" & Fmt(detailD) & ")", "above", 0.004, VIEW_LETTER_H
+    ViewTitle vFront, "SIDE VIEW - back end left, hood end right", "below", 0.022, TEXT_H
 End Sub
 
 
@@ -2638,6 +2660,19 @@ Private Sub DrawFlowsCalciner()
     LabelM3 vSec, -CAL_FEED_X - 3.2, 0#, CAL_FEED_Z + 2.8, "Meal in"
     LabelM3 vTop, CAL_TA_X + 3.2, CAL_TA_Y - 0.2, CAL_TA_Z, "Tertiary air in"
     LabelM3 vLeft, 0#, CAL_FUEL_Y + 2.2, CAL_FUEL_Z + 1.4, "Fuel in"
+    ' SolidWorks leaves the scale off this section's label even with the
+    ' section's scale set (C1, C4, C5 print it): the second line by hand,
+    ' under "KESIT A-A" (centred on the axis, its top 20-24 mm under the
+    ' throat's foot on the 16 Nov sheet)
+    Dim scx As Double, scy As Double
+    ToSheet vSec, 0#, 0#, 0#, scx, scy
+    ' the label's own word (O-umlaut L C-cedilla E K) spelled with ChrW: the macro file stays ASCII
+    ' As SolidWorks writes it on C4 (read from the PDF, 16 Nov): 13.23 pt,
+    ' "... 1 : 100", centred under "KESIT A-A", top 12.8 pt under its top.
+    ' CharHeight 0.0045 printed 17.01 pt, so 0.0035 is 13.23 pt; x and y put
+    ' the 87 pt line's centre on the label's (481.9 pt) and its top at 986.9 pt.
+    LabelPH scx - 0.0154, scy - 0.0249, ChrW(214) & "L" & ChrW(199) & "EK 1 : " & Fmt(scaleD), 0.0035
+    Note "section A-A label: scale line 1:" & Fmt(scaleD) & " written by hand"
 End Sub
 
 
@@ -2849,7 +2884,7 @@ End Sub
 ' An arrow between two model points, in whichever view (its transform
 ' drops the depth).
 Private Sub ArrowM3(v As SldWorks.View, ByVal xa As Double, ByVal ya As Double, ByVal za As Double, _
-                    ByVal xb As Double, ByVal yb As Double, ByVal zb As Double)
+                    ByVal xb As Double, ByVal yb As Double, ByVal zb As Double, Optional ByVal headK As Double = 1#)
     Dim ax As Double, ay As Double, qx As Double, qy As Double
     Dim ux As Double, uy As Double, n As Double
     Const AL As Double = 0.004, AW As Double = 0.0014
@@ -2857,8 +2892,10 @@ Private Sub ArrowM3(v As SldWorks.View, ByVal xa As Double, ByVal ya As Double, 
     ToSheet v, xb, yb, zb, qx, qy
     LineP ax, ay, qx, qy
     ux = qx - ax: uy = qy - ay: n = Sqr(ux * ux + uy * uy): ux = ux / n: uy = uy / n
-    LineP qx, qy, qx - AL * ux - AW * uy, qy - AL * uy + AW * ux
-    LineP qx, qy, qx - AL * ux + AW * uy, qy - AL * uy - AW * ux
+    LineP qx, qy, qx - headK * (AL * ux + AW * uy), qy - headK * (AL * uy - AW * ux)
+    LineP qx, qy, qx - headK * (AL * ux - AW * uy), qy - headK * (AL * uy + AW * ux)
+    If headK > 1# Then LineP qx - headK * (AL * ux + AW * uy), qy - headK * (AL * uy - AW * ux), _
+                             qx - headK * (AL * ux - AW * uy), qy - headK * (AL * uy + AW * ux)
 End Sub
 
 
@@ -2873,6 +2910,48 @@ Private Sub LabelM(v As SldWorks.View, ByVal x As Double, ByVal z As Double, ByV
     Dim sx As Double, sy As Double
     If v Is vTop Then ToSheet v, x, z, 0#, sx, sy Else ToSheet v, x, 0#, z, sx, sy
     LabelPH sx, sy, txt, TEXT_H
+End Sub
+
+
+' ISO 128-3, a view not in its projected place: on the reference view an
+' arrow in the direction of viewing, from model point a to b, and its
+' letter beyond the arrow's tail; the view itself carries the letter
+' (ViewTitle). The letter is larger than the dimension text.
+Private Sub ViewArrow(v As SldWorks.View, ByVal xa As Double, ByVal ya As Double, ByVal za As Double, _
+                      ByVal xb As Double, ByVal yb As Double, ByVal zb As Double, ByVal letter As String)
+    Dim ax As Double, ay As Double, qx As Double, qy As Double, ux As Double, uy As Double, n As Double
+    UseLayer L_TEXT
+    ' a larger, closed head: not to be read as a flow arrow (the cooler's
+    ' air arrows run beside arrow A)
+    ArrowM3 v, xa, ya, za, xb, yb, zb, 1.5
+    ToSheet v, xa, ya, za, ax, ay
+    ToSheet v, xb, yb, zb, qx, qy
+    ux = ax - qx: uy = ay - qy: n = Sqr(ux * ux + uy * uy): ux = ux / n: uy = uy / n
+    ' the note's position is its upper left corner: centre the letter on the tail's extension
+    LabelPH ax + 0.004 * ux - 0.5 * VIEW_LETTER_H, ay + 0.004 * uy + 0.5 * VIEW_LETTER_H, letter, VIEW_LETTER_H
+    Note "view arrow " & letter & " on " & v.Name
+End Sub
+
+
+' A view's caption, placed by the view's outline on the sheet: "above"
+' (left-aligned, the letter of a view out of its projected place), "below"
+' (left-aligned, the KIC / ID fan captions) or "right" (at mid height).
+' gap is the clear space to the outline [m on paper].
+Private Sub ViewTitle(v As SldWorks.View, ByVal txt As String, ByVal side As String, _
+                      ByVal gap As Double, ByVal h As Double)
+    Dim ol As Variant, px As Double, py As Double
+    ' no rebuild here: the views are placed, and a rebuild would close the
+    ' sheet sketch the flows and arrows are drawn in
+    ol = v.GetOutline
+    Select Case side
+    Case "above": px = ol(0): py = ol(3) + gap + h
+    Case "below": px = ol(0): py = ol(1) - gap
+    Case "right": px = ol(2) + gap: py = 0.5 * (ol(1) + ol(3)) + 0.5 * h
+    Case Else: Fail "ViewTitle: no side '" & side & "'."
+    End Select
+    UseLayer L_TEXT
+    LabelPH px, py, txt, h
+    Note "view label " & txt & " on " & v.Name & " (" & side & ")"
 End Sub
 
 

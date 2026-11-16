@@ -99,6 +99,17 @@ def _half_up(x, decimals=0):
     return str(Decimal(repr(x)).quantize(Decimal(1).scaleb(-decimals), ROUND_HALF_UP))
 
 
+class TheMacroIsAsciiTest(unittest.TestCase):
+    """The VBA editor imports a .bas in the Windows code page (Turkish
+    1254 here); a UTF-8 'Ö' would arrive as two wrong characters. Text
+    the sheet needs outside ASCII is spelled with ChrW."""
+
+    def test_drawings_bas_holds_ascii_only(self):
+        raw = (gen_geometry.MACROS / "drawings.bas").read_bytes()
+        bad = [i + 1 for i, line in enumerate(raw.splitlines()) if any(b > 127 for b in line)]
+        self.assertEqual(bad, [], "non-ASCII on these lines")
+
+
 class TheTableRoundsAsTheDimensionsTest(unittest.TestCase):
     """A value sits on a sheet twice, as a SolidWorks dimension and in the
     parameter table; both must print the same digits."""
@@ -134,6 +145,36 @@ class TheTableRoundsAsTheDimensionsTest(unittest.TestCase):
                     self.assertEqual(table[k], _half_up(float(v)))
         if not ran:
             self.skipTest("no drawings_*_build.log: run geometry/macros/drawings.bas")
+
+
+class TheViewsOutOfPlaceAreLabelledTest(unittest.TestCase):
+    """ISO 128-3: a view not in its projected place (or at another scale)
+    carries a letter, and an arrow with that letter on the reference view
+    shows the direction of viewing. drawings.bas logs 'view arrow <L>' and
+    'view label <text>'; skipped until the macro has run here."""
+
+    WANT = {
+        "kiln": {"arrows": ["A"], "labels": ["A (1:50)"]},
+        "cooler": {"arrows": ["A", "B"], "labels": ["A", "B (1:50)"]},
+    }
+
+    def test_each_letter_has_its_arrow_and_its_label(self):
+        ran = False
+        for name, want in self.WANT.items():
+            log = gen_drawings.LOG_DIR / f"drawings_{name}_build.log"
+            if not log.exists():
+                continue
+            text = log.read_text(encoding="latin-1")
+            if "view arrow" not in text:
+                continue  # a log from before the labels: the sheet is re-drawn by hand
+            ran = True
+            with self.subTest(name=name):
+                self.assertEqual(sorted(re.findall(r"^view arrow (\S+) on ", text, re.M)), want["arrows"])
+                # view names are localised and may hold spaces ("Çizim Görünümü1")
+                labels = re.findall(r"^view label (.+?) on .+ \(above\)$", text, re.M)
+                self.assertEqual(sorted(labels), want["labels"])
+        if not ran:
+            self.skipTest("no drawings log with view labels yet: run drawings.bas kiln and cooler")
 
 
 class TheSheetMeasuresTheSourceTest(unittest.TestCase):
