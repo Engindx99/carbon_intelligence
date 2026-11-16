@@ -83,7 +83,7 @@ def size_text(value, status):
     """The size as the sheet prints it: 'D 3.070', 'D 0.849 E', '-'."""
     if value is None:
         return "-"
-    return f"D {value:.3f}" + ("" if status == pv.VERIFIED else " E")
+    return f"D {pv.fmt_half_up(value, 3)}" + ("" if status == pv.VERIFIED else " E")
 
 
 # ----------------------------------------------------------------------

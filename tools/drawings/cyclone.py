@@ -103,9 +103,9 @@ def cell(p):
     if isinstance(p.value, bool):
         return "yes" if p.value else "no"
     if p.unit == "m":
-        return f"{p.mm:.0f}"
+        return pv.fmt_half_up(p.mm, 0)
     if p.unit in ("m3", "m2"):
-        return f"{p.value:.2f}"
+        return pv.fmt_half_up(p.value, 2)
     return f"{p.value:g}"
 
 

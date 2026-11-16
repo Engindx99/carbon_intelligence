@@ -86,6 +86,56 @@ class TheMacroTableIsTheJsonTest(unittest.TestCase):
             self.assertEqual([r[5] for r in rows], [p["status"] for p in data["params"]])
 
 
+def _table_rows(name):
+    """The sheet's parameter table as the macro prints it: {key: value text}."""
+    text = (gen_geometry.MACROS / "drawings.bas").read_text(encoding="latin-1")
+    chunks = re.findall(rf'^Const {name}_TAB_\d+\s+As String\s+=\s+"(.*)"', text, re.M)
+    return {r.split("~")[0]: r.split("~")[2] for r in "".join(chunks).split(";") if r}
+
+
+def _half_up(x, decimals=0):
+    """SolidWorks' display rounding: a half goes up (848.5 -> 849)."""
+    from decimal import ROUND_HALF_UP, Decimal
+    return str(Decimal(repr(x)).quantize(Decimal(1).scaleb(-decimals), ROUND_HALF_UP))
+
+
+class TheTableRoundsAsTheDimensionsTest(unittest.TestCase):
+    """A value sits on a sheet twice, as a SolidWorks dimension and in the
+    parameter table; both must print the same digits."""
+
+    def test_a_half_goes_up(self):
+        from tools.drawings import cyclone, provenance as pv
+        cases = [(0.8485, "m", "849"), (0.0025, "m", "3"), (1.0, "m", "1000"),
+                 (-2.1015, "m", "-2102"), (1009.705, "m3", "1009.71"), (635.955, "m2", "635.96")]
+        for value, unit, want in cases:
+            with self.subTest(value=value, unit=unit):
+                p = pv.Param(key="k", label="k", value=value, unit=unit, source="derived",
+                             status="Estimated", doc="-", inputs=["x"])
+                self.assertEqual(cyclone.cell(p), want)
+
+    def test_the_pid_size_rounds_the_same_way(self):
+        from tools.pid import model
+        self.assertEqual(model.size_text(0.8485, "Estimated"), "D 0.849 E")
+        self.assertEqual(model.size_text(0.0005, "Verified"), "D 0.001")
+
+    def test_the_table_prints_each_logged_dimension(self):
+        ran = False
+        for name in gen_drawings.EQUIPMENT:
+            log = gen_drawings.LOG_DIR / f"drawings_{name}_build.log"
+            if not log.exists():
+                continue
+            ran = True
+            table = _table_rows(name)
+            units = {p["short"]: p["unit"] for p in _payload(name)["params"]}
+            for k, v in re.findall(r"^dim (\S+) (-?[\d.]+)$", log.read_text(encoding="latin-1"), re.M):
+                if units[k] != "m":
+                    continue
+                with self.subTest(name=name, key=k):
+                    self.assertEqual(table[k], _half_up(float(v)))
+        if not ran:
+            self.skipTest("no drawings_*_build.log: run geometry/macros/drawings.bas")
+
+
 class TheSheetMeasuresTheSourceTest(unittest.TestCase):
     """drawings.bas logs every dimension SolidWorks measured as
     'dim <key> <mm or deg>'; skipped until the macro has run here."""

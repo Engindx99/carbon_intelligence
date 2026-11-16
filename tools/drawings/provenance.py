@@ -54,6 +54,17 @@ SOURCE_TR = {
 LENGTH_UNITS = ("m",)
 
 
+def fmt_half_up(x, decimals=0):
+    """`x` printed with `decimals` digits, a half rounded away from zero,
+    as SolidWorks prints a dimension (848.5 -> 849). Python's own
+    rounding sends a half to the even digit (848.5 -> 848), so a value
+    on a half would read differently in the table and on the view.
+    round(x, 6) first drops the binary noise (848.4999999 is 848.5),
+    as value_mm does."""
+    from decimal import ROUND_HALF_UP, Decimal
+    return str(Decimal(repr(round(float(x), 6))).quantize(Decimal(1).scaleb(-decimals), ROUND_HALF_UP))
+
+
 @dataclass
 class Param:
     key: str                 # dotted name, unique on one drawing
