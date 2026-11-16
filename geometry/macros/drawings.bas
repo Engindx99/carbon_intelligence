@@ -1879,10 +1879,18 @@ Private Sub DimensionCalciner()
     ' the meal pipe's end face is edge-on from the front (its normal lies
     ' in the x-z plane): a straight edge of the pipe's diameter. (In plan it
     ' is a tilted ellipse, which SolidWorks dimensioned as a radius.)
-    DimEdges "D_feed", CAL_FEED_D, vFront, _
-        "circle", CAL_FEED_X, 0, CAL_FEED_Z, 0.5 * CAL_FEED_D, CAL_FEED_Z, _
+    ' Dimensioned in detail B (1:50; user decision, 16 Nov 2026), which
+    ' shows the pipe's entry and had no dimension. The cut through the axis
+    ' leaves the end face as a straight edge of the pipe's diameter, not a
+    ' circle (run of 16 Nov: 5 edges, none a circle); its middle is the end
+    ' face's centre. SolidWorks sets the dimension line parallel to that
+    ' edge, offset by the text point's distance along the pipe's axis
+    ' (cos 60, sin 60): 2.3 m of it put the line outside the detail's
+    ' circle (run of 16 Nov), so the text sits 0.6 m out along the axis.
+    DimEdges "D_feed", CAL_FEED_D, vDet, _
+        "line", CAL_FEED_X, 0, CAL_FEED_Z, 0, 0, _
         "", 0, 0, 0, 0, 0, _
-        CAL_FEED_X + 2.2, 0, CAL_FEED_Z + 2.4
+        CAL_FEED_X + 0.6 * 0.5, 0, CAL_FEED_Z + 0.6 * Sqr(3#) * 0.5
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -1914,10 +1922,13 @@ Private Sub DimensionTwin()
         "circle", rr, yb, zf, rr, zf, _
         "", 0, 0, 0, 0, 0, _
         0, yb, zf - 1.6
-    DimEdges "y_rise", zb - zt, vFront, _
+    ' the Y's height in detail C (1:50; user decision, 16 Nov 2026): in the
+    ' front view it crowded the meal-out labels; the text inside the
+    ' detail's circle (centre x 0, z TW_Z_SPLIT + 0.75, radius 3.0 m)
+    DimEdges "y_rise", zb - zt, vDetC, _
         "circle", -rr, yb, zt, rr, zt, _
         "circle", b + rb, yb, zb, rb, zb, _
-        S2 + 1.6, yb, 0.5 * (zt + zb)
+        2.8, yb, 0.5 * (zt + zb)
 
     ' A-A (from above: x right, y up)
     DimEdges "D_barrel", C1_D_BARREL, vPlan, _
