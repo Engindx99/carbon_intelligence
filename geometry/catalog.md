@@ -82,9 +82,11 @@ calciner_eff_over_shell   calciner_H/D   kiln_eff_over_shell
 Bir bileşen dokümanı katalog değerinden bilerek sapabilir; sapma o dokümanda gerekçesiyle
 yazılır ve bu tablo değişmez. Şu anki sapmalar:
 
-- [cyclone_C1.md](preheater/cyclone_C1.md) — giriş yüksekliği 4.97 yerine **2.16 m**.
-  Yayınlanmış uzun giriş 270°'lik volütle beslendiği için anlamlı; CFD modeli volütü
-  kurmadığından gerekçesini kaybediyor.
+- [cyclone_C1.md](preheater/cyclone_C1.md) — giriş 0.86 × 4.97 yerine **volütlü 0.86 × 3.00 m**,
+  yatay; daldırma **2.16 yerine 3.45 m** (S/a 1.15), C4 gibi (kullanıcı kararı, 16 Kasım 2026).
+  Gerekçe: tesis debisinde (C1 başına 28.76 kg/s) a 3.00 m giriş hızını 17.9 m/s'ye getiriyor;
+  katalogdaki 4.97 m 10.8 m/s verip S'yi 5.7 m'ye zorlardı. 16 Kasım 2026'ya kadar volütsüz,
+  5° eğimli 0.86 × 2.16 m'lik bir yarık kullanılıyordu (17.9 kg/s için boyutlanmıştı).
 - [cyclone_C4.md](preheater/cyclone_C4.md) — CFD'de giriş 1.27 × 9.44 yerine **volütlü 3.40 × 2.912 m**
   (aynı alan). Katalog girişi gövde ile vorteks bulucu arasına sığmıyor ve koninin dibine iniyor; tesis
   bunu volütle çözer, model de basit bir volüt kurar. Gövde **3.46 yerine 6.30 m** (h = D): FLS oranı

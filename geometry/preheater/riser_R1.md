@@ -42,32 +42,40 @@ orada olur. Riser'la bu paylaşım ölçülen bir sonuç olur.
 
 Kesit: **yuvarlak Ø2.171 m** — yayınlanmış Ø3.07 m ikiz C1'leri birlikte besler, C1 başına
 alanının yarısı düşer (3.70 m²). 17.9 kg/s'de hız 8.7 m/s (638 K) – 10.6 m/s (776 K); DTU'nun
-ölçtüğü riser hızları 7.5–9.3 m/s. Tesisteki gibi riser ve dirsek yuvarlak; siklona doğrulanmış
-0.86 × 2.16 m'lik dikdörtgen kanaldan girilir, arada 1.5 m'lik bir yuvarlak→dikdörtgen geçiş var.
+ölçtüğü riser hızları 7.5–9.3 m/s; tesis debisinde (C1 başına 28.76 kg/s) beslemenin altında ~16 m/s
+(~800 K), üstünde ~12.5 m/s (603 K). Tesisteki gibi riser ve dirsek yuvarlak; siklona C1'in giriş
+kanalından girilir, arada 1.5 m'lik bir yuvarlak→dikdörtgen geçiş var. Kanal 16 Kasım 2026'dan beri
+volütün 0.86 × 3.00 m'lik yatay kanalı ([cyclone_C1.md](cyclone_C1.md)); önce 0.86 × 2.16 m'lik,
+5° eğimli yarıktı.
 Önceki sürümler (28 Eylül) kanal kesitini aşağıya kadar sürdürüyordu ve ince kalıyordu. Kare
 siklon girişi elendi: aynı alanda 1.36 m'lik kenar vorteks bulucuya çarpar (halka 0.88 m).
 
-Düzen (C1 koordinatları, siklon ekseni z, toz çıkışı z = 0):
-- Geçiş: kanal ekseni boyunca 1.5 m; (−4.483, 1.73, 10.547) merkezli daireden kanalın uç
-  yüzüne (merkez (−2.989, 1.73, 10.416)) loft. y'de yarım açı 24°.
-- Dirsek: daire, (−4.672, y, 8.385)'ten geçen y'ye paralel eksen etrafında 95° (90° + kanalın
-  5° eğimi), düz yukarıdan kanal eksenine döner; merkez çizgisi yarıçapı 2.171 m (1.0 D).
-  Tepesi z = 11.64 m. Dirsek (1.5 D → 1.0 D) ve geçiş (2.0 → 1.5 m) riser siklona 1.7 m
-  yaklaşsın diye kısaltıldı (kullanıcı kararı, 29 Eylül 2026).
-- Düz riser: eksen x = −6.843, y = 1.73; z 0.885 … 8.385 (7.5 m).
+Düzen (C1 koordinatları, siklon ekseni z, toz çıkışı z = 0; volütlü C1, 16 Kasım 2026, build
+logu `geometry/output/2500/C1_cyclone_build.log`):
+- Geçiş: kanal ekseni boyunca 1.5 m; (−4.500, 2.64, 9.940) merkezli daireden volüt kanalının uç
+  yüzüne (merkez (−3.000, 2.64, 9.940), 0.86 × 3.00 m) loft. y'de daralır (yarım açı 24°), z'de
+  genişler (yarım açı 15°). Loft hacmi 4.763 m³.
+- Dirsek: daire, (−4.500, y, 7.769)'dan geçen y'ye paralel eksen etrafında 90°, düz yukarıdan
+  yatay kanal eksenine döner; merkez çizgisi yarıçapı 2.171 m (1.0 D). Tepesi z = 11.025 m, çatının
+  (11.44) altında. Dirsek (1.5 D → 1.0 D) ve geçiş (2.0 → 1.5 m) riser siklona yaklaşsın diye
+  kısaltılmıştı (kullanıcı kararı, 29 Eylül 2026).
+- Düz riser: eksen x = −6.671, y = 2.64; z 0.269 … 7.769 (7.5 m).
 - Farin besleme oluğu ("distribution box"): riser'ın −x tarafında, 0.6 × 0.6 m kare kesitli,
   **yatayla 60° eğimli** bir boru; riser'dan dışarı doğru yükselir. Ekseni riser duvarını
-  z = 5.385'te keser; riser ekseninde z = 3.505'ten başlar (içteki kısmı birleşimde erir),
-  duvardan eksen boyunca 1.0 m dışarı çıkar. Uç yüzünün merkezi (−8.428, 1.73, 6.251).
-  Duvardaki açıklık z ≈ 4.71 … 5.99. Beslemenin üstünde 3.0 m, altında 4.5 m riser var.
+  z = 4.769'da keser; riser ekseninden başlar (içteki kısmı birleşimde erir), duvardan eksen
+  boyunca 1.0 m dışarı çıkar. Uç yüzünün merkezi (−8.256, 2.64, 5.635). Beslemenin üstünde
+  3.0 m, altında 4.5 m riser var.
+- Eski yarıklı düzende (Eylül – 16 Kasım 2026) dirsek 95° (90° + kanalın 5° eğimi), riser ekseni
+  x = −6.843, y = 1.73, z 0.885 … 8.385, oluk duvarı z = 5.385'te kesiyordu; aşağıdaki mesh ve CFD
+  sonucu o düzene aittir.
   Yatay bir stub farini riser duvarına şerit hâlinde döker. İki yönlü DPM'i ıraksatan da ince
   prizma hücrelerindeki bu duvar şeridiydi (T2, 28 Eylül). Eğimli olukla farin gaz akımına
   düşerek girer, enjeksiyon hızı da oluktaki serbest düşmeden türetilebilir. 60°, ham farinin
   40–45°'lik şev açısının üstünde; açı ve kesit için tesis kaynağı yok (kullanıcı kararı,
   29 Eylül 2026).
 
-Boylar neden böyle: beslemeden siklon gövdesine yol ≈ 3.0 (riser) + 3.6 (dirsek) + 1.5 (geçiş)
-+ 3.0 (kanal) ≈ 11.1 m, ~0.9 s. 90 µm'lik farinin ısıl zaman sabiti ~0.02 s, 200 µm'lik ~0.08 s,
+Boylar neden böyle: beslemeden siklon gövdesine yol ≈ 3.0 (riser) + 3.4 (90° dirsek) + 1.5 (geçiş)
++ 3.0 (kanal) ≈ 10.9 m, ~0.9 s (eski 95°'lik dirsekle 11.1 m). 90 µm'lik farinin ısıl zaman sabiti ~0.02 s, 200 µm'lik ~0.08 s,
 yani farinin tamamına yakını siklona varmadan gazla dengeye gelebilir; sonuç yapay bir kısalığa
 bağlı değil. Besleme altındaki 4.5 m (~2 D) gazın beslemeye gelişmiş varması, geri düşen iri
 farinin de gaz girişinden hemen çıkmaması için. Önceki 2.5 m ince riser'ın 2 D_h'siydi; bu
@@ -76,20 +84,20 @@ riser'da yalnız 1.15 D ediyordu.
 Riser gerçekte C2'nin çıkışından başlar ve çok daha uzundur; bu domen onun yalnız üst ucunu,
 beslemeden C1'e kadarını temsil eder. Gaz tabanda düzgün profille girer.
 
-Mesh (29 Eylül 2026, bu geometri): C1 seviye-0 tarifi. Ansys Meshing tet 0.15 m, 5 prizma
+Mesh (29 Eylül 2026, eski yarıklı geometri; volütlü domen henüz mesh'lenmedi): C1 seviye-0 tarifi. Ansys Meshing tet 0.15 m, 5 prizma
 katmanı, ilk 5 mm, büyüme 1.2 → Fluent poly + `improve-quality` → **191,208 poly hücre**, min
 orthogonal quality **0.313**, hücre hacmi toplamı 249.68 m³ (geometri 250.23).
 (Eski geometride — yatay stub, besleme altı 2.5 m — 184,519 hücre ve min OQ 0.209'du.)
 
-Gaz-yalnız sonuç (URANS SST-CC, 603 K): C1 statik ΔP **500.8 Pa**, doğrulanmış 503.8'e göre
+Gaz-yalnız sonuç (eski yarıklı geometri, 17.9 kg/s, URANS SST-CC, 603 K): C1 statik ΔP **500.8 Pa**, doğrulanmış 503.8'e göre
 −%0.6. Riser'daki düşüş 64.3 Pa; bunun ~59 Pa'sı 8.3 → 16.5 m/s hızlanma. Farinli durum CFD ile
 değil analitik olarak hesaplandı (DDPM terk edildi; bkz. [cyclone_C1.md](cyclone_C1.md), "Yüklü
 Durum"). Riser'ın yüklü ΔP'si 190 Pa.
 
 ## Boundary Faces
 
-- Riser tabanı (z = 0.885, daire 3.70 m², yeşil): gaz girişi — Fluent'te `inlet_gas`, mass-flow-inlet.
-- Oluk ucu (merkez (−8.428, 1.73, 6.251), normali oluk ekseni boyunca, 0.36 m², mor): `meal_feed` —
+- Riser tabanı (z = 0.269, daire 3.70 m², yeşil): gaz girişi — Fluent'te `inlet_gas`, mass-flow-inlet.
+- Oluk ucu (merkez (−8.256, 2.64, 5.635), normali oluk ekseni boyunca, 0.36 m², mor): `meal_feed` —
   gaz için duvar. DPM enjeksiyon yüzeyi olarak kullanılmadı: farin oluğun kapalı ucundaki durgun
   gazda asılı kalıyor. Oluk geometride beslemenin yerini ve yüksekliğini belirliyor.
 - Diğer yüzler duvar.
@@ -97,6 +105,7 @@ Durum"). Riser'ın yüklü ΔP'si 190 Pa.
 ## Derived Properties
 
 Ekipman hacmi ve duvar alanı Geometrik Ölçüler'deki tabloda (hat başına).
-CFD domenindeki riser hacmi: dirsek 13.32 m³ + düz riser 27.76 m³ + geçiş ~4.2 m³ (loft, kesin
-değer makro log'unda) + oluk 0.370 m³ ≈ 45.6 m³ (C1 + riser domeni, kaz boyunlu çıkışla ≈ 250.2 m³;
-yatay stub ve 2.5 m'lik besleme altıyla 242.65 m³ idi)
+CFD domenindeki riser hacmi (volütlü C1): dirsek 12.62 m³ (90°) + düz riser 27.76 m³ + geçiş 4.763 m³
+(loft, makro log'u) + oluk 0.370 m³ ≈ 45.5 m³. C1 + riser domeni **265.10 m³** (riser'sız C1
+219.59 m³). Eski yarıklı domen 250.2 m³ idi (95°'lik dirsek 13.32 m³, geçiş ~4.2 m³); yatay stub ve
+2.5 m'lik besleme altıyla 242.65 m³.

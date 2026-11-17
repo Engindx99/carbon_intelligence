@@ -39,31 +39,53 @@ Yayınlanmış olan yalnız çap D'dir (HFC2500); gövde, koni, vorteks bulucu, 
 
 ### Farin Girişi
 
-Giriş tipi: Teğetsel
+**Volütlü giriş, 0.86 × 3.00 m, daldırma S 3.45 m (kullanıcı kararı, 16 Kasım 2026).** Giriş ve daldırma CFD kararıdır, katalog değeri değil; ölçüler yukarıdaki tabloda.
 
-Giriş kesiti: Dikdörtgen, sabit kesit
+Giriş tipi: Volüt (C4 ve C5 ile aynı yapı, `cyclone.bas` VOLUTE_ON): gövdenin dışında, çatıyla aynı hizada yatay bir kanal ve onun döndüğü yarım tur Arşimet sarmalı (r 3.07 → 2.21 m). Kanalın iç duvarı gövdenin teğet çizgisinin 0.05 m dışında (dil).
 
-Giriş genişliği ve yüksekliği yukarıdaki tabloda. Yükseklik **kullanıcı kararı**, katalog değeri değil.
+Giriş kesiti: Dikdörtgen, 0.86 × 3.00 m, kesit alanı 2.58 m²; kanal teğet düzleminden 3.0 m geriye, eğimsiz.
 
-FLS oranı 4.97 m veriyor (a/D = 1.15); giriş bilerek kısaltıldı. Gerekçe: yayınlanmış uzun giriş, gerçek makinede 270°'lik sarmal volütle beslendiği için anlamlıdır, bu model ise volütü bilerek kurmuyor. Volüt yerine düz teğetsel kanal konunca uzun giriş gerekçesini kaybediyor — 4.97 m'de açıklığın %61'i vorteks bulucu ağzının (z = 9.28) altında kalıyor ve oradan giren gaz halkayı atlayarak kısa devre yapabiliyor; giriş hızı da ~7 m/s'ye düşüyor, oysa preheater siklonları 15–20 m/s'de çalışır.
+Gerekçe:
+- Eski giriş (0.86 × 2.16 m'lik düz yarık, 5° aşağı eğimli, S 2.16 m) 17.9 kg/s için boyutlanmıştı (giriş hızı ~16.5 m/s).
+- Tesisin debisi C1 başına 28.76 kg/s (ID fanın debisi, iki C1'e bölünmüş; ~603 K). Bu debide yarık 24.9 m/s ile çalışıyordu ve kanalın iç duvarı vorteks bulucunun dış duvarına yalnız 20 mm kalıyordu: jet doğrudan vorteks bulucuya çarpıyordu.
+- a 3.00 m, giriş hızını 17.9 m/s'ye, preheater siklonlarının 15–20 m/s bandının ortasına getirir. Katalogdaki 4.97 m (a/D 1.15) 10.8 m/s verir ve S'yi 5.7 m'ye zorlar.
+- Volüt jeti gövdenin dışından sokar, vorteks bulucuya çarpmasını önler. Yayınlanmış makine de volütlüdür (FLS'nin uzun girişi 270°'lik sarmalla anlamlıdır).
+- S/a 1.15: Hoffmann & Stein'ın 1.1–1.2 aralığı; C4'te aynı kural uygulandı. Vorteks bulucu ağzı (z 7.99) volütün tabanının (z 8.44) 0.45 m altında, koninin 3.34 m üstünde; ağız altında açıklık kalmıyor.
 
-2.16 m ise a/D = 0.50 ve a/b = 2.51: Stairmand'in klasik oranı. Açıklığın yalnızca %10'u vorteks bulucu ağzının altında kalıyor ve giriş hızı ~16 m/s'ye dönüyor. Genişlik zaten klasikti (b/D = 0.86/4.32 = 0.199).
+Yüklü Muschelknautz ile karşılaştırma (tesis debisi, betik `c1_inlet_options.py`, çekirdek `C:\Users\engin\c4\mm\mm_loaded.py`). Gaz-yalnız ΔP mevcut yarık için CFD'nin Euler sayısıyla (6.35), diğerleri MM oranıyla ölçeklendi; volütün α'sı C4'ün CFD'sinden (0.91):
 
-Ekipman hacmi değişmiyor, dolayısıyla kalma süresi ve holdup etkilenmiyor. Katalog tablosu ([catalog.md](../catalog.md)) yayınlanmış 4.97 değerini taşımaya devam eder; sapma bu dokümanda kayıtlıdır.
+| Seçenek | v_in | Gaz ΔP | Yüklü ΔP | x₅₀ | η alt–üst |
+|---|---|---|---|---|---|
+| Eski yarık, a 2.16, S 2.16 | 24.9 m/s | 1223 Pa | 591 Pa | 20.2 µm | %97.0–98.7 |
+| Yarık, a 3.00, S 3.45 | 17.9 | 764 | 391 | 27.5 | %95.9–97.9 |
+| Yarık, a 4.97 (katalog), S 5.72 | 10.8 | 388 | 221 | 50.7 | %92.7–94.9 |
+| **Volüt, a 3.00, S 3.45** | **17.9** | **810** | **495** | **24.7** | **%96.3–98.3** |
 
-Giriş kesit alanı: 1.858 m²
+Bu oranlar MM'den gelir; volütlü C1'in kendi Euler sayısını yeni CFD verecek. O gelene kadar twin `c1_euler` 8.12 kullanır (6.35 × MM oranı 0.662 × alan oranının karesi 1.929; `configs/twin_cfg.yaml`).
 
-Giriş kanalı: 0.86 × 2.16 m, 3.0 m uzunluğunda, teğetsel, sabit kesitli, 5° aşağı eğimli
+Ekipman hacmi (gövde + koni) değişmiyor, kalma süresi ve holdup etkilenmiyor. Katalog tablosu ([catalog.md](../catalog.md)) yayınlanmış 4.97 ve 2.16 değerlerini taşımaya devam eder; sapma burada kayıtlıdır.
 
-Giriş yönü: Cyclone gövdesine teğetsel ve düşey düzlemde 5° aşağı eğimli
-
-Kesit değişimi: Yok — kanal boyunca sabit
-
-Volüt geometrisi: Modellenmeyecek; basitleştirilmiş düz, teğetsel ve eğimli giriş kullanılacak
-
-C1 Y ayrımı: TBD — `LayoutParams` alanı tanımlı, değeri yok
+C1 Y ayrımı: ikiz C1 ve R1'in Y'si [riser_R1.md](riser_R1.md)'de ve `C1_twin` katısında.
 
 ## CFD Geometry
+
+### Güncel geometri: volüt (16 Kasım 2026)
+
+İki katı, ikisi de `geometry/macros/cyclone.bas` ile (build logu `geometry/output/2500/C1_cyclone_build.log`):
+- **`C1_riser`** (`main`): CFD domeni, riser koluyla birlikte ([riser_R1.md](riser_R1.md)). **265.10 m³**, kapalı tek katı (51 kenar). Sınır yüzleri: gaz girişi riser tabanı 3.701 m², `gas_outlet` 4.524 m², `dust_outlet` 0.126 m², `meal_feed` 0.36 m² (gaz için duvar).
+- **`C1`** (`gas_only`): riser'sız C1, teknik resmin katısı. **219.59 m³** (29 kenar); giriş yüzü kanalın ucu, 2.58 m².
+
+Ölçüler (C1 koordinatları; siklon ekseni z, toz çıkışı z = 0, gaz +x yönünde girer):
+- Volüt kanalı: y 2.21 … 3.07, z 8.44 … 11.44 (çatıyla aynı hizada); uç yüzü x = −3.00. Sarmal +x tarafında gövdeyi sarar, −y'de r 2.21'de kapanır; sarmalın gövde dışındaki alanı 3.716 m². Karşı taraftaki uç −y'de 2.227 m'ye kadar uzanır.
+- Vorteks bulucu: z 7.99 … 11.44, iç Ø2.40, duvar 0.08 m.
+- Çıkış: çatının 3.00 m üstüne yükseliş, 180° dirsek (R 3.60 m) +x'e, aşağı inen bacak x = 7.20; `gas_outlet` z = 11.44.
+- Girdap yukarıdan bakıldığında saat yönünde.
+
+Hacim aşamaları (log): gövde + koni 124.541; + volüt 143.428; − vorteks bulucu duvarı 141.277; + çatı üstü boru 154.850; + kaz boynu 206.014; + iniş 219.586 m³. Riser'lı domende sonra + riser dirseği 232.207; + riser 259.965; + geçiş (loft) 264.729; + farin oluğu 265.099 m³.
+
+**Bu bölümün geri kalanı ve aşağıdaki CFD koşuları (500.8 Pa, Eu 6.35, MM kalibrasyonu, DPM) eski yarık geometrisine aittir:** 0.86 × 2.16 m, 5° aşağı eğimli kanal, S 2.16 m. Tarihçe olarak tutuluyor. Volütlü C1'in CFD'si henüz yapılmadı.
+
+### Eski geometri: düz yarık (Eylül – 16 Kasım 2026)
 
 Katı `geometry/output/2500/C1.step` (ayrıca `.stl` ve `.SLDPRT`), `geometry/macros/cyclone.bas` SolidWorks makrosuyla üretilir. (Eski `python -m geometry --export` komutunun dayandığı paket kaldırıldı.)
 
@@ -235,6 +257,12 @@ geçiyordu. Düzlemin yeri artık üzerine bırakılan bir test bloğuyla **öl�
 [macros/README.md](../macros/README.md).)
 
 ## Boundary Faces
+
+Güncel (volüt, 16 Kasım 2026):
+- `C1_riser`: gaz girişi riser tabanı (z 0.269, daire 3.701 m², yeşil), `meal_feed` oluğun ucu (0.36 m², mor, gaz için duvar), `gas_outlet` iniş bacağının ucu (z 11.44, x 7.20, aşağı bakan Ø2.40 disk, 4.524 m², mavi), `dust_outlet` (0.126 m², turuncu). Volütün kanal ucu riser geçişiyle birleşir, ayrı bir yüz olarak kalmaz.
+- `C1` (riser'sız): giriş yüzü volüt kanalının ucu (x = −3.00, merkezi (−3.00, 2.64, 9.94), 2.58 m², yeşil); diğerleri aynı. Volütün x = 0'daki iki dil yüzü duvardır.
+
+Eski yarık geometrisi (tarihçe):
 
 Giriş kanalının uç yüzü: `meal_inlet` — merkezi (−2.989, 1.730, 10.416), normali kanal ekseni, 1.858 m² (yeşil)
 
@@ -747,6 +775,8 @@ Farklı debilerde ΔP ∝ ṁ_g² ölçeklenir.
 
 ### Tesis debisinde (12 Ekim 2026)
 
+> **Not (16 Kasım 2026):** bu bölüm eski yarık geometrisine aittir. Volütlü C1 için yüklü MM (28.76 kg/s): ΔP 495 Pa, η %96.3–98.3 (yukarıda, "Farin Girişi"). Twin hâlâ η 0.97 kullanıyor; yeni alt sınır 0.963. Değerin değişip değişmeyeceği yeni CFD'den sonra karara bağlanacak.
+
 CFD 17.9 kg/s'de (sektör tipik değeri) çözüldü. Tesisin her hattı 2500 t/d'dir ve hattın gazını ikiz C1'ler paylaşır: **C1 başına ~28 kg/s**. Ölçüler aynı kalır; değerler o debiye taşınır. Betik: `C:\Users\engin\c4\mm\c1_plant.py` (repo dışı). Betik, CFD noktasında yukarıdaki sayıları birebir veriyor: 249 Pa, %96.1.
 - **Gaz-yalnız ΔP:** CFD'nin Euler sayısı (6.35) × giriş dinamik basıncı. Giriş hızı 25.7 m/s, ΔP **1.23 kPa**. Literatürün üst kademe bandı 0.5–2 kPa.
 - **Yüklü durum:** MM, yarık α'sı ile, cyclone_C1.md'deki gibi. Farin kule döngüsünden gelir (C2–C4 η 0.93, C5 η 0.90, kalsinatörde %90 kalsinasyon): hattın C1'lerine 49.9 kg/s, C1 başına c₀ 0.89.
@@ -843,9 +873,9 @@ Ekipman hacmi (her biri), toplam yükseklik ve ıslak alan: Geometrik Ölçüler
 
 Koni duvarının yatayla açısı: 67.1° — farinin 40°'lik yığılma açısının üstünde
 
-Giriş kesit alanı: 1.858 m²
+Giriş kesit alanı: 2.58 m² (volüt kanalı 0.86 × 3.00; eski yarık 1.858)
 
-Giriş hidrolik çapı: 1.23 m
+Giriş hidrolik çapı: 1.34 m (eski yarık 1.23)
 
 Vorteks bulucu kesiti: 4.524 m²
 
@@ -853,8 +883,8 @@ Toz çıkışı kesiti: 0.126 m²
 
 Toz çıkışı çapının gözden geçirilmesi (16 Kasım 2026, kullanıcı onayı; ölçü değişmedi):
 - Oran FLS referansınınki: Svensen ve diğ. 2025 Tablo 8, Cy1 D_d/D = 0.64/6.90 = 0.093. Farin akısı referanstan düşük; kıyas [meal_pipe_C1.md](meal_pipe_C1.md)'de.
-- Girdap ucu, Alexander'ın doğal girdap boyuyla: L/D = 2.3·(D_x/D)·(D²/(a·b))^(1/3) = 2.3 × 0.556 × 2.157 = 2.76, L ≈ 11.9 m. Vorteks bulucu ağzından toz çıkışına 9.28 m var; girdap toz çıkışına ulaşır, koni duvarına tutunmaz (aşınma ve yeniden kalkış riski yok). Giriş a = 3.0 m'ye büyütülse L ≈ 10.7 m, yine yeterli.
+- Girdap ucu, Alexander'ın doğal girdap boyuyla: L/D = 2.3·(D_x/D)·(D²/(a·b))^(1/3) = 2.3 × 0.556 × 2.157 = 2.76, L ≈ 11.9 m. Vorteks bulucu ağzından toz çıkışına 9.28 m var; girdap toz çıkışına ulaşır, koni duvarına tutunmaz (aşınma ve yeniden kalkış riski yok). Giriş a = 3.0 m'ye büyütülse L ≈ 10.7 m, yine yeterli. (Bu hesap eski yarıkla yapıldı.) Kabul edilen volütte (a 3.00, S 3.45) vorteks bulucu ağzından toz çıkışına 7.99 m var, L ≈ 10.7 m: girdap yine toz çıkışına ulaşır.
 
-Vorteks bulucunun dış yarıçapı ile kanalın iç duvarı arasındaki pay: 0.020 m (teğet payından etkilenmez — pay yalnızca dış duvarı kaydırır) — akışkan içinde bir darboğaz değil (aradaki bölge halkanın kendisi, serbest); kanalın vorteks bulucuyu kesmemesini garanti eden geometrik sınır
+Volüt kanalının iç duvarı (r 2.21 m) ile vorteks bulucunun dış duvarı (r 1.28 m) arasında 0.93 m var; jet gövdenin dışından girer. Eski yarıkta bu pay 0.020 m'ydi.
 
-Not: Geometrik olarak eksik olan volüt ve C1 Y ayrımı, ilk tek-C1 CFD modeli için gerekli değildir. Bunlar daha sonraki çoklu C1/dağıtım geometrisi çalışmasında ele alınacaktır.
+C1 Y ayrımı ikiz katıda (`C1_twin`, [riser_R1.md](riser_R1.md)). Volüt 16 Kasım 2026'dan beri modelde.
