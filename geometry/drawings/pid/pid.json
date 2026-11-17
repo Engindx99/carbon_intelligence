@@ -690,7 +690,7 @@
       "from": "C5A.dust_out",
       "to": "MP5A.in",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6963472398158179,
+      "size_m": 0.6964060208520898,
       "size_text": "D 0.696 E",
       "status": "Estimated",
       "inputs": []
@@ -702,7 +702,7 @@
       "from": "MP5A.out",
       "to": "OPC-03",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6963472398158179,
+      "size_m": 0.6964060208520898,
       "size_text": "D 0.696 E",
       "status": "Estimated",
       "inputs": []
@@ -928,7 +928,7 @@
       "from": "OPC-03",
       "to": "KIC.meal_in",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6963472398158179,
+      "size_m": 0.6964060208520898,
       "size_text": "D 0.696 E",
       "status": "Estimated",
       "inputs": []
@@ -1075,7 +1075,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M103",
       "mount": "F",
-      "reference_value": 572.6542593527855
+      "reference_value": 573.311770838523
     },
     {
       "tag": "TT-105",
@@ -1085,7 +1085,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M105",
       "mount": "F",
-      "reference_value": 746.9132079145871
+      "reference_value": 746.6425181914007
     },
     {
       "tag": "TT-107",
@@ -1095,7 +1095,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M107",
       "mount": "F",
-      "reference_value": 878.5933991163492
+      "reference_value": 878.3701078534648
     },
     {
       "tag": "TT-109",
@@ -1105,7 +1105,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M109",
       "mount": "F",
-      "reference_value": 987.2860954435583
+      "reference_value": 987.1907099207841
     },
     {
       "tag": "TT-104",
@@ -1115,7 +1115,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G104",
       "mount": "F",
-      "reference_value": 979.8657504660381
+      "reference_value": 979.7713609326748
     },
     {
       "tag": "TT-106",
@@ -1125,7 +1125,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G106",
       "mount": "F",
-      "reference_value": 877.0613601648712
+      "reference_value": 876.8079172427888
     },
     {
       "tag": "TT-108",
@@ -1135,7 +1135,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G108",
       "mount": "F",
-      "reference_value": 744.7029762914201
+      "reference_value": 744.3077159218448
     },
     {
       "tag": "TT-110",
@@ -1145,7 +1145,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G110",
       "mount": "F",
-      "reference_value": 572.211919241965
+      "reference_value": 572.9686969240875
     },
     {
       "tag": "AT-110",
@@ -1165,7 +1165,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G104",
       "mount": "F",
-      "reference_value": 112.53635996262389
+      "reference_value": 112.53761508785718
     },
     {
       "tag": "FT-111",
@@ -1175,7 +1175,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G111",
       "mount": "F",
-      "reference_value": 115.05146254067304
+      "reference_value": 115.0514625377586
     },
     {
       "tag": "FT-102",
@@ -1185,7 +1185,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G102",
       "mount": "F",
-      "reference_value": 6.712718291773676
+      "reference_value": 6.713833428683365
     },
     {
       "tag": "FT-105",
@@ -1205,7 +1205,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "M112",
       "mount": "F",
-      "reference_value": 67.12718291773675
+      "reference_value": 67.13833428683367
     },
     {
       "tag": "TI-101",
@@ -1315,7 +1315,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "M202",
       "mount": "F",
-      "reference_value": 93.89761571373208
+      "reference_value": 93.89998597878832
     },
     {
       "tag": "FT-203",
@@ -1325,7 +1325,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G203",
       "mount": "F",
-      "reference_value": 112.53635996262389
+      "reference_value": 112.53761508785718
     },
     {
       "tag": "TT-202",
@@ -1445,7 +1445,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "G303",
       "mount": "F",
-      "reference_value": 1366.9458530856477
+      "reference_value": 1366.6408501954766
     },
     {
       "tag": "FT-304",
@@ -1465,7 +1465,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G303",
       "mount": "F",
-      "reference_value": 32.00377768392149
+      "reference_value": 32.013813913195456
     },
     {
       "tag": "FT-306",
@@ -1475,7 +1475,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "K301",
       "mount": "F",
-      "reference_value": 56.90492185836083
+      "reference_value": 56.9049218612741
     },
     {
       "tag": "TT-304",
@@ -1485,7 +1485,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "K301",
       "mount": "F",
-      "reference_value": 1844.4195530025468
+      "reference_value": 1843.8950546539468
     },
     {
       "tag": "TI-307",
@@ -1515,7 +1515,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "A401",
       "mount": "F",
-      "reference_value": 125.19082808839383
+      "reference_value": 125.19082809480302
     },
     {
       "tag": "FY-401",
@@ -1555,7 +1555,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "A404",
       "mount": "F",
-      "reference_value": 58.43133983305429
+      "reference_value": 58.43133983946347
     },
     {
       "tag": "TT-404",
@@ -1575,7 +1575,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "K402",
       "mount": "F",
-      "reference_value": 482.4401017066389
+      "reference_value": 482.3610025500715
     },
     {
       "tag": "FT-403",
@@ -1585,7 +1585,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "K402",
       "mount": "F",
-      "reference_value": 56.90492185836083
+      "reference_value": 56.9049218612741
     },
     {
       "tag": "AT-401",

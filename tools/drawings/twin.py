@@ -53,7 +53,7 @@ def params(g, name="C1_twin"):
     bend = pv.primary(g, f"{dom}.c1_riser_bend_R_over_D", "bend R over D")
     below = pv.primary(g, f"{dom}.c1_riser_below_feed", "riser below the feed")
     above = pv.primary(g, f"{dom}.c1_riser_above_feed", "riser above the feed")
-    up_min = pv.primary(g, "layout.r1_up_min", "R1 over C2's outlet leg")
+    up_min = pv.primary(g, "layout.r1_up_min", "R1 over its reducer")
     stage = pv.primary(g, "layout.stage_gap", "stage gap")
     D_b = pv.cyclone_dim(g, "C1", "D_barrel", "Barrel inner diameter D")
     H_b = pv.cyclone_dim(g, "C1", "H_barrel", "Barrel height")
@@ -78,7 +78,7 @@ def params(g, name="C1_twin"):
     P["y_rise"] = pv.derived("c1_twin.y_rise", "Y height (R1 top to the branches' floor)",
                              tw["y_rise"], "m", spacing_in)
     P["r1_stub"] = pv.derived("c1_twin.r1_stub", "R1 straight under its Y",
-                              L["z_r1_split"] - L["z_r1_leg_top"], "m", [up_min, stage])
+                              L["z_r1_split"] - L["z_r1_foot"], "m", [up_min, stage])
     P["D_barrel"] = D_b
     P["height"] = pv.derived("C1.height", "Barrel + cone height", c1["height"], "m", [H_b, H_c])
     P["D_vortex"] = D_v

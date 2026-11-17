@@ -1192,8 +1192,8 @@ def layout(g):
     """Where everything stands, z above ground, x from the calciner
     axis on one string's side: the kiln inlet chamber, the calciner on
     it, the tertiary air duct, C5 by the gooseneck leg, C4..C2 each
-    roof flush with the top of the outlet bend below it, R1 and the
-    twin C1 over C2."""
+    roof flush with the top of the outlet bend below it, R1 straight up
+    on C2's axis and the twin C1 over it."""
 
     L = g["layout"]
     cal, gn, kl = calciner(g), gooseneck(g), kiln(g)
@@ -1227,18 +1227,19 @@ def layout(g):
         below = s + 1
         z_dust[s] = top(below) + c[below]["outlet_bend_R"] + 0.5 * c[below]["D_vortex"] - c[s]["height"]
 
-    D_r1 = v(g["risers"]["R1"]["D"])
-    r = 0.5 * D_r1
     tw = c1_twin(g)
     y_rise = tw["y_rise"]
-    z_leg_top = top(2) + c[2]["outlet_bend_R"] + 0.5 * c[2]["D_vortex"]
-    # C1 over C2's outlet pipe by the stage gap, or as high as R1's
-    # rise and Y ask before the C1 CFD branch's floor
+    # R1 straight up on C2's axis (user decision, 17 Nov 2026): out of
+    # C2's outlet pipe through a conical reducer D_x -> R1's D, then
+    # its own bore up to the Y
+    red = r1_reducer(g)
+    z_foot = top(2) + red["length"]
+    # C1 over C2's outlet pipe by the stage gap (its meal reaching R2),
+    # or as high as R1's rise and Y ask before the C1 CFD branch's floor
     z_dust[1] = max(
         top(2) + v(L["stage_gap"]),
-        z_leg_top + v(L["r1_up_min"]) + y_rise - br["z_floor"],
+        z_foot + v(L["r1_up_min"]) + y_rise - br["z_floor"],
     )
-    d_r1 = c[2]["outlet_bend_R"] + c[2]["outlet_run"] + v(L["r1_leg_on"]) + r
     d_c1 = 0.5 * tw["spacing"]        # the twin's ducts face each other across R1's axis
 
     # The kiln out of the chamber's +x side, falling at its slope; the
@@ -1271,11 +1272,10 @@ def layout(g):
         "z_roof": {s: z_dust[s] + c[s]["height"] for s in z_dust},
         "z_top": {s: top(s) for s in z_dust},
         "z_c5_inlet": z_dust[5] + c[5]["height"] - r_leg,
-        "x_r1": x_outer - d_r1,
-        "d_r1": d_r1,
+        "x_r1": x_outer,
         "d_c1": d_c1,
-        "x_c1": (x_outer - d_r1 - d_c1, x_outer - d_r1 + d_c1),
-        "z_r1_leg_top": z_leg_top,
+        "x_c1": (x_outer - d_c1, x_outer + d_c1),
+        "z_r1_foot": z_foot,
         "z_r1_split": z_dust[1] + br["z_floor"] - y_rise,
         "z_tower": z_dust[1] + c[1]["height"] + c[1]["outlet_rise"] + c[1]["outlet_bend_R"] + 0.5 * c[1]["D_vortex"],
         "x_gooseneck_leg": gn["x_leg"],
@@ -1325,17 +1325,36 @@ def stage_riser(g, k):
     )
 
 
+def r1_reducer(g):
+    """R1's foot (user decision, 17 Nov 2026): a conical reducer from
+    C2's outlet bore D_x to R1's D at layout.r1_reducer_deg."""
+    D2 = cyclone(g, "C2")["D_vortex"]
+    D1 = v(g["risers"]["R1"]["D"])
+    if D1 > D2:
+        raise ValueError(f"R1 (D {D1}) is wider than C2's outlet pipe (D {D2})")
+    length = 0.5 * (D2 - D1) / math.tan(math.radians(v(g["layout"]["r1_reducer_deg"])))
+    slant = math.hypot(length, 0.5 * (D2 - D1))
+    return {
+        "D_in": D2,
+        "D_out": D1,
+        "length": length,
+        "volume": math.pi / 12.0 * length * (D2 * D2 + D2 * D1 + D1 * D1),
+        "wall_area": 0.5 * math.pi * (D2 + D1) * slant,
+    }
+
+
 def r1_path(g):
     """R1, the gas from C2 up to the twin C1, per string: C2's CFD
-    outlet (rise, 90 deg bend, leg on to R1's axis), R1 straight up to
-    its Y, then each twin's branch (half R1's area) up to its bend,
-    the 95 deg bend, the transition and the inlet duct to the barrel.
-    The Y's own short pieces are taken as the branches' run."""
+    outlet pipe (its rise over the roof), the reducer, R1 straight up
+    on C2's axis to its Y (user decision, 17 Nov 2026; before, C2's CFD
+    bend and leg turned it over to R1), then each twin's branch (half
+    R1's area) up to its bend, the bend, the transition and the inlet
+    duct to the barrel. The Y's own short pieces are taken as the
+    branches' run."""
     c2, br, L = cyclone(g, "C2"), c1_branch(g), layout(g)
-    D2, R2 = c2["D_vortex"], c2["outlet_bend_R"]
+    D2 = c2["D_vortex"]
     D1 = v(g["risers"]["R1"]["D"])
-    z_leg = L["z_top"][2] + R2
-    up = L["z_r1_split"] - z_leg
+    up = L["z_r1_split"] - L["z_r1_foot"]
     branch_up = (L["z_dust"][1] + br["z_bend"]) - L["z_r1_split"]
     bend = math.radians(br["bend_deg"]) * br["bend_R"]
     duct = br["transition"] + v(g["cyclone_domain"]["inlet_duct_length"])
@@ -1344,8 +1363,7 @@ def r1_path(g):
     branches = {"volume": n * branch["volume"], "wall_area": n * branch["wall_area"]}
     out = _sum(
         _pipe(D2, c2["outlet_rise"]),
-        _pipe(D2, 0.5 * math.pi * R2),
-        _pipe(D2, L["d_r1"] - R2),
+        r1_reducer(g),
         _pipe(D1, up),
         branches,
     )

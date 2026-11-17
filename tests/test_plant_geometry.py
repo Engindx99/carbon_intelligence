@@ -259,7 +259,7 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
             ("c5_over_tertiary_air", "C5_OVER_TA"), ("gooseneck_to_c5_gap", "GN_TO_C5_GAP"),
             ("stage_gap", "STAGE_GAP"),
             ("column_offset", "ZIG_DX"), ("c1_twin_gap", "C1_TWIN_GAP"),
-            ("r1_up_min", "R1_UP_MIN"), ("r1_leg_on", "R1_LEG_ON"), ("cooler_drop", "COOLER_DROP"),
+            ("r1_up_min", "R1_UP_MIN"), ("r1_reducer_deg", "R1_RED_DEG"), ("cooler_drop", "COOLER_DROP"),
         ):
             with self.subTest(key=key):
                 self.assertAlmostEqual(pg.v(L[key]), self.drw[macro], delta=TOL)

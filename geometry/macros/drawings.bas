@@ -76,14 +76,14 @@ Const TW_BRANCH_D                  As Double  = 2.170818     ' branch bore [deri
 Const TW_Y_BRANCH                  As Double  = -6.670818    ' branches and R1 in front of the C1 axes, y [derived]
 Const TW_Z_BRANCH                  As Double  = 0.269182     ' the branches' floor [derived]
 Const TW_Z_SPLIT                   As Double  = -1.765818    ' R1's top: the Y starts [derived]
-Const TW_R1_STUB_L                 As Double  = 0.5          ' R1 straight under its Y [derived]
+Const TW_R1_STUB_L                 As Double  = 6.954182     ' R1 straight under its Y, from its reducer [derived]
 Const TW_Z_CUT                     As Double  = 6.777195     ' section A-A: clear of the feed chutes and the bends [derived]
 Const TW_C1_R                      As Double  = 2.16         ' barrel radius [derived]
 Const TW_C1_FAR                    As Double  = 2.226723     ' each C1's outer side from its axis: the barrel, or the volute's scroll end [derived]
 Const TW_Y_MIN                     As Double  = -8.516034    ' the feed chutes' far side, y (the C1_riser solid's -x) [derived]
 Const TW_Y_MAX                     As Double  = 8.4          ' the outlet legs' far side, y [derived]
 Const TW_TOP                       As Double  = 19.24        ' the outlet bends' crown [derived]
-Const C1_twin_TAB_1                As String  = "R1_D~R1 bore~3070~mm~published~Verified;branch_D~Branch bore (half R1's area)~2171~mm~derived~Estimated;twin_gap~Branches' walls apart~1000~mm~model parameter~Estimated;spacing~C1 axis to axis~8451~mm~derived~Estimated;barrel_gap~Barrel wall to wall~4131~mm~derived~Estimated;branch_pitch~Branch axis to axis (Y)~3171~mm~derived~Estimated;y_branch~R1 / branches in front of the C1 axes~6671~mm~derived~Estimated;y_rise~Y height (R1 top to the branches' floor)~2035~mm~derived~Estimated;r1_stub~R1 straight under its Y~500~mm~derived~Schematic;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;height~Barrel + cone height~11440~mm~derived~Estimated;" ' parameter table rows
+Const C1_twin_TAB_1                As String  = "R1_D~R1 bore~3070~mm~published~Verified;branch_D~Branch bore (half R1's area)~2171~mm~derived~Estimated;twin_gap~Branches' walls apart~1000~mm~model parameter~Estimated;spacing~C1 axis to axis~8451~mm~derived~Estimated;barrel_gap~Barrel wall to wall~4131~mm~derived~Estimated;branch_pitch~Branch axis to axis (Y)~3171~mm~derived~Estimated;y_branch~R1 / branches in front of the C1 axes~6671~mm~derived~Estimated;y_rise~Y height (R1 top to the branches' floor)~2035~mm~derived~Estimated;r1_stub~R1 straight under its Y~6954~mm~derived~Schematic;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;height~Barrel + cone height~11440~mm~derived~Estimated;" ' parameter table rows
 Const C1_twin_TAB_2                As String  = "D_vortex~Vortex finder / outlet pipe bore Dx~2400~mm~FLS ratio~Estimated;top~Dust outlets to the top of the bends~19240~mm~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C1_twin_TAB_3                As String  = ""           ' parameter table rows
 Const C1_twin_TAB_4                As String  = ""           ' parameter table rows
@@ -271,10 +271,12 @@ Const LEFT_X As Double = 0.44
 Const DET_X  As Double = 0.57
 Const DET_Y  As Double = 0.45
 ' C1_twin: the front view's centre; the plan (A-A) under it, the side
-' view right of it, detail C right of the plan
+' view right of it, detail C right of the plan. 0.40 / 0.155 until R1
+' rose straight on C2's axis (17 Nov 2026): its stub under the Y grew
+' 0.5 -> 6.95 m and the front view ran into A-A's note
 Const TW_FRONT_X As Double = 0.17
-Const TW_FRONT_Y As Double = 0.4
-Const TW_PLAN_Y  As Double = 0.155
+Const TW_FRONT_Y As Double = 0.415
+Const TW_PLAN_Y  As Double = 0.135
 Const TW_SIDE_X  As Double = 0.38
 Const TW_DET_X   As Double = 0.55
 Const TW_DET_Y   As Double = 0.2

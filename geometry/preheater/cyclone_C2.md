@@ -36,6 +36,17 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 
 Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek kurulur: C2, C4'ün CFD domeniyle özdeştir ([cyclone_C4.md](cyclone_C4.md)) — volütlü giriş, h = D gövde, daldırma 3.90 m, 90° çıkış dirseği. Tesiste çıkış borusu R1'in başıdır ([riser_R1.md](riser_R1.md)).
 
+**Tesiste C2'nin çıkışı dönmez (kullanıcı kararı, 17 Kasım 2026).** R1, C2'nin ekseninde dik yükselir:
+CFD'nin 7.871 m'lik çıkış borusu, ucunda 45°'lik bir daraltıcı (Ø4.63 → Ø3.07, 0.78 m) ve R1. İkiz
+C1'ler bu yüzden C2'nin üstündedir. Yukarıdaki tablodaki 90° dirsek ve 4.63 m'lik bacak C4'ün CFD
+domenine aittir; C3–C5'te durur (R2–R4 onların çıkış borusudur), C2'de yoktur. C2'nin ΔP'si yine
+C4'ün Euler sayısıyla (11.54) taşınır. O sayı dirseği içerir; düz çıkışın farkı ölçülmedi, çıkış
+borusunun 1.25 → 1.70·D_x uzaması Eu'yu %1.4 değiştirmişti, fark bu mertebede beklenir. Ölçmek
+için C4 geometrisi düz çıkışla bir kez çözülebilir; bu koşu R1'e giren dönen akımın profilini de
+verir, ikiz C1'in Y'li giriş domeninin giriş koşulu odur.
+Önce (13 Ekim – 17 Kasım 2026) C2'nin CFD dirseği ve bacağı gazı kalsinatöre doğru 11.3 m taşıyor,
+R1 orada bir dirsekle yükseliyordu.
+
 Eski `geometry/output/2500/C2.step` (273.1 m³) eski katalog ölçülerine (D 6.10) aittir, kullanılmamalı. Eski `geometry.cfd_boundary` config bloğu 14 Ekim 2026'da silindi; sınır seçimleri `cyclone.bas`'tadır.
 
 ## Boundary Faces

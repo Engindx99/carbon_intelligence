@@ -107,7 +107,7 @@ Const C1_FEED_L                    As Double  = 1#           ' C1 feed chute dep
 Const C1_FEED_W                    As Double  = 0.6          ' C1 feed chute side [literature, preheater/riser_R1.md]
 Const C1_OUT_RISE                  As Double  = 3#           ' C1 outlet pipe rise [derived]
 Const C1_OUT_R                     As Double  = 3.6          ' C1 outlet 180 deg bend centreline R [derived]
-Const STAGE_GAP                    As Double  = 4#           ' [schematic, plant_topology.md]
+Const STAGE_GAP                    As Double  = 9.5          ' [schematic, plant_topology.md]
 Const ZIG_DX                       As Double  = 15#          ' outer column outboard of the inner [schematic, plant_topology.md]
 Const C5_OVER_TA                   As Double  = 1.75         ' [schematic, plant_topology.md]
 Const GN_TO_C5_GAP                 As Double  = 1#           ' [schematic, plant_topology.md]
@@ -116,7 +116,8 @@ Const C1_TWIN_S                    As Double  = 8.450818     ' twin C1: axis to 
 Const C1_DUCT_Y                    As Double  = 2.64         ' C1 inlet duct / branch axis from the C1 axis [derived]
 Const R1_BRANCH_HALF               As Double  = 1.585409     ' R1's Y: each branch from R1's axis [derived]
 Const R1_UP_MIN                    As Double  = 0.5          ' [schematic, plant_topology.md]
-Const R1_LEG_ON                    As Double  = 0.5          ' [schematic, plant_topology.md]
+Const R1_RED_DEG                   As Double  = 45#          ' R1's reducer out of C2's outlet pipe: half angle [schematic, plant_topology.md]
+Const R1_RED_L                     As Double  = 0.78         ' R1's reducer: length, D_x -> R1's D [derived]
 Const KILN_AXIS_Z                  As Double  = 10#          ' [schematic, plant_topology.md]
 Const CHAMBER_MARGIN               As Double  = 1#           ' [model, kiln/kiln_inlet_chamber.md]
 Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant_topology.md]
@@ -175,12 +176,12 @@ Const TA_BEND_R_OVER_D As Double = 1.5     ' its turn from the hood over to the 
 
 ' SCHEMATIC -- no source; they only lay the plant out.
 ' -> STAGE_GAP, ZIG_DX, C5_OVER_TA, GN_TO_C5_GAP: in the generated block above
-'    STAGE_GAP: C1's dust outlet at least this far over C2's stub [m] (R1's Y sets it higher). C2..C4 stand where the outlet below (as its CFD) runs into them
+'    STAGE_GAP: C1's dust outlet at least this far over C2's stub [m]: the C1 meal reaching R2's upright from over C2 (R1's Y could set it higher). C2..C4 stand where the outlet below (as its CFD) runs into them
 '    ZIG_DX: a string's outer column (C4, C2) outboard of its inner one (C5, C3) [m]: each riser's leg past the CFD outlet face, its taper and 0.5 m (14.6 m for R4); was 20
 '    C5_OVER_TA: the C5 dust outlets at least this far over the tertiary air duct [m]
 '    GN_TO_C5_GAP: a gooseneck arm's outlet face to its C5 barrel; the level run goes on across it [m]
 ' Each of the twin C1 as its CFD domain (cyclone_C1.md, riser_R1.md): heights over its dust outlet [m, deg]
-' -> C1_RISER_X, C1_RISER_Z0, C1_BEND_Z, C1_BEND_R, C1_BEND_DEG, C1_TRANS_L, C1_DUCT_H, C1_VOL_OUT, C1_VOL_FAR, C1_FEED_Z, C1_FEED_L, C1_FEED_W, C1_OUT_RISE, C1_OUT_R, R1_BRANCH_HALF, R1_UP_MIN, R1_LEG_ON: in the generated block above
+' -> C1_RISER_X, C1_RISER_Z0, C1_BEND_Z, C1_BEND_R, C1_BEND_DEG, C1_TRANS_L, C1_DUCT_H, C1_VOL_OUT, C1_VOL_FAR, C1_FEED_Z, C1_FEED_L, C1_FEED_W, C1_OUT_RISE, C1_OUT_R, R1_BRANCH_HALF, R1_UP_MIN, R1_RED_DEG, R1_RED_L: in the generated block above
 '    C1_RISER_X: its own riser branch (D = R1's half area), its axis this far from the C1 axis
 '    C1_RISER_Z0: the CFD domain's floor: the branch is straight from here ...
 '    C1_BEND_Z: ... up to its bend
@@ -200,15 +201,17 @@ Const TA_BEND_R_OVER_D As Double = 1.5     ' its turn from the hood over to the 
 '    C1_TWIN_GAP: the two branches' walls this far apart; C1_TWIN_S (axis to axis) and R1_BRANCH_HALF follow
 '    C1_DUCT_Y: each branch (and its duct) this far from its C1's axis, towards R1
 '    R1_BRANCH_HALF: R1's Y: the twin's branches this far either side of R1's axis [m]
-'    R1_UP_MIN: R1's wall on C2's side straight up at least this far over the leg before its Y; the C1 stage stands that high [m]
-'    R1_LEG_ON: C2's outlet leg runs on this far past the CFD's 4.63 m into R1's elbow: the two strings' far C1 outlet bends ~6 m apart over the calciner [m]
+'    R1_UP_MIN: R1 straight up at least this far over its reducer before its Y; the C1 stage stands that high [m]
+'    R1_RED_DEG, R1_RED_L: R1 rises straight out of C2's outlet pipe on C2's axis (user decision, 17 Nov 2026),
+'      through a conical reducer D_x -> R1's D at this half angle, this long. Before, C2's CFD bend and leg
+'      turned it over to an elbow 11.3 m towards the calciner
 Const ID_FAN_L       As Double = 2.5      ' "to ID fan": an arrow this long down from each C1 outlet's leg [m]
 Const RM_L           As Double = 0.8      ' raw meal: a small-headed arrow along each chute's axis, from this far past its end [m]
 Const MEAL_ENTRY_UP  As Double = 1.5      ' meal enters a riser this far over its foot (R2..R4: over the roof, into the CFD outlet pipe) [m]
 Const MEAL_SIDE_L    As Double = 1#       ' a meal pipe's end into a wall comes this far out from it, then into it at the meal slope [m]
 Const MEAL_DROP      As Double = 1.5      ' a C1..C3's meal falls straight this far out of its dust outlet before it turns [m]
 Const MEAL_OVER_GAP  As Double = 0.3      ' C2 / C3's meal runs out over the CFD outlet bend under it at least this far clear of its outer wall [m]
-Const MEAL_JOIN_DEG  As Double = 50#      ' the near C1's meal runs at this slope, behind C2's outlet and R1's elbow, to join the far one's [deg]
+Const MEAL_JOIN_DEG  As Double = 50#      ' the near C1's meal runs at this slope, behind C2's outlet pipe and R1, to join the far one's [deg]
 Const C4_MEAL_DROP   As Double = 3#       ' C4 meal falls straight this far before turning towards the calciner. Its run on,
                                           ' behind C5, is flatter than meal flows: a 2D projection, as the C5 meal's [m]
 Const C5_MEAL_DROP   As Double = 1#      ' C5 meal falls straight this far before turning towards the inlet chamber [m]
@@ -296,7 +299,7 @@ Dim zDust(1 To 5) As Double, zRoof(1 To 5) As Double, zTop(1 To 5) As Double
 Dim zIn(1 To 5) As Double                 ' gas inlet centre, its top at the roof
 Dim xInner As Double                      ' |x| of a string's inner column (C5, C3)
 Dim dC1 As Double                         ' each twin C1 from R1's axis
-Dim dR1 As Double                         ' R1's axis from C2's, towards the calciner
+Dim dR1 As Double                         ' R1's axis from C2's, towards the calciner: 0 since R1 rises on C2's axis
 Dim zTower As Double                      ' the tower's top: the C1 outlet bends
 
 ' drawing state
@@ -435,9 +438,11 @@ Private Sub Derive()
         zDust(s) = zDust(s + 1) + CycHeight(s + 1) + OutR(s + 1) + StubR(s + 1) - C4_HC - C4_HB
     Next s
     zDust(1) = zDust(2) + CycHeight(2) + STAGE_GAP
-    ' R1 turns up out of C2's outlet leg, rises R1_UP_MIN over it and splits;
-    ' the twin C1 stand as high as that asks, their CFD domain over it
-    zDust(1) = Max2(zDust(1), zDust(2) + CycHeight(2) + C4_OUT_R + 0.5 * C4_VD + R1_UP_MIN + R1YRise() - C1_RISER_Z0)
+    ' R1 rises straight out of C2's outlet pipe on C2's axis (user
+    ' decision, 17 Nov 2026), through its reducer, R1_UP_MIN at least
+    ' and splits; the twin C1 stand as high as that asks, their CFD
+    ' domain over it
+    zDust(1) = Max2(zDust(1), zDust(2) + CycHeight(2) + R1_RED_L + R1_UP_MIN + R1YRise() - C1_RISER_Z0)
     For s = 1 To 5
         CycDims s, d, hb, hc, vd, dd
         zRoof(s) = zDust(s) + hc + hb
@@ -458,7 +463,7 @@ Private Sub Derive()
     ' other, their branches R1_BRANCH_HALF either side of it; the
     ' tower's top over their outlet bends (turned in depth)
     dC1 = 0.5 * C1_TWIN_S
-    dR1 = C4_OUT_R + C4_OUT_RUN + R1_LEG_ON + 0.5 * RiserD(1)
+    dR1 = 0#                                   ' R1 on C2's axis (17 Nov 2026; it stood over C2's outlet leg)
     zTower = zTop(1) + C1_OUT_R + 0.5 * C1_VD
 
     ' Cooler under the kiln's discharge, running on in +x; the hood,
@@ -541,7 +546,7 @@ Private Sub PreChecks()
     r1 = CycR(1): r4 = CycR(4): r5 = CycR(5)
     xm = xInner + 0.5 * ZIG_DX
 
-    ' R1 narrows out of C2's outlet leg
+    ' R1 narrows out of C2's outlet pipe
     If StubR(2) < 0.5 * RiserD(1) Then Fail "R1 (D " & Fmt(RiserD(1)) & ") is wider than the gas outlet of C2."
     ' R1's Y: its branches apart, its split over R1's foot and under
     ' the C1 CFD domain's floor; the two meal chutes, side by side in
@@ -550,8 +555,11 @@ Private Sub PreChecks()
     If Abs(dC1 - C1_DUCT_Y - R1_BRANCH_HALF) > 0.000001 Then Fail "the twin's branches are not under their ducts."
     If C1_TWIN_S - C1_D < 0.3 Then Fail "the twin C1's barrels run into each other. Raise C1_TWIN_GAP."
     If R1SplitZ() < RiserV0(1) + R1_UP_MIN - 0.001 Then Fail "R1 splits before it rises: the C1 CFD branch does not fit over C2."
-    ' the twin C1 over C2's outlet bend
-    If zDust(1) - (zTop(2) + C4_OUT_R + 0.5 * C4_VD) < 0.5 Then Fail "the C1s sit on C2's outlet bend."
+    ' the twin C1 over C2's outlet pipe, R1 between them
+    If zDust(1) - zTop(2) < 0.5 Then Fail "the C1s sit on C2's outlet pipe."
+    If Abs(Tan(R1_RED_DEG * PI / 180#) * R1_RED_L - (StubR(2) - 0.5 * RiserD(1))) > 0.000001 Then
+        Fail "R1_RED_L is not the reducer at R1_RED_DEG."
+    End If
     If 2# * R1_BRANCH_HALF - C1_FEED_W < 0.3 Then Fail "the twin C1's meal chutes run into each other. Raise C1_TWIN_GAP."
     ' each C1's inlet duct under its roof
     If C1InletZ() + C1InletHalf() > C1_HC + C1_HB Then Fail "the C1 inlet duct runs over the C1 roof."
@@ -568,8 +576,9 @@ Private Sub PreChecks()
     ' The CFD domains' faces: R4..R2's leg runs straight past the outlet
     ' face of C5..C3 (2 R from its axis) and tapers onto the 3.40 m
     ' inlet only outside the next cyclone's inlet face (C4_IN_L from its
-    ' axis); R1's elbow starts past C2's outlet face; the gooseneck
-    ' meets C5 outside its inlet face
+    ' axis); the gooseneck meets C5 outside its inlet face. R1 has no
+    ' elbow: C2's outlet pipe rises straight into it, past the C4 CFD's
+    ' outlet face (C2's bend is not drawn, user decision 17 Nov 2026)
     For k = 5 To 3 Step -1
         If ZIG_DX - CycR(k - 1) - (2# * StubR(k) - C4_IN_H) < 2# * OutR(k) + 0.5 Then
             Fail "R" & (k - 1) & " tapers inside the CFD outlet leg of C" & k & ". Raise ZIG_DX."
@@ -578,7 +587,6 @@ Private Sub PreChecks()
             Fail "R" & (k - 1) & " tapers inside the CFD inlet duct of C" & (k - 1) & "."
         End If
     Next k
-    If dR1 - 0.5 * RiserD(1) < 2# * C4_OUT_R - 0.001 Then Fail "R1's elbow starts inside C2's CFD outlet leg. Raise R1_LEG_ON."
     If CycR(5) < Kc(5) * C4_IN_L Then Fail "the gooseneck runs into C5's CFD inlet duct."
     ' The C5s clear of the calciner; the gooseneck rises clear of each other
     If xInner - r5 <= rCalc Then Fail "the C5s run into the calciner."
@@ -886,13 +894,16 @@ Private Sub DrawPlant()
             up = s - 1
             OutletRiser s, col(s), Sgn(col(up) - col(s)), col(up) - Sgn(col(up) - col(s)) * CycR(up), side
         Next s
+        ' R2's bend and leg, closed: the C1 meal passes behind it (the
+        ' twin stand 6.7 m behind the C2 / R2 plane, 17 Nov 2026)
+        OutletBody 3, col(3), Sgn(col(2) - col(3)), col(2) - Sgn(col(2) - col(3)) * CycR(2)
 
-        '--- R1: out of C2's CFD outlet, its leg towards the calciner,
-        '    an elbow straight up, a Y into the twin C1's branches; each
+        '--- R1: straight up out of C2's outlet pipe on C2's axis, its
+        '    reducer, a Y into the twin C1's branches; each
         '    C1 with its branch, inlet and outlet bend as its CFD domain,
         '    the two mirror images of each other --------------------------
-        R1Elbow xo, sd, side
-        ElbowBody xo, sd
+        R1Straight xo, side
+        R1Body xo
         R1Y xo - sd * dR1
         C1Unit side & " far", xo - sd * (dR1 + dC1), -sd
         C1Unit side & " near", xo - sd * (dR1 - dC1), sd
@@ -907,18 +918,18 @@ Private Sub DrawPlant()
         ' chamber through its roof. Each is drawn whole where there is
         ' room, broken where it passes behind a cyclone or the tertiary
         ' air duct (PathM). The near C1's joins the far one's beside R2,
-        ' behind C2's outlet bend and R1's elbow, clear over R2's bend.
+        ' behind C2's outlet pipe, R1 and R2's bend: the twin stand over
+        ' C2 since R1 rises on its axis, 6.7 m behind the C2 / R2 plane,
+        ' and their pipes come forward to R2 only at its upright
+        ' (user decision, 17 Nov 2026; before, they had to clear R2's
+        ' bend in the plane, which would put the C1s 6 m higher).
         ' Each falls straight out of its dust outlet first.
         MealInto "C1", side, xo - sd * (dR1 + dC1), zDust(1), MEAL_DROP, MEAL_SLOPE_DEG, col(3), 2, _
-                 Sgn(col(3) - col(2)), xe, zc
+                 Sgn(col(3) - col(2)), xe, zc, True
         xn = xo - sd * (dR1 - dC1)
         zx = zDust(1) - MEAL_DROP - Abs(xe - xn) * Tan(MEAL_JOIN_DEG * PI / 180#)
         If zx <= zc + 0.5 Or zx >= zDust(1) - MEAL_DROP - Abs(xe - (xo - sd * (dR1 + dC1))) * Tan(MEAL_SLOPE_DEG * PI / 180#) - 0.5 Then
             Fail "the near C1's meal does not join the far one's on its run beside R2."
-        End If
-        If SegClear(xn, zDust(1) - MEAL_DROP, xe, zx, col(3) + Sgn(col(2) - col(3)) * C4_OUT_R, RiserBendZ(2), _
-                    C4_OUT_R + 0.5 * RiserD(2)) < MEAL_OVER_GAP Then
-            Fail "the near C1's meal runs into R2's bend. Lower MEAL_JOIN_DEG."
         End If
         PathM "meal: C1 " & side & " near -> the far C1's pipe", Array(xn, zDust(1), xn, zDust(1) - MEAL_DROP, xe, zx)
         MealInto "C2", side, col(2), zDust(2), MEAL_DROP, MEAL_SLOPE_DEG, col(4), 3, Sgn(col(4) - col(3)), xe, zc
@@ -1114,52 +1125,31 @@ Private Sub ClipLineM(ByVal xa As Double, ByVal za As Double, ByVal xb As Double
 End Sub
 
 
-' C2's CFD gas outlet over its stub top at xo (string sd): the 90 deg
-' bend towards the calciner, its walls arcs; the leg level on past the
-' CFD's 4.63 m into R1's elbow. The leg's top wall runs straight into
-' R1's wall on C2's side, which turns straight up; its bottom wall
-' turns up at 45 deg across to R1's far wall -- a mitred elbow,
-' narrowing from D_x to R1's D. R1 rises to its Y.
-Private Sub R1Elbow(ByVal xo As Double, ByVal sd As Double, ByVal side As String)
-    Dim zt As Double, cx As Double, a0 As Double, zl As Double, a As Double, r As Double, xr As Double
-    zt = zTop(2): cx = xo - sd * C4_OUT_R
-    zl = zt + C4_OUT_R: a = 0.5 * C4_VD: r = 0.5 * RiserD(1): xr = xo - sd * dR1
-    If sd < 0# Then a0 = PI Else a0 = 0#
-    ArcM cx, zt, C4_OUT_R + a, a0, 0.5 * PI
-    ArcM cx, zt, C4_OUT_R - a, a0, 0.5 * PI
-    DuctEdge cx, zl + a, xr + sd * r, zl + a
-    DuctEdge cx, zl - a, xr + sd * r, zl - a
-    DuctEdge xr + sd * r, zl - a, xr - sd * r, zl - a + 2# * r
-    DuctEdge xr + sd * r, zl + a, xr + sd * r, R1SplitZ()
-    DuctEdge xr - sd * r, zl - a + 2# * r, xr - sd * r, R1SplitZ()
-    ArrowAt 0.5 * (cx + xr + sd * r), zl, -sd, 0#
-    Note "-- gas: C2 " & side & " outlet -> R1 (D " & Fmt(C4_VD) & " -> " & Fmt(RiserD(1)) & ")"
+' R1 straight up out of C2's outlet pipe (drawn with C2 up to zTop)
+' on C2's axis xo: the conical reducer D_x -> R1's D over R1_RED_L,
+' then R1's walls up to its Y.
+Private Sub R1Straight(ByVal xo As Double, ByVal side As String)
+    Dim zt As Double, a As Double, r As Double, zf As Double
+    Dim g As Double
+    Dim k As Long
+    zt = zTop(2): a = 0.5 * C4_VD: r = 0.5 * RiserD(1): zf = RiserV0(1)
+    For k = 0 To 1
+        g = 1# - 2# * k
+        DuctEdge xo + g * a, zt, xo + g * r, zf
+        DuctEdge xo + g * r, zf, xo + g * r, R1SplitZ()
+    Next k
+    ArrowAt xo, 0.5 * (zf + R1SplitZ()), 0#, 1#
+    Note "-- gas: C2 " & side & " outlet -> R1 straight up (D " & Fmt(C4_VD) & " -> " & Fmt(RiserD(1)) & _
+         " over " & Fmt(R1_RED_L) & " m, R1 " & Fmt(R1SplitZ() - zf) & " m to its Y)"
 End Sub
 
 
-' C2's outlet bend, its leg and R1 up to its Y on string sd, closed,
-' for the crossing check: the near C1's meal passes behind it. The
-' arcs as 8 chords each.
-Private Sub ElbowBody(ByVal xo As Double, ByVal sd As Double)
-    Dim pts(0 To 45) As Variant                ' 23 points: two 9-point arcs, 5 corners
-    Dim cx As Double, zt As Double, zl As Double, a As Double, r As Double, xr As Double, ang As Double
-    Dim i As Long, n As Long
-    zt = zTop(2): cx = xo - sd * C4_OUT_R
-    zl = zt + C4_OUT_R: a = 0.5 * C4_VD: r = 0.5 * RiserD(1): xr = xo - sd * dR1
-    For i = 0 To 8
-        ang = 0.5 * PI * i / 8#
-        pts(n) = cx + sd * (C4_OUT_R + a) * Cos(ang): pts(n + 1) = zt + (C4_OUT_R + a) * Sin(ang): n = n + 2
-    Next i
-    pts(n) = xr + sd * r: pts(n + 1) = zl + a: n = n + 2
-    pts(n) = xr + sd * r: pts(n + 1) = R1SplitZ(): n = n + 2
-    pts(n) = xr - sd * r: pts(n + 1) = R1SplitZ(): n = n + 2
-    pts(n) = xr - sd * r: pts(n + 1) = zl - a + 2# * r: n = n + 2
-    pts(n) = xr + sd * r: pts(n + 1) = zl - a: n = n + 2
-    For i = 8 To 0 Step -1
-        ang = 0.5 * PI * i / 8#
-        pts(n) = cx + sd * (C4_OUT_R - a) * Cos(ang): pts(n + 1) = zt + (C4_OUT_R - a) * Sin(ang): n = n + 2
-    Next i
-    BodyM pts
+' The reducer and R1 up to its Y on C2's axis xo, closed, for the
+' crossing check: the C1 meal passes behind it.
+Private Sub R1Body(ByVal xo As Double)
+    Dim zt As Double, a As Double, r As Double, zf As Double
+    zt = zTop(2): a = 0.5 * C4_VD: r = 0.5 * RiserD(1): zf = RiserV0(1)
+    BodyM Array(xo + a, zt, xo + r, zf, xo + r, R1SplitZ(), xo - r, R1SplitZ(), xo - r, zf, xo - a, zt)
 End Sub
 
 
@@ -1183,10 +1173,33 @@ Private Sub OutletRiser(ByVal s As Long, ByVal xc As Double, ByVal dr As Double,
 End Sub
 
 
+' OutletRiser's bend and leg, closed, for the crossing check (a pipe
+' standing behind it is drawn broken): the arcs as 8 chords each.
+Private Sub OutletBody(ByVal s As Long, ByVal xc As Double, ByVal dr As Double, ByVal xw As Double)
+    Dim pts(0 To 39) As Variant                ' 20 points: two 9-point arcs, 2 corners
+    Dim zt As Double, cx As Double, a0 As Double, zl As Double, a As Double, th As Double
+    Dim i As Long, n As Long
+    zt = zTop(s): cx = xc + dr * OutR(s)
+    zl = zt + OutR(s): a = StubR(s)
+    If dr > 0# Then a0 = PI Else a0 = 0#
+    For i = 0 To 8
+        th = a0 + (0.5 * PI - a0) * i / 8#
+        pts(n) = cx + (OutR(s) + a) * Cos(th): pts(n + 1) = zt + (OutR(s) + a) * Sin(th): n = n + 2
+    Next i
+    pts(n) = xw: pts(n + 1) = zl + a: n = n + 2
+    pts(n) = xw: pts(n + 1) = zl - a: n = n + 2
+    For i = 8 To 0 Step -1
+        th = a0 + (0.5 * PI - a0) * i / 8#
+        pts(n) = cx + (OutR(s) - a) * Cos(th): pts(n + 1) = zt + (OutR(s) - a) * Sin(th): n = n + 2
+    Next i
+    BodyM pts
+End Sub
+
+
 ' the foot of R(k)'s upright: the roof under the CFD outlet pipe for
-' R2..R4, the top of C2's outlet leg for R1
+' R2..R4, the top of R1's reducer on C2's outlet pipe for R1
 Private Function RiserV0(ByVal k As Long) As Double
-    If k = 1 Then RiserV0 = zTop(2) + C4_OUT_R + 0.5 * C4_VD Else RiserV0 = zRoof(k + 1)
+    If k = 1 Then RiserV0 = zTop(2) + R1_RED_L Else RiserV0 = zRoof(k + 1)
 End Function
 
 ' the upright's top: where C(k + 1)'s outlet bend starts (R2..R4)
@@ -1378,7 +1391,8 @@ End Sub
 ' Returns the foot of its run beside the wall.
 Private Sub MealInto(ByVal src As String, ByVal side As String, ByVal xs As Double, ByVal zs As Double, _
                      ByVal drop As Double, ByVal deg As Double, ByVal xr As Double, ByVal k As Long, _
-                     ByVal sg As Double, ByRef xpOut As Double, ByRef z3Out As Double)
+                     ByVal sg As Double, ByRef xpOut As Double, ByRef z3Out As Double, _
+                     Optional ByVal behind As Boolean = False)
     Dim xw As Double, xp As Double, z1 As Double, z2 As Double, z3 As Double, ze As Double, tn As Double
     Dim cx As Double, cz As Double, ro As Double, what As String
     what = "meal: " & src & " " & side & " -> R" & k
@@ -1391,7 +1405,7 @@ Private Sub MealInto(ByVal src As String, ByVal side As String, ByVal xs As Doub
     If z2 <= z3 + 0.001 Then Fail what & ": the dust outlet is too low to reach R" & k & " at its slope."
     ' the bend's centre and outer wall: C(k + 1)'s outlet turns away from sg
     cx = xr - sg * OutR(k + 1): cz = RiserBendZ(k): ro = OutR(k + 1) + 0.5 * RiserD(k)
-    If SegClear(xs, z1, xp, z2, cx, cz, ro) < MEAL_OVER_GAP Then
+    If Not behind And SegClear(xs, z1, xp, z2, cx, cz, ro) < MEAL_OVER_GAP Then
         Fail what & ": its slope runs within " & Fmt(MEAL_OVER_GAP) & " m of the outlet bend under it."
     End If
     If drop > 0# Then

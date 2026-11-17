@@ -36,7 +36,7 @@ Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model*
 | Ölçü | Değer | Kaynak |
 |---|---|---|
 | Boru sayısı (hat başına) | 1 | yerleşim kararı |
-| Hat başına farin debisi | 30.2072 kg/s | modelleme |
+| Hat başına farin debisi | 30.2123 kg/s | modelleme |
 | Bir borunun debisi | 30.21 kg/s | türetilmiş |
 | Kütle akışı (kalsinatör borusunun) | 79.3 kg/(m² s) | türetilmiş |
 | İç çap | 0.696 m | kütle akışı ölçeği |

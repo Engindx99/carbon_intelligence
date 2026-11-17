@@ -5,18 +5,20 @@ Bağlantı: C2 → C1 (CFD_VIEW.pdf: "Riserler R1–R4 (C2→C1 … C5→C4)").
 
 ## Geometrik Ölçüler
 
-R1'in iç çapı yayınlanmıştır (HFC2500). Gaz yolu çizimdeki gibidir (kullanıcı kararı, 14 Ekim 2026; [plant_topology.md](../plant_topology.md)): C2'nin CFD çıkış borusu (yükseliş, 90° dirsek, R1 eksenine bacak), R1'in Y'ye kadar dik kısmı, sonra ikiz C1'lerin her birine bir kol (R1 alanının yarısı): dik kısım, 95° dirsek, geçiş ve giriş kanalı. Y'nin kendi kısa parçaları kolların boyuna katılır. FLS'nin `h_tot`'u (21.38 m) ile düz silindir okuması twin'de 13–14 Ekim 2026 arasında kullanıldı; bu tesisin değildir.
+R1'in iç çapı yayınlanmıştır (HFC2500). Gaz yolu çizimdeki gibidir ([plant_topology.md](../plant_topology.md)): C2'nin CFD çıkış borusu (çatının üstünde 7.871 m dik), 45°'lik bir daraltıcı (Ø4.63 → Ø3.07), R1'in **C2'nin ekseninde** Y'ye kadar dik kısmı, sonra ikiz C1'lerin her birine bir kol (R1 alanının yarısı): dik kısım, 90° dirsek, geçiş ve giriş kanalı. R1 17 Kasım 2026'dan beri düz (kullanıcı kararı); ikiz C1'ler C2'nin üstünde durur. 14 Ekim – 17 Kasım 2026 arasında C2'nin CFD dirseği ve bacağı gazı kalsinatöre doğru 11.3 m taşıyor, R1 orada bir dirsekle yükseliyordu (yol hacmi hat başına 517 m³; düz yol 322 m³).
+
+Fiziksel sonucu: C2'nin vorteks bulucusundan çıkan dönen akım dirseklerle bozulmadan R1'e ve Y'ye ulaşır. Düz boruda dönme yavaş söner (çap başına ~%2–3) ve C2'den Y'ye yaklaşık 4 çaplık bir yol var. Daraltıcı açısal momentumu korurken eksenel momentumu artırır, dönme sayısını ~1/3 düşürür. Eksen simetrik girdap Y'de simetrik bölünür. Önceki düzende ise dirseğin hemen üstündeki kısa R1, Y'ye bir yana yığılmış bir profil veriyordu. Aynalı ikizlerin girişine ters yönlü dönme gelir. Kollardaki ~3.5 çaplık dik kısım, farin beslemesi, dirsek ve daralma bunu büyük ölçüde siler; ama C1 verimine etkisi ölçülmedi. Tek C1 CFD'sinin düzgün giriş profili her iki düzende de bir yaklaşımdır: Y'li bir giriş domeni gerekir. R1'de farin yoktur (besleme kollarda), bu yüzden kısalması gaz–farin temasını değiştirmez. Y'nin kendi kısa parçaları kolların boyuna katılır. FLS'nin `h_tot`'u (21.38 m) ile düz silindir okuması twin'de 13–14 Ekim 2026 arasında kullanıldı; bu tesisin değildir.
 
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|
 | C2 çıkış borusu yükselişi (Ø4.630) | 7.871 m | türetilmiş |
-| C2 çıkış dirseği, 90° yay | 7.273 m | türetilmiş |
-| C2 çıkış bacağı, R1 eksenine | 6.665 m | türetilmiş |
+| R1 daraltıcısı yarım açısı (C2 ekseninde, dik) | 45 ° | şematik |
+| R1 daraltıcısı boyu (Ø4.630 → Ø3.070) | 0.780 m | türetilmiş |
 | R1 iç çapı | 3.07 m | yayınlanmış |
-| R1 dik boyu, Y'ye kadar | 2.815 m | türetilmiş |
+| R1 dik boyu, daraltıcıdan Y'ye | 6.954 m | türetilmiş |
 | İkiz C1 kolu çapı (R1 alanının yarısı) | 2.171 m | türetilmiş |
-| Kol başına boy (dik + 95° dirsek + geçiş + kanal) | 17.445 m | türetilmiş |
+| Kol başına boy (dik + 90° dirsek + geçiş + kanal) | 17.445 m | türetilmiş |
 | Kol sayısı | 2 | türetilmiş |
 | İkiz C1 kolları arası boşluk (cidardan cidara) | 1 m | modelleme |
 | İkiz C1 eksenleri arası | 8.451 m | türetilmiş |
@@ -24,8 +26,8 @@ R1'in iç çapı yayınlanmıştır (HFC2500). Gaz yolu çizimdeki gibidir (kull
 | Y'den her kolun R1 eksenine uzaklığı | 1.585 m | türetilmiş |
 | Y'nin yüksekliği (R1 tepesinden kolların dik kısmına) | 2.035 m | türetilmiş |
 | R1 ve kollar, C1 eksenlerinin önünde | 6.671 m | türetilmiş |
-| **Ekipman hacmi (hat başına)** | 517.15 m³ | türetilmiş |
-| **Duvar alanı (hat başına)** | 582.31 m² | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 322.33 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 432.84 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry

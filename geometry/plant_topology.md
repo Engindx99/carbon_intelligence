@@ -13,11 +13,11 @@ Bir SolidWorks **çizim sayfası**: A1 yatay (841 × 594 mm), ölçek **1:300**.
 İlk sürüm bir parça sketch'iydi. Renkler orada görünmedi, çünkü sketch'in durum rengi özel rengi bastırıyordu. Etiketler 1 m yükseklikte okunmuyordu, her köşede de nokta yığını vardı. Çizim belgesine bu yüzden geçildi (kullanıcı kararı, 5 Ekim 2026).
 
 - **Ekipman, gerçek kesit dış hatlarıyla:** siklonlar (toz çıkışı, koni, gövde, tavan, gaz çıkış stub'ı), kalsinatör (boğaz, koni, gövde), fırın giriş odası, fırın, soğutucu, fırın başlığı.
-- **Akışın geçtiği duvarlar açıktır:** fırının iki ucu (giriş odasına ve başlığa açılır), kalsinatör boğazı (giriş odasının tavanı), kaz boynu kollarının kalsinatör tavanındaki ağızları, tersiyer hava kanalının başlık tavanındaki ve kalsinatör duvarındaki ağızları, başlığın altı (soğutucuya açık), her siklonun toz çıkışı, gaz çıkış stub'ının tepesi ve girişinin geldiği taraftaki gövde duvarı. R1 C2'nin çıkış bacağından bir dirsekle başlar; R2–R4, C3–C5'in çıkış borusunun kendisidir. Açıklığın yanında kalan, `MIN_SEG`'ten kısa duvar parçası çizilmez. Bütün siklonlarda giriş tavandan aşağı iner; gövde duvarı yalnız kanalın yüksekliği boyunca açıktır, altında kapalı devam eder. Tek çizgili yollar (farin, egzoz, primer hava) duvarda biter.
-- **Ana kanallar gerçek çapında, çift çizgiyle:** R1–R4, kaz boynu ve tersiyer hava kanalı. Kenarlar eksenin w/2 iki yanındadır; köşeler kenarların kesişiminde birleşir. Kaz boynunun Y dirsekleri ve C1'lerin iki dirseği (kol ve gaz çıkışı, CFD katısındaki gibi) yaydır; C2–C5'in çıkış dirsekleri (R2–R4) de yaydır; R1'in dirseği, Y'si ve kaz boynu inişinin dönüşü 45°'lik düz parçalardır.
+- **Akışın geçtiği duvarlar açıktır:** fırının iki ucu (giriş odasına ve başlığa açılır), kalsinatör boğazı (giriş odasının tavanı), kaz boynu kollarının kalsinatör tavanındaki ağızları, tersiyer hava kanalının başlık tavanındaki ve kalsinatör duvarındaki ağızları, başlığın altı (soğutucuya açık), her siklonun toz çıkışı, gaz çıkış stub'ının tepesi ve girişinin geldiği taraftaki gövde duvarı. R1 C2'nin çıkış borusundan bir daraltıcıyla dik devam eder; R2–R4, C3–C5'in çıkış borusunun kendisidir. Açıklığın yanında kalan, `MIN_SEG`'ten kısa duvar parçası çizilmez. Bütün siklonlarda giriş tavandan aşağı iner; gövde duvarı yalnız kanalın yüksekliği boyunca açıktır, altında kapalı devam eder. Tek çizgili yollar (farin, egzoz, primer hava) duvarda biter.
+- **Ana kanallar gerçek çapında, çift çizgiyle:** R1–R4, kaz boynu ve tersiyer hava kanalı. Kenarlar eksenin w/2 iki yanındadır; köşeler kenarların kesişiminde birleşir. Kaz boynunun Y dirsekleri ve C1'lerin iki dirseği (kol ve gaz çıkışı, CFD katısındaki gibi) yaydır; C2–C5'in çıkış dirsekleri (R2–R4) de yaydır; R1'in daraltıcısı, Y'si ve kaz boynu inişinin dönüşü 45°'lik düz parçalardır.
 - **Diğer yollar tek çizgiyle, eksen boyunca:** farin hatları, C1 egzozu, ikincil hava, fırın → kalsinatör gazı.
 - **Akış okları:** her yolun en uzun parçasının ortasında, akış yönünde. Çizimden çıkan ya da yalnızca bir akımı belirten yollarda ("to ID fan", "to cooler vent", "to clinker transport", primer hava, tersiyer hava oku) ok yolun ucundadır; okun ötesinde çizgi kalmaz.
-- **Farin hatları tam, arkadan geçtiği yerde kırık:** her farin hattı toz çıkışından hedefine tam çizilir (kullanıcı kararı 14 Ekim 2026, uç gösteriminden geri dönüldü). Bir hat bir siklonun, C2'nin çıkış dirseği ve R1 dirseğinin ya da TA kanalının arkasından geçiyorsa, o dış hattın içinde ve iki yanında `CROSS_GAP` kadar çizilmez (`PathM`; bunlar kapalı dış hat olarak kaydedilir: `BodyM`, `CycBody`, `ElbowBody`). Lejantta bir örneği var.
+- **Farin hatları tam, arkadan geçtiği yerde kırık:** her farin hattı toz çıkışından hedefine tam çizilir (kullanıcı kararı 14 Ekim 2026, uç gösteriminden geri dönüldü). Bir hat bir siklonun, R1'in (daraltıcısıyla), R2'nin dirseğinin ya da TA kanalının arkasından geçiyorsa, o dış hattın içinde ve iki yanında `CROSS_GAP` kadar çizilmez (`PathM`; bunlar kapalı dış hat olarak kaydedilir: `BodyM`, `CycBody`, `R1Body`, `OutletBody`). Lejantta bir örneği var.
 - **Şematik not:** lejantta, giriş odasının ölçüsünün kaynaksız olduğu ve farin borularının 2D izdüşümü olduğu (C4 ve C5 boruları ve oda rampası 3D yerleşimde daha diktir) yazılıdır.
 - **Etiketler:** not olarak, kâğıtta 3.5 mm yükseklikte. Siklon adları gövdenin içinde (oradan hiçbir yol geçmez), riser adları kanalın içinde. Sayılar yerel ayardan bağımsız olarak noktalı ve sabit ondalıklı yazılır ("2.440").
 - **Kot cetveli:** solda, çerçevenin içinde, 0'dan 100 m'ye; her 10 m'de bir çentik ve kot. Zemin çizgisi cetvelden başlar.
@@ -92,9 +92,9 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 <!-- END GENERATED -->
 
 **Serbest:**
-- R1'in dirseği ve Y'si, yani C1 kol tabanının altı.
+- R1'in daraltıcısı ve Y'si, yani C1 kol tabanının altı.
 - Çıkış yüzünden sonraki bacak ve giriş yüzüne kadar olan kanal: uzunluğu, 4.63 → 3.40 daralması.
-- Kolon aralıkları (`ZIG_DX`, `R1_LEG_ON`, `R1_BRANCH_HALF`, `GN_TO_C5_GAP`).
+- Kolon aralıkları (`ZIG_DX`, `R1_BRANCH_HALF`, `GN_TO_C5_GAP`).
 - Kalsinatör, kaz boynu, TA, fırın, soğutucu yerleşimi.
 - Farin hatlarının gösterimi, etiketler, tablolar.
 
@@ -106,7 +106,7 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 
 **Kilit:**
 - `tests/test_plant_topology_cfd_lock.py` iki makroyu metin olarak okur. Const'lar artık aynı kaynaktan üretildiği için bu ikinci bir güvencedir. Çizimdeki her domen ölçüsünün `cyclone.bas`'taki `SelectCyclone` değerlerine 1 mm içinde eşit olduğunu doğrular; C5 için ayrıca C4 × 1.0317 olduğunu. Biri öbürü olmadan değişirse test hangi ölçünün kaydığını yazarak düşer (`python3 -m unittest tests.test_plant_topology_cfd_lock`).
-- Makronun ön kontrolleri yüzleri korur: R4–R2'nin daralması alttaki siklonun çıkış yüzünden sonra başlar ve üsttekinin giriş yüzünün dışında biter; R1'in dirseği C2'nin çıkış yüzünden sonra başlar; kaz boynu C5'in giriş yüzünün dışında kalır. R1'in Y'si C1 kol tabanının altında kalır.
+- Makronun ön kontrolleri yüzleri korur: R4–R2'nin daralması alttaki siklonun çıkış yüzünden sonra başlar ve üsttekinin giriş yüzünün dışında biter; R1'in daraltıcısı C2'nin CFD çıkış borusunun ucunda başlar (C4'ün CFD dirseği C2'de yoktur); kaz boynu C5'in giriş yüzünün dışında kalır. R1'in Y'si C1 kol tabanının altında kalır.
 - Çizimdeki çıkış borusu 5.79 değil, CFD'nin tam değeri 1.25 × 4.63 = 5.7875 m'ydi; kilit testi bu 2.5 mm'lik farkı yakaladı.
 - **C4 / C5 çıkış borusu 1.25·VD'den 1.70·VD'ye (5.79 → 7.87 m; kullanıcı kararı 14 Ekim 2026).** 1.25'te C2 ve C3 altlarındaki CFD dirseğinin yalnız 0.9 m üstündeydi; farin hatları dirseğe yapışmadan inemiyordu. Bu donmuş bir bloktur, iş akışına göre değişti: önce çizim denendi, sonra `cyclone.bas`'ta `OUTLET_EXT_OVER_VORTEX_D` siklon başına oldu (C1 1.25, C4 ve C5 1.70), kilit testi ikisini eşitler. C4 CFD'si bu domende yeniden çözüldü (14 Ekim 2026): statik ΔP 522.8 Pa, Eu 11.54 (1.25'li domende 515.5 Pa, 11.38; +%1.4); bkz. [cyclone_C4.md](preheater/cyclone_C4.md). Kule 112.02'den 120.41 m'ye uzadı.
 
@@ -121,10 +121,10 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | Parametre | Ne belirler |
 |---|---|
 | **donmuş (CFD):** `C4_VF_S`, `C4_OUT_RISE`, `C4_OUT_R`, `C4_OUT_RUN`, `C4_IN_H`, `C4_IN_W`, `C4_TONGUE`, `C4_IN_L`, `C1_VF_S` | C2–C4 C4'ün CFD domeninin aynısı ([cyclone_C4.md](preheater/cyclone_C4.md), `cyclone.bas`; ölçüler yukarıdaki CFD domenleri tablosunda): vorteks bulucu çatıdan aşağı (kesikli); gaz çıkış borusu çatının üstüne çıkar (1.70·VD; 14 Ekim 2026'ya kadar 1.25·VD), 90°'lik dirsek (duvarları yay) ve yatay bacak; giriş bir volüt: düz kanal ve gövdeden dil kadar dışarıda başlayan yarım tur Arşimet sarmalı. Kesitte volüt çatının altında bir bant olarak görünür; sarmal riserın karşı tarafında gövdeden ~1.5 m taşar. Çıkışın yatay yönü CFD'de riserın ters tarafınadır; çizimde bir sonraki siklona döner (siklonun çıkışını kendi ekseni etrafında döndürmek; akış aynı, kullanıcı kararı 13 Ekim 2026). C1'in vorteks bulucusu da çatıdan aşağı. C5 bunların hepsinin 6.50/6.30 ile büyütülmüş kopyasıdır (`Kc`). Volütü kaz boynunun ters tarafındadır (kullanıcı kararı 14 Ekim 2026) |
-| `STAGE_GAP` | C1'in toz çıkışının C2'nin stub'ının en az bu kadar üstünde olması (R1'in Y'si C1'i zaten daha yukarı koyar). C2–C4'ün kotu artık bu paydan değil, alttaki kademenin CFD çıkışından gelir: her siklonun çatısı, alttakinin CFD dirseğinin üstü hizasındadır. 14 Ekim 2026'ya kadar C3 ve C2 bu kadar dirseğin üstündeydi; bu, CFD borusuyla dirsek arasına 4.87 m düz boru sokuyordu (CFD domeni bozuluyordu), kaldırıldı ve kule 14.6 m kısaldı (kullanıcı kararı) |
+| `STAGE_GAP` | C1'in toz çıkışının C2'nin stub'ının en az bu kadar üstünde olması. R1 C2'nin ekseninde düz yükseldiğinden (17 Kasım 2026) ikiz C1'ler C2'nin üstündedir ve iki farin borusu iç kolondaki R2'nin dik kısmına geri iner (60°, yakın C1'inki 50° ile katılır): buna en az 9.41 m gerekir, 9.5 alındı. Önce 4.0'dı; R1'in Y'si C1'i zaten daha yukarı koyuyordu. C2–C4'ün kotu artık bu paydan değil, alttaki kademenin CFD çıkışından gelir: her siklonun çatısı, alttakinin CFD dirseğinin üstü hizasındadır. 14 Ekim 2026'ya kadar C3 ve C2 bu kadar dirseğin üstündeydi; bu, CFD borusuyla dirsek arasına 4.87 m düz boru sokuyordu (CFD domeni bozuluyordu), kaldırıldı ve kule 14.6 m kısaldı (kullanıcı kararı) |
 | `ZIG_DX` | Hattın dış kolonunun (C4, C2) iç kolonundan (C5, C3) uzaklığı. Yatay bacağın yalnız ilk 4.63 m'si (C5'te 4.78) CFD domenidir, üstteki siklonun 3.0 m'lik giriş kanalı gövdenin içinde kalır; aradaki bacak serbesttir. Alt sınır: çıkış yüzü + 0.5 m + daralma + gövde yarıçapı, R4 için 14.6 m; ön kontrol zorlar. 20 m idi (farin borularını riserların yanından geçirmek için); farin uçlarla gösterilince kule kare gibi durduğu için 15 m'ye indi (kullanıcı kararı 14 Ekim 2026). 11 m'den 20'ye çıkmıştı |
 | **donmuş (CFD):** `C1_RISER_X` … `C1_OUT_R` | Her C1, kendi CFD domeniyle aynı ([cyclone_C1.md](preheater/cyclone_C1.md), [riser_R1.md](preheater/riser_R1.md)); yükseklikler toz çıkışından: riser kolu (R1'in alanının yarısı) domen tabanından dirseğine dik; dirsek (CFD'deki gibi yuvarlak: duvarları eş merkezli iki yay); geçiş ve aşağı eğimli giriş kanalı gövdeye; kare kesitli, 60° eğimli farin oluğu kol duvarından dışarı çıkar; gaz çıkışı çatının üstünde dik boru, kolun ters tarafına 180° dirsek (yuvarlak, iki yay) ve aşağı inen bacak |
-| `R1_LEG_ON` | C2'nin çıkış bacağının, CFD'nin 4.63 m'sinden sonra R1'in dirseğine kadar uzandığı yol. İki hattın uzak C1'lerinin çıkış dirsekleri kalsinatörün üstünde ~5.9 m arayla kalır. 1.55 m idi |
+| `R1_RED_DEG`, `R1_RED_L` | R1, C2'nin çıkış borusundan C2'nin ekseninde dik devam eder (kullanıcı kararı 17 Kasım 2026): Ø4.63 → Ø3.07 konik daraltıcı, yarım açı 45° (çizimin 45°'lik parçaları), boy 0.78 m; daralma kaybı ~3 Pa. Önceki `R1_LEG_ON` (0.5 m) C2'nin CFD bacağını R1'in dirseğine uzatıyordu; o düzende R1 C2'den 11.3 m kalsinatöre doğruydu |
 | `C1_TWIN_GAP` (→ `C1_TWIN_S`, `R1_BRANCH_HALF`) | İkiz C1 (kullanıcı kararı 13 Kas 2026): ayna simetrik çift, her C1 kendi CFD domeniyle aynı ama ekseni etrafında 90° döndürülmüş; kol, dirsek, giriş kanalı, farin oluğu ve çıkış dirseği derinlik yönünde (bu ön görünüşte uçtan görünür, akış ⊗ ile). Giriş kanalları birbirine bakar, ortak R1 simetri düzleminde önde yükselir. `C1_TWIN_GAP` iki kolun cidarları arası (model); C1 eksenleri arası ve Y'nin kol yarı aralığı ondan türetilir. Önceden kollar ön görünüş düzlemindeydi ve C1'ler R1'den 9.593 m uzaktaydı |
 | `GN_TO_C5_GAP` | Kaz boynu inişi ile C5 gövdesi arasındaki boşluk. İniş, C5'in giriş kotunda bu boşluğu yatay geçerek gövdeye girer |
 | `GN_BEND_LEG` | Kaz boynu inişinin C5'e dönerken 45° parçasının yatay boyu, kol çapı cinsinden. Kolla C5 gövdesi arasında 2.75 m olduğu için riserlardaki 1.0 sığmıyor; ön kontrol, ardından en az yarım kol yarıçapı yatay giriş kalmasını zorlar |
@@ -134,7 +134,7 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | `MEAL_SIDE_L` | Riser'a giren farin hattının duvarın yanında indiği dik hattın duvardan uzaklığı; hat buradan 60° ile duvara girer |
 | `MEAL_DROP` | C1–C3'ün farininin toz çıkışından dik düştüğü boy; her hat siklondan önce düz çıkar, sonra 60° ile döner (kullanıcı kararı 14 Ekim 2026) |
 | `MEAL_OVER_GAP` | C2 ve C3'ün farini düz inişinden sonra 60° ile altındaki CFD çıkış dirseğinin üstünden dışarı çıkar; makro, eğimli parçanın dirseğin dış duvarına (tam daire, güvenli tarafta) bundan fazla yaklaşmasına izin vermez. 1.70·VD ile C2 / C3 dirseğin 2.9 m üstündedir, açıklık 0.40 / 0.41 m. 1.25·VD'de 0.9 m'ydi; düz iniş ancak 0.5 m, eğim 40° olabiliyordu |
-| `MEAL_JOIN_DEG` | Yakın C1'in farininin, düz inişinden sonra uzak C1'inkine katılırken eğimi; R2'nin dirseğinden 5.5 m açık. 60°'de uzak C1'in hattına R2'ye döndüğü yerin altında varırdı |
+| `MEAL_JOIN_DEG` | Yakın C1'in farininin, düz inişinden sonra uzak C1'inkine katılırken eğimi. 17 Kasım 2026'dan beri iki C1 farini de R2'nin dirseğinin arkasından geçer (C1'ler C2/R2 düzleminin 6.7 m arkasında; aynı düzlemde temizlemek C1'leri 6 m yükseltirdi, kullanıcı kararı); önce dirsekten 5.5 m açıktı. 60°'de uzak C1'in hattına R2'ye döndüğü yerin altında varırdı |
 | `C4_MEAL_DROP` / `C5_MEAL_DROP` | C4 ve C5 farininin toz çıkışından dik düştüğü boy; ardından 1 m'lik (`MEAL_BEND`) bir dönüş parçası ve hedefe düz hat. C5'inki 1.0 m'den uzun olamaz: düz iniş TA kanalının 0.3 m üstünde bitmeli (ön kontrol). Bu düz hatlar farinin aktığından yatıktır (C4 ~16°, C5 ~34°): 2D izdüşümdür, 3D'de borular diktir |
 | `CROSS_GAP` | Farin hattının arkasından geçtiği dış hattın iki yanında bırakılan boşluk |
 | `ID_FAN_L` | Her C1 çıkışının inen bacağından aşağı "to ID fan" okunun boyu |
@@ -227,7 +227,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C1_FEED_W` | 0.6 | plant_geometry.yaml |
 | `C1_OUT_RISE` | 3 | plant_geometry.yaml |
 | `C1_OUT_R` | 3.6 | plant_geometry.yaml |
-| `STAGE_GAP` | 4 | plant_geometry.yaml |
+| `STAGE_GAP` | 9.5 | plant_geometry.yaml |
 | `ZIG_DX` | 15 | plant_geometry.yaml |
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
@@ -236,7 +236,8 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C1_DUCT_Y` | 2.64 | plant_geometry.yaml |
 | `R1_BRANCH_HALF` | 1.585409 | plant_geometry.yaml |
 | `R1_UP_MIN` | 0.5 | plant_geometry.yaml |
-| `R1_LEG_ON` | 0.5 | plant_geometry.yaml |
+| `R1_RED_DEG` | 45 | plant_geometry.yaml |
+| `R1_RED_L` | 0.78 | plant_geometry.yaml |
 | `KILN_AXIS_Z` | 10 | plant_geometry.yaml |
 | `CHAMBER_MARGIN` | 1 | plant_geometry.yaml |
 | `COOLER_DROP` | 1 | plant_geometry.yaml |
@@ -293,20 +294,20 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Tersiyer hava kanalı | eksen z 21.671 |
 | İç kolon (C5, C3) | x = ±16.781 |
 | Dış kolon (C4, C2) | x = ±31.781 |
-| R1 | x = ±20.486 |
-| İkiz C1 | x = ±16.261 ve ±24.712 |
+| R1 | x = ±31.781 |
+| İkiz C1 | x = ±27.556 ve ±36.007 |
 | C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
 | C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
 | C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |
 | C2 toz çıkışı / çıkış borusu tepesi | z 69.991 / 91.462 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 100.672 / 115.112 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 119.912 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 100.962 / 115.402 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 120.202 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |
 <!-- END GENERATED -->
 
-Fırın giriş odasının düz tabanı yoktur: tabanı fırının alt dudağından odanın sol üst köşesine çıkan bir rampadır. Y kaz boynunun kolları boynun içinden başlar, dirsekle döner, C5'in giriş kotuna iner ve yatay olarak C5 gövdesine girer. R4, R3 ve R2 C5, C4 ve C3'ün çıkış borusudur; R1 C2'nin çıkış bacağından dirsekle dik çıkar. İkiz C1'ler R1'in iki yanında, birbirinin aynasıdır.
+Fırın giriş odasının düz tabanı yoktur: tabanı fırının alt dudağından odanın sol üst köşesine çıkan bir rampadır. Y kaz boynunun kolları boynun içinden başlar, dirsekle döner, C5'in giriş kotuna iner ve yatay olarak C5 gövdesine girer. R4, R3 ve R2 C5, C4 ve C3'ün çıkış borusudur; R1 C2'nin çıkış borusundan, C2'nin ekseninde dik çıkar. İkiz C1'ler R1'in iki yanında, C2'nin üstünde, birbirinin aynasıdır.
 
 ## Yollar
 
@@ -316,7 +317,7 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
 - başlık (brülör ucu) → fırın boyunca, eksenin `KILN_FLOW_OFF` üstünde → giriş odası (rampanın 1 m üstünden kalsinatör eksenine döner) → kalsinatör → kaz boynu → C5. Kaz boynu `calciner.bas`'taki gibi bir Y'dir: tavanın ortasından boyun yükselir; tepesinde iki kol başlar (çaplar ekipman tablosunda), her biri 180° dirsekle dışa döner ve iner. İki kolun dış duvarları boynun 3.6 m üstünde, eksende kesişir; çatal orasıdır. İniş, C5'in girişine ulaşınca riserlar gibi iki 45°'lik adımla döner: girişin `GN_BEND_LEG` kol çapı üstünde 45° döner, 45° ile girişin seviyesine iner ve 1 m yatay olarak C5 gövdesinin yan duvarına, üst duvarı tavan hizasında girer; bu, volütlü girişin yandan görünüşüdür. Kol C5'in volüt girişinin yüksekliğine sığar; ön kontrol bunu zorlar. Kolun inişi, C5 tersiyer hava kanalının üstünde durduğu için `calciner.bas`'taki kol ucundan (kalsinatörün yarı yüksekliği) daha yukarıda biter.
 - C5 → R4 → C4: R2 / R3 gibi; R4, C5'in CFD çıkış borusunun kendisidir (kullanıcı kararı 14 Ekim 2026): çatının üstünde CFD'nin dik borusu, hemen ardından CFD dirseği (C4'ün çatı kotunda) ve yatay bacakla (çıkış yüzünden sonra 0.92 m serbest) C4'e girer; bacağın alt duvarı son 1.38 m'de 45° ile volüt girişine yükselir. Eski 45°'lik daralma ve iki 45° dönüş kalktı.
 - C4 → R3 → C3, C3 → R2 → C2: riser, C4 / C3'ün CFD çıkışının kendisidir (kullanıcı kararı 13 Ekim 2026, ayrı riser kalktı ve yol kısaldı). Çıkış CFD domeninin birebir aynısıdır (14 Ekim 2026): çatının üstünde CFD'nin dik borusu (siyah, siklonun parçası), hemen ardından 90° dirsek (duvarları yay) ve yatay bacak (çıkış yüzünden sonra 1.36 m serbest). CFD'nin bacağından sonrası domenin dışındadır; bacak oradan düz devam eder (bir ara orada 45° ile 1.5 m yükselip katları açıyordu; kıvrım istenmediği için kalktı, 14 Ekim 2026). Bacağın üst duvarı üst siklonun çatı hizasındadır, alt duvarı son 1.23 m'de 45° ile volüt girişine yükselir; üst siklonun kotu buradan gelir.
-- C2 → R1 → ikiz C1: R1 C2'nin CFD çıkışından (bacağı kalsinatöre doğru) geçer. Bacak CFD'nin bacağından `R1_LEG_ON` kadar daha uzanır ve bir dirsekle yukarı döner: üst duvarı düz gidip R1'in C2 tarafındaki duvarı olarak dik yükselir, alt duvarı 45° ile R1'in öbür duvarına çıkar; dirsek C2'nin çıkış çapından R1'in çapına daralır (kullanıcı kararı 13 Ekim 2026; eski daralma + 45° + 0.5 m dik kısım bacağa bağlanmıyordu). R1'in C2 tarafındaki duvarı bacağın üstünde `R1_UP_MIN` kadar dik yükselir (C1 kademesi buna göre yükselir), öbür duvarı 2.06 m. Sonra R1 45°'lik düz parçalardan bir Y ile iki kola ayrılır: R1'in duvarları 45° ile dışa açılır, kolların iç duvarları R1 eksenindeki çataldan 45° ile yükselir; her kol Y boyunca kendi çapındadır (R1'in alanının yarısı). Kollar Y'den sonra, tam C1 CFD domeninin tabanında (`C1_RISER_Z0`) dik başlar. Oradan yukarısı her C1 için CFD domeninin aynısıdır: dik kol, 95° dirsek, geçiş ve 5° eğimli giriş kanalı (bkz. `C1_RISER_X` … satırı). İkizler birbirinin aynasıdır: kollar ortada, gaz çıkış dirsekleri dışa döner. Aynalanmış akış aynı çözümdür, yalnız girdap ters yönde döner. Y CFD domeninin altında kaldığı için CFD sonuçları geçerlidir; tek fark kolun tabanına gelen hız profilinin tam düzgün olmamasıdır (CFD düzgün profil verir).
+- C2 → R1 → ikiz C1: R1 C2'nin ekseninde dik yükselir (kullanıcı kararı 17 Kasım 2026): C2'nin CFD çıkış borusu (çatının üstünde 7.871 m) ucunda 45°'lik bir daraltıcıyla (`R1_RED_L`) Ø4.63'ten R1'in çapına daralır, R1 oradan Y'ye kadar düz çıkar (en az `R1_UP_MIN`; C1 kademesini `STAGE_GAP` belirlediği için 6.95 m). C4'ün CFD dirseği ve bacağı C2'de çizilmez; C3–C5'te durur. 13 Ekim – 17 Kasım 2026 arasında C2'nin bacağı `R1_LEG_ON` kadar uzayıp bir dirsekle yukarı dönüyordu ve R1 C2'den 11.3 m kalsinatöre doğruydu. Sonra R1 45°'lik düz parçalardan bir Y ile iki kola ayrılır: R1'in duvarları 45° ile dışa açılır, kolların iç duvarları R1 eksenindeki çataldan 45° ile yükselir; her kol Y boyunca kendi çapındadır (R1'in alanının yarısı). Kollar Y'den sonra, tam C1 CFD domeninin tabanında (`C1_RISER_Z0`) dik başlar. Oradan yukarısı her C1 için CFD domeninin aynısıdır: dik kol, 90° dirsek, geçiş ve volütün yatay giriş kanalı (bkz. `C1_RISER_X` … satırı). İkizler birbirinin aynasıdır: kollar ortada, gaz çıkış dirsekleri dışa döner. Aynalanmış akış aynı çözümdür, yalnız girdap ters yönde döner. Y CFD domeninin altında kalır; ama R1 düz olduğundan C2'nin dönen akımı Y'ye ve kollara ulaşır, aynalı ikizlerin girişine ters yönlü dönme gelir. C1 CFD'sinin düzgün giriş profili bu yüzden bir yaklaşımdır; Y'li giriş domeni gerekir ([riser_R1.md](preheater/riser_R1.md)).
 - ikiz C1 → ID fan: her C1'in gaz çıkışı CFD'deki gibi çatının üstünde yükselir, kolun ters tarafına 180° döner ve çatı kotuna iner; oradan aşağı bir "to ID fan" oku
 
 **Farin:**
@@ -327,7 +328,7 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
   - C2 ve C3 kendi riser'larının tam üstündedir: hat toz çıkışından `MEAL_DROP` düşer, 60° ile dirseğin üstünden dışarı çıkar (0.40 / 0.41 m açık), sonra iner. C3'ün hattı kaz boynu inişinden 0.86 m açıktadır.
   - 60° eğim, kalsinatör besleme borularının eğimidir (Fidaros 2007). Boru dik riser duvarıyla 30° yapar, yani farin duvara yatık, neredeyse teğet kayarak girer.
   - Tesislerde farin, riser'a alttaki siklonun hemen üstünden bu şekilde verilir.
-- Yakın C1 (hattın dış ucundaki, C2'nin üstündeki) → uzak C1'in hattı: toz çıkışından `MEAL_DROP` düşer, `MEAL_JOIN_DEG` ile C2'nin çıkış dirseği ve R1 dirseğinin arkasından geçer (kırık) ve uzak C1'in R2'nin yanında inen hattına katılır; R2'nin dirseğinden 5.5 m açıktır. İki C1'in farini tek boruyla R2'ye girer (kullanıcı kararı 14 Ekim 2026).
+- Yakın C1 (hattın dış ucundaki) → uzak C1'in hattı: toz çıkışından `MEAL_DROP` düşer, `MEAL_JOIN_DEG` ile R1'in ve R2'nin dirseğinin arkasından geçer (kırık) ve uzak C1'in R2'nin yanında inen hattına katılır. Uzak C1'in hattı da R2'nin dirseğinin arkasından geçer: C1'ler C2/R2 düzleminin 6.7 m arkasındadır, borular R2'ye ancak dik kısmında öne döner (17 Kasım 2026). İki C1'in farini tek boruyla R2'ye girer (kullanıcı kararı 14 Ekim 2026).
 - C4 → kalsinatör: `C4_MEAL_DROP` dik düşer, `MEAL_BEND`'lik dönüş parçası ve kalsinatör duvarına, `calciner.bas`'ın farin borularının duvarı kestiği kotta (`CALC_FEED_Z`, tersiyer kanalın hemen üstü; 14 Ekim 2026'ya kadar çizimde 3 m aşağıdaydı, `FEED_LOWER`) düz hat; C5'in konisinin arkasından geçer (kırık). Her hattın C4'ü kendi taraftaki besleme borusunu besler.
 - C5 → giriş odasının tavanı: `C5_MEAL_DROP` dik düşer, dönüş parçası ve tavana, kenarından `MEAL_INTO_CHAMBER` içeride düz hat; kalsinatör konisinin altından geçer. Sağ hattaki TA kanalının arkasından geçer (kırık), soldaki hiçbir şeyi kesmez.
 - Giriş odasında farin birikmez: düz taban yerine fırının alt dudağından odanın sol üst köşesine çıkan bir rampa var (açısı yerleşim tablosunda; Ø4.0 fırınla 39.8°'ydi). Bu, farinin yığılma açısı (~40°), yani kayabildiği sınır; makro 39°'nin altına izin vermez. İki C5'in farini rampaya düşer ve fırına kayar. Eski düz taban fırın ağzının 1 m altındaydı ve sol yarısı fırından 5 m uzak bir ölü bölgeydi
@@ -344,7 +345,7 @@ Her hattaki yollar aynıdır; sol hat sağın aynasıdır.
 ## Doğrulama
 
 Makronun ön kontrolleri:
-- R1 ikiz C1'lerin arasına sığıyor ve C2'nin gaz çıkışından dar
+- R1 ikiz C1'lerin arasına sığıyor ve C2'nin gaz çıkışından dar; `R1_RED_L` `R1_RED_DEG`'deki daraltıcının boyu; C1'ler C2'nin çıkış borusunun en az 0.5 m üstünde
 - C3 ve C2'nin konisi, altlarındaki CFD dirseğinin dış duvarının en az 0.5 m üstünde; R2–R4'ün bacakları dirsekten sonra üst siklona ulaşıyor ve 3.40 m'lik girişe daralacak yer var
 - R2–R4'e giden farin CFD borusunun dirseğin altında kalan kısmına giriyor, toz çıkışından ulaşabiliyor; C2 / C3'ün eğimli parçası altındaki dirsekten en az 0.3 m açık
 - C5 farininin dik düşüşü TA kanalının üstünde bitiyor

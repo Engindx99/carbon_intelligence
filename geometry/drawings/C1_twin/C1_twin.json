@@ -156,7 +156,7 @@
     {
       "key": "c1_twin.r1_stub",
       "label": "R1 straight under its Y",
-      "value": 0.5,
+      "value": 6.954182181757304,
       "unit": "m",
       "source": "derived",
       "status": "Schematic",
@@ -165,7 +165,7 @@
         "layout.r1_up_min",
         "layout.stage_gap"
       ],
-      "value_mm": 500.0,
+      "value_mm": 6954.182182,
       "short": "r1_stub"
     },
     {
