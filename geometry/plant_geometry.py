@@ -1025,6 +1025,58 @@ def cyclone_slot_inlet(g, name):
     }
 
 
+def cyclone_duct_inlet(g, name):
+    """The inlet duct's end face and axis, slot or volute, in the
+    macro's frame (gas entering towards +x): what a riser in front of
+    the duct joins onto. A slot is cyclone_slot_inlet. A volute's duct
+    (cyclone.bas VOLUTE_ON) is horizontal and flush with the roof, its
+    inner wall volute_tongue outside the barrel's tangent line, its
+    face inlet_duct_length back from the tangent plane x = 0."""
+
+    c = cyclone(g, name)
+    if not c["volute"]:
+        return cyclone_slot_inlet(g, name)
+    if c["inlet_slope"] != 0.0:
+        raise ValueError(f"{name}: a volute is built horizontal (inlet_slope 0)")
+    d = g["cyclone_domain"]
+    R = 0.5 * c["D_barrel"]
+    z_roof = c["height"]
+    y_inner = R + v(d["volute_tongue"])
+    y_outer = y_inner + c["W_inlet"]
+    L_in = v(d["inlet_duct_length"])
+    return {
+        "y_inner": y_inner,
+        "y_outer": y_outer,
+        "slope_deg": 0.0,
+        "axis": (1.0, 0.0),
+        "normal": (0.0, 1.0),
+        "z_top0": z_roof,
+        "z_bot0": z_roof - c["H_inlet"],
+        "face_centre": (-L_in, 0.5 * (y_inner + y_outer), z_roof - 0.5 * c["H_inlet"]),
+        "length": L_in,
+    }
+
+
+def cyclone_volute_extent(g, name):
+    """How far a volute's scroll reaches outside the barrel, as
+    cyclone.bas samples it: the Archimedean spiral r = R + t + W (1 -
+    phi / pi), phi clockwise from +y over a half turn, at 3600 steps.
+    x_max on the far side of the duct's tangent plane, y_min where the
+    scroll closes behind the barrel."""
+
+    c = cyclone(g, name)
+    d = g["cyclone_domain"]
+    r_t = 0.5 * c["D_barrel"] + v(d["volute_tongue"])
+    W = c["W_inlet"]
+    x_max = y_min = 0.0
+    for k in range(3601):
+        ph = math.pi * k / 3600.0
+        r = r_t + W - W * ph / math.pi
+        x_max = max(x_max, r * math.sin(ph))
+        y_min = min(y_min, r * math.cos(ph))
+    return {"x_max": x_max, "y_min": y_min, "r_start": r_t + W, "r_end": r_t}
+
+
 def cyclone_outlet(g, name):
     """The outlet pipe above the roof, in the slot inlet's frame: it
     rises outlet_rise from the roof, bends through outlet_turn about
@@ -1063,7 +1115,7 @@ def c1_branch(g):
     distance from the C1 axis."""
 
     d = g["cyclone_domain"]
-    s = cyclone_slot_inlet(g, "C1")
+    s = cyclone_duct_inlet(g, "C1")
     dx, dz = s["axis"]
     nx, nz = s["normal"]
     ce_x, _, ce_z = s["face_centre"]
@@ -1109,7 +1161,7 @@ def c1_twin(g):
     branches' straight run starts at the CFD domain's floor."""
 
     br = c1_branch(g)
-    s = cyclone_slot_inlet(g, "C1")
+    s = cyclone_duct_inlet(g, "C1")
     c = cyclone(g, "C1")
     R = 0.5 * c["D_barrel"]
     r = 0.5 * v(g["risers"]["R1"]["D"])

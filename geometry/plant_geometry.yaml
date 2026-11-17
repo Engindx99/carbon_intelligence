@@ -35,13 +35,16 @@ cyclones:
     D_barrel:          {value: 4.32, unit: m,     source: published,    doc: preheater/cyclone_C1.md}
     H_barrel:          {value: 6.79, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     H_cone:            {value: 4.65, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
-    L_vortex:          {value: 2.16, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    # Inlet re-sized for the plant's flow (user decision, 16 Nov 2026):
+    # a volute, a = 3.00 m (17.9 m/s at 28.76 kg/s per C1) and S/a 1.15,
+    # as C4. The FLS ratios gave S 2.16 and a 4.97 (cyclone_C1.md).
+    L_vortex:          {value: 3.45, unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
     D_vortex:          {value: 2.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     D_dust:            {value: 0.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     W_inlet:           {value: 0.86, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
-    H_inlet:           {value: 2.16, unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
-    inlet_slope:       {value: 5.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C1.md}
-    volute:            {value: false, unit: "-",  source: cfd_decision, doc: preheater/cyclone_C1.md}
+    H_inlet:           {value: 3.0,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
+    inlet_slope:       {value: 0.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C1.md}
+    volute:            {value: true, unit: "-",   source: cfd_decision, doc: preheater/cyclone_C1.md}
     outlet_turn:       {value: 180.0, unit: deg,  source: cfd_decision, doc: preheater/cyclone_C1.md}
     outlet_rise_over_Dx: {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
     outlet_bend_R_over_Dx: {value: 1.5, unit: "-", source: model,       doc: preheater/cyclone_C1.md}

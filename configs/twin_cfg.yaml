@@ -204,7 +204,11 @@ pressure:
   # Cyclones, static dP over the inlet duct's velocity: C1
   # (geometry/preheater/cyclone_C1.md, plant flow), C4 with the 1.70 D_x
   # outlet (cyclone_C4.md). C2, C3 and C5 are C4's geometric twins.
-  c1_euler: 6.35
+  # C1 since 16 Nov 2026 (volute 0.86 x 3.00 m, S 3.45): ESTIMATE until
+  # its CFD is re-run, the slot CFD's 6.35 times the clean-gas
+  # Muschelknautz ratio (volute alpha 0.91 from C4's CFD) times the
+  # inlet area ratio squared: 6.35 x 0.662 x 1.929 = 8.12.
+  c1_euler: 8.12
   c4_euler: 11.54
 
 cooler:

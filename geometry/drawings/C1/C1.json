@@ -87,15 +87,15 @@
     {
       "key": "C1.L_vortex",
       "label": "Vortex finder immersion S",
-      "value": 2.16,
+      "value": 3.45,
       "unit": "m",
-      "source": "derived_from_reference",
+      "source": "cfd_decision",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
         "cyclones.C1.L_vortex"
       ],
-      "value_mm": 2160.0,
+      "value_mm": 3450.0,
       "short": "L_vortex"
     },
     {
@@ -142,7 +142,7 @@
     },
     {
       "key": "C1.W_inlet",
-      "label": "Inlet width b",
+      "label": "Inlet width b (volute duct)",
       "value": 0.86,
       "unit": "m",
       "source": "derived_from_reference",
@@ -156,8 +156,8 @@
     },
     {
       "key": "C1.H_inlet",
-      "label": "Inlet height a (normal to the duct)",
-      "value": 2.16,
+      "label": "Inlet height a (volute duct)",
+      "value": 3.0,
       "unit": "m",
       "source": "cfd_decision",
       "status": "Estimated",
@@ -165,13 +165,13 @@
       "inputs": [
         "cyclones.C1.H_inlet"
       ],
-      "value_mm": 2160.0,
+      "value_mm": 3000.0,
       "short": "H_inlet"
     },
     {
       "key": "C1.inlet_slope",
       "label": "Inlet duct slope",
-      "value": 5.0,
+      "value": 0.0,
       "unit": "deg",
       "source": "cfd_decision",
       "status": "Estimated",
@@ -183,7 +183,7 @@
     },
     {
       "key": "cyclone_domain.inlet_duct_length",
-      "label": "Inlet duct length (axis, from tangent plane)",
+      "label": "Volute duct length (from tangent plane)",
       "value": 3.0,
       "unit": "m",
       "source": "model",
@@ -194,20 +194,6 @@
       ],
       "value_mm": 3000.0,
       "short": "inlet_duct_length"
-    },
-    {
-      "key": "cyclone_domain.inlet_roof_clearance",
-      "label": "Opening top below the roof",
-      "value": 0.05,
-      "unit": "m",
-      "source": "model",
-      "status": "Estimated",
-      "doc": "preheater/cyclone_C1.md",
-      "inputs": [
-        "cyclone_domain.inlet_roof_clearance"
-      ],
-      "value_mm": 50.0,
-      "short": "inlet_roof_clearance"
     },
     {
       "key": "cyclone_domain.volute_tongue",
@@ -224,9 +210,23 @@
       "short": "tongue"
     },
     {
+      "key": "cyclone_domain.volute_overlap",
+      "label": "Scroll's inner arc inside the barrel",
+      "value": 0.1,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.volute_overlap"
+      ],
+      "value_mm": 100.0,
+      "short": "overlap"
+    },
+    {
       "key": "C1.volute",
       "label": "Volute",
-      "value": false,
+      "value": true,
       "unit": "-",
       "source": "cfd_decision",
       "status": "Estimated",
@@ -427,7 +427,6 @@
     "vortex_wall",
     "W_inlet",
     "H_inlet",
-    "inlet_slope",
     "outlet_rise",
     "leg_x"
   ],

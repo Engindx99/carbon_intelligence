@@ -21,13 +21,13 @@ Yayınlanmış olan yalnız çap D'dir (HFC2500); gövde, koni, vorteks bulucu, 
 | Efektif iç çap D | 4.32 m | yayınlanmış |
 | Silindirik gövde yüksekliği | 6.79 m | FLS oranıyla türetilmiş |
 | Koni yüksekliği | 4.65 m | FLS oranıyla türetilmiş |
-| Vorteks bulucu daldırması S | 2.16 m | FLS oranıyla türetilmiş |
+| Vorteks bulucu daldırması S | 3.45 m | CFD kararı |
 | Vorteks bulucu çapı D_x | 2.4 m | FLS oranıyla türetilmiş |
 | Toz çıkışı çapı | 0.4 m | FLS oranıyla türetilmiş |
 | Giriş genişliği | 0.86 m | FLS oranıyla türetilmiş |
-| Giriş yüksekliği | 2.16 m | CFD kararı |
-| Giriş eğimi | 5 ° | CFD kararı |
-| Volüt | yok | CFD kararı |
+| Giriş yüksekliği | 3 m | CFD kararı |
+| Giriş eğimi | 0 ° | CFD kararı |
+| Volüt | var | CFD kararı |
 | Çıkış dönüşü | 180 ° | CFD kararı |
 | Çıkış borusu yükselişi (çatının üstünde) | 3.000 m | 1.25 D_x |
 | Çıkış dirseği merkez yarıçapı | 3.600 m | 1.5 D_x |
@@ -850,6 +850,10 @@ Giriş hidrolik çapı: 1.23 m
 Vorteks bulucu kesiti: 4.524 m²
 
 Toz çıkışı kesiti: 0.126 m²
+
+Toz çıkışı çapının gözden geçirilmesi (16 Kasım 2026, kullanıcı onayı; ölçü değişmedi):
+- Oran FLS referansınınki: Svensen ve diğ. 2025 Tablo 8, Cy1 D_d/D = 0.64/6.90 = 0.093. Farin akısı referanstan düşük; kıyas [meal_pipe_C1.md](meal_pipe_C1.md)'de.
+- Girdap ucu, Alexander'ın doğal girdap boyuyla: L/D = 2.3·(D_x/D)·(D²/(a·b))^(1/3) = 2.3 × 0.556 × 2.157 = 2.76, L ≈ 11.9 m. Vorteks bulucu ağzından toz çıkışına 9.28 m var; girdap toz çıkışına ulaşır, koni duvarına tutunmaz (aşınma ve yeniden kalkış riski yok). Giriş a = 3.0 m'ye büyütülse L ≈ 10.7 m, yine yeterli.
 
 Vorteks bulucunun dış yarıçapı ile kanalın iç duvarı arasındaki pay: 0.020 m (teğet payından etkilenmez — pay yalnızca dış duvarı kaydırır) — akışkan içinde bir darboğaz değil (aradaki bölge halkanın kendisi, serbest); kanalın vorteks bulucuyu kesmemesini garanti eden geometrik sınır
 

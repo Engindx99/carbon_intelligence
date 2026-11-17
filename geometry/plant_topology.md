@@ -86,7 +86,7 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 <!-- BEGIN GENERATED (tools/gen_geometry.py) cfd -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Blok | Domen (donmuş) | Giriş yüzü | Çıkış yüzü |
 |---|---|---|---|
-| C1 (×4) | gövde, VF 2.16, Ø2.171 kol, 95° R 2.171 dirsek, 1.5 m geçiş, 5° kanal, 0.6 m oluk; 3.00 m çıkış borusu, R 3.60 180° dirsek, 3.00 m iniş | kolun tabanı, toz çıkışının 0.885 m üstü | inişin ucu, çatı kotunda, eksenden 7.20 m |
+| C1 (×4) | gövde, VF 3.45, Ø2.171 kol, 90° R 2.171 dirsek, 1.5 m geçiş, 0° kanal, 0.6 m oluk; 3.00 m çıkış borusu, R 3.60 180° dirsek, 3.00 m iniş | kolun tabanı, toz çıkışının 0.269 m üstü | inişin ucu, çatı kotunda, eksenden 7.20 m |
 | C2–C4 (×6) | gövde, VF 3.900, volüt ve 3.00 m giriş kanalı, 7.871 m (1.7·VD) çıkış borusu, R 4.630 90° dirsek, 4.630 m bacak | giriş kanalının ucu, eksenden 3.00 m (`C4_IN_L`) | bacağın ucu, eksenden 9.260 m, çatının 12.501 m üstünde |
 | C5 (×2) | C2–C4'ün 1.0317 katı (CFD'si ayrıca çözülmez) | eksenden 3.10 m | bacağın ucu, eksenden 9.554 m, çatının 12.898 m üstünde |
 <!-- END GENERATED -->
@@ -188,7 +188,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C4_IN_W` | 2.912 | plant_geometry.yaml |
 | `C4_TONGUE` | 0.05 | plant_geometry.yaml |
 | `C4_IN_L` | 3 | plant_geometry.yaml |
-| `C1_VF_S` | 2.16 | plant_geometry.yaml |
+| `C1_VF_S` | 3.45 | plant_geometry.yaml |
 | `R1_D` | 3.07 | plant_geometry.yaml |
 | `CALC_D` | 6.7404 | plant_geometry.yaml |
 | `CALC_H` | 30 | plant_geometry.yaml |
@@ -213,14 +213,16 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `COOLER_AREA` | 119.6 | plant_geometry.yaml |
 | `COOLER_W` | 4 | plant_geometry.yaml |
 | `COOLER_H` | 3 | plant_geometry.yaml |
-| `C1_RISER_X` | 6.842893 | plant_geometry.yaml |
-| `C1_RISER_Z0` | 0.884601 | plant_geometry.yaml |
-| `C1_BEND_Z` | 8.384601 | plant_geometry.yaml |
+| `C1_RISER_X` | 6.670818 | plant_geometry.yaml |
+| `C1_RISER_Z0` | 0.269182 | plant_geometry.yaml |
+| `C1_BEND_Z` | 7.769182 | plant_geometry.yaml |
 | `C1_BEND_R` | 2.170818 | plant_geometry.yaml |
-| `C1_BEND_DEG` | 95 | plant_geometry.yaml |
+| `C1_BEND_DEG` | 90 | plant_geometry.yaml |
 | `C1_TRANS_L` | 1.5 | plant_geometry.yaml |
-| `C1_DUCT_H` | 2.16 | plant_geometry.yaml |
-| `C1_FEED_Z` | 5.384601 | plant_geometry.yaml |
+| `C1_DUCT_H` | 3 | plant_geometry.yaml |
+| `C1_VOL_OUT` | 3.07 | plant_geometry.yaml |
+| `C1_VOL_FAR` | 2.226723 | plant_geometry.yaml |
+| `C1_FEED_Z` | 4.769182 | plant_geometry.yaml |
 | `C1_FEED_L` | 1 | plant_geometry.yaml |
 | `C1_FEED_W` | 0.6 | plant_geometry.yaml |
 | `C1_OUT_RISE` | 3 | plant_geometry.yaml |
@@ -230,8 +232,8 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
 | `C1_TWIN_GAP` | 1 | plant_geometry.yaml |
-| `C1_TWIN_S` | 6.630818 | plant_geometry.yaml |
-| `C1_DUCT_Y` | 1.73 | plant_geometry.yaml |
+| `C1_TWIN_S` | 8.450818 | plant_geometry.yaml |
+| `C1_DUCT_Y` | 2.64 | plant_geometry.yaml |
 | `R1_BRANCH_HALF` | 1.585409 | plant_geometry.yaml |
 | `R1_UP_MIN` | 0.5 | plant_geometry.yaml |
 | `R1_LEG_ON` | 0.5 | plant_geometry.yaml |
@@ -292,13 +294,13 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | İç kolon (C5, C3) | x = ±16.781 |
 | Dış kolon (C4, C2) | x = ±31.781 |
 | R1 | x = ±20.486 |
-| İkiz C1 | x = ±17.171 ve ±23.802 |
+| İkiz C1 | x = ±16.261 ve ±24.712 |
 | C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
 | C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
 | C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |
 | C2 toz çıkışı / çıkış borusu tepesi | z 69.991 / 91.462 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 100.057 / 114.497 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 119.297 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 100.672 / 115.112 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 119.912 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |

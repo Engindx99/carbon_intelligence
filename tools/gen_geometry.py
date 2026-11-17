@@ -260,6 +260,8 @@ def drawing_bas(g):
         der("C1_BEND_DEG", br["bend_deg"], "C1 branch bend"),
         src("C1_TRANS_L", d["c1_riser_transition"], "round -> duct transition"),
         src("C1_DUCT_H", cy["C1"]["H_inlet"], "C1 inlet duct height"),
+        der("C1_VOL_OUT", pg.cyclone_duct_inlet(g, "C1")["y_outer"], "C1 volute duct's outer wall from the C1 axis"),
+        der("C1_VOL_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"], "C1 volute scroll's end, the side away from the duct"),
         der("C1_FEED_Z", br["z_feed"], "C1 feed chute axis at the branch wall"),
         src("C1_FEED_L", d["c1_feed_depth"], "C1 feed chute depth"),
         src("C1_FEED_W", d["c1_feed_width"], "C1 feed chute side"),
@@ -321,7 +323,7 @@ def drawings_bas(g):
 
     cy, d = g["cyclones"], g["cyclone_domain"]
     c1 = pg.cyclone(g, "C1")
-    s = pg.cyclone_slot_inlet(g, "C1")
+    s = pg.cyclone_duct_inlet(g, "C1")
     o = pg.cyclone_outlet(g, "C1")
     P = dcy.params(g, "C1")
     nx, nz = s["normal"]
@@ -350,7 +352,7 @@ def drawings_bas(g):
         der("C1_FACE_TOP_Z", cez + h * nz, "inlet face, upper edge z"),
         der("C1_FACE_BOT_X", cex - h * nx, "inlet face, lower edge x"),
         der("C1_FACE_BOT_Z", cez - h * nz, "inlet face, lower edge z"),
-        der("C1_REACH", s["reach"], "inlet opening's upstream end on the barrel, -x"),
+        der("C1_REACH", s.get("reach", 0.0), "inlet opening's upstream end on the barrel, -x (0: a volute)"),
     ]
     out += _table_consts("C1", P, dcy.ORDER)
     out += _twin_sheet_consts(g)
@@ -552,6 +554,8 @@ def _twin_sheet_consts(g):
         der("TW_R1_STUB_L", L["z_r1_split"] - L["z_r1_leg_top"], "R1 straight under its Y"),
         der("TW_Z_CUT", 0.5 * (chute_top + br["z_bend"]), "section A-A: clear of the feed chutes and the bends"),
         der("TW_C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
+        der("TW_C1_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"] if c1["volute"] else 0.5 * c1["D_barrel"],
+            "each C1's outer side from its axis: the barrel, or the volute's scroll end"),
         der("TW_Y_MIN", y_min, "the feed chutes' far side, y (the C1_riser solid's -x)"),
         der("TW_Y_MAX", o["leg_x"] + 0.5 * o["D"], "the outlet legs' far side, y"),
         der("TW_TOP", o["z_bend"] + o["bend_R"] + 0.5 * o["D"], "the outlet bends' crown"),
@@ -583,6 +587,8 @@ def c1_twin_bas(g):
         der("Z_SPLIT", tw["z_split"], "R1's top: the Y starts"),
         der("R1_STUB_L", L["z_r1_split"] - L["z_r1_leg_top"], "R1 straight under its Y, over C2's outlet leg"),
         der("C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
+        der("C1_Y_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"] if c1["volute"] else 0.5 * c1["D_barrel"],
+            "the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end"),
         der("C1_TOP", o["z_bend"] + o["bend_R"] + 0.5 * o["D"], "the outlet bend's crown"),
         der("C1_X_MAX", o["leg_x"] + 0.5 * o["D"], "the C1_riser solid's far side, its outlet leg (C1 frame x)"),
         der("C1_X_MIN", tip, "the C1_riser solid's near side, its feed chute (C1 frame x)"),

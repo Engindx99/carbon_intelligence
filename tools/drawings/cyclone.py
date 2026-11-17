@@ -1,6 +1,7 @@
-"""A preheater cyclone's drawing values (the slot-inlet, gooseneck-
-outlet cyclone, C1): every value geometry/macros/drawings.bas shows or
-lists, with where it comes from and how far to trust it.
+"""A preheater cyclone's drawing values (the gooseneck-outlet cyclone,
+C1, with its volute since 16 Nov 2026): every value
+geometry/macros/drawings.bas shows or lists, with where it comes from
+and how far to trust it.
 
 The macro gets them through its generated Const block
 (tools/gen_geometry.py, drawings_bas); the JSON next to the drawing
@@ -19,7 +20,7 @@ from . import provenance as pv
 # between the pipe's and the leg's inner walls in the section.
 DIMENSIONED = (
     "D_barrel", "H_barrel", "H_cone", "height", "D_dust", "D_vortex",
-    "L_vortex", "vortex_wall", "W_inlet", "H_inlet", "inlet_slope",
+    "L_vortex", "vortex_wall", "W_inlet", "H_inlet",
     "outlet_rise", "leg_x",
 )
 
@@ -27,7 +28,7 @@ DIMENSIONED = (
 ORDER = (
     "per_string", "D_barrel", "H_barrel", "H_cone", "height", "L_vortex",
     "D_vortex", "vortex_wall", "D_dust", "W_inlet", "H_inlet", "inlet_slope",
-    "inlet_duct_length", "inlet_roof_clearance", "tongue", "volute",
+    "inlet_duct_length", "tongue", "overlap", "volute",
     "outlet_turn", "outlet_rise", "outlet_bend_R", "outlet_run", "leg_x",
     "top", "volume", "wet_area", "u_wall", "u_material", "u_flange",
     "u_support", "u_split",
@@ -35,10 +36,12 @@ ORDER = (
 
 
 def params(g, name):
-    """{short key: Param} for cyclone `name` (slot inlet only)."""
+    """{short key: Param} for cyclone `name` (a volute and a 180 deg
+    gooseneck: C1)."""
     c = pg.cyclone(g, name)
     o = pg.cyclone_outlet(g, name)
-    pg.cyclone_slot_inlet(g, name)          # refuses a volute cyclone
+    if not c["volute"] or c["outlet_turn"] != 180.0:
+        raise ValueError(f"{name} is not a volute cyclone with a gooseneck outlet")
     dom = "cyclone_domain"
     P = {}
 
@@ -56,14 +59,13 @@ def params(g, name):
     dim("D_vortex", "Vortex finder / outlet pipe bore Dx")
     P["vortex_wall"] = pv.primary(g, f"{dom}.vortex_wall", "Vortex finder wall")
     dim("D_dust", "Dust outlet diameter")
-    dim("W_inlet", "Inlet width b")
-    dim("H_inlet", "Inlet height a (normal to the duct)")
+    dim("W_inlet", "Inlet width b (volute duct)")
+    dim("H_inlet", "Inlet height a (volute duct)")
     dim("inlet_slope", "Inlet duct slope")
     P["inlet_duct_length"] = pv.primary(g, f"{dom}.inlet_duct_length",
-                                        "Inlet duct length (axis, from tangent plane)")
-    P["inlet_roof_clearance"] = pv.primary(g, f"{dom}.inlet_roof_clearance",
-                                           "Opening top below the roof")
+                                        "Volute duct length (from tangent plane)")
     P["tongue"] = pv.primary(g, f"{dom}.volute_tongue", "Tongue (cut-water)")
+    P["overlap"] = pv.primary(g, f"{dom}.volute_overlap", "Scroll's inner arc inside the barrel")
     dim("volute", "Volute")
     dim("outlet_turn", "Outlet bend angle")
     rise_k = pv.cyclone_dim(g, name, "outlet_rise_over_Dx", "")

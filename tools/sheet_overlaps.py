@@ -45,6 +45,7 @@ MIN_LINE = 0.5           # [pt] shorter segments are arrowhead or hatch stubs' e
 # (sheet file, text, kind) -> why it is accepted
 ALLOW = {
     ("C1.pdf", "80 E", "line"): "detail B: the vortex finder wall, hatched on both sides; no clear place inside",
+    ("C1.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section (-x side since the volute, as C4)",
     ("C4.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section",
     ("C5.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section",
 }

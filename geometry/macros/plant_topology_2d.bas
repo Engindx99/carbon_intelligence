@@ -68,7 +68,7 @@ Const C4_IN_H                      As Double  = 3.4          ' volute inlet heig
 Const C4_IN_W                      As Double  = 2.912        ' volute inlet width [cfd_decision, preheater/cyclone_C4.md]
 Const C4_TONGUE                    As Double  = 0.05         ' [model, preheater/cyclone_C4.md]
 Const C4_IN_L                      As Double  = 3#           ' inlet duct face from the axis [model, preheater/cyclone_C4.md]
-Const C1_VF_S                      As Double  = 2.16         ' vortex finder immersion [derived_from_reference, preheater/cyclone_C1.md]
+Const C1_VF_S                      As Double  = 3.45         ' vortex finder immersion [cfd_decision, preheater/cyclone_C1.md]
 Const R1_D                         As Double  = 3.07         ' [published, preheater/riser_R1.md]
 Const CALC_D                       As Double  = 6.7404       ' [derived_from_reference, calciner/calciner.md]
 Const CALC_H                       As Double  = 30#          ' cone + cylinder [published, calciner/calciner.md]
@@ -93,14 +93,16 @@ Const KILN_SLOPE                   As Double  = 0.03         ' slope / 100 [publ
 Const COOLER_AREA                  As Double  = 119.6        ' m2 [published, cooler/cooler.md]
 Const COOLER_W                     As Double  = 4#           ' grate width [literature, cooler/cooler.md]
 Const COOLER_H                     As Double  = 3#           ' casing height [literature, cooler/cooler.md]
-Const C1_RISER_X                   As Double  = 6.842893     ' C1 riser branch axis from the C1 axis [derived]
-Const C1_RISER_Z0                  As Double  = 0.884601     ' C1 CFD domain floor, over the dust outlet [derived]
-Const C1_BEND_Z                    As Double  = 8.384601     ' C1 branch bend start [derived]
+Const C1_RISER_X                   As Double  = 6.670818     ' C1 riser branch axis from the C1 axis [derived]
+Const C1_RISER_Z0                  As Double  = 0.269182     ' C1 CFD domain floor, over the dust outlet [derived]
+Const C1_BEND_Z                    As Double  = 7.769182     ' C1 branch bend start [derived]
 Const C1_BEND_R                    As Double  = 2.170818     ' C1 branch bend centreline R [derived]
-Const C1_BEND_DEG                  As Double  = 95#          ' C1 branch bend [derived]
+Const C1_BEND_DEG                  As Double  = 90#          ' C1 branch bend [derived]
 Const C1_TRANS_L                   As Double  = 1.5          ' round -> duct transition [model, preheater/riser_R1.md]
-Const C1_DUCT_H                    As Double  = 2.16         ' C1 inlet duct height [cfd_decision, preheater/cyclone_C1.md]
-Const C1_FEED_Z                    As Double  = 5.384601     ' C1 feed chute axis at the branch wall [derived]
+Const C1_DUCT_H                    As Double  = 3#           ' C1 inlet duct height [cfd_decision, preheater/cyclone_C1.md]
+Const C1_VOL_OUT                   As Double  = 3.07         ' C1 volute duct's outer wall from the C1 axis [derived]
+Const C1_VOL_FAR                   As Double  = 2.226723     ' C1 volute scroll's end, the side away from the duct [derived]
+Const C1_FEED_Z                    As Double  = 4.769182     ' C1 feed chute axis at the branch wall [derived]
 Const C1_FEED_L                    As Double  = 1#           ' C1 feed chute depth [model, preheater/riser_R1.md]
 Const C1_FEED_W                    As Double  = 0.6          ' C1 feed chute side [literature, preheater/riser_R1.md]
 Const C1_OUT_RISE                  As Double  = 3#           ' C1 outlet pipe rise [derived]
@@ -110,8 +112,8 @@ Const ZIG_DX                       As Double  = 15#          ' outer column outb
 Const C5_OVER_TA                   As Double  = 1.75         ' [schematic, plant_topology.md]
 Const GN_TO_C5_GAP                 As Double  = 1#           ' [schematic, plant_topology.md]
 Const C1_TWIN_GAP                  As Double  = 1#           ' twin C1: gap between the branches' walls [model, preheater/riser_R1.md]
-Const C1_TWIN_S                    As Double  = 6.630818     ' twin C1: axis to axis [derived]
-Const C1_DUCT_Y                    As Double  = 1.73         ' C1 inlet duct / branch axis from the C1 axis [derived]
+Const C1_TWIN_S                    As Double  = 8.450818     ' twin C1: axis to axis [derived]
+Const C1_DUCT_Y                    As Double  = 2.64         ' C1 inlet duct / branch axis from the C1 axis [derived]
 Const R1_BRANCH_HALF               As Double  = 1.585409     ' R1's Y: each branch from R1's axis [derived]
 Const R1_UP_MIN                    As Double  = 0.5          ' [schematic, plant_topology.md]
 Const R1_LEG_ON                    As Double  = 0.5          ' [schematic, plant_topology.md]
@@ -178,14 +180,16 @@ Const TA_BEND_R_OVER_D As Double = 1.5     ' its turn from the hood over to the 
 '    C5_OVER_TA: the C5 dust outlets at least this far over the tertiary air duct [m]
 '    GN_TO_C5_GAP: a gooseneck arm's outlet face to its C5 barrel; the level run goes on across it [m]
 ' Each of the twin C1 as its CFD domain (cyclone_C1.md, riser_R1.md): heights over its dust outlet [m, deg]
-' -> C1_RISER_X, C1_RISER_Z0, C1_BEND_Z, C1_BEND_R, C1_BEND_DEG, C1_TRANS_L, C1_DUCT_H, C1_FEED_Z, C1_FEED_L, C1_FEED_W, C1_OUT_RISE, C1_OUT_R, R1_BRANCH_HALF, R1_UP_MIN, R1_LEG_ON: in the generated block above
+' -> C1_RISER_X, C1_RISER_Z0, C1_BEND_Z, C1_BEND_R, C1_BEND_DEG, C1_TRANS_L, C1_DUCT_H, C1_VOL_OUT, C1_VOL_FAR, C1_FEED_Z, C1_FEED_L, C1_FEED_W, C1_OUT_RISE, C1_OUT_R, R1_BRANCH_HALF, R1_UP_MIN, R1_LEG_ON: in the generated block above
 '    C1_RISER_X: its own riser branch (D = R1's half area), its axis this far from the C1 axis
 '    C1_RISER_Z0: the CFD domain's floor: the branch is straight from here ...
 '    C1_BEND_Z: ... up to its bend
 '    C1_BEND_R: bend centreline radius (1.0 D), its walls arcs
-'    C1_BEND_DEG: the bend: from straight up to the inlet duct's 5 deg down
+'    C1_BEND_DEG: the bend: from straight up to the inlet duct's axis (90: the volute's duct is level)
 '    C1_TRANS_L: round -> rectangular transition along the duct axis, then the duct into the barrel
-'    C1_DUCT_H: inlet duct height (0.86 wide, tangential)
+'    C1_DUCT_H: inlet duct height (the volute's, 0.86 wide, flush with the roof; user decision 16 Nov 2026)
+'    C1_VOL_OUT: the volute duct's outer wall from the C1 axis, on the branch's side
+'    C1_VOL_FAR: the volute's scroll end, past the barrel on the side away from the branch
 '    C1_FEED_Z: the meal chute's axis meets the branch wall here, on the side away from the C1
 '    C1_FEED_L: ... standing out this far along its axis, at MEAL_SLOPE_DEG
 '    C1_FEED_W: ... 0.6 x 0.6 square
@@ -334,8 +338,11 @@ Sub main()
 
     Restore
     WriteLog
-    MsgBox "Plant topology 2D built and verified: two 2500 t/d strings, 12 cyclones, A1 at 1:" & Fmt(SHEET_SCALE) & _
-           "." & vbLf & LayerSummary() & vbLf & vbLf & "Full log: " & LogPath(), vbInformation, "Plant topology 2D"
+    ' no message box when OUT_ROOT\quiet.flag exists (tools/sw_run.py)
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox "Plant topology 2D built and verified: two 2500 t/d strings, 12 cyclones, A1 at 1:" & Fmt(SHEET_SCALE) & _
+               "." & vbLf & LayerSummary() & vbLf & vbLf & "Full log: " & LogPath(), vbInformation, "Plant topology 2D"
+    End If
     Exit Sub
 
 Failed:
@@ -343,8 +350,10 @@ Failed:
     Restore
     buildLog = buildLog & "ABORTED while " & phase & ": " & why & vbLf
     WriteLog
-    MsgBox "Plant topology 2D ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
-           vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Plant topology 2D"
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox "Plant topology 2D ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
+               vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Plant topology 2D"
+    End If
 
 End Sub
 
@@ -1026,43 +1035,82 @@ End Sub
 
 
 ' A twin C1's section about its axis at xc, R1 on its side inSide. Its
-' branch rises in front of it (the twin is turned, user decision 13 Nov
-' 2026), C1_DUCT_Y +- the branch radius from the axis on that side,
-' from the CFD domain's floor to its bend's crown: what of the cone,
-' barrel wall and roof lies behind it is hidden (ISO 128 02.1), the
-' rest drawn as Cyclone draws a cyclone.
+' outline, each side: the cone, the barrel up to the volute's floor, the
+' volute out to C1_VOL_OUT on the branch's side (its duct, seen end on)
+' or to C1_VOL_FAR on the other (the scroll's end), up to the roof, the
+' roof in to the outlet stub, the stub up. The branch rises in front of
+' it (the twin is turned, user decision 13 Nov 2026), C1_DUCT_Y +- the
+' branch radius from the axis, from the CFD domain's floor to its bend's
+' crown: what of the outline lies behind that band is hidden (ISO 128
+' 02.1), clipped segment by segment (ClipLineM).
 Private Sub C1Outline(ByVal xc As Double, ByVal inSide As Double)
     Dim rb As Double, b0 As Double, b1 As Double, z0 As Double, z1 As Double
-    Dim zc As Double, sg As Double, k As Long
+    Dim sg As Double, k As Long, i As Long, xo As Double, zv As Double
     Dim xr As Double, xs As Double, zr As Double, zt As Double, zcone As Double
+    Dim u As Variant, w As Variant
     rb = kBranch * 0.5 * RiserD(1)
     b0 = C1_DUCT_Y - rb: b1 = C1_DUCT_Y + rb              ' the branch's band, from the axis
     z0 = zDust(1) + C1_RISER_Z0                           ' its floor ...
     z1 = zDust(1) + C1_BEND_Z + C1_BEND_R + rb            ' ... to its crown's top
     zcone = zDust(1) + C1_HC: zr = zRoof(1): zt = zTop(1)
+    zv = zr - C1_DUCT_H                                   ' the volute's floor
     xr = 0.5 * C1_D: xs = 0.5 * C1_VD
-    If b1 < xr Or b0 > xs Then Fail "the C1 branch is not where C1Outline hides the C1 behind it."
-    If z1 < zr Or z0 > zDust(1) + C1_HC * (b0 - 0.5 * C1_DD) / (xr - 0.5 * C1_DD) Then
-        Fail "the C1 branch does not cover the C1 cone and barrel the way C1Outline assumes."
-    End If
+    If zv <= zcone Then Fail "the C1 volute reaches below the barrel; C1Outline draws it on the barrel."
+    If b0 >= C1_VOL_OUT Or b1 <= xr Then Fail "the C1 branch does not stand in front of the C1's volute."
     For k = 0 To 1
         sg = 1# - 2# * k
-        If sg = inSide Then
-            ' the cone: drawn up to where it passes behind the branch's near wall
-            zc = zDust(1) + C1_HC * (b0 - 0.5 * C1_DD) / (xr - 0.5 * C1_DD)
-            LineM xc + sg * 0.5 * C1_DD, zDust(1), xc + sg * b0, zc
-            UseLayer L_HID
-            LineM xc + sg * b0, zc, xc + sg * xr, zcone
-            LineM xc + sg * xr, zcone, xc + sg * xr, zr
-            LineM xc + sg * xr, zr, xc + sg * xs, zr
-            LineM xc + sg * xs, zr, xc + sg * xs, z1
-            UseLayer L_EQUIP
-            LineM xc + sg * xs, z1, xc + sg * xs, zt
-        Else
-            PolyM Array(xc + sg * 0.5 * C1_DD, zDust(1), xc + sg * xr, zcone, xc + sg * xr, zr, _
-                        xc + sg * xs, zr, xc + sg * xs, zt)
-        End If
+        If sg = inSide Then xo = C1_VOL_OUT Else xo = C1_VOL_FAR
+        u = Array(0.5 * C1_DD, xr, xr, xo, xo, xs, xs)    ' from the axis
+        w = Array(zDust(1), zcone, zv, zv, zr, zr, zt)
+        For i = 0 To 5
+            If sg = inSide Then
+                ClipLineM xc + sg * u(i), w(i), xc + sg * u(i + 1), w(i + 1), _
+                          xc + sg * b0, xc + sg * b1, z0, z1
+            Else
+                LineM xc + sg * u(i), w(i), xc + sg * u(i + 1), w(i + 1)
+            End If
+        Next i
     Next k
+End Sub
+
+
+' A line, the part of it inside the box (x between xa0 and xa1 in either
+' order, z between zb0 and zb1) on the hidden layer: Liang-Barsky.
+' Leaves the layer as L_EQUIP.
+Private Sub ClipLineM(ByVal xa As Double, ByVal za As Double, ByVal xb As Double, ByVal zb As Double, _
+                      ByVal xa0 As Double, ByVal xa1 As Double, ByVal zb0 As Double, ByVal zb1 As Double)
+    Dim x0 As Double, x1 As Double, dx As Double, dz As Double, t0 As Double, t1 As Double
+    Dim p(3) As Double, q(3) As Double, r As Double, j As Long, ln As Double
+    x0 = Min2(xa0, xa1): x1 = Max2(xa0, xa1)
+    dx = xb - xa: dz = zb - za
+    ln = Sqr(dx * dx + dz * dz)
+    p(0) = -dx: q(0) = xa - x0
+    p(1) = dx: q(1) = x1 - xa
+    p(2) = -dz: q(2) = za - zb0
+    p(3) = dz: q(3) = zb1 - za
+    t0 = 0#: t1 = 1#
+    For j = 0 To 3
+        If Abs(p(j)) < 0.000000001 Then
+            If q(j) < 0# Then t0 = 1#: t1 = 0#           ' parallel and outside
+        Else
+            r = q(j) / p(j)
+            If p(j) < 0# Then
+                If r > t0 Then t0 = r
+            Else
+                If r < t1 Then t1 = r
+            End If
+        End If
+    Next j
+    UseLayer L_EQUIP
+    If t1 - t0 <= 0.000001 / ln Then
+        LineM xa, za, xb, zb
+        Exit Sub
+    End If
+    If t0 * ln > 0.000001 Then LineM xa, za, xa + t0 * dx, za + t0 * dz
+    UseLayer L_HID
+    LineM xa + t0 * dx, za + t0 * dz, xa + t1 * dx, za + t1 * dz
+    UseLayer L_EQUIP
+    If (1# - t1) * ln > 0.000001 Then LineM xa + t1 * dx, za + t1 * dz, xb, zb
 End Sub
 
 

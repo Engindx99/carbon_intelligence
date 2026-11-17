@@ -47,11 +47,13 @@ class GasPressureLossesTest(unittest.TestCase):
         self.assertAlmostEqual(r["C4"]["dP"], 522.8, delta=0.04 * 522.8)
 
     def test_c1_gives_back_its_plant_point(self):
-        # cyclone_C1.md at plant flow: 28 kg/s per C1 at 603 K, 1232 Pa.
+        # The volute C1 (16 Nov 2026) at plant flow: 28 kg/s per C1 at
+        # 603 K, Eu 8.12 (MM estimate until its CFD), 816 Pa. The slot
+        # C1 gave 1232 Pa there (cyclone_C1.md).
         g = pg.load()
         units = int(g["plant"]["strings"]["value"]) * int(pg.cyclone(g, "C1")["per_string"])
         r = self.rows(stand_in(1100.0, 100.0, [603.0] * 4, 28.0 * units))
-        self.assertAlmostEqual(r["C1"]["dP"], 1232.0, delta=0.02 * 1232.0)
+        self.assertAlmostEqual(r["C1"]["dP"], 816.0, delta=0.02 * 816.0)
 
     def test_sections_in_gas_order_and_power_is_dp_times_flow(self):
         twin = stand_in(1150.0, 110.0, [1090.0, 1000.0, 900.0, 750.0], 110.0)

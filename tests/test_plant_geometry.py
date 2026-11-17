@@ -499,7 +499,7 @@ class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
         other, R1 on the mirror plane; the pair as tight as the branches'
         walls c1_twin_gap apart allow, nothing else touching."""
         tw, br = pg.c1_twin(self.g), pg.c1_branch(self.g)
-        c, s = pg.cyclone(self.g, "C1"), pg.cyclone_slot_inlet(self.g, "C1")
+        c, s = pg.cyclone(self.g, "C1"), pg.cyclone_duct_inlet(self.g, "C1")
         R, rb = 0.5 * c["D_barrel"], 0.5 * br["D"]
         self.assertAlmostEqual(tw["branch_gap"], pg.v(self.g["layout"]["c1_twin_gap"]), places=12)
         self.assertGreater(tw["barrel_gap"], tw["gap"])               # the barrels clear too

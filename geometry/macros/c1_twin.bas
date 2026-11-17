@@ -35,17 +35,18 @@ Option Explicit
 ' change the source and run: python3 tools/gen_geometry.py
 Const R1_D                         As Double  = 3.07         ' R1 bore [published, preheater/riser_R1.md]
 Const TWIN_GAP                     As Double  = 1#           ' the branches' walls apart [model, preheater/riser_R1.md]
-Const TWIN_S                       As Double  = 6.630818     ' C1 axis to axis [derived]
+Const TWIN_S                       As Double  = 8.450818     ' C1 axis to axis [derived]
 Const BRANCH_HALF                  As Double  = 1.585409     ' each branch from R1's axis, x [derived]
 Const BRANCH_D                     As Double  = 2.170818     ' branch bore (half R1's area) [derived]
-Const BRANCH_Y                     As Double  = -6.842893    ' branches and R1 in front of the C1 axes, y [derived]
-Const Z_BRANCH                     As Double  = 0.884601     ' the branches' floor (the C1_riser inlet face) [derived]
-Const Z_SPLIT                      As Double  = -1.150399    ' R1's top: the Y starts [derived]
+Const BRANCH_Y                     As Double  = -6.670818    ' branches and R1 in front of the C1 axes, y [derived]
+Const Z_BRANCH                     As Double  = 0.269182     ' the branches' floor (the C1_riser inlet face) [derived]
+Const Z_SPLIT                      As Double  = -1.765818    ' R1's top: the Y starts [derived]
 Const R1_STUB_L                    As Double  = 0.5          ' R1 straight under its Y, over C2's outlet leg [derived]
 Const C1_R                         As Double  = 2.16         ' barrel radius [derived]
+Const C1_Y_FAR                     As Double  = 2.226723     ' the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end [derived]
 Const C1_TOP                       As Double  = 19.24        ' the outlet bend's crown [derived]
 Const C1_X_MAX                     As Double  = 8.4          ' the C1_riser solid's far side, its outlet leg (C1 frame x) [derived]
-Const C1_X_MIN                     As Double  = -8.68811     ' the C1_riser solid's near side, its feed chute (C1 frame x) [derived]
+Const C1_X_MIN                     As Double  = -8.516034    ' the C1_riser solid's near side, its feed chute (C1 frame x) [derived]
 Const OUT_Z_END                    As Double  = 11.44        ' the outlet legs' end faces [derived]
 ' END GENERATED
 
@@ -109,7 +110,10 @@ Sub main()
 
     buildLog = "c1_twin built" & vbLf & buildLog
     WriteLog
-    MsgBox "C1_twin built." & vbLf & "Full log: " & LogPath(), vbInformation, "Twin C1"
+    ' no message box when OUT_ROOT\quiet.flag exists (tools/sw_run.py)
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox "C1_twin built." & vbLf & "Full log: " & LogPath(), vbInformation, "Twin C1"
+    End If
     Exit Sub
 
 Failed:
@@ -117,8 +121,10 @@ Failed:
     RestorePrefs
     buildLog = "c1_twin ABORTED while " & phase & ": " & why & vbLf & buildLog
     WriteLog
-    MsgBox "C1_twin ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
-           vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Twin C1"
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox "C1_twin ABORTED." & vbLf & vbLf & "while " & phase & ":" & vbLf & why & _
+               vbLf & vbLf & "Full log: " & LogPath(), vbCritical, "Twin C1"
+    End If
 End Sub
 
 
@@ -480,10 +486,10 @@ Private Sub Verify()
     Set b = LastBody()
     g = ExactBox(b)
     Note "twin box: " & BoxText(b)
-    ' symmetric about x = 0, the barrels its outer sides, the outlet
-    ' legs its back, the feed chutes its front, R1's stub its floor
-    CheckNear "x max (C1 A's barrel)", g(3), 0.5 * TWIN_S + C1_R
-    CheckNear "x min (C1 B's barrel)", g(0), -(0.5 * TWIN_S + C1_R)
+    ' symmetric about x = 0, the barrels its outer sides (with a volute,
+    ' the scroll's end, 67 mm past the barrel on C1), the outlet legs its back, the feed chutes its front, R1's stub its floor
+    CheckNear "x max (C1 A's far side)", g(3), 0.5 * TWIN_S + C1_Y_FAR
+    CheckNear "x min (C1 B's far side)", g(0), -(0.5 * TWIN_S + C1_Y_FAR)
     CheckNear "y max (the outlet legs)", g(4), C1_X_MAX
     CheckNear "y min (the feed chutes)", g(1), C1_X_MIN
     CheckNear "z min (R1's stub)", g(2), Z_SPLIT - R1_STUB_L

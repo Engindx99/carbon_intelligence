@@ -34,6 +34,8 @@ Yukarıdaki "TBD" satırlar kaynak olmadığı içindir; bu bölüm bir **model*
 
 C1'in toz çıkışı (Ø0.400 m, FLS oranı dust_D/D ≈ 0.092; C2–C5'te ≈ 0.13) bu borudan dardır ve aynı farini boru akışının ~2.25 katıyla taşır (tabloda). İki ölçü farklı kaynaklara dayandığı için ayrı tutulur (kullanıcı kararı, 16 Kasım 2026): preheater siklonunun çıkışı için bir tasarım akışı veren kaynak bulunamadı; CFD'de toz çıkışı duvar sınır koşuludur, twin bu çapı kullanmaz.
 
+**Toz çıkışı akısı, FLS referansıyla (16 Kasım 2026, kullanıcı onayı; ölçü değişmedi).** Siklonun toz çıkışı için kıyas borunun akısı değil, aynı tasarım ailesinin siklon çıkışıdır. Svensen ve diğ. 2025 (arXiv 2504.02886) Tablo 8'deki FLS referans senaryosunda Cy1 r_c 3.45 / r_d 0.32 m (D 6.90, D_d 0.64 m; D_d/D 0.093), Cy2–Cy5 r_d 0.45 m (D_d/D 0.127–0.133); besleme 85.7 kg/s. Referansın Cy1 çıkışı bu farini 0.322 m²'den, yani **≥ 266 kg/(m² s)** ile geçirir (dönen toz hariç). Buradaki ikiz C1'ler hattın 44.85 kg/s'ini toplam 0.251 m²'den, ~178 kg/(m² s) ile (döngü tozuyla ~200) geçirir: referanstan düşük. Klapeli koni çıkışı gaz sızdırmazlığı için bilerek dardır; 79 kg/(m² s) bir eğik borunun değeridir ve çıkış için ölçüt değildir. Stairmand'ın D_d/D 0.25–0.375'i düşük yüklü, klapesiz siklonlarındır.
+
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|

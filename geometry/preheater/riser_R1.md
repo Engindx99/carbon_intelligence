@@ -16,16 +16,16 @@ R1'in iç çapı yayınlanmıştır (HFC2500). Gaz yolu çizimdeki gibidir (kull
 | R1 iç çapı | 3.07 m | yayınlanmış |
 | R1 dik boyu, Y'ye kadar | 2.815 m | türetilmiş |
 | İkiz C1 kolu çapı (R1 alanının yarısı) | 2.171 m | türetilmiş |
-| Kol başına boy (dik + 95° dirsek + geçiş + kanal) | 17.634 m | türetilmiş |
+| Kol başına boy (dik + 95° dirsek + geçiş + kanal) | 17.445 m | türetilmiş |
 | Kol sayısı | 2 | türetilmiş |
 | İkiz C1 kolları arası boşluk (cidardan cidara) | 1 m | modelleme |
-| İkiz C1 eksenleri arası | 6.631 m | türetilmiş |
-| İkiz C1 gövdeleri arası boşluk | 2.311 m | türetilmiş |
+| İkiz C1 eksenleri arası | 8.451 m | türetilmiş |
+| İkiz C1 gövdeleri arası boşluk | 4.131 m | türetilmiş |
 | Y'den her kolun R1 eksenine uzaklığı | 1.585 m | türetilmiş |
 | Y'nin yüksekliği (R1 tepesinden kolların dik kısmına) | 2.035 m | türetilmiş |
-| R1 ve kollar, C1 eksenlerinin önünde | 6.843 m | türetilmiş |
-| **Ekipman hacmi (hat başına)** | 518.56 m³ | türetilmiş |
-| **Duvar alanı (hat başına)** | 584.90 m² | türetilmiş |
+| R1 ve kollar, C1 eksenlerinin önünde | 6.671 m | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 517.15 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 582.31 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry

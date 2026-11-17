@@ -130,9 +130,9 @@
         },
         {
           "key": "cyclones.C1.L_vortex",
-          "value": 2.16,
+          "value": 3.45,
           "unit": "m",
-          "source": "derived_from_reference",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C1.md"
         },
@@ -162,7 +162,7 @@
         },
         {
           "key": "cyclones.C1.H_inlet",
-          "value": 2.16,
+          "value": 3.0,
           "unit": "m",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -170,7 +170,7 @@
         },
         {
           "key": "cyclones.C1.inlet_slope",
-          "value": 5.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -178,7 +178,7 @@
         },
         {
           "key": "cyclones.C1.volute",
-          "value": false,
+          "value": true,
           "unit": "-",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -945,9 +945,9 @@
       "dimensions": [
         {
           "key": "cyclones.C1.L_vortex",
-          "value": 2.16,
+          "value": 3.45,
           "unit": "m",
-          "source": "derived_from_reference",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C1.md"
         },

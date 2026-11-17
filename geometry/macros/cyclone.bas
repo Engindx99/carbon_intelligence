@@ -62,13 +62,13 @@ Const D_RISER_SRC                  As Double  = 3.07         ' R1 inner D [publi
 Const C1_D_BARREL                  As Double  = 4.32         ' [published, preheater/cyclone_C1.md]
 Const C1_H_BARREL                  As Double  = 6.79         ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_CONE                    As Double  = 4.65         ' [derived_from_reference, preheater/cyclone_C1.md]
-Const C1_L_VORTEX                  As Double  = 2.16         ' [derived_from_reference, preheater/cyclone_C1.md]
+Const C1_L_VORTEX                  As Double  = 3.45         ' [cfd_decision, preheater/cyclone_C1.md]
 Const C1_D_VORTEX                  As Double  = 2.4          ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_D_DUST                    As Double  = 0.4          ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_W_INLET                   As Double  = 0.86         ' [derived_from_reference, preheater/cyclone_C1.md]
-Const C1_H_INLET                   As Double  = 2.16         ' [cfd_decision, preheater/cyclone_C1.md]
-Const C1_INLET_SLOPE_DEG           As Double  = 5#           ' [cfd_decision, preheater/cyclone_C1.md]
-Const C1_VOLUTE_ON                 As Boolean = False        ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_H_INLET                   As Double  = 3#           ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_INLET_SLOPE_DEG           As Double  = 0#           ' [cfd_decision, preheater/cyclone_C1.md]
+Const C1_VOLUTE_ON                 As Boolean = True         ' [cfd_decision, preheater/cyclone_C1.md]
 Const C1_OUTLET_TURN_DEG           As Double  = 180#         ' [cfd_decision, preheater/cyclone_C1.md]
 Const C1_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
 Const C1_ELBOW_R_OVER_VORTEX_D     As Double  = 1.5          ' [model, preheater/cyclone_C1.md]
@@ -409,9 +409,10 @@ Const VOLUTE_SPLINE_PTS As Long = 25        ' points along the half turn
 ' twin C1s, so each C1's riser is round with half its area: 3.70 m2,
 ' 2.17 m across, 8.7-10.6 m/s at 17.9 kg/s where DTU measured
 ' 7.5-9.3 m/s. The riser and its bend are round, as in the plant;
-' the cyclone is still entered through the validated 0.86 x 2.16 m
-' duct, and a loft RISER_TRANS_LEN long, along the duct axis, turns
-' the round section into the duct's rectangle. A square inlet was
+' the cyclone is entered through its inlet duct (since 16 Nov 2026
+' the volute's 0.86 x 3.00 m, horizontal; until then the 0.86 x
+' 2.16 m slot, 5 deg down), and a loft RISER_TRANS_LEN long, along
+' the duct axis, turns the round section into the duct's rectangle. A square inlet was
 ' ruled out: 1.36 m of it would run through the vortex finder,
 ' whose annulus is 0.88 m (user decisions, 28-29 Sep 2026).
 '
@@ -560,10 +561,24 @@ Dim buildLog As String
 ' it happened.
 Dim phase As String
 
+' gas_only: C1 without its riser branch (the C1 sheet's solid, C1.SLDPRT)
+Dim gasOnly As Boolean
+
 
 '==================================================================
 ' main
 '==================================================================
+' C1 without its riser, written as C1.SLDPRT / .step / .stl: the solid
+' geometry/macros/drawings.bas draws the C1 sheet from. main builds the
+' CFD domain (C1_riser). The flag is cleared after, so a later main is
+' the riser domain again.
+Sub gas_only()
+    gasOnly = True
+    main
+    gasOnly = False
+End Sub
+
+
 Sub main()
 
     Dim why As String
@@ -597,7 +612,12 @@ Sub main()
     End If
 
     Restore
-    MsgBox CYCLONE_NAME & " built and exported." & vbLf & vbLf & buildLog, vbInformation, "Cyclone"
+    WriteLog CYCLONE_NAME & " built and exported"
+    ' no message box when OUT_ROOT\quiet.flag exists (a run from WSL,
+    ' tools/sw_run.py): the log carries the result
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CYCLONE_NAME & " built and exported." & vbLf & vbLf & buildLog, vbInformation, "Cyclone"
+    End If
     Exit Sub
 
 Failed:
@@ -605,9 +625,26 @@ Failed:
     ' it resets the Err object and the reason would be lost.
     why = Err.Description
     Restore
-    MsgBox CYCLONE_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
-           "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Cyclone"
+    WriteLog CYCLONE_NAME & " ABORTED while " & phase & ": " & why
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CYCLONE_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
+               "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Cyclone"
+    End If
 
+End Sub
+
+
+' The build log, next to the exports: geometry\output\<line>\
+' <CYCLONE_NAME>_cyclone_build.log (tools/sw_run.py prints its first line).
+Private Sub WriteLog(ByVal outcome As String)
+    Dim fn As Integer
+    On Error Resume Next
+    If Dir(OUT_ROOT, vbDirectory) = "" Then MkDir OUT_ROOT
+    If Dir(OUT_ROOT & LINE_KEY, vbDirectory) = "" Then MkDir OUT_ROOT & LINE_KEY
+    fn = FreeFile
+    Open OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & "_cyclone_build.log" For Output As #fn
+    Print #fn, outcome & vbLf & buildLog;
+    Close #fn
 End Sub
 
 
@@ -625,29 +662,32 @@ Private Sub SelectCyclone()
         D_BARREL = C1_D_BARREL
         H_BARREL = C1_H_BARREL
         H_CONE = C1_H_CONE
+
+        ' Immersion, NOT the catalogue 2.16 m: S/a 1.15 against the
+        ' 3.00 m inlet below, as C4 (Hoffmann & Stein ask S/a 1.1-1.2).
+        ' The rim sits 0.45 m under the volute's floor and 3.34 m above
+        ' the cone (user decision, 16 Nov 2026).
         L_VORTEX = C1_L_VORTEX
         D_VORTEX = C1_D_VORTEX
         D_DUST = C1_D_DUST
         W_INLET = C1_W_INLET
 
-        ' Inlet height, normal to the duct axis. NOT the catalogue value.
+        ' Inlet, NOT the catalogue 0.86 x 4.97 m: a volute, 0.86 x 3.00 m,
+        ' horizontal (user decision, 16 Nov 2026; cyclone_C1.md).
         '
-        ' The FLS ratio gives 4.97 m, i.e. a/D = 1.15. That is genuine for a
-        ' low pressure drop preheater cyclone -- but only because the real
-        ' machine feeds it through a 270 deg wrap-around volute, which this
-        ' model deliberately does not build. With the volute replaced by a
-        ' straight tangential duct, a 4.97 m inlet lost its reason to exist:
-        ' it put 61 % of the opening below the vortex finder's rim, a
-        ' short-circuit path, and dropped the inlet velocity to about
-        ' 7 m/s where preheater cyclones run at 15-20.
-        '
-        ' 2.16 m is a/D = 0.50 and a/b = 2.51, which is Stairmand's classical
-        ' proportion, puts only 10 % of the opening below the rim and brings
-        ' the inlet velocity back to about 16 m/s. The inlet width was
-        ' already classical: b/D = 0.86 / 4.32 = 0.199.
+        ' The catalogue's a/D = 1.15 belongs to the real machine's
+        ' wrap-around volute. Until 16 Nov 2026 this model used a straight
+        ' 0.86 x 2.16 m slot, 5 deg down, sized for 17.9 kg/s. At the
+        ' plant's 28.76 kg/s per C1 (the ID fan's duty over the twin) that
+        ' slot ran at 25 m/s with its inner wall 20 mm off the vortex
+        ' finder. 3.00 m brings the inlet to 17.9 m/s, inside the 15-20
+        ' m/s preheater band; the 4.97 m catalogue height would give
+        ' 10.8 m/s and need S 5.7 m. The volute puts the jet outside the
+        ' barrel, clear of the finder, as on the real machine and on C4
+        ' and C5. Loaded Muschelknautz: 495 Pa, eta 96.3-98.3 %.
         '
         ' Equipment volume is untouched, so the twin's residence time and
-        ' hold-up are unaffected. See geometry/preheater/cyclone_C1.md.
+        ' hold-up are unaffected.
         H_INLET = C1_H_INLET
 
         INLET_SLOPE_DEG = C1_INLET_SLOPE_DEG
@@ -656,7 +696,7 @@ Private Sub SelectCyclone()
         OUTLET_EXT_OVER_VORTEX_D = C1_OUTLET_EXT_OVER_VORTEX_D
         ELBOW_R_OVER_VORTEX_D = C1_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C1_OUTLET_DOWN_OVER_VORTEX_D
-        RISER_ON = True
+        RISER_ON = Not gasOnly
         BOI_RADIUS = C1_BOI_RADIUS
 
     Case "C4"
@@ -957,7 +997,7 @@ Private Sub Derive()
     zFeedEnd = zFeedStart + lFeed * fz
     ' the end face's corner furthest out, the lower one
     xBoxMin = xFeedEnd - 0.5 * FEED_H * wx
-    yBoxMax = R
+    yBoxMax = MaxD(R, yHi2)                 ' the volute's duct reaches past the barrel
     If yMid + rRiser > yBoxMax Then yBoxMax = yMid + rRiser
 
     ' Pappus again: the disc's centroid sits on the centreline.
@@ -1136,6 +1176,11 @@ Private Sub PreChecks()
     Note "tongue                            " & Fmt(INLET_TONGUE) & " m thick, duct stops at x = " & _
          Fmt(-xTrim) & " m"
     OutletNote
+    RiserNote
+End Sub
+
+
+Private Sub RiserNote()
     If RISER_ON Then
         Note "riser: D " & Fmt(2# * rRiser) & " m at x = " & Fmt(xRiser) & ", z " & Fmt(zRiserBot) & _
              " .. " & Fmt(zRiserTop) & " m, bend R " & Fmt(rRiserBend) & " m to z " & _
@@ -1153,10 +1198,11 @@ End Sub
 ' one stays outside it.
 Private Sub VolutePreChecks()
 
-    If RISER_ON Then
-        Fail "RISER_ON with VOLUTE_ON: the riser's transition is built onto the slot duct's " & _
-             "section, and joining it to the volute has not been worked out."
-    End If
+    ' A riser joins the volute's duct the way it joins the slot's: the
+    ' transition lofts onto the duct's end face at x = -L_INLET, which
+    ' with no slope is a plain W_INLET x H_INLET rectangle normal to x
+    ' (C1 since 16 Nov 2026). RiserPreChecks below holds it to the
+    ' same limits.
     If INLET_SLOPE_DEG <> 0# Then
         Fail "INLET_SLOPE_DEG is " & Fmt(INLET_SLOPE_DEG) & " with VOLUTE_ON; the volute is " & _
              "built as a horizontal outline extruded from the roof."
@@ -1200,6 +1246,7 @@ Private Sub VolutePreChecks()
 
     BoiPreChecks
     OutletPreChecks
+    RiserPreChecks
 
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
@@ -1210,6 +1257,7 @@ Private Sub VolutePreChecks()
          Fmt(100# * MaxD(0#, H_INLET - L_VORTEX) / H_INLET) & " % of the opening below the " & _
          "finder's rim"
     OutletNote
+    RiserNote
 
 End Sub
 
@@ -1517,22 +1565,22 @@ Private Sub Build()
         '--- 7. round riser bend, ending on the transition's round end
         Set f = RevolveRiserBend(planeRiser)
         CheckBodies "7  + riser bend", 2, vStage7, _
-                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 8. round riser down to its gas inlet -------------------
         Set f = ExtrudeRiser(planeRiser)
         CheckBodies "8  + riser", 2, vStage8, _
-                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 9. loft from the round end to the duct's rectangle ------
         Set f = LoftTransition()
         CheckBodies "9  + transition", 1, vStage9, _
-                    xRiser - rRiser, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 10. meal feed chute out through the riser wall ----------
         Set f = ExtrudeFeedChute(planeFeed)
         CheckStage "10 + feed chute", vFinal, _
-                   xBoxMin, -R, 0#, xBoxMax, yBoxMax, zElbowTop
+                   xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
     End If
 
     swSkMgr.AddToDB = False
@@ -2577,6 +2625,7 @@ Private Sub CheckBodies(ByVal stage As String, ByVal nBodies As Long, ByVal expe
                         ByVal x1 As Double, ByVal y1 As Double, ByVal z1 As Double)
 
     Dim bodies As Variant, box As Variant
+    Dim bd As SldWorks.Body2
     Dim lo(2) As Double, hi(2) As Double
     Dim got As Double
     Dim i As Long, a As Long
@@ -2597,6 +2646,12 @@ Private Sub CheckBodies(ByVal stage As String, ByVal nBodies As Long, ByVal expe
 
     For i = 0 To UBound(bodies)
         box = bodies(i).GetBodyBox
+        ' the volute's spiral is a spline: exact extremes, as CheckStage
+        ' (through a typed variable: ExactBox takes a Body2 ByRef)
+        If VOLUTE_ON Then
+            Set bd = bodies(i)
+            box = ExactBox(bd)
+        End If
         For a = 0 To 2
             If i = 0 Or box(a) < lo(a) Then lo(a) = box(a)
             If i = 0 Or box(a + 3) > hi(a) Then hi(a) = box(a + 3)
