@@ -33,20 +33,20 @@ Option Explicit
 ' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
 ' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
 ' change the source and run: python3 tools/gen_geometry.py
-Const R1_D                         As Double  = 3.07         ' R1 bore [published, preheater/riser_R1.md]
+Const R1_D                         As Double  = 3.15         ' R1 bore = C2's D_x [derived]
 Const TWIN_GAP                     As Double  = 1#           ' the branches' walls apart [model, preheater/riser_R1.md]
-Const TWIN_S                       As Double  = 8.450818     ' C1 axis to axis [derived]
-Const BRANCH_HALF                  As Double  = 1.585409     ' each branch from R1's axis, x [derived]
-Const BRANCH_D                     As Double  = 2.170818     ' branch bore (half R1's area) [derived]
-Const BRANCH_Y                     As Double  = -6.670818    ' branches and R1 in front of the C1 axes, y [derived]
-Const Z_BRANCH                     As Double  = 0.269182     ' the branches' floor (the C1_riser inlet face) [derived]
-Const Z_SPLIT                      As Double  = -1.765818    ' R1's top: the Y starts [derived]
-Const R1_STUB_L                    As Double  = 6.954182     ' R1 straight under its Y, from its reducer on C2's outlet pipe [derived]
+Const TWIN_S                       As Double  = 8.507386     ' C1 axis to axis [derived]
+Const BRANCH_HALF                  As Double  = 1.613693     ' each branch from R1's axis, x [derived]
+Const BRANCH_D                     As Double  = 2.227386     ' branch bore (half R1's area) [derived]
+Const BRANCH_Y                     As Double  = -6.727386    ' branches and R1 in front of the C1 axes, y [derived]
+Const Z_BRANCH                     As Double  = 0.212614     ' the branches' floor (the C1_riser inlet face) [derived]
+Const Z_SPLIT                      As Double  = -1.862386    ' R1's top: the Y starts [derived]
+Const R1_STUB_L                    As Double  = 2.137614     ' R1 straight under its Y, from the top of C2's CFD outlet pipe [derived]
 Const C1_R                         As Double  = 2.16         ' barrel radius [derived]
 Const C1_Y_FAR                     As Double  = 2.226723     ' the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end [derived]
-Const C1_TOP                       As Double  = 19.24        ' the outlet bend's crown [derived]
-Const C1_X_MAX                     As Double  = 8.4          ' the C1_riser solid's far side, its outlet leg (C1 frame x) [derived]
-Const C1_X_MIN                     As Double  = -8.516034    ' the C1_riser solid's near side, its feed chute (C1 frame x) [derived]
+Const C1_TOP                       As Double  = 18.46        ' the outlet bend's crown [derived]
+Const C1_X_MAX                     As Double  = 7.56         ' the C1_riser solid's far side, its outlet leg (C1 frame x) [derived]
+Const C1_X_MIN                     As Double  = -8.600887    ' the C1_riser solid's near side, its feed chute (C1 frame x) [derived]
 Const OUT_Z_END                    As Double  = 11.44        ' the outlet legs' end faces [derived]
 ' END GENERATED
 

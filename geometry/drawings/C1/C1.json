@@ -101,15 +101,16 @@
     {
       "key": "C1.D_vortex",
       "label": "Vortex finder / outlet pipe bore Dx",
-      "value": 2.4,
+      "value": 2.16,
       "unit": "m",
-      "source": "derived_from_reference",
+      "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 2400.0,
+      "value_mm": 2160.0,
       "short": "D_vortex"
     },
     {
@@ -252,67 +253,71 @@
     {
       "key": "C1.outlet_rise",
       "label": "Outlet pipe rise over the roof",
-      "value": 3.0,
+      "value": 2.7,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
         "cyclones.C1.outlet_rise_over_Dx",
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 3000.0,
+      "value_mm": 2700.0,
       "short": "outlet_rise"
     },
     {
       "key": "C1.outlet_bend_R",
       "label": "Outlet bend centreline radius",
-      "value": 3.5999999999999996,
+      "value": 3.24,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
         "cyclones.C1.outlet_bend_R_over_Dx",
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 3600.0,
+      "value_mm": 3240.0,
       "short": "outlet_bend_R"
     },
     {
       "key": "C1.outlet_run",
       "label": "Outlet drop leg",
-      "value": 3.0,
+      "value": 2.7,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
         "cyclones.C1.outlet_run_over_Dx",
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 3000.0,
+      "value_mm": 2700.0,
       "short": "outlet_run"
     },
     {
       "key": "C1.leg_x",
       "label": "Barrel axis to drop leg axis",
-      "value": 7.199999999999999,
+      "value": 6.48,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
         "cyclones.C1.outlet_bend_R_over_Dx",
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 7200.0,
+      "value_mm": 6480.0,
       "short": "leg_x"
     },
     {
       "key": "C1.top",
       "label": "Dust outlet to top of the bend",
-      "value": 19.24,
+      "value": 18.46,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -321,10 +326,11 @@
         "cyclones.C1.H_barrel",
         "cyclones.C1.H_cone",
         "cyclones.C1.outlet_rise_over_Dx",
-        "cyclones.C1.D_vortex",
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel",
         "cyclones.C1.outlet_bend_R_over_Dx"
       ],
-      "value_mm": 19240.0,
+      "value_mm": 18460.0,
       "short": "top"
     },
     {
@@ -346,7 +352,7 @@
     {
       "key": "C1.wet_area",
       "label": "Wetted area (barrel, roof ring, cone)",
-      "value": 139.6985323946101,
+      "value": 140.5580721446323,
       "unit": "m2",
       "source": "derived",
       "status": "Estimated",
@@ -356,7 +362,7 @@
         "cyclones.C1.H_barrel",
         "cyclones.C1.H_cone",
         "cyclones.C1.D_dust",
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel"
       ],
       "short": "wet_area"
     },

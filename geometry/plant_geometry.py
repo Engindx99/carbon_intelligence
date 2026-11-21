@@ -77,13 +77,16 @@ def v(node):
 # Cyclones
 # ======================================================================
 CYCLONE_DIMS = (
-    "D_barrel", "H_barrel", "H_cone", "L_vortex", "D_vortex", "D_dust",
+    "D_barrel", "H_barrel", "H_cone", "L_vortex", "D_dust",
     "W_inlet", "H_inlet",
 )
 CYCLONE_FLAGS = (
     "inlet_slope", "volute", "outlet_turn", "outlet_rise_over_Dx",
-    "outlet_bend_R_over_Dx", "outlet_run_over_Dx",
+    "D_vortex_over_D_barrel",
 )
+# only where they apply: a bend's R and leg (outlet_turn 90 / 180), a
+# riser under the inlet (C2-C5, user decision 17 Nov 2026)
+CYCLONE_OPTIONAL = {"outlet_bend_R_over_Dx": 0.0, "outlet_run_over_Dx": 0.0, "inlet_riser": False}
 
 
 def cyclone_scale(g, name):
@@ -113,9 +116,18 @@ def cyclone(g, name):
 
     c = {key: k * v(base[key]) for key in CYCLONE_DIMS}
     c.update({key: v(base[key]) for key in CYCLONE_FLAGS})
+    c.update({key: v(base[key]) if key in base else dflt for key, dflt in CYCLONE_OPTIONAL.items()})
+    if c["outlet_turn"] != 0.0 and "outlet_bend_R_over_Dx" not in base:
+        raise ValueError(f"{name}: outlet_turn {c['outlet_turn']} needs outlet_bend_R_over_Dx and outlet_run_over_Dx")
+    # the level inlet duct: per cyclone where given (C4's, scaled for C5), else the domain's
+    c["inlet_duct_length"] = (k * v(base["inlet_duct_length"]) if "inlet_duct_length" in base
+                              else v(g["cyclone_domain"]["inlet_duct_length"]))
     c["per_string"] = v(node["per_string"])
     c["boi_radius"] = v(node.get("boi_radius", base["boi_radius"]))
     c["scale"] = k
+    # the vortex finder's bore, = the riser rising out of it (user
+    # decision, 21 Nov 2026: D / D_x = D / D_riser = 2.0)
+    c["D_vortex"] = c["D_vortex_over_D_barrel"] * c["D_barrel"]
 
     R, r, Dx = 0.5 * c["D_barrel"], 0.5 * c["D_dust"], c["D_vortex"]
     hb, hc = c["H_barrel"], c["H_cone"]
@@ -261,6 +273,107 @@ def calciner_inlets(g):
         },
         "meal": calciner_pipe(R, rf, slope, z_wall, depth),
         "fuel": calciner_pipe(R, 0.5 * v(c["D_fuel"]), v(c["fuel_slope"]), z_wall, depth),
+    }
+
+
+def _clip_area(poly, x_max):
+    """Area of a closed polygon [(x, z), ...] left of x = x_max
+    (Sutherland-Hodgman against one half-plane, then the shoelace)."""
+    out = []
+    n = len(poly)
+    for i in range(n):
+        p, q = poly[i], poly[(i + 1) % n]
+        pin, qin = p[0] <= x_max, q[0] <= x_max
+        if pin:
+            out.append(p)
+        if pin != qin:
+            t = (x_max - p[0]) / (q[0] - p[0])
+            out.append((x_max, p[1] + t * (q[1] - p[1])))
+    a = 0.0
+    for i in range(len(out)):
+        (x0, z0), (x1, z1) = out[i], out[(i + 1) % len(out)]
+        a += x0 * z1 - x1 * z0
+    return 0.5 * abs(a)
+
+
+def calciner_dispersion_plate(g, n_arc=4000, n_y=400):
+    """The dispersion plate under each meal pipe's hole (calciner.md):
+    a slab of thickness t between two concentric arcs, in the meal
+    pipe's vertical plane (rho = radial out along +-x, z), extruded
+    +-W/2 across it (y).
+
+    In (rho, z) a plate direction at angle phi to the horizontal,
+    inwards, is d = (-cos phi, sin phi); its upper normal n = (sin phi,
+    cos phi). The upper (meal) face starts at A = (R, z_A) along the
+    meal pipe's slope (phi0 = -slope), turns on radius Rc about
+    C = A + Rc n(phi0) to the exit angle phi1, and ends at E, the
+    protrusion past the wall: Rc (sin phi1 - sin phi0) = protrusion. The
+    lower face is the arc of Rc + t about C. The tail runs back from A
+    (and A') by `tail` along -d(phi0), out of the vessel. z_A sits
+    lip_clearance under the hole's lowest point.
+
+    Volumes: the slab's own (closed form: the annular sector plus the
+    tail's rectangle, times W) and the part of it inside the vessel, the
+    fluid the cut removes (rho < sqrt(R^2 - y^2); polygon clip on n_arc
+    arc points, Simpson over y)."""
+    c, cal = g["calciner"], calciner(g)
+    meal = calciner_inlets(g)["meal"]
+    R, D = cal["R"], meal["D"]
+    phi0 = -math.radians(meal["slope"])
+    phi1 = math.radians(v(c["dispersion_plate_exit_angle"]))
+    prot = v(c["dispersion_plate_protrusion_over_D_feed"]) * D
+    W = v(c["dispersion_plate_width_over_D_feed"]) * D
+    t = v(c["dispersion_plate_thickness"])
+    tail = v(c["dispersion_plate_tail"])
+    z_a = meal["hole_bottom"] - v(c["dispersion_plate_lip_clearance"])
+    rc = prot / (math.sin(phi1) - math.sin(phi0))
+
+    def n(phi):
+        return (math.sin(phi), math.cos(phi))
+
+    cx, cz = R + rc * n(phi0)[0], z_a + rc * n(phi0)[1]
+
+    def on(rad, phi):
+        return (cx - rad * n(phi)[0], cz - rad * n(phi)[1])
+
+    back = (math.cos(phi0), -math.sin(phi0))                  # -d(phi0): out and up
+    a, e = on(rc, phi0), on(rc, phi1)
+    a2, e2 = on(rc + t, phi0), on(rc + t, phi1)
+    tt = (a[0] + tail * back[0], a[1] + tail * back[1])
+    tt2 = (a2[0] + tail * back[0], a2[1] + tail * back[1])
+
+    # the profile, closed: tail top -> A -> upper arc -> E -> E' -> lower arc -> A' -> tail bottom
+    poly = [tt]
+    poly += [on(rc, phi0 + (phi1 - phi0) * k / n_arc) for k in range(n_arc + 1)]
+    poly += [on(rc + t, phi1 - (phi1 - phi0) * k / n_arc) for k in range(n_arc + 1)]
+    poly.append(tt2)
+
+    dphi = phi1 - phi0
+    area = 0.5 * dphi * ((rc + t) ** 2 - rc ** 2) + tail * t
+    h = W / n_y
+    inside = 0.0
+    for k in range(n_y + 1):
+        y = -0.5 * W + k * h
+        w = 1.0 if k in (0, n_y) else (4.0 if k % 2 else 2.0)
+        inside += w * _clip_area(poly, math.sqrt(R * R - y * y))
+    inside *= h / 3.0
+
+    z_low = cz - (rc + t)                                      # the lower arc's lowest point (phi = 0 lies on it)
+    return {
+        "exit_angle": math.degrees(phi1),
+        "R_arc": rc,
+        "thickness": t,
+        "width": W,
+        "protrusion": prot,
+        "tail": tail,
+        "centre": (cx, cz),
+        "A": a, "E": e, "A_low": a2, "E_low": e2, "T": tt, "T_low": tt2,
+        "z_low": z_low,
+        "profile_area": area,
+        "volume": area * W,
+        "inside_vessel": inside,
+        "edge_area": t * W,
+        "pipe_clearance": (meal["z_wall"] - 0.5 * D / math.cos(-phi0) - z_a) * math.cos(phi0),
     }
 
 
@@ -1043,7 +1156,7 @@ def cyclone_duct_inlet(g, name):
     z_roof = c["height"]
     y_inner = R + v(d["volute_tongue"])
     y_outer = y_inner + c["W_inlet"]
-    L_in = v(d["inlet_duct_length"])
+    L_in = c["inlet_duct_length"]
     return {
         "y_inner": y_inner,
         "y_outer": y_outer,
@@ -1077,11 +1190,212 @@ def cyclone_volute_extent(g, name):
     return {"x_max": x_max, "y_min": y_min, "r_start": r_t + W, "r_end": r_t}
 
 
+def riser_inlet(g, name, D_riser=None, offset=None):
+    """A riser's top into C(name)'s level inlet duct (R2-R4 into C2-C4,
+    and the C4 CFD domain's own inlet; user decision, 17 Nov 2026), in
+    cyclone_duct_inlet's frame (x along the duct towards the volute,
+    its face at x = -L_in; y across; z from the roof down as "drop").
+
+    The riser (D_riser, the cyclone below's outlet bore; C(name)'s own
+    D_x if not given) stands vertical under the duct's axis (y = the
+    duct's middle), its top cut by a plane tilted about the horizontal
+    normal to the riser-cyclone line (riser_top). A straight loft
+    joins that top to the duct's vertical face, the bore going over
+    from the ellipse to the duct's W x H: its floor (the inner wall)
+    rises at riser_slope_deg at least, its ceiling (the outer wall) is
+    parallel to the floor in the plant section (user sketch, 21 Nov
+    2026: a chamfered turn, not a flat floor and a steep ceiling). The riser axis is as far
+    from C(name)'s axis as riser_barrel_clearance asks, both outside the
+    barrel and, horizontally, beyond the level duct's face (a longer
+    duct puts the riser further out: user, 21 Nov 2026), or `offset`
+    (a column spacing shared by several risers)."""
+
+    c = cyclone(g, name)
+    if not c["inlet_riser"]:
+        raise ValueError(f"{name} has no riser inlet")
+    s = cyclone_duct_inlet(g, name)
+    d = g["cyclone_domain"]
+    D = c["D_vortex"] if D_riser is None else D_riser
+    R = 0.5 * c["D_barrel"]
+    th = math.radians(v(d["riser_slope_deg"]))
+    y_d = 0.5 * (s["y_inner"] + s["y_outer"])
+    clr = v(d["riser_barrel_clearance"])
+    least = max(R + 0.5 * D + clr, math.hypot(s["length"] + 0.5 * D + clr, y_d))
+    off = least if offset is None else offset
+    if off < least - 1e-9:
+        raise ValueError(f"{name}: a riser {off:.3f} m off its axis runs into the barrel (needs {least:.3f})")
+    x_j = math.sqrt(off * off - y_d * y_d)       # the riser axis back from x = 0
+    run = x_j - s["length"]                       # riser axis to the duct face, horizontal
+    if run - 0.5 * D <= 0.0:
+        raise ValueError(f"{name}: the riser stands under the level duct; no room to turn in")
+    H, W = c["H_inlet"], c["W_inlet"]
+    top = riser_top(off, x_j, y_d, s["length"], D, W, H, th)
+    drop, drop_out = top["drop"], top["drop_out"]
+    run_in = run - 0.5 * D
+    inner_deg = math.degrees(math.atan2(drop - H, run_in))
+    axis = math.hypot(run, 0.5 * (drop + drop_out) - 0.5 * H)
+    loft = _ruled_loft(D, W, H, run, drop, drop_out, top["e"])
+    wedge = top["wedge_volume"]
+    return {
+        "D": D,
+        "offset": off,
+        "clearance": off - R - 0.5 * D,
+        "x": -x_j,
+        "y": y_d,
+        "run": run,
+        "drop": drop,                 # roof down to the cut's low (inner) point
+        "drop_out": drop_out,         # roof down to the cut's high (outer) point
+        "cut_deg": top["cut_deg"],
+        "t_out": top["t_out"],
+        "t_in": top["t_in"],
+        "inner_deg": inner_deg,
+        "length": axis,
+        "level": s["length"],
+        "slope_deg": v(d["riser_slope_deg"]),
+        # the ruled loft (its untwisted pairing; C4's solid measured
+        # 37.935 m3 against this 38.2, 17 Nov 2026) and the riser's
+        # wedge over its low point, under the cut
+        "volume": loft["volume"] + wedge,
+        "wall_area": loft["wall_area"] + top["wedge_wall_area"],
+        "duct_volume": W * H * s["length"],
+        "duct_wall_area": 2.0 * (W + H) * s["length"],
+    }
+
+
+def riser_top(off, x_j, y_d, L, D, W, H, th):
+    """A riser's top cut under a level duct (user sketch, 21 Nov 2026).
+    The riser's axis at (-x_j, y_d), off from the cyclone's axis; the
+    duct's face at x = -L, W wide (y_d +- W/2), H tall under the roof.
+
+    The plant section (plant_topology_2d.bas) is the vertical plane of
+    both axes; a point projects to t = off - (p . r) / off, its
+    distance from the riser's axis towards the cyclone's. The duct
+    face's corners project to t_out (outer) .. t_in (inner).
+
+    The cut's low point (drop under the roof) is at the riser's rim
+    nearest the cyclone, as low as the floor asks to rise at th at
+    least to the face's floor corners (riser_floor_run). Its high point
+    (drop_out) is at the far rim, as high as makes the ceiling's
+    outline (far rim -> top edge at t_out) parallel to the floor's
+    (near rim -> floor edge at t_in) in the plant section; never under
+    the low point. The cut plane tilts about the horizontal normal to
+    the axes' line; e is the unit vector, in the duct's frame, from the
+    riser's axis towards the cyclone's."""
+    a = 0.5 * D
+    w = 0.5 * W
+    dots = (L * x_j + (y_d + w) * y_d, L * x_j + (y_d - w) * y_d)
+    t_out = off - max(dots) / off
+    t_in = off - min(dots) / off
+    if t_in <= a:
+        raise ValueError(f"the duct's floor projects inside the riser (t_in {t_in:.3f} <= {a:.3f})")
+    drop = H + riser_floor_run(x_j - L, D, W) * math.tan(th)
+    if drop - H <= 0.0:
+        raise ValueError("the riser's top is not below the duct's floor")
+    drop_out = min(drop, (t_out + a) * (drop - H) / (t_in - a))
+    if drop_out <= 0.0:
+        raise ValueError(f"the riser's cut reaches over the roof (drop_out {drop_out:.3f})")
+    rise = drop - drop_out
+    return {
+        "drop": drop,
+        "drop_out": drop_out,
+        "t_out": t_out,
+        "t_in": t_in,
+        "cut_deg": math.degrees(math.atan2(rise, D)),
+        "e": (x_j / off, -y_d / off),
+        # the riser over its low point, under the cut: half a cylinder rise tall
+        "wedge_volume": 0.5 * math.pi * a * a * rise,
+        "wedge_wall_area": math.pi * a * rise,
+    }
+
+
+@lru_cache(maxsize=None)
+def _ruled_loft(D, W, H, run, drop, drop_out=None, e=(1.0, 0.0), n=720, phases=128):
+    """The riser inlet's loft as SolidWorks builds it with no guides: a
+    ruled surface from the riser's top (D, its centre run back from the
+    duct face; level at drop under the roof, or cut obliquely from drop
+    at its rim towards e to drop_out at the far rim) to the duct's
+    upright W x H face (top edge at the roof). Each perimeter at equal
+    arc-length steps; of the pairings (start, sense) the untwisted one,
+    which encloses the most. Volume by the divergence theorem over the
+    closed triangulated surface, wall the ruled part's area."""
+    d_out = drop if drop_out is None else drop_out
+    t = np.arange(n) / n
+    P = 2.0 * (W + H)
+    s = t * P
+    # rectangle, in (x, y, z): face at x = 0, y across, z from the roof
+    y = np.where(s < W, -0.5 * W + s,
+        np.where(s < W + H, 0.5 * W,
+        np.where(s < 2 * W + H, 0.5 * W - (s - W - H), -0.5 * W)))
+    z = np.where(s < W, 0.0,
+        np.where(s < W + H, -(s - W),
+        np.where(s < 2 * W + H, -H, -H + (s - 2 * W - H))))
+    rect = np.stack([np.zeros(n), y, z], axis=1)
+    best = None
+    for k in range(phases):
+        for sense in (1.0, -1.0):
+            a = 2.0 * math.pi * (k / phases + sense * t)
+            ca, sa = np.cos(a), np.sin(a)
+            zc = -(0.5 * (drop + d_out) + 0.5 * (drop - d_out) * (ca * e[0] + sa * e[1]))
+            circ = np.stack([-run + 0.5 * D * ca, 0.5 * D * sa, zc], axis=1)
+            c1, r1 = np.roll(circ, -1, axis=0), np.roll(rect, -1, axis=0)
+            v = (np.einsum("ij,ij->i", circ, np.cross(c1, r1)) + np.einsum("ij,ij->i", circ, np.cross(r1, rect))).sum()
+            cc, rc = np.array([-run, 0.0, -0.5 * (drop + d_out)]), np.array([0.0, 0.0, -0.5 * H])
+            v += np.einsum("j,ij->i", cc, np.cross(c1, circ)).sum() + np.einsum("j,ij->i", rc, np.cross(rect, r1)).sum()
+            v = abs(v) / 6.0
+            if best is None or v > best[0]:
+                area = 0.5 * (np.linalg.norm(np.cross(c1 - circ, r1 - circ), axis=1)
+                              + np.linalg.norm(np.cross(r1 - circ, rect - circ), axis=1)).sum()
+                best = (v, area)
+    return {"volume": best[0], "wall_area": best[1]}
+
+
+def riser_floor_run(run, D, W):
+    """Horizontal distance from a riser's rim to the farthest point of
+    the duct face's floor (its corners), the riser axis run back from
+    the face under the duct's middle: the inner wall's longest run."""
+    return math.hypot(run, 0.5 * W) - 0.5 * D
+
+
+def cfd_riser_inlet(g, name):
+    """The riser inlet of the C4 CFD domain (C2-C4 are C4; C5 is it x
+    its scale): R2 / R3 as the plant has them -- C4's own D_x, the
+    columns' shared offset -- and riser_cfd_stub_over_D of vertical
+    riser under the turn, where the domain's gas inlet is."""
+    base = "C4"
+    r = dict(riser_inlet(g, base, None, layout(g)["column_offset"]))
+    r["stub"] = v(g["cyclone_domain"]["riser_cfd_stub_over_D"]) * r["D"]
+    k = cyclone_scale(g, name) if name != base else 1.0
+    if k != 1.0:
+        for key in ("D", "offset", "clearance", "x", "y", "run", "length", "drop", "level", "stub"):
+            r[key] *= k
+        for key in ("volume", "duct_volume"):
+            r[key] *= k ** 3
+        for key in ("wall_area", "duct_wall_area"):
+            r[key] *= k ** 2
+        # the volute's tongue is not scaled (cyclone.bas, C5_TONGUE), so
+        # the duct's middle -- the riser's y -- is C(name)'s own, and the
+        # riser's x, run and drop follow from it at the scaled offset
+        # (the solid's frame; volumes and areas above stay scaled, ~0.1 %)
+        c = cyclone(g, name)
+        th = math.radians(v(g["cyclone_domain"]["riser_slope_deg"]))
+        r["y"] = 0.5 * c["D_barrel"] + v(g["cyclone_domain"]["volute_tongue"]) + 0.5 * c["W_inlet"]
+        x_j = math.sqrt(r["offset"] ** 2 - r["y"] ** 2)
+        r["x"] = -x_j
+        r["run"] = x_j - r["level"]
+        # the cut as riser_inlet's, in C(name)'s own frame (21 Nov 2026)
+        top = riser_top(r["offset"], x_j, r["y"], r["level"], r["D"], c["W_inlet"], c["H_inlet"], th)
+        for key in ("drop", "drop_out", "t_out", "t_in", "cut_deg"):
+            r[key] = top[key]
+        r["length"] = math.hypot(r["run"], 0.5 * (r["drop"] + r["drop_out"]) - 0.5 * c["H_inlet"])
+    return r
+
+
 def cyclone_outlet(g, name):
     """The outlet pipe above the roof, in the slot inlet's frame: it
-    rises outlet_rise from the roof, bends through outlet_turn about
-    an axis outlet_bend_R out along +x, then drops (180 deg, down to
-    outlet_run below the bend start) or runs on along +x (90 deg)."""
+    rises outlet_rise from the roof, then ends there (0 deg), or bends
+    through outlet_turn about an axis outlet_bend_R out along +x and
+    drops (180 deg, down to outlet_run below the bend start) or runs on
+    along +x (90 deg)."""
 
     c = cyclone(g, name)
     z_roof = c["height"]
@@ -1095,7 +1409,12 @@ def cyclone_outlet(g, name):
         "bend_centre": (r_bend, z_bend),
         "turn_deg": c["outlet_turn"],
     }
-    if c["outlet_turn"] == 180.0:
+    if c["outlet_turn"] == 0.0:
+        # straight up (C2-C5 since 17 Nov 2026): the CFD domain ends in
+        # a level disc outlet_rise over the roof, on the axis
+        out["z_end"] = z_bend
+        out["z_top"] = z_bend
+    elif c["outlet_turn"] == 180.0:
         out["leg_x"] = 2.0 * r_bend
         out["z_end"] = z_bend - c["outlet_run"]
     else:
@@ -1107,6 +1426,12 @@ def cyclone_outlet(g, name):
 # ======================================================================
 # C1's own riser branch (cyclone.bas Derive, the C1 case)
 # ======================================================================
+def r1_D(g):
+    """R1's bore: C2's outlet pipe (its vortex finder) straight up, no
+    reducer (user decision, 21 Nov 2026; it was the published 3.07)."""
+    return cyclone(g, "C2")["D_vortex"]
+
+
 def c1_branch(g):
     """C1's CFD riser branch, heights from its dust outlet and x from
     its axis (the inlet duct towards -x): the branch D (half R1's
@@ -1120,7 +1445,7 @@ def c1_branch(g):
     nx, nz = s["normal"]
     ce_x, _, ce_z = s["face_centre"]
 
-    D_r1 = v(g["risers"]["R1"]["D"])
+    D_r1 = r1_D(g)
     r = math.sqrt(v(d["c1_riser_area_share"]) * 0.25 * D_r1 * D_r1)
     r_bend = v(d["c1_riser_bend_R_over_D"]) * 2.0 * r
     trans = v(d["c1_riser_transition"])
@@ -1164,7 +1489,7 @@ def c1_twin(g):
     s = cyclone_duct_inlet(g, "C1")
     c = cyclone(g, "C1")
     R = 0.5 * c["D_barrel"]
-    r = 0.5 * v(g["risers"]["R1"]["D"])
+    r = 0.5 * r1_D(g)
     rb = 0.5 * br["D"]
     gap = v(g["layout"]["c1_twin_gap"])
     y_duct = 0.5 * (s["y_inner"] + s["y_outer"])   # the duct's (and branch's) axis from the C1 axis
@@ -1193,7 +1518,8 @@ def layout(g):
     axis on one string's side: the kiln inlet chamber, the calciner on
     it, the tertiary air duct, C5 by the gooseneck leg, C4..C2 each
     roof flush with the top of the outlet bend below it, R1 straight up
-    on C2's axis and the twin C1 over it."""
+    on C2's axis and the twin C1 over it. C4..C2 each over the outlet
+    pipe of the one below, which rises beside it into its inlet."""
 
     L = g["layout"]
     cal, gn, kl = calciner(g), gooseneck(g), kiln(g)
@@ -1213,7 +1539,14 @@ def layout(g):
 
     r_leg = 0.5 * gn["D_leg"]
     x_inner = gn["x_leg"] + r_leg + v(L["gooseneck_to_c5_gap"]) + 0.5 * c[5]["D_barrel"]
-    x_outer = x_inner + v(L["column_offset"])
+    # R4..R2 (user decision, 17 Nov 2026): each the outlet pipe of the
+    # cyclone below, straight up under the inlet of the one above and
+    # turning in at its top; the two columns as far apart as the widest
+    # riser asks, every riser then set at that spacing
+    rs = {s: riser_inlet(g, f"C{s}", c[s + 1]["D_vortex"]) for s in (4, 3, 2)}
+    offset = max(r["offset"] for r in rs.values())
+    rs = {s: riser_inlet(g, f"C{s}", c[s + 1]["D_vortex"], offset) for s in (4, 3, 2)}
+    x_outer = x_inner + offset
     col = {5: x_inner, 4: x_outer, 3: x_inner, 2: x_outer}
 
     # C5's inlet axis is the arms' level runs' axis (the CFD's outlet faces, which gooseneck()
@@ -1223,17 +1556,24 @@ def layout(g):
     def top(s):        # the outlet pipe's top, where its bend starts
         return z_dust[s] + c[s]["height"] + c[s]["outlet_rise"]
 
+    # each C4..C2 stands with its dust outlet dust_over_roof over the roof
+    # under it (the cyclone two below shares its column, its riser's top
+    # just under this one's roof), or as high as the CFD outlet pipe
+    # below and the riser's turn ask
+    gap = v(L["dust_over_roof"])
+    riser_vertical = {}
     for s in (4, 3, 2):
         below = s + 1
-        z_dust[s] = top(below) + c[below]["outlet_bend_R"] + 0.5 * c[below]["D_vortex"] - c[s]["height"]
+        roof_below = z_dust[below] + c[below]["height"]
+        step = max(c[s]["height"] + gap, c[below]["outlet_rise"] + rs[s]["drop"])
+        z_dust[s] = roof_below + step - c[s]["height"]
+        riser_vertical[s] = step - rs[s]["drop"]
 
     tw = c1_twin(g)
     y_rise = tw["y_rise"]
-    # R1 straight up on C2's axis (user decision, 17 Nov 2026): out of
-    # C2's outlet pipe through a conical reducer D_x -> R1's D, then
-    # its own bore up to the Y
-    red = r1_reducer(g)
-    z_foot = top(2) + red["length"]
+    # R1 straight up on C2's axis (user decision, 17 Nov 2026): C2's
+    # outlet pipe, its bore unchanged (21 Nov 2026), up to the Y
+    z_foot = top(2)
     # C1 over C2's outlet pipe by the stage gap (its meal reaching R2),
     # or as high as R1's rise and Y ask before the C1 CFD branch's floor
     z_dust[1] = max(
@@ -1250,10 +1590,16 @@ def layout(g):
     co = cooler(g)
     z_cooler = z_kiln_end - 0.5 * kl["D"] - v(L["cooler_drop"]) - co["casing_height"]
     z_hood = z_kiln_end - a_ch
-    ramp = math.atan(
-        (z_ch0 + 2.0 * a_ch - v(L["kiln_axis_z"]) + 0.5 * kl["D"] / math.cos(alpha))
-        / (2.0 * a_ch)
-    )
+    # The chamber's section (user sketch, 21 Nov 2026): the throat's walls
+    # run down, the ramp from the left one falls at ramp_deg to a foot
+    # ramp_foot long at the kiln mouth's lower lip; the foot falls at the
+    # kiln's slope towards the kiln (the kiln shell's line carried in)
+    kic = g["kiln_inlet_chamber"]
+    ramp = math.radians(v(kic["ramp_deg"]))
+    z_lip = v(L["kiln_axis_z"]) - 0.5 * kl["D"] / math.cos(alpha)
+    x_toe = a_ch - v(kic["ramp_foot"])
+    z_toe = z_lip + v(kic["ramp_foot"]) * math.tan(alpha)
+    z_ramp_top = z_toe + (x_toe + 0.5 * cal["D_throat"]) * math.tan(ramp)
 
     return {
         "a_chamber": a_ch,
@@ -1267,7 +1613,10 @@ def layout(g):
         "z_tertiary_air": z_ta,
         "x_inner": x_inner,
         "x_outer": x_outer,
+        "column_offset": offset,
         "col": col,
+        "riser": rs,
+        "riser_vertical": riser_vertical,
         "z_dust": z_dust,
         "z_roof": {s: z_dust[s] + c[s]["height"] for s in z_dust},
         "z_top": {s: top(s) for s in z_dust},
@@ -1280,6 +1629,8 @@ def layout(g):
         "z_tower": z_dust[1] + c[1]["height"] + c[1]["outlet_rise"] + c[1]["outlet_bend_R"] + 0.5 * c[1]["D_vortex"],
         "x_gooseneck_leg": gn["x_leg"],
         "chamber_ramp_deg": math.degrees(ramp),
+        "chamber_ramp_toe": (x_toe, z_toe),
+        "z_chamber_ramp_top": z_ramp_top,
         "kiln_end": (x_kiln_end, z_kiln_end),
         "cooler_x": (x_kiln_end, x_kiln_end + co["length"]),
         "cooler_z": (z_cooler, z_cooler + co["casing_height"]),
@@ -1309,51 +1660,34 @@ def _sum(*parts):
 
 
 def stage_riser(g, k):
-    """R(k), k = 2..4: the gas from C(k+1) up to C(k) is C(k+1)'s CFD
-    outlet pipe itself -- its rise over the roof, its 90 deg bend and
-    the leg level on to C(k)'s barrel wall (the drawing; the published
-    Ø3.35-3.60 risers are not this plant's). At the pipe's bore all the
-    way; the 45 deg taper onto the inlet is left out (simple, small)."""
+    """R(k), k = 2..4: the gas from C(k+1) up to C(k) (user decision,
+    17 Nov 2026): C(k+1)'s outlet pipe straight up from its roof beside
+    C(k) (its first outlet_rise the CFD domain's), the transition whose
+    walls turn in at riser_slope_deg (circle -> the volute inlet) and
+    the level duct into C(k)'s volute. Before, it was C(k+1)'s CFD
+    outlet pipe, its 90 deg bend and a level leg 15 m over to C(k)."""
     s = k + 1
-    c, up = cyclone(g, f"C{s}"), cyclone(g, f"C{k}")
-    D, R = c["D_vortex"], c["outlet_bend_R"]
-    leg = v(g["layout"]["column_offset"]) - R - 0.5 * up["D_barrel"]
-    return _sum(
-        _pipe(D, c["outlet_rise"]),
-        _pipe(D, 0.5 * math.pi * R),
-        _pipe(D, leg),
-    )
-
-
-def r1_reducer(g):
-    """R1's foot (user decision, 17 Nov 2026): a conical reducer from
-    C2's outlet bore D_x to R1's D at layout.r1_reducer_deg."""
-    D2 = cyclone(g, "C2")["D_vortex"]
-    D1 = v(g["risers"]["R1"]["D"])
-    if D1 > D2:
-        raise ValueError(f"R1 (D {D1}) is wider than C2's outlet pipe (D {D2})")
-    length = 0.5 * (D2 - D1) / math.tan(math.radians(v(g["layout"]["r1_reducer_deg"])))
-    slant = math.hypot(length, 0.5 * (D2 - D1))
-    return {
-        "D_in": D2,
-        "D_out": D1,
-        "length": length,
-        "volume": math.pi / 12.0 * length * (D2 * D2 + D2 * D1 + D1 * D1),
-        "wall_area": 0.5 * math.pi * (D2 + D1) * slant,
-    }
+    c = cyclone(g, f"C{s}")
+    L = layout(g)
+    r = L["riser"][k]
+    trans = {"D": r["D"], "length": r["length"], "volume": r["volume"], "wall_area": r["wall_area"]}
+    duct = {"length": r["level"], "volume": r["duct_volume"], "wall_area": r["duct_wall_area"]}
+    out = _sum(_pipe(c["D_vortex"], L["riser_vertical"][k]), trans, duct)
+    out["riser"] = r
+    return out
 
 
 def r1_path(g):
     """R1, the gas from C2 up to the twin C1, per string: C2's CFD
-    outlet pipe (its rise over the roof), the reducer, R1 straight up
-    on C2's axis to its Y (user decision, 17 Nov 2026; before, C2's CFD
-    bend and leg turned it over to R1), then each twin's branch (half
-    R1's area) up to its bend, the bend, the transition and the inlet
-    duct to the barrel. The Y's own short pieces are taken as the
-    branches' run."""
+    outlet pipe (its rise over the roof), then the same bore straight
+    up on C2's axis to its Y (user decisions, 17 Nov 2026; 21 Nov 2026
+    no reducer: R1 = C2's D_x), then each twin's branch (half R1's
+    area) up to its bend, the bend, the transition and the inlet duct
+    to the barrel. The Y's own short pieces are taken as the branches'
+    run."""
     c2, br, L = cyclone(g, "C2"), c1_branch(g), layout(g)
     D2 = c2["D_vortex"]
-    D1 = v(g["risers"]["R1"]["D"])
+    D1 = r1_D(g)
     up = L["z_r1_split"] - L["z_r1_foot"]
     branch_up = (L["z_dust"][1] + br["z_bend"]) - L["z_r1_split"]
     bend = math.radians(br["bend_deg"]) * br["bend_R"]
@@ -1363,7 +1697,6 @@ def r1_path(g):
     branches = {"volume": n * branch["volume"], "wall_area": n * branch["wall_area"]}
     out = _sum(
         _pipe(D2, c2["outlet_rise"]),
-        r1_reducer(g),
         _pipe(D1, up),
         branches,
     )
@@ -1429,8 +1762,7 @@ def twin_sections(g=None):
             h = L["z_dust"][1] + br["z_bend"] - L["z_roof"][2]
         else:
             r = stage_riser(g, s)
-            below = cyclone(g, f"C{s + 1}")
-            h = below["outlet_rise"] + below["outlet_bend_R"] + 0.5 * below["D_vortex"]
+            h = L["z_roof"][s] - L["z_roof"][s + 1]          # the riser, roof below to roof
         stages.append({
             "cyclone": f"C{s}",
             "cyclones_per_string": c["per_string"],

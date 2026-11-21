@@ -93,8 +93,15 @@ CASE_KEYS = (  # source key -> SelectCyclone variable
     ("outlet_rise_over_Dx", "OUTLET_EXT_OVER_VORTEX_D"),
     ("outlet_bend_R_over_Dx", "ELBOW_R_OVER_VORTEX_D"),
     ("outlet_run_over_Dx", "OUTLET_DOWN_OVER_VORTEX_D"),
+    ("inlet_duct_length", "L_INLET_CASE"),
+    ("inlet_riser", "RISER_IN_ON"),
     ("boi_radius", "BOI_RADIUS"),
 )
+# derived per case: the riser inlet's axis from the barrel axis (the
+# plant's column offset, so the domain's riser is R2 / R3; 0 without one)
+BOOL_KEYS = ("volute", "inlet_riser")
+# D_x = D_vortex_over_D_barrel x D: the riser's bore (user decision, 21 Nov 2026)
+VD_WHAT = "vortex finder D = riser D = D_vortex_over_D_barrel x D"
 
 DOMAIN_KEYS = (  # cyclone_domain key -> module Const
     ("vortex_wall", "VORTEX_WALL"), ("inlet_duct_length", "L_INLET"),
@@ -108,6 +115,9 @@ DOMAIN_KEYS = (  # cyclone_domain key -> module Const
     ("c1_riser_below_feed", "RISER_BELOW_FEED"),
     ("c1_feed_width", "FEED_W"), ("c1_feed_height", "FEED_H"),
     ("c1_feed_depth", "FEED_DEPTH"), ("meal_slope", "FEED_SLOPE_DEG"),
+    ("riser_slope_deg", "RISER_IN_SLOPE_DEG"),
+    ("riser_barrel_clearance", "RISER_IN_CLEAR"),
+    ("riser_cfd_stub_over_D", "RISER_IN_STUB_OVER_D"),
 )
 
 
@@ -124,24 +134,35 @@ def cyclone_case(g, name):
                 out.append(src(f"{name}_{var}", node[key]))
             elif key == "D_barrel":
                 out.append(src(f"{name}_{var}", node["D_barrel_published"]))
-            elif key in pg.CYCLONE_DIMS:
+            elif key == "D_vortex":
+                out.append(der(f"{name}_{var}", c[key], VD_WHAT))
+            elif key in pg.CYCLONE_DIMS or key == "inlet_duct_length":
                 out.append(der(f"{name}_{var}", c[key], f"{base} x {c['scale']:.6f}"))
             else:
-                kind = "Boolean" if key == "volute" else "Double"
+                kind = "Boolean" if key in BOOL_KEYS else "Double"
                 out.append(Const(f"{name}_{var}", c[key], f"as {base}", kind))
         return out
+    c = pg.cyclone(g, name)
     for key, var in CASE_KEYS:
-        kind = "Boolean" if key == "volute" else "Double"
-        out.append(src(f"{name}_{var}", node[key], kind=kind))
+        kind = "Boolean" if key in BOOL_KEYS else "Double"
+        if key == "D_vortex":
+            out.append(der(f"{name}_{var}", c[key], VD_WHAT))
+        elif key in node:
+            out.append(src(f"{name}_{var}", node[key], kind=kind))
+        else:
+            # not given for this cyclone: the domain's (inlet duct) or none (no bend, no riser)
+            out.append(Const(f"{name}_{var}", c[key], "not given: the default", kind))
     return out
 
 
 def cyclone_bas(g):
     d = g["cyclone_domain"]
     out = [src(var, d[key]) for key, var in DOMAIN_KEYS]
-    out.append(src("D_RISER_SRC", g["risers"]["R1"]["D"], "R1 inner D"))
+    out.append(der("D_RISER_SRC", pg.r1_D(g), "R1 inner D = C2's D_x"))
     for name in ("C1", "C4", "C5"):
         out += cyclone_case(g, name)
+        off = pg.cfd_riser_inlet(g, name)["offset"] if pg.cyclone(g, name)["inlet_riser"] else 0.0
+        out.append(der(f"{name}_RISER_IN_OFFSET", off, "riser inlet axis from the barrel axis (the columns' offset)"))
     return out
 
 
@@ -185,6 +206,13 @@ def calciner_bas(g):
         src("FEED_DEPTH", c["feed_depth"], "meal and fuel pipes past the wall"),
         src("D_FUEL", c["D_fuel"]),
         src("FUEL_SLOPE_DEG", c["fuel_slope"], "below the horizontal"),
+        src("DP_EXIT_DEG", c["dispersion_plate_exit_angle"], "dispersion plate's exit, above the horizontal"),
+        src("DP_PROT_OVER_D", c["dispersion_plate_protrusion_over_D_feed"], "its edge past the wall, x D_FEED"),
+        src("DP_WIDTH_OVER_D", c["dispersion_plate_width_over_D_feed"], "its width, x D_FEED"),
+        src("DP_THICKNESS", c["dispersion_plate_thickness"]),
+        src("DP_LIP_CLEARANCE", c["dispersion_plate_lip_clearance"], "its meal face under the hole's lowest point"),
+        src("DP_TAIL", c["dispersion_plate_tail"], "its tail on into the wall, along the pipe slope"),
+        der("DP_INSIDE_VESSEL", pg.calciner_dispersion_plate(g)["inside_vessel"], "one plate inside the vessel, m3 (the fluid it removes; plant_geometry.py)"),
         Const("OVERLAP_N", pg.OVERLAP_N, "grid per axis, the bends' shared volume [plant_geometry.py]", "Long"),
         Const("P_ATM", pg.P_ATM, "Pa, the throat's gas [plant_geometry.py]"),
         Const("R_GAS", pg.R_GAS, "J/(mol K) [plant_geometry.py]"),
@@ -203,6 +231,7 @@ def drawing_bas(g):
     k, coo, lay = g["kiln"], g["cooler"], g["layout"]
     br = pg.c1_branch(g)
     tw = pg.c1_twin(g)
+    L = pg.layout(g)
 
     out = []
     for tag, c in (("C1", cy["C1"]), ("C4", cy["C4"])):
@@ -210,7 +239,7 @@ def drawing_bas(g):
             src(f"{tag}_D", c["D_barrel"], "barrel D"),
             src(f"{tag}_HB", c["H_barrel"], "barrel height"),
             src(f"{tag}_HC", c["H_cone"], "cone height"),
-            src(f"{tag}_VD", c["D_vortex"], "vortex finder D"),
+            der(f"{tag}_VD", pg.cyclone(g, tag)["D_vortex"], "vortex finder D = riser D, D / 2"),
             src(f"{tag}_DD", c["D_dust"], "dust outlet D"),
         ]
     out += [
@@ -222,14 +251,14 @@ def drawing_bas(g):
         der("C5_HIN", c5["H_inlet"], "volute inlet height, C4 x scale"),
         src("C4_VF_S", cy["C4"]["L_vortex"], "vortex finder immersion"),
         der("C4_OUT_RISE", c4["outlet_rise"], "outlet pipe rise over the roof"),
-        der("C4_OUT_R", c4["outlet_bend_R"], "outlet bend centreline R"),
-        der("C4_OUT_RUN", c4["outlet_run"], "outlet leg"),
+        der("C4_OUT_R", c4["outlet_bend_R"], "outlet bend centreline R (0: straight, 17 Nov 2026)"),
+        der("C4_OUT_RUN", c4["outlet_run"], "outlet leg (0: straight)"),
         src("C4_IN_H", cy["C4"]["H_inlet"], "volute inlet height"),
         src("C4_IN_W", cy["C4"]["W_inlet"], "volute inlet width"),
         src("C4_TONGUE", d["volute_tongue"]),
-        src("C4_IN_L", d["inlet_duct_length"], "inlet duct face from the axis"),
+        der("C4_IN_L", c4["inlet_duct_length"], "level inlet duct, its face back from the tangent plane"),
         src("C1_VF_S", cy["C1"]["L_vortex"], "vortex finder immersion"),
-        src("R1_D", g["risers"]["R1"]["D"]),
+        der("R1_D", pg.r1_D(g), "R1 = C2's outlet pipe, D_x"),
         src("CALC_D", cal["D"]),
         src("CALC_H", cal["H"], "cone + cylinder"),
         der("CALC_THROAT_D", 2.0 * pg.throat_radius(g), "throat D"),
@@ -268,7 +297,15 @@ def drawing_bas(g):
         der("C1_OUT_RISE", c1["outlet_rise"], "C1 outlet pipe rise"),
         der("C1_OUT_R", c1["outlet_bend_R"], "C1 outlet 180 deg bend centreline R"),
         src("STAGE_GAP", lay["stage_gap"]),
-        src("ZIG_DX", lay["column_offset"], "outer column outboard of the inner"),
+        der("ZIG_DX", L["column_offset"], "outer column outboard of the inner: the widest riser's offset"),
+        src("DUST_OVER_ROOF", lay["dust_over_roof"], "C4..C2's dust outlet over the roof below"),
+        src("RISER_SLOPE_DEG", d["riser_slope_deg"], "R2..R4's walls turn in at this slope"),
+        der("R4_RISE_V", L["riser_vertical"][4], "R4 vertical, C5's roof to its turn"),
+        der("R3_RISE_V", L["riser_vertical"][3], "R3 vertical, C4's roof to its turn"),
+        der("R2_RISE_V", L["riser_vertical"][2], "R2 vertical, C3's roof to its turn"),
+        der("RISER_RUN", L["riser"][3]["run"], "R2/R3's transition: horizontal run, riser axis to the level duct's face"),
+        der("RISER_RUN4", L["riser"][4]["run"], "R4's transition: horizontal run"),
+        der("RISER_Y", L["riser"][3]["y"], "a riser's axis across from its cyclone's axis (depth): under the duct"),
         src("C5_OVER_TA", lay["c5_over_tertiary_air"]),
         src("GN_TO_C5_GAP", lay["gooseneck_to_c5_gap"]),
         src("C1_TWIN_GAP", lay["c1_twin_gap"], "twin C1: gap between the branches' walls"),
@@ -276,10 +313,10 @@ def drawing_bas(g):
         der("C1_DUCT_Y", tw["y_duct"], "C1 inlet duct / branch axis from the C1 axis"),
         der("R1_BRANCH_HALF", tw["branch_half"], "R1's Y: each branch from R1's axis"),
         src("R1_UP_MIN", lay["r1_up_min"]),
-        src("R1_RED_DEG", lay["r1_reducer_deg"], "R1's reducer out of C2's outlet pipe: half angle"),
-        der("R1_RED_L", pg.r1_reducer(g)["length"], "R1's reducer: length, D_x -> R1's D"),
         src("KILN_AXIS_Z", lay["kiln_axis_z"]),
         src("CHAMBER_MARGIN", lay["chamber_margin"]),
+        src("KIC_RAMP_DEG", g["kiln_inlet_chamber"]["ramp_deg"], "KIC ramp, to the horizontal"),
+        src("KIC_RAMP_FOOT", g["kiln_inlet_chamber"]["ramp_foot"], "KIC ramp's level foot, toe to the kiln mouth"),
         src("COOLER_DROP", lay["cooler_drop"]),
     ]
     return out
@@ -335,7 +372,7 @@ def drawings_bas(g):
         src("C1_H_BARREL", cy["C1"]["H_barrel"], "barrel height"),
         src("C1_H_CONE", cy["C1"]["H_cone"], "cone height"),
         src("C1_L_VORTEX", cy["C1"]["L_vortex"], "vortex finder immersion"),
-        src("C1_D_VORTEX", cy["C1"]["D_vortex"], "vortex finder / outlet pipe bore"),
+        der("C1_D_VORTEX", c1["D_vortex"], "vortex finder / outlet pipe bore, D / 2"),
         src("C1_D_DUST", cy["C1"]["D_dust"], "dust outlet D"),
         src("C1_W_INLET", cy["C1"]["W_inlet"], "inlet width"),
         src("C1_H_INLET", cy["C1"]["H_inlet"], "inlet height, normal to the duct"),
@@ -368,7 +405,8 @@ def drawings_bas(g):
 
 def _volute_sheet_consts(g):
     """What drawings.bas needs for the C4 and C5 sheets (volute cyclones
-    with a 90 deg outlet), under their own prefix, and their tables."""
+    with a riser inlet and a straight outlet), under their own prefix,
+    and their tables."""
     from tools.drawings import volute as dvo
 
     d = g["cyclone_domain"]
@@ -376,6 +414,7 @@ def _volute_sheet_consts(g):
     for name in ("C4", "C5"):
         c = pg.cyclone(g, name)
         o = pg.cyclone_outlet(g, name)
+        r = pg.cfd_riser_inlet(g, name)
         out += [
             der(f"{name}_D_BARREL", c["D_barrel"], "barrel inner D"),
             der(f"{name}_H_BARREL", c["H_barrel"], "barrel height"),
@@ -387,14 +426,17 @@ def _volute_sheet_consts(g):
             der(f"{name}_H_INLET", c["H_inlet"], "volute duct height"),
             src(f"{name}_VORTEX_WALL", d["vortex_wall"], "vortex finder wall (not scaled)"),
             src(f"{name}_TONGUE", d["volute_tongue"], "volute tongue (not scaled)"),
-            src(f"{name}_L_DUCT", d["inlet_duct_length"], "volute duct length (not scaled)"),
+            der(f"{name}_L_DUCT", c["inlet_duct_length"], "level volute duct length"),
             der(f"{name}_HEIGHT", c["height"], "barrel + cone"),
             der(f"{name}_OUT_RISE", c["outlet_rise"], "outlet pipe rise over the roof"),
-            der(f"{name}_OUT_R", c["outlet_bend_R"], "outlet bend centreline R"),
-            der(f"{name}_OUT_RUN", c["outlet_run"], "outlet run after the bend"),
-            der(f"{name}_EXIT_X", o["x_end"], "barrel axis to the gas outlet face"),
-            der(f"{name}_Z_LEG", o["z_leg"], "the outlet run's axis, z"),
-            der(f"{name}_TOP", o["z_leg"] + 0.5 * o["D"], "top of the outlet pipe"),
+            der(f"{name}_TOP", o["z_top"], "the straight outlet pipe's end face, z"),
+            der(f"{name}_RISER_D", r["D"], "riser inlet D"),
+            der(f"{name}_RISER_X", r["x"], "riser axis, x (the duct runs to -x)"),
+            der(f"{name}_RISER_Y", r["y"], "riser axis, y (under the duct's middle)"),
+            der(f"{name}_RISER_OFFSET", r["offset"], "riser axis from the barrel axis"),
+            der(f"{name}_RISER_ZTOP", c["height"] - r["drop"], "the riser's cut, its low (inner) point, z"),
+            der(f"{name}_RISER_ZOUT", c["height"] - r["drop_out"], "the riser's cut, its high (outer) point, z"),
+            der(f"{name}_RISER_ZBOT", c["height"] - r["drop"] - r["stub"], "the riser's gas inlet face, z"),
         ]
         out += _table_consts(name, dvo.params(g, name), dvo.ORDER)
     return out
@@ -442,6 +484,23 @@ def _calciner_sheet_consts(g):
         der("CAL_FUEL_Y", fuel["end"][0], "fuel pipe end face centre, y"),
         der("CAL_FUEL_Z", fuel["end"][1], "fuel pipe end face centre, z"),
         der("CAL_BOX_Y", fuel["end"][0] + 0.5 * fuel["D"] * sf, "the fuel pipes' far side, y"),
+    ]
+    dp = pg.calciner_dispersion_plate(g)
+    out += [
+        der("CAL_DP_R", dp["R_arc"], "dispersion plate (+x): the meal face's radius"),
+        der("CAL_DP_T", dp["thickness"], "its thickness"),
+        der("CAL_DP_CX", dp["centre"][0], "the arcs' centre, x"),
+        der("CAL_DP_CZ", dp["centre"][1], "the arcs' centre, z"),
+        der("CAL_DP_AX", dp["A"][0], "the meal face's start on the wall, x"),
+        der("CAL_DP_AZ", dp["A"][1], "the meal face's start on the wall, z"),
+        der("CAL_DP_EX", dp["E"][0], "the meal face's edge, x"),
+        der("CAL_DP_EZ", dp["E"][1], "the meal face's edge, z"),
+        der("CAL_DP_ELX", dp["E_low"][0], "the lower face's edge, x"),
+        der("CAL_DP_ELZ", dp["E_low"][1], "the lower face's edge, z"),
+        der("CAL_DP_ZLOW", dp["z_low"], "the lower face's lowest point, z"),
+        der("CAL_DP_PROT", dp["protrusion"], "the edge past the wall"),
+        der("CAL_DP_EXIT", dp["exit_angle"], "the exit angle above the horizontal, deg"),
+        der("CAL_DP_SLOPE", pg.calciner_inlets(g)["meal"]["slope"], "the meal pipe's slope, where the plate starts, deg"),
     ]
     out += _table_consts("calciner", dca.params(g), dca.ORDER)
     return out
@@ -544,7 +603,7 @@ def _twin_sheet_consts(g):
     chute_top = br["z_feed"] + pg.v(d["c1_feed_depth"]) * math.sin(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.cos(th)
     y_min = -(br["x"] + rb + pg.v(d["c1_feed_depth"]) * math.cos(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.sin(th))
     out = [
-        src("TW_R1_D", g["risers"]["R1"]["D"], "R1 bore"),
+        der("TW_R1_D", pg.r1_D(g), "R1 bore = C2's D_x"),
         src("TW_GAP", g["layout"]["c1_twin_gap"], "the branches' walls apart"),
         der("TW_S", tw["spacing"], "C1 axis to axis"),
         der("TW_BRANCH_HALF", tw["branch_half"], "each branch from R1's axis, x"),
@@ -552,7 +611,7 @@ def _twin_sheet_consts(g):
         der("TW_Y_BRANCH", tw["y_branch"], "branches and R1 in front of the C1 axes, y"),
         der("TW_Z_BRANCH", tw["z_branch"], "the branches' floor"),
         der("TW_Z_SPLIT", tw["z_split"], "R1's top: the Y starts"),
-        der("TW_R1_STUB_L", L["z_r1_split"] - L["z_r1_foot"], "R1 straight under its Y, from its reducer"),
+        der("TW_R1_STUB_L", L["z_r1_split"] - L["z_r1_foot"], "R1 straight under its Y, from C2's CFD outlet top"),
         der("TW_Z_CUT", 0.5 * (chute_top + br["z_bend"]), "section A-A: clear of the feed chutes and the bends"),
         der("TW_C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
         der("TW_C1_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"] if c1["volute"] else 0.5 * c1["D_barrel"],
@@ -578,7 +637,7 @@ def c1_twin_bas(g):
     # the feed chute's far corner, out along -x of the C1 frame
     tip = -(br["x"] + rb + pg.v(d["c1_feed_depth"]) * math.cos(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.sin(th))
     return [
-        src("R1_D", g["risers"]["R1"]["D"], "R1 bore"),
+        der("R1_D", pg.r1_D(g), "R1 bore = C2's D_x"),
         src("TWIN_GAP", lay["c1_twin_gap"], "the branches' walls apart"),
         der("TWIN_S", tw["spacing"], "C1 axis to axis"),
         der("BRANCH_HALF", tw["branch_half"], "each branch from R1's axis, x"),
@@ -586,7 +645,7 @@ def c1_twin_bas(g):
         der("BRANCH_Y", tw["y_branch"], "branches and R1 in front of the C1 axes, y"),
         der("Z_BRANCH", tw["z_branch"], "the branches' floor (the C1_riser inlet face)"),
         der("Z_SPLIT", tw["z_split"], "R1's top: the Y starts"),
-        der("R1_STUB_L", L["z_r1_split"] - L["z_r1_foot"], "R1 straight under its Y, from its reducer on C2's outlet pipe"),
+        der("R1_STUB_L", L["z_r1_split"] - L["z_r1_foot"], "R1 straight under its Y, from the top of C2's CFD outlet pipe"),
         der("C1_R", 0.5 * c1["D_barrel"], "barrel radius"),
         der("C1_Y_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"] if c1["volute"] else 0.5 * c1["D_barrel"],
             "the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end"),
@@ -752,6 +811,11 @@ def _cyclone_rows(g, name):
     for key, label in labels:
         if scaled and key == "D_barrel":
             rows.append(row_src(label, node["D_barrel_published"]))
+        elif key == "D_vortex":
+            rows.append(row_src("D_x / D (= riser çapı / D)", base["D_vortex_over_D_barrel"],
+                                note="" if base_name == name else f"{base_name} ile özdeş"))
+            rows.append(row_der(label + " (= riser çapı)", c[key], "m", 4,
+                                f"{c['D_vortex_over_D_barrel']:g} D"))
         elif scaled:
             rows.append(row_der(label, c[key], "m", 4, f"C4 × {c['scale']:.6f}"))
         else:
@@ -764,15 +828,32 @@ def _cyclone_rows(g, name):
         row_src("Çıkış dönüşü", base["outlet_turn"], note=note),
         row_der("Çıkış borusu yükselişi (çatının üstünde)", c["outlet_rise"], "m", 3,
                 f"{c['outlet_rise_over_Dx']:g} D_x"),
-        row_der("Çıkış dirseği merkez yarıçapı", c["outlet_bend_R"], "m", 3,
-                f"{c['outlet_bend_R_over_Dx']:g} D_x"),
-        row_der("Çıkış bacağı / inişi", c["outlet_run"], "m", 3,
-                f"{c['outlet_run_over_Dx']:g} D_x"),
+    ]
+    if c["outlet_turn"] != 0.0:
+        rows += [
+            row_der("Çıkış dirseği merkez yarıçapı", c["outlet_bend_R"], "m", 3,
+                    f"{c['outlet_bend_R_over_Dx']:g} D_x"),
+            row_der("Çıkış bacağı / inişi", c["outlet_run"], "m", 3,
+                    f"{c['outlet_run_over_Dx']:g} D_x"),
+        ]
+    if c["inlet_riser"]:
+        r = pg.cfd_riser_inlet(g, name)
+        rows += [
+            row_der("Yatay giriş kanalı (teğet düzleminden)", c["inlet_duct_length"], "m", 3),
+            row_src("Riser duvarlarının kanala eğimi", g["cyclone_domain"]["riser_slope_deg"]),
+            row_der("Riser ekseni, gövde ekseninden (kolon aralığı)", r["offset"], "m", 3),
+            row_der("Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına)", r["run"], "m", 3),
+            row_der("CFD domenindeki dik riser (dönüşün altında)", r["stub"], "m", 3),
+        ]
+    rows += [
         row_der("Toplam yükseklik (gövde + koni)", c["height"], "m", 3),
         row_der("**Ekipman hacmi (gövde + koni)**", c["volume"], "m³", 2),
         row_der("**Islak alan (gövde + çatı halkası + koni)**", c["wet_area"], "m²", 2),
     ]
     return rows
+
+
+GEN = {2: "'nin", 3: "'ün", 4: "'ün", 5: "'in"}     # Turkish genitive after C2..C5
 
 
 def _riser_rows(g, k):
@@ -783,10 +864,8 @@ def _riser_rows(g, k):
         tw = pg.c1_twin(g)
         rows = [
             row_der("C2 çıkış borusu yükselişi (Ø{:.3f})".format(p[0]["D"]), p[0]["length"], "m"),
-            row_src("R1 daraltıcısı yarım açısı (C2 ekseninde, dik)", g["layout"]["r1_reducer_deg"]),
-            row_der("R1 daraltıcısı boyu (Ø{:.3f} → Ø{:.3f})".format(p[1]["D_in"], p[1]["D_out"]), p[1]["length"], "m"),
-            row_src("R1 iç çapı", g["risers"]["R1"]["D"]),
-            row_der("R1 dik boyu, daraltıcıdan Y'ye", p[2]["length"], "m"),
+            row_der("R1 iç çapı (= C2 D_x, daraltıcı yok)", p[1]["D"], "m"),
+            row_der("R1 dik boyu, C2 CFD çıkışından Y'ye", p[1]["length"], "m"),
             row_der("İkiz C1 kolu çapı (R1 alanının yarısı)", br["D"], "m"),
             row_der("Kol başına boy (dik + {:.0f}° dirsek + geçiş + kanal)".format(pg.c1_branch(g)["bend_deg"]), br["length"], "m"),
             row_der("Kol sayısı", r["branches"], "", 0),
@@ -802,9 +881,12 @@ def _riser_rows(g, k):
         p = r["parts"]
         rows = [
             row_der(f"Çap (C{k + 1}'in vorteks bulucusu D_x)", p[0]["D"], "m"),
-            row_der(f"C{k + 1} çıkış borusu yükselişi", p[0]["length"], "m"),
-            row_der("90° dirsek, merkez yayı", p[1]["length"], "m"),
-            row_der(f"Bacak, C{k} gövdesine", p[2]["length"], "m"),
+            row_der(f"Dik riser, C{k + 1}'in çatısından dönüşe (ilk {pg.cyclone(g, f'C{k + 1}')['outlet_rise']:.3f} m CFD çıkış borusu)",
+                    p[0]["length"], "m"),
+            row_src("Duvarların içeri dönüş eğimi", g["cyclone_domain"]["riser_slope_deg"]),
+            row_der(f"Eğik geçiş, eksen boyu (Ø → C{k} girişi)", p[1]["length"], "m"),
+            row_der(f"Yatay kanal, C{k}{GEN[k]} volütüne", p[2]["length"], "m"),
+            row_der(f"Riser ekseni, C{k}{GEN[k]} ekseninden", r["riser"]["offset"], "m"),
             row_der("Toplam boy", sum(q["length"] for q in p), "m"),
         ]
     rows += [
@@ -847,6 +929,7 @@ def _gooseneck_rows(g):
 
 def _calciner_rows(g):
     c, cal = g["calciner"], pg.calciner(g)
+    dp = pg.calciner_dispersion_plate(g)
     return [
         row_src("Gövde (shell) çapı", c["D_shell"]),
         row_src("Efektif iç çap", c["D"], note="7.20 × 3.08 / 3.29"),
@@ -858,6 +941,12 @@ def _calciner_rows(g):
         row_src("Tersiyer hava kanalı çapı", c["D_tertiary_air"]),
         row_src("Farin besleme borusu çapı", c["D_feed"], note="Fidaros 2007 × √2"),
         row_src("Yakıt borusu çapı", c["D_fuel"], note="Fidaros 2007 × √2"),
+        row_src("Dağıtma plakası çıkış açısı (yatayın üstü)", c["dispersion_plate_exit_angle"],
+                note="tip: KHD US 6,875,267 + üretici görseli; açı görselden"),
+        row_der("Dağıtma plakası yay yarıçapı", dp["R_arc"], "m", 3, "çıkıntıdan ve açılardan"),
+        row_der("Dağıtma plakası duvardan çıkıntısı", dp["protrusion"], "m", 3, "0.5 × farin borusu çapı (model)"),
+        row_der("Dağıtma plakası genişliği", dp["width"], "m", 4, "1.0 × farin borusu çapı (model)"),
+        row_src("Dağıtma plakası kalınlığı", c["dispersion_plate_thickness"]),
         row_der("**Ekipman hacmi (koni + silindir)**", cal["vessel_volume"], "m³", 2),
         row_der("**Duvar alanı (silindir + koni + tavan halkası)**", cal["vessel_wall_area"], "m²", 2),
     ]
@@ -1074,9 +1163,9 @@ def _topology_equipment(g):
         ("C1 (hat başına ikiz)", f"D {c1['D_barrel']:.2f}, gövde {c1['H_barrel']:.2f}", "cyclone_C1.md (CFD)"),
         ("C2 = C3 = C4", f"D {c4['D_barrel']:.2f}, gövde {c4['H_barrel']:.2f} (h = D)", "cyclone_C4.md (CFD)"),
         ("C5", f"D {c5['D_barrel']:.2f}, gövde {c5['H_barrel']:.2f} (CFD C4 × {c5['scale']:.4f})", "cyclone_C5.md"),
-        ("R1 (hat başına)", f"Ø{pg.v(g['risers']['R1']['D']):.2f}", "riser_R1.md (HFC2500)"),
+        ("R1 (hat başına)", f"Ø{pg.r1_D(g):.3f}", "C2'nin dik çıkış borusu, D_x = D/2 (riser_R1.md)"),
         ("R2 / R3 / R4 (hat başına)", " / ".join(f"Ø{pg.stage_riser(g, kk)['parts'][0]['D']:.3f}" for kk in (2, 3, 4)),
-         "C3 / C4 / C5'in CFD çıkış borusu (riser_R2–R4.md)"),
+         "C3 / C4 / C5'in dik çıkış borusu, 45° ile üst siklona (riser_R2–R4.md)"),
         ("Kalsinatör", f"Ø{cal['D']:.4f}, {cal['H']:.1f} m (koni dahil), boğaz Ø{cal['D_throat']:.3f}, koni {pg.v(g['calciner']['cone_angle']):g}°",
          "calciner.md (PF5000)"),
         ("Kaz boynu", f"üç düz parçalı boyun (45°/0°/45°), Ø{gn['D_neck']:.3f}, aşağıda 2 kol × Ø{gn['D_leg']:.2f}, her kol C5 girişine iner", "gooseneck.md"),
@@ -1089,16 +1178,16 @@ def _topology_equipment(g):
 def _topology_cfd(g):
     c1, c4, c5 = (pg.cyclone(g, n) for n in ("C1", "C4", "C5"))
     d, br = g["cyclone_domain"], pg.c1_branch(g)
-    L_in = pg.v(d["inlet_duct_length"])
+    L_in = c4["inlet_duct_length"]
+    r4 = pg.cfd_riser_inlet(g, "C4")
 
     def mid(c, k=1.0):
-        return (f"gövde, VF {c['L_vortex']:.3f}, volüt ve {k * L_in:.2f} m giriş kanalı, "
-                f"{c['outlet_rise']:.3f} m ({c['outlet_rise_over_Dx']:g}·VD) çıkış borusu, "
-                f"R {c['outlet_bend_R']:.3f} 90° dirsek, {c['outlet_run']:.3f} m bacak")
+        return (f"Ø{r4['D']:.2f} dik riser {r4['stub']:.2f} m, {pg.v(d['riser_slope_deg']):g}° eğik geçiş "
+                f"(yatay {r4['run']:.3f} m), {L_in:.2f} m yatay kanal, volüt, gövde, VF {c['L_vortex']:.3f}, "
+                f"{c['outlet_rise']:.3f} m ({c['outlet_rise_over_Dx']:g}·VD) dik çıkış borusu")
 
     def out(c):
-        return (f"bacağın ucu, eksenden {c['outlet_bend_R'] + c['outlet_run']:.3f} m, "
-                f"çatının {c['outlet_rise'] + c['outlet_bend_R']:.3f} m üstünde")
+        return f"çıkış borusunun ucu, eksende, çatının {c['outlet_rise']:.3f} m üstünde"
     return [
         ("C1 (×4)",
          f"gövde, VF {c1['L_vortex']:.2f}, Ø{br['D']:.3f} kol, {br['bend_deg']:g}° R {br['bend_R']:.3f} dirsek, "
@@ -1106,9 +1195,10 @@ def _topology_cfd(g):
          f"{c1['outlet_rise']:.2f} m çıkış borusu, R {c1['outlet_bend_R']:.2f} 180° dirsek, {c1['outlet_run']:.2f} m iniş",
          f"kolun tabanı, toz çıkışının {br['z_floor']:.3f} m üstü",
          f"inişin ucu, çatı kotunda, eksenden {2 * c1['outlet_bend_R']:.2f} m"),
-        ("C2–C4 (×6)", mid(c4), f"giriş kanalının ucu, eksenden {L_in:.2f} m (`C4_IN_L`)", out(c4)),
+        ("C2–C4 (×6)", mid(c4), f"riser parçasının tabanı, gövde ekseninden {r4['offset']:.3f} m, "
+         f"dönüşün {r4['stub']:.2f} m altı", out(c4)),
         ("C5 (×2)", f"C2–C4'ün {c5['scale']:.4f} katı (CFD'si ayrıca çözülmez)",
-         f"eksenden {c5['scale'] * L_in:.2f} m", out(c5)),
+         f"riser parçasının tabanı, eksenden {c5['scale'] * r4['offset']:.3f} m", out(c5)),
     ]
 
 
@@ -1154,9 +1244,11 @@ def _calciner_cfd(g):
     steps = [cal["v_throat"] + cal["vessel_volume"]]
     ins = pg.calciner_inlets(g)
     ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
+    dp = pg.calciner_dispersion_plate(g)
     for dv in (v_p1 + v_p2 + v_p3 + v_p4, v_arm - gn["overlap_neck_arm"],
                v_arm - gn["overlap_neck_arm"] - gn["overlap_arms"] + gn["overlap_all"],
-               meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"]):
+               meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"],
+               -dp["inside_vessel"], -dp["inside_vessel"]):
         steps.append(steps[-1] + dv)
     return [
         ("Boğaz", f"Ø{f(cal['D_throat'])}, z 0 .. {f(cal['z_throat_top'])}", f"{cal['v_throat']:.3f}"),
@@ -1180,11 +1272,15 @@ def _calciner_cfd(g):
          f"yüzü x {f(ta['x_end'])}", f"{steps[6]:.3f} (+{ta['volume']:.3f})"),
         ("7a / 7b + yakıt boruları ±y", f"Ø{fuel['D']:g}, {fuel['slope']:g}°, eksenleri duvarı z {f(fuel['z_wall'])}'da keser; "
          f"uç yüzleri (0, ±{f(fuel['end'][0])}, {f(fuel['end'][1])})",
-         f"{steps[7]:.3f} / **{steps[8]:.3f}** (+{fuel['volume']:.4f} her biri)"),
+         f"{steps[7]:.3f} / {steps[8]:.3f} (+{fuel['volume']:.4f} her biri)"),
+        ("8a / 8b − dağıtma plakaları ±x", f"farin deliğinin en alt noktasının {pg.v(g['calciner']['dispersion_plate_lip_clearance']):g} altında, duvarda {meal['slope']:g}° eğimle başlar, "
+         f"R {f(dp['R_arc'])} yayla +{dp['exit_angle']:g}°'ye döner; kenarı ρ {f(dp['E'][0])}, z {f(dp['E'][1])}; en alt noktası z {f(dp['z_low'])}; "
+         f"genişlik {f(dp['width'])}, kalınlık {dp['thickness']:g}; kuyruk {dp['tail']:g} duvarın içine; akıştan kesilir (katı hacmi {dp['volume']:.4f})",
+         f"{steps[9]:.3f} / **{steps[10]:.3f}** (−{dp['inside_vessel']:.4f} her biri)"),
         ("**Uyarı: eski CFD sonuçları**", "Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; "
          "kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı", "—"),
         ("Yeniden koşu: domen", "geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py",
-         f"{steps[8]:.3f}"),
+         f"{steps[10]:.3f}"),
         ("Yeniden koşu: çıkışlar", f"gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±{f(gn['x_leg'])}, y = −{f(gn['y_off'])}, z {f(gn['z_end'])}; "
          f"yatay kol {gn['arm_run'] / gn['D_leg']:g} çap ({f(gn['arm_run'])}), eğik parçadan {90.0 - gn['arm_angle']:g}° mitre sonrası", f"{math.pi * rl * rl:.3f} m² her biri"),
     ]

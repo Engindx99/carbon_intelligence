@@ -9,8 +9,12 @@ Attribute VB_Name = "cyclone"
 ' round riser, its bend and the transition into the inlet duct, and
 ' the meal feed chute. With VOLUTE_ON the inlet is a simple volute
 ' outside the barrel instead of a slot through the shell, and with
-' OUTLET_TURN_DEG 90 the outlet turns into a horizontal run instead
-' (C4). Nothing structural is modelled -- no shell, no refractory
+' OUTLET_TURN_DEG 90 the outlet turns into a horizontal run instead,
+' with 0 it ends straight. With RISER_IN_ON (C4 / C5 since 17 Nov
+' 2026) a round riser stands under the volute's level duct and a
+' straight loft from its level top turns in to the duct's face, its
+' outer wall at RISER_IN_SLOPE_DEG: R2 / R3 as the plant has them.
+' Nothing structural is modelled -- no shell, no refractory
 ' (CLAUDE.md rule 8).
 '
 ' Coordinates: cyclone axis = z, dust outlet at z = 0. Gas enters
@@ -37,7 +41,8 @@ Option Explicit
 '     geometry/catalog.md.
 '------------------------------------------------------------------
 
-Const CYCLONE_NAME As String = "C1"      ' "C1", "C4" or "C5"
+Const CYCLONE_DEFAULT As String = "C1"   ' what main builds: "C1", "C4" or "C5"
+Dim CYCLONE_NAME As String               ' this run's; c4 / c5 set it (tools/sw_run.py)
 Const LINE_KEY As String = "2500"
 
 ' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
@@ -58,12 +63,15 @@ Const FEED_W                       As Double  = 0.6          ' [literature, preh
 Const FEED_H                       As Double  = 0.6          ' [literature, preheater/riser_R1.md]
 Const FEED_DEPTH                   As Double  = 1#           ' [model, preheater/riser_R1.md]
 Const FEED_SLOPE_DEG               As Double  = 60#          ' [literature, calciner/calciner.md]
-Const D_RISER_SRC                  As Double  = 3.07         ' R1 inner D [published, preheater/riser_R1.md]
+Const RISER_IN_SLOPE_DEG           As Double  = 45#          ' [schematic, preheater/cyclone_C4.md]
+Const RISER_IN_CLEAR               As Double  = 0.3          ' [model, preheater/cyclone_C4.md]
+Const RISER_IN_STUB_OVER_D         As Double  = 1#           ' [model, preheater/cyclone_C4.md]
+Const D_RISER_SRC                  As Double  = 3.15         ' R1 inner D = C2's D_x [derived]
 Const C1_D_BARREL                  As Double  = 4.32         ' [published, preheater/cyclone_C1.md]
 Const C1_H_BARREL                  As Double  = 6.79         ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_CONE                    As Double  = 4.65         ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_L_VORTEX                  As Double  = 3.45         ' [cfd_decision, preheater/cyclone_C1.md]
-Const C1_D_VORTEX                  As Double  = 2.4          ' [derived_from_reference, preheater/cyclone_C1.md]
+Const C1_D_VORTEX                  As Double  = 2.16         ' vortex finder D = riser D = D_vortex_over_D_barrel x D [derived]
 Const C1_D_DUST                    As Double  = 0.4          ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_W_INLET                   As Double  = 0.86         ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_INLET                   As Double  = 3#           ' [cfd_decision, preheater/cyclone_C1.md]
@@ -73,37 +81,46 @@ Const C1_OUTLET_TURN_DEG           As Double  = 180#         ' [cfd_decision, pr
 Const C1_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
 Const C1_ELBOW_R_OVER_VORTEX_D     As Double  = 1.5          ' [model, preheater/cyclone_C1.md]
 Const C1_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
-Const C1_BOI_RADIUS                As Double  = 0.8          ' [model, preheater/cyclone_C1.md]
+Const C1_L_INLET_CASE              As Double  = 3#           ' not given: the default
+Const C1_RISER_IN_ON               As Boolean = False        ' not given: the default
+Const C1_BOI_RADIUS                As Double  = 0.72         ' [model, preheater/cyclone_C1.md]
+Const C1_RISER_IN_OFFSET           As Double  = 0#           ' riser inlet axis from the barrel axis (the columns' offset) [derived]
 Const C4_D_BARREL                  As Double  = 6.3          ' [published, preheater/cyclone_C4.md]
 Const C4_H_BARREL                  As Double  = 6.3          ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_H_CONE                    As Double  = 7.3          ' [derived_from_reference, preheater/cyclone_C4.md]
 Const C4_L_VORTEX                  As Double  = 3.9          ' [cfd_decision, preheater/cyclone_C4.md]
-Const C4_D_VORTEX                  As Double  = 4.63         ' [derived_from_reference, preheater/cyclone_C4.md]
+Const C4_D_VORTEX                  As Double  = 3.15         ' vortex finder D = riser D = D_vortex_over_D_barrel x D [derived]
 Const C4_D_DUST                    As Double  = 0.81         ' [derived_from_reference, preheater/cyclone_C4.md]
 Const C4_W_INLET                   As Double  = 2.912        ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_H_INLET                   As Double  = 3.4          ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_INLET_SLOPE_DEG           As Double  = 0#           ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_VOLUTE_ON                 As Boolean = True         ' [cfd_decision, preheater/cyclone_C4.md]
-Const C4_OUTLET_TURN_DEG           As Double  = 90#          ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_OUTLET_TURN_DEG           As Double  = 0#           ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' [cfd_decision, preheater/cyclone_C4.md]
-Const C4_ELBOW_R_OVER_VORTEX_D     As Double  = 1#           ' [model, preheater/cyclone_C4.md]
-Const C4_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1#           ' [model, preheater/cyclone_C4.md]
-Const C4_BOI_RADIUS                As Double  = 1.5          ' [model, preheater/cyclone_C4.md]
+Const C4_ELBOW_R_OVER_VORTEX_D     As Double  = 0#           ' not given: the default
+Const C4_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' not given: the default
+Const C4_L_INLET_CASE              As Double  = 2#           ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_RISER_IN_ON               As Boolean = True         ' [cfd_decision, preheater/cyclone_C4.md]
+Const C4_BOI_RADIUS                As Double  = 1#           ' [model, preheater/cyclone_C4.md]
+Const C4_RISER_IN_OFFSET           As Double  = 6.08966      ' riser inlet axis from the barrel axis (the columns' offset) [derived]
 Const C5_D_BARREL                  As Double  = 6.5          ' [published, preheater/cyclone_C5.md]
 Const C5_H_BARREL                  As Double  = 6.5          ' C4 x 1.031746 [derived]
 Const C5_H_CONE                    As Double  = 7.531746     ' C4 x 1.031746 [derived]
 Const C5_L_VORTEX                  As Double  = 4.02381      ' C4 x 1.031746 [derived]
-Const C5_D_VORTEX                  As Double  = 4.776984     ' C4 x 1.031746 [derived]
+Const C5_D_VORTEX                  As Double  = 3.25         ' vortex finder D = riser D = D_vortex_over_D_barrel x D [derived]
 Const C5_D_DUST                    As Double  = 0.835714     ' C4 x 1.031746 [derived]
 Const C5_W_INLET                   As Double  = 3.004444     ' C4 x 1.031746 [derived]
 Const C5_H_INLET                   As Double  = 3.507937     ' C4 x 1.031746 [derived]
 Const C5_INLET_SLOPE_DEG           As Double  = 0#           ' as C4
 Const C5_VOLUTE_ON                 As Boolean = True         ' as C4
-Const C5_OUTLET_TURN_DEG           As Double  = 90#          ' as C4
+Const C5_OUTLET_TURN_DEG           As Double  = 0#           ' as C4
 Const C5_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' as C4
-Const C5_ELBOW_R_OVER_VORTEX_D     As Double  = 1#           ' as C4
-Const C5_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1#           ' as C4
-Const C5_BOI_RADIUS                As Double  = 1.55         ' [model, preheater/cyclone_C5.md]
+Const C5_ELBOW_R_OVER_VORTEX_D     As Double  = 0#           ' as C4
+Const C5_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' as C4
+Const C5_L_INLET_CASE              As Double  = 2.063492     ' C4 x 1.031746 [derived]
+Const C5_RISER_IN_ON               As Boolean = True         ' as C4
+Const C5_BOI_RADIUS                As Double  = 1.03         ' [model, preheater/cyclone_C5.md]
+Const C5_RISER_IN_OFFSET           As Double  = 6.282983     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
 ' END GENERATED
 
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
@@ -122,6 +139,9 @@ Dim VOLUTE_ON As Boolean                 ' inlet through a volute instead of a s
 Dim OUTLET_TURN_DEG As Double            ' outlet bend: 180 (gooseneck + drop) or 90 (elbow + run)
 Dim RISER_ON As Boolean                  ' riser, its bend and the feed chute in front of the duct
 Dim BOI_RADIUS As Double                 ' mesh sizing cylinder about the cyclone axis [m]
+Dim L_INLET_C As Double                  ' the level inlet duct's length (C4 1.0 m, C1 the shared L_INLET)
+Dim RISER_IN_ON As Boolean               ' a riser under the volute's duct, turning in (C4 / C5)
+Dim RISER_IN_OFFSET As Double            ' that riser's axis from the barrel axis [m]
 
 ' Modelling parameters -- NOT plant dimensions. No source gives
 ' them; they say where the CFD boundary faces sit.
@@ -444,7 +464,7 @@ Const VOLUTE_SPLINE_PTS As Long = 25        ' points along the half turn
 ' before and writes it under the old name. RISER_ON is per cyclone,
 ' set in SelectCyclone; the lengths below are C1's.
 ' -> D_RISER_SRC, RISER_AREA_SHARE, RISER_TRANS_LEN, RISER_BEND_R_OVER_D, RISER_ABOVE_FEED, RISER_BELOW_FEED, FEED_W, FEED_H, FEED_DEPTH, FEED_SLOPE_DEG: in the generated block above
-'    D_RISER_SRC: published R1 inner diameter [m], geometry/catalog.md
+'    D_RISER_SRC: R1 inner diameter = C2's vortex finder D_x [m] (21 Nov 2026; was the published 3.07)
 '    RISER_AREA_SHARE: the twin C1s share R1
 '    RISER_TRANS_LEN: round-to-duct loft, along the duct axis [m]
 '    RISER_BEND_R_OVER_D: bend centreline radius, x riser diameter
@@ -518,6 +538,12 @@ Dim zFeedStart As Double, lFeed As Double   ' chute start on the riser axis, its
 Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the chute's end face, the meal_feed
 Dim zRiserBendTop As Double                 ' highest point of the riser bend
 Dim outName As String                       ' file name the solid is written under
+Dim rRi As Double, xRi As Double, runRi As Double   ' riser inlet: radius, axis x (y = yMid), axis to duct face
+Dim zRiTop As Double, zRiBot As Double      ' riser inlet: its cut's low (inner) point, its gas inlet face
+Dim zRiOut As Double                        ' riser inlet: its cut's high (outer) point
+Dim tRiOut As Double, tRiIn As Double       ' the duct face's outer / inner corners in the plant section
+Dim vRiStub As Double, vRiMid As Double, vRiLo As Double, vRiHi As Double
+Dim uSignI As Double, vSignI As Double      ' z = zRiTop, the riser inlet's top
 Dim rTongue As Double                       ' volute: duct inner wall / spiral end radius, R + t
 Dim rScroll0 As Double                      ' volute: spiral start radius, R + t + W
 Dim aScroll As Double                       ' volute: spiral fluid area outside the barrel [m2]
@@ -578,6 +604,21 @@ Sub gas_only()
     gasOnly = False
 End Sub
 
+' C4 (= C2, C3) and C5, written as C4.* / C5.*, without editing the
+' file: tools/sw_run.py cyclone_solid.c4 / .c5. The name is cleared
+' after, so a later main is CYCLONE_DEFAULT again.
+Sub c4()
+    CYCLONE_NAME = "C4"
+    main
+    CYCLONE_NAME = ""
+End Sub
+
+Sub c5()
+    CYCLONE_NAME = "C5"
+    main
+    CYCLONE_NAME = ""
+End Sub
+
 
 Sub main()
 
@@ -587,6 +628,7 @@ Sub main()
     ' or the second run's report is the first one's as well.
     buildLog = ""
     phase = "starting up"
+    If CYCLONE_NAME = "" Then CYCLONE_NAME = CYCLONE_DEFAULT
 
     On Error GoTo Failed
 
@@ -698,6 +740,9 @@ Private Sub SelectCyclone()
         OUTLET_DOWN_OVER_VORTEX_D = C1_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = Not gasOnly
         BOI_RADIUS = C1_BOI_RADIUS
+        L_INLET_C = C1_L_INLET_CASE
+        RISER_IN_ON = C1_RISER_IN_ON
+        RISER_IN_OFFSET = C1_RISER_IN_OFFSET
 
     Case "C4"
         ' geometry/preheater/cyclone_C4.md -- also C2 and C3, which
@@ -745,9 +790,13 @@ Private Sub SelectCyclone()
         INLET_SLOPE_DEG = C4_INLET_SLOPE_DEG
         VOLUTE_ON = C4_VOLUTE_ON
 
-        ' C4's gas goes on to the R3 riser, not down to a fan, so its
-        ' outlet turns through 90 deg into a horizontal run. Either
-        ' bend breaks the swirl, which is what the bend is for.
+        ' C4's gas goes on up the R3 riser, which is this outlet pipe
+        ' itself, straight up beside C3 (user decision, 17 Nov 2026), so
+        ' the outlet ends straight: OUTLET_TURN_DEG 0, the outlet face a
+        ' disc on the axis OUTLET_EXT_OVER_VORTEX_D over the roof. Until
+        ' then it turned through 90 deg into a horizontal run (R 1.0 D,
+        ' run 1.0 D) and the CFD saw the bend break the swirl; now the
+        ' swirl leaves straight up, as it does in the plant.
         OUTLET_TURN_DEG = C4_OUTLET_TURN_DEG
 
         ' C1's 1.5 D bend and 1.25 D drop, scaled to this 4.63 m
@@ -769,6 +818,19 @@ Private Sub SelectCyclone()
         ELBOW_R_OVER_VORTEX_D = C4_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C4_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = False
+
+        ' The gas comes in as it does in the plant (user decision, 17 Nov
+        ' 2026): up a round riser of C4's own D_x (R2 / R3 are C3 / C4's
+        ' outlet pipes) under the volute's level duct, now L_INLET_C
+        ' (1.0 m) long, its axis RISER_IN_OFFSET (the plant's column
+        ' offset) from the barrel axis. A straight loft from the riser's
+        ' level top to the duct's face turns it in: the outer wall at
+        ' RISER_IN_SLOPE_DEG to the duct's top edge, the inner one
+        ' steeper to its floor. The domain starts RISER_IN_STUB_OVER_D
+        ' diameters of riser below the turn.
+        L_INLET_C = C4_L_INLET_CASE
+        RISER_IN_ON = C4_RISER_IN_ON
+        RISER_IN_OFFSET = C4_RISER_IN_OFFSET
 
         ' C1's measured core radius scaled with the finder diameter:
         ' 0.8 x 4.63 / 2.40 = 1.54 m, rounded down to stay inside
@@ -799,12 +861,17 @@ Private Sub SelectCyclone()
         INLET_SLOPE_DEG = C5_INLET_SLOPE_DEG
         VOLUTE_ON = C5_VOLUTE_ON
 
-        ' C5's gas goes on to the R4 riser, as C4's goes to R3.
+        ' C5's gas goes on up the R4 riser, straight, as C4's goes up R3.
         OUTLET_TURN_DEG = C5_OUTLET_TURN_DEG
         OUTLET_EXT_OVER_VORTEX_D = C5_OUTLET_EXT_OVER_VORTEX_D
         ELBOW_R_OVER_VORTEX_D = C5_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C5_OUTLET_DOWN_OVER_VORTEX_D
         RISER_ON = False
+        ' C4's riser inlet x 1.0317, as every other length (the plant
+        ' feeds C5 from the gooseneck; the domain stays C4's similar)
+        L_INLET_C = C5_L_INLET_CASE
+        RISER_IN_ON = C5_RISER_IN_ON
+        RISER_IN_OFFSET = C5_RISER_IN_OFFSET
 
         ' C4's 1.5 m x 1.0317.
         BOI_RADIUS = C5_BOI_RADIUS
@@ -847,6 +914,8 @@ Private Sub Derive()
     zLegAxis = zOutletTop + rBend
     xGasOut = rBend + legLen
     If OUTLET_TURN_DEG = 90# Then xBoxMax = xGasOut
+    ' straight (0): the outlet face is the pipe's top disc, on the axis
+    If OUTLET_TURN_DEG = 0# Then zElbowTop = zOutletTop
 
     zBoiTop = zRoof + BOI_ROOF_MARGIN
 
@@ -882,9 +951,9 @@ Private Sub Derive()
     ' duct centreline crosses the barrel's tangent plane x = 0.
     ' Measuring at the centroid is what makes the volume below exact
     ' -- the tilted end cut adds and removes equal wedges about it.
-    ceX = -L_INLET * dx
+    ceX = -L_INLET_C * dx
     ceY = yMid
-    ceZ = 0.5 * (zTopAt0 + zBotAt0) - L_INLET * dz
+    ceZ = 0.5 * (zTopAt0 + zBotAt0) - L_INLET_C * dz
 
     xInletNear = ceX + 0.5 * H_INLET * nx      ' inlet face edge nearest the cyclone
     zDuctTop = ceZ + 0.5 * H_INLET * nz        ' highest point of the duct
@@ -916,7 +985,7 @@ Private Sub Derive()
         ' The duct runs L_INLET back from the tangent plane x = 0, but
         ' on a wide barrel the barrel itself reaches further (C4:
         ' R = 3.15 against L = 3.0).
-        xLo2 = -MaxD(L_INLET, R)
+        xLo2 = -MaxD(L_INLET_C, R)
         yLo2 = yScrollMin
         xHi2 = xScrollMax
         yHi2 = rScroll0
@@ -926,6 +995,34 @@ Private Sub Derive()
         xHi2 = R
         yHi2 = R
     End If
+    If OUTLET_TURN_DEG = 0# Then xBoxMax = MaxD(xHi2, rVortex)
+
+    ' The riser inlet (RISER_IN_ON): its axis under the duct's middle,
+    ' RISER_IN_OFFSET from the barrel axis; its top cut by a plane tilted
+    ' about the horizontal normal to the riser-cyclone line (user sketch,
+    ' 21 Nov 2026; plant_geometry.riser_top): the low point, at the rim
+    ' nearest the cyclone, as low as the floor asks to rise at
+    ' RISER_IN_SLOPE_DEG to the duct face's floor corners; the high
+    ' point, at the far rim, as high as makes the ceiling parallel to the
+    ' floor in the plant section (the plane of both axes, where a point
+    ' lies t = off - (p . r) / off from the riser's axis).
+    rRi = rVortex
+    If RISER_IN_ON And RISER_IN_OFFSET > Abs(yMid) Then
+        runRi = Sqr(RISER_IN_OFFSET * RISER_IN_OFFSET - yMid * yMid) - L_INLET_C
+        xRi = -(runRi + L_INLET_C)
+        zRiTop = zRoof - H_INLET - (Sqr(runRi * runRi + 0.25 * W_INLET * W_INLET) - rRi) * Tan(RISER_IN_SLOPE_DEG * PI / 180#)
+        Dim dA As Double, dB As Double
+        dA = (-L_INLET_C) * xRi + (yMid + 0.5 * W_INLET) * yMid
+        dB = (-L_INLET_C) * xRi + (yMid - 0.5 * W_INLET) * yMid
+        tRiOut = RISER_IN_OFFSET - MaxD(dA, dB) / RISER_IN_OFFSET
+        tRiIn = RISER_IN_OFFSET - MinD(dA, dB) / RISER_IN_OFFSET
+        If tRiIn > rRi Then
+            zRiOut = zRoof - MinD(zRoof - zRiTop, (tRiOut + rRi) * (zRoof - H_INLET - zRiTop) / (tRiIn - rRi))
+        Else
+            zRiOut = zRiTop
+        End If
+        zRiBot = zRiTop - RISER_IN_STUB_OVER_D * 2# * rRi
+    End If
 
     ' ---- closed-form volumes, one per build stage ----
     vEquip = PI * R * R * H_BARREL _
@@ -934,7 +1031,7 @@ Private Sub Derive()
     ' The duct outside the barrel. Integrating the free axial length
     ' over the section gives a closed form; the part that varies
     ' along the section's own "up" axis cancels by symmetry.
-    vDuctFree = H_INLET * L_INLET * wDuct - (H_INLET / nz) * Segment(R, yInner, yOuter)
+    vDuctFree = H_INLET * L_INLET_C * wDuct - (H_INLET / nz) * Segment(R, yInner, yOuter)
 
     ' Less the wedge the tongue keeps out of the fluid: the part of
     ' the duct between x = -xTrim and the tangent plane that lay
@@ -946,7 +1043,7 @@ Private Sub Derive()
 
     ' The volute lies wholly outside the barrel but for its inner arc,
     ' which the merge eats: duct plus spiral, one inlet height deep.
-    If VOLUTE_ON Then vDuctFree = H_INLET * (L_INLET * W_INLET + aScroll)
+    If VOLUTE_ON Then vDuctFree = H_INLET * (L_INLET_C * W_INLET + aScroll)
 
     vPipe = PI * rVortex * rVortex * (zOutletTop - zRoof)
     vWall = PI * ((rVortex + VORTEX_WALL) ^ 2 - rVortex * rVortex) * L_VORTEX
@@ -1032,6 +1129,21 @@ Private Sub Derive()
     If RISER_ON Then
         vFinal = vStage9 + vFeed           ' + meal feed chute; re-based on the measured loft
         outName = CYCLONE_NAME & "_riser"
+    ElseIf RISER_IN_ON Then
+        ' The riser stub, a second body for now, then the loft that joins
+        ' it on. A loft from a level circle to an upright rectangle has no
+        ' closed form; it is held to a frustum of its end areas along its
+        ' axis within +-40 % and the measured value re-bases the final.
+        vRiStub = PI * rRi * rRi * (0.5 * (zRiTop + zRiOut) - zRiBot)
+        vRiMid = Sqr(runRi * runRi + (zRoof - 0.5 * H_INLET - 0.5 * (zRiTop + zRiOut)) ^ 2) / 3# * _
+                 (PI * rRi * rRi + W_INLET * H_INLET + Sqr(PI * rRi * rRi * W_INLET * H_INLET))
+        vRiLo = 0.6 * vRiMid: vRiHi = 1.4 * vRiMid
+        vStage7 = vStage6 + vRiStub
+        vStage8 = vStage7 + vRiMid
+        vFinal = vStage8
+        xBoxMin = xRi - rRi
+        yBoxMax = MaxD(MaxD(R, yHi2), yMid + rRi)
+        outName = CYCLONE_NAME
     Else
         vFinal = vStage6
         outName = CYCLONE_NAME
@@ -1080,9 +1192,9 @@ Private Sub PreChecks()
 
     ' The checks common to both inlets, then the slot's or the
     ' volute's own.
-    If OUTLET_TURN_DEG <> 180# And OUTLET_TURN_DEG <> 90# Then
-        Fail "OUTLET_TURN_DEG is " & Fmt(OUTLET_TURN_DEG) & "; the outlet bend is built for " & _
-             "180 (gooseneck and drop) or 90 (elbow and horizontal run)."
+    If OUTLET_TURN_DEG <> 180# And OUTLET_TURN_DEG <> 90# And OUTLET_TURN_DEG <> 0# Then
+        Fail "OUTLET_TURN_DEG is " & Fmt(OUTLET_TURN_DEG) & "; the outlet is built for " & _
+             "180 (gooseneck and drop), 90 (elbow and horizontal run) or 0 (straight)."
     End If
     If VOLUTE_ON Then
         VolutePreChecks
@@ -1095,7 +1207,7 @@ Private Sub PreChecks()
     If xInletNear > -reach Then
         Fail "the inlet face reaches x = " & Fmt(xInletNear) & " m, inside the barrel " & _
              "(the barrel reaches x = " & Fmt(-reach) & " m at the duct's inner wall). " & _
-             "L_INLET must exceed " & Fmt((reach + 0.5 * H_INLET * nx) / dx) & " m."
+             "L_INLET_C must exceed " & Fmt((reach + 0.5 * H_INLET * nx) / dx) & " m."
     End If
 
     ' 2. the duct must not reach below the dust outlet
@@ -1181,6 +1293,18 @@ End Sub
 
 
 Private Sub RiserNote()
+    If RISER_IN_ON Then
+        Note "riser inlet: D " & Fmt(2# * rRi) & " m at (" & Fmt(xRi) & ", " & Fmt(yMid) & "), " & _
+             Fmt(RISER_IN_OFFSET) & " m off the axis (" & Fmt(RISER_IN_OFFSET - R - rRi) & " m clear), z " & _
+             Fmt(zRiBot) & " .. " & Fmt(zRiTop) & " (cut, inner) .. " & Fmt(zRiOut) & " m (cut, outer; " & _
+             Fmt(Atn((zRiOut - zRiTop) / (2# * rRi)) * 180# / PI) & " deg); loft to the duct's face " & Fmt(runRi) & _
+             " m away; in the plant section ceiling " & Fmt(Atn((zRoof - zRiOut) / (tRiOut + rRi)) * 180# / PI) & _
+             " deg, floor " & Fmt(Atn((zRoof - H_INLET - zRiTop) / (tRiIn - rRi)) * 180# / PI) & " deg; inner wall " & _
+             Fmt(Atn((zRoof - H_INLET - zRiTop) / (runRi - rRi)) * 180# / PI) & " deg at the floor's middle, " & _
+             Fmt(Atn((zRoof - H_INLET - zRiTop) / (Sqr(runRi * runRi + 0.25 * W_INLET * W_INLET) - rRi)) * 180# / PI) & " deg at its corners"
+        Note "riser inlet volumes: stub " & Fmt(vRiStub) & " m3, loft expected " & Fmt(vRiLo) & _
+             " .. " & Fmt(vRiHi) & " m3"
+    End If
     If RISER_ON Then
         Note "riser: D " & Fmt(2# * rRiser) & " m at x = " & Fmt(xRiser) & ", z " & Fmt(zRiserBot) & _
              " .. " & Fmt(zRiserTop) & " m, bend R " & Fmt(rRiserBend) & " m to z " & _
@@ -1250,7 +1374,7 @@ Private Sub VolutePreChecks()
 
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
-    Note "volute: duct " & Fmt(W_INLET) & " x " & Fmt(H_INLET) & " m, " & Fmt(L_INLET) & _
+    Note "volute: duct " & Fmt(W_INLET) & " x " & Fmt(H_INLET) & " m, " & Fmt(L_INLET_C) & _
          " m long, inner wall y = " & Fmt(rTongue) & " m; spiral r " & Fmt(rScroll0) & " -> " & _
          Fmt(rTongue) & " m over 180 deg, " & Fmt(aScroll) & " m2 outside the barrel"
     Note "volute floor at z = " & Fmt(zRoof - H_INLET) & " m; " & _
@@ -1264,6 +1388,11 @@ End Sub
 
 Private Function MaxD(ByVal a As Double, ByVal b As Double) As Double
     If a > b Then MaxD = a Else MaxD = b
+End Function
+
+
+Private Function MinD(ByVal a As Double, ByVal b As Double) As Double
+    If a < b Then MinD = a Else MinD = b
 End Function
 
 
@@ -1292,7 +1421,9 @@ End Sub
 
 
 Private Sub OutletNote()
-    If OUTLET_TURN_DEG = 90# Then
+    If OUTLET_TURN_DEG = 0# Then
+        Note "outlet: straight, rise to z = " & Fmt(zOutletTop) & " m, the outlet face a disc on the axis"
+    ElseIf OUTLET_TURN_DEG = 90# Then
         Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, elbow R " & Fmt(rBend) & _
              " m over 90 deg, run along +x at z = " & Fmt(zLegAxis) & " m to the outlet face at x = " & _
              Fmt(xGasOut) & " m"
@@ -1306,6 +1437,13 @@ End Sub
 ' 9. the outlet bend, either way round.
 Private Sub OutletPreChecks()
 
+    If OUTLET_TURN_DEG = 0# Then
+        If OUTLET_EXT_OVER_VORTEX_D <= 0# Then
+            Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & "; the straight " & _
+                 "outlet needs a pipe above the roof."
+        End If
+        Exit Sub
+    End If
     ' At rBend <= rVortex the inner wall of the
     '    bend passes through the axis it is swept about and the solid
     '    folds through itself; Pappus stops being the volume, too.
@@ -1353,6 +1491,37 @@ End Sub
 ' 10. the riser. Built outside everything else by construction;
 '     these say so with the numbers.
 Private Sub RiserPreChecks()
+
+    ' the riser inlet (C4 / C5): under the duct, clear of the barrel,
+    ' its top below the duct's floor and above the dust outlet
+    If RISER_IN_ON Then
+    If RISER_ON Then Fail "RISER_ON and RISER_IN_ON are both set; a cyclone has one riser."
+    If Not VOLUTE_ON Then Fail "RISER_IN_ON needs the volute's level duct (VOLUTE_ON)."
+    If RISER_IN_SLOPE_DEG <= 0# Or RISER_IN_SLOPE_DEG >= 90# Then
+        Fail "RISER_IN_SLOPE_DEG is " & Fmt(RISER_IN_SLOPE_DEG) & "; the walls turn in between 0 and 90 deg."
+    End If
+    If RISER_IN_OFFSET - R - rRi < RISER_IN_CLEAR - 0.000001 Then
+        Fail "the riser inlet's axis " & Fmt(RISER_IN_OFFSET) & " m off the barrel axis leaves it " & _
+             Fmt(RISER_IN_OFFSET - R - rRi) & " m from the barrel; RISER_IN_CLEAR asks " & Fmt(RISER_IN_CLEAR) & " m."
+    End If
+    If runRi - rRi <= 0# Then
+        Fail "the riser inlet stands under the level duct (its wall " & Fmt(runRi - rRi) & _
+             " m from the duct's face); there is no room to turn in."
+    End If
+    If tRiIn <= rRi Then
+        Fail "the duct's floor projects inside the riser inlet in the plant section (t " & Fmt(tRiIn) & " m)."
+    End If
+    If zRiOut < zRiTop - 0.000001 Or zRiOut >= zRoof Then
+        Fail "the riser inlet's cut runs from z = " & Fmt(zRiTop) & " to " & Fmt(zRiOut) & " m, not under the roof."
+    End If
+    If zRiTop >= zRoof - H_INLET Then
+        Fail "the riser inlet's top at z = " & Fmt(zRiTop) & " m is not below the duct's floor (z = " & _
+             Fmt(zRoof - H_INLET) & " m)."
+    End If
+    If zRiBot <= 0# Then
+        Fail "the riser inlet's gas inlet face is at z = " & Fmt(zRiBot) & " m, at or below the dust outlet."
+    End If
+    End If
 
     If RISER_ON Then
     If RISER_BEND_R_OVER_D <= 0.5 Then
@@ -1438,6 +1607,7 @@ Private Sub Build()
     Dim planeFeed As SldWorks.Feature     ' y = yMid - FEED_W / 2, the feed chute's side wall
     Dim planeRoof As SldWorks.Feature     ' z = zRoof, the volute's outline
     Dim planeLeg As SldWorks.Feature      ' x = rBend, where the 90 deg elbow ends
+    Dim planeRiserIn As SldWorks.Feature  ' z = zRiTop, the riser inlet's top
     Dim xMin5 As Double
     Dim f As SldWorks.Feature
 
@@ -1476,9 +1646,12 @@ Private Sub Build()
     Else
         Set planeDuct = OffsetPlane(planeY0, 0#, yInner, 0#, uSignD, vSignD)
     End If
-    Set planeBend = OffsetPlane(planeZ0, 0#, 0#, zOutletTop, uSignZ, vSignZ)
+    If OUTLET_TURN_DEG <> 0# Then Set planeBend = OffsetPlane(planeZ0, 0#, 0#, zOutletTop, uSignZ, vSignZ)
     If OUTLET_TURN_DEG = 90# Then
         Set planeLeg = OffsetPlane(planeX0, rBend, 0#, 0#, uSignL, vSignL)
+    End If
+    If RISER_IN_ON Then
+        Set planeRiserIn = OffsetPlane(planeZ0, 0#, 0#, zRiBot, uSignI, vSignI)
     End If
     If RISER_ON Then
         Set planeRiser = OffsetPlane(planeZ0, 0#, 0#, zRiserTop, uSignQ, vSignQ)
@@ -1545,7 +1718,7 @@ Private Sub Build()
         Set f = ExtrudeRun(planeLeg)
         CheckStage "6  + outlet run", vStage6, _
                    xMin5, yLo2, 0#, xBoxMax, yHi2, zElbowTop
-    Else
+    ElseIf OUTLET_TURN_DEG = 180# Then
         Set f = RevolveElbow(planeBend, PI)
         CheckStage "5  + outlet gooseneck", vStage5, _
                    xMin5, yLo2, 0#, xBoxMax, yHi2, zElbowTop
@@ -1580,6 +1753,21 @@ Private Sub Build()
         '--- 10. meal feed chute out through the riser wall ----------
         Set f = ExtrudeFeedChute(planeFeed)
         CheckStage "10 + feed chute", vFinal, _
+                   xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
+    End If
+
+    ' The riser inlet (C4 / C5): the stub apart from the cyclone first,
+    ' a second body, up from its gas inlet face to its oblique cut, then
+    ' the loft from the cut to the duct's face joins the two.
+    If RISER_IN_ON Then
+        '--- 7. round riser stub under the duct ----------------------
+        Set f = ExtrudeRiserIn(planeRiserIn)
+        CheckBodies "7  + riser inlet stub", 2, vStage7, _
+                    xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
+
+        '--- 8. loft: the oblique cut -> the duct's face -------------
+        Set f = LoftRiserIn()
+        CheckStage "8  + riser inlet turn", vFinal, _
                    xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
     End If
 
@@ -1877,8 +2065,8 @@ Private Function ExtrudeVolute(planeRoof As SldWorks.Feature) As SldWorks.Featur
 
     ' The straight sides: H -> A -> B -> C, then E -> F and G -> H.
     gx(0) = 0#: gy(0) = rT              ' H
-    gx(1) = -L_INLET: gy(1) = rT        ' A
-    gx(2) = -L_INLET: gy(2) = rS        ' B
+    gx(1) = -L_INLET_C: gy(1) = rT        ' A
+    gx(2) = -L_INLET_C: gy(2) = rS        ' B
     gx(3) = 0#: gy(3) = rS              ' C
     For i = 0 To 2
         G2S sk, gx(i), gy(i), zRoof, u0, v0
@@ -2390,6 +2578,199 @@ Private Function ExtrudeRiser(planeRiser As SldWorks.Feature) As SldWorks.Featur
 
     Fail "the riser could not be extruded down to z = " & Fmt(zRiserBot) & " m in either " & _
          "direction. Expected " & Fmt(vStage8) & " m3 over the two bodies."
+
+End Function
+
+
+' The riser inlet's stub (RISER_IN_ON): a disc on the level plane at
+' its top, extruded down to its gas inlet face; apart from the cyclone
+' until the loft joins it. The wrong way up it runs into nothing and
+' its volume is right, so the direction is settled by the inlet face.
+Private Function ExtrudeRiserIn(planeRiserIn As SldWorks.Feature) As SldWorks.Feature
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim u0 As Double, v0 As Double
+    Dim f As SldWorks.Feature
+    Dim got As Double
+    Dim k As Long
+
+    uSign = uSignI: vSign = vSignI
+
+    swModel.ClearSelection2 True
+    planeRiserIn.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the riser inlet sketch."
+    wRefSet = False
+
+    G2S sk, xRi, yMid, zRiBot, u0, v0
+    If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rRi) Is Nothing Then
+        Fail "CreateCircleByRadius failed on the riser inlet's section."
+    End If
+
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    ' up to the oblique cut (a plane through three points of it)
+    Dim cutPlane As SldWorks.Feature
+    Set cutPlane = RiserCutPlane()
+    Dim selCut As SldWorks.SelectData
+
+    For k = 0 To 1
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set selCut = swModel.SelectionManager.CreateSelectData
+        selCut.Mark = 1
+        cutPlane.Select4 True, selCut
+        Set f = swFeat.FeatureExtrusion3( _
+            True, False, (k = 1), _
+            swEndCondUpToSurface, swEndCondBlind, _
+            0.01, 0.01, _
+            False, False, False, False, _
+            0#, 0#, _
+            False, False, False, False, _
+            True, True, True, _
+            swStartSketchPlane, 0#, False)
+        swModel.ClearSelection2 True
+
+        If Not f Is Nothing Then
+            got = BodiesVolume()
+            If Abs(got - vStage7) <= VOL_TOL * vStage7 And HasPlaneFace(2, zRiBot) Then
+                Set ExtrudeRiserIn = f
+                Exit Function
+            End If
+            Note "riser inlet stub extruded the wrong way (volume " & Fmt(got) & " m3); reversing"
+            swModel.ClearSelection2 True
+            f.Select2 False, 0
+            swModel.EditDelete
+            swModel.ClearSelection2 True
+            Set f = Nothing
+        End If
+    Next k
+
+    Fail "the riser inlet stub could not be extruded from z = " & Fmt(zRiBot) & " m up to its cut in either " & _
+         "direction. Expected " & Fmt(vStage7) & " m3 over the two bodies."
+
+End Function
+
+
+' The riser inlet's cut: a reference plane through three points of it,
+' made in a 3D sketch (hidden after): the low point on the rim nearest
+' the cyclone's axis, the high point on the far rim, and a side point
+' half way up. Its tilt axis is the horizontal normal to the line of
+' the two axes.
+Private Function RiserCutPlane() As SldWorks.Feature
+    Dim ex As Double, ey As Double, hyp As Double
+    Dim p1 As SldWorks.SketchPoint, p2 As SldWorks.SketchPoint, p3 As SldWorks.SketchPoint
+    Dim skFeat As SldWorks.Feature, pl As SldWorks.Feature
+    Dim sd As SldWorks.SelectData
+
+    hyp = Sqr(xRi * xRi + yMid * yMid)
+    ex = -xRi / hyp: ey = -yMid / hyp               ' towards the cyclone's axis
+
+    swModel.ClearSelection2 True
+    swSkMgr.Insert3DSketch True
+    Set p1 = swSkMgr.CreatePoint(xRi + rRi * ex, yMid + rRi * ey, zRiTop)
+    Set p2 = swSkMgr.CreatePoint(xRi - rRi * ex, yMid - rRi * ey, zRiOut)
+    Set p3 = swSkMgr.CreatePoint(xRi - rRi * ey, yMid + rRi * ex, 0.5 * (zRiTop + zRiOut))
+    If p1 Is Nothing Or p2 Is Nothing Or p3 Is Nothing Then Fail "the riser inlet's cut points could not be sketched."
+    swSkMgr.Insert3DSketch True
+    Set skFeat = LastFeature("3DProfileFeature")
+
+    swModel.ClearSelection2 True
+    Set sd = swModel.SelectionManager.CreateSelectData
+    sd.Mark = 0: p1.Select4 False, sd
+    sd.Mark = 1: p2.Select4 True, sd
+    sd.Mark = 2: p3.Select4 True, sd
+    Set pl = swFeat.InsertRefPlane(4, 0#, 4, 0#, 4, 0#)  ' swRefPlaneReferenceConstraint_Coincident x 3
+    swModel.ClearSelection2 True
+    If pl Is Nothing Then Fail "InsertRefPlane failed for the riser inlet's cut."
+
+    skFeat.Select2 False, 0
+    swModel.BlankSketch
+    swModel.ClearSelection2 True
+    Set RiserCutPlane = pl
+End Function
+
+
+' The riser inlet's turn: a loft from the stub's oblique cut (an
+' ellipse from z = zRiTop to zRiOut, RiserCutPlane) to the duct's
+' upright face (x = -L_INLET_C), merging the stub into the cyclone.
+' Both are existing planar faces, found by what they are. With no guide
+' curves the loft is ruled: its ceiling runs straight from the cut's
+' high point to the duct's top edge, its floor from the low point to the
+' duct's floor, parallel in the plant section -- a chamfered turn.
+Private Function LoftRiserIn() As SldWorks.Feature
+
+    Dim bodies As Variant, faces As Variant
+    Dim fc As SldWorks.Face2
+    Dim duct As SldWorks.Face2, topFace As SldWorks.Face2
+    Dim ent As SldWorks.Entity
+    Dim surf As SldWorks.Surface
+    Dim selData As SldWorks.SelectData
+    Dim p As Variant, bx As Variant
+    Dim f As SldWorks.Feature
+    Dim b As Long, i As Long
+    Dim got As Double
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail "no body to loft the riser inlet on."
+    For b = 0 To UBound(bodies)
+        faces = bodies(b).GetFaces
+        For i = 0 To UBound(faces)
+            Set fc = faces(i)
+            Set surf = fc.GetSurface
+            If surf.IsPlane Then
+                p = surf.PlaneParams
+                If Abs(Abs(p(0)) - 1#) < DIR_TOL And Abs(p(3) + L_INLET_C) < 0.0001 Then
+                    Set duct = fc
+                ElseIf Abs(p(2)) > 0.05 And Abs(p(2)) < 1# - DIR_TOL Then
+                    ' the stub's oblique cut, centred on the riser's axis (no
+                    ' other face of the domain is tilted)
+                    bx = fc.GetBox
+                    If Abs(0.5 * (bx(0) + bx(3)) - xRi) < 0.01 And Abs(0.5 * (bx(1) + bx(4)) - yMid) < 0.01 Then Set topFace = fc
+                End If
+            End If
+        Next i
+    Next b
+    If duct Is Nothing Then Fail "the riser inlet's loft could not find the duct's end face."
+    If topFace Is Nothing Then Fail "the riser inlet's loft could not find the stub's top face."
+
+    swModel.ClearSelection2 True
+    Set selData = swModel.SelectionManager.CreateSelectData
+    selData.Mark = 1
+    Set ent = topFace
+    ent.Select4 False, selData
+    Set ent = duct
+    ent.Select4 True, selData
+
+    Set f = swFeat.InsertProtrusionBlend2( _
+        False, True, False, 1#, _
+        0, 0, 1#, 1#, True, True, _
+        False, 0#, 0#, 0, _
+        True, True, True, 0)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then
+        Fail "InsertProtrusionBlend2 refused the loft between the riser inlet's top and the duct's face."
+    End If
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If UBound(bodies) <> 0 Then
+        Fail "the riser inlet's loft left " & (UBound(bodies) + 1) & " bodies; it did not join " & _
+             "the riser to the cyclone."
+    End If
+    got = BodiesVolume()
+    If got < vStage7 + vRiLo Or got > vStage7 + vRiHi Then
+        Fail "the riser inlet's loft added " & Fmt(got - vStage7) & " m3; expected " & _
+             Fmt(vRiLo) & " .. " & Fmt(vRiHi) & " m3."
+    End If
+
+    Note "riser inlet loft " & Fmt(got - vStage7) & " m3 (frustum estimate " & Fmt(vRiMid) & ", " & _
+         Fmt(100# * (got - vStage7 - vRiMid) / vRiMid) & " %)"
+    vStage8 = got
+    vFinal = vStage8
+    Set LoftRiserIn = f
 
 End Function
 
@@ -3140,6 +3521,12 @@ Private Sub TagBoundaryFaces()
                 ElseIf OUTLET_TURN_DEG = 180# And Abs(pz - zGasOut) < 0.0001 And FaceXMin(face) > R Then
                     Paint face, 0.2, 0.45, 0.85           ' gas_outlet, the drop's end
                     nGas = nGas + 1: aGas = aGas + face.GetArea
+                ElseIf OUTLET_TURN_DEG = 0# And Abs(pz - zOutletTop) < 0.0001 Then
+                    Paint face, 0.2, 0.45, 0.85           ' gas_outlet, the straight pipe's top
+                    nGas = nGas + 1: aGas = aGas + face.GetArea
+                ElseIf RISER_IN_ON And Abs(pz - zRiBot) < 0.0001 Then
+                    Paint face, 0.2, 0.7, 0.35            ' gas inlet, the riser stub's bottom
+                    nInlet = nInlet + 1: aInlet = aInlet + face.GetArea
                 ElseIf RISER_ON And Abs(pz - zRiserBot) < 0.0001 Then
                     ' The gas enters here now, so it takes the colour
                     ' the inlet face had and Fluent Meshing's naming
@@ -3158,7 +3545,7 @@ Private Sub TagBoundaryFaces()
                 Paint face, 0.2, 0.45, 0.85               ' gas_outlet, the run's end
                 nGas = nGas + 1: aGas = aGas + face.GetArea
             ElseIf VOLUTE_ON And Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And _
-                   Abs(p(3) - xGasOut) >= 0.0001 And Abs(p(3) + L_INLET) >= 0.0001 Then
+                   (OUTLET_TURN_DEG <> 90# Or Abs(p(3) - xGasOut) >= 0.0001) And Abs(p(3) + L_INLET_C) >= 0.0001 Then
                 ' The volute's two tongue faces at x = 0 are normal to
                 ' the duct axis too; they are wall.
                 Paint face, 0.72, 0.72, 0.72              ' volute tongues
@@ -3189,6 +3576,12 @@ Private Sub TagBoundaryFaces()
         If nInlet <> 1 Then Fail "found " & nInlet & " riser inlet faces, expected 1."
         If nFeed <> 1 Then Fail "found " & nFeed & " feed chute end faces, expected 1."
         CheckArea "meal_feed", aFeed, FEED_W * FEED_H
+    ElseIf RISER_IN_ON Then
+        If nDuctEnd <> 0 Then
+            Fail "found " & nDuctEnd & " faces at the duct's end; the riser inlet's loft did not " & _
+                 "merge across it and a wall still closes it."
+        End If
+        If nInlet <> 1 Then Fail "found " & nInlet & " riser inlet faces, expected 1."
     ElseIf nInlet <> 1 Then
         Fail "found " & nInlet & " faces normal to the duct axis, expected 1 (the inlet). " & _
              "Two means the duct's end cap survived the merge and blocks the opening."
@@ -3198,6 +3591,8 @@ Private Sub TagBoundaryFaces()
     CheckArea "gas_outlet", aGas, PI * rVortex * rVortex
     If RISER_ON Then
         CheckArea "gas inlet", aInlet, PI * rRiser * rRiser
+    ElseIf RISER_IN_ON Then
+        CheckArea "gas inlet", aInlet, PI * rRi * rRi
     Else
         CheckArea "gas inlet", aInlet, wDuct * H_INLET
     End If

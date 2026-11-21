@@ -16,19 +16,23 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 | Silindirik gövde yüksekliği | 6.3 m | CFD kararı; C4 ile özdeş |
 | Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş; C4 ile özdeş |
 | Vorteks bulucu daldırması S | 3.9 m | CFD kararı; C4 ile özdeş |
-| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| D_x / D (= riser çapı / D) | 0.5 | CFD kararı; C4 ile özdeş |
+| Vorteks bulucu çapı D_x (= riser çapı) | 3.1500 m | 0.5 D |
 | Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş; C4 ile özdeş |
 | Giriş genişliği | 2.912 m | CFD kararı; C4 ile özdeş |
 | Giriş yüksekliği | 3.4 m | CFD kararı; C4 ile özdeş |
 | Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
 | Volüt | var | CFD kararı; C4 ile özdeş |
-| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
-| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
-| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
-| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Çıkış dönüşü | 0 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 5.355 m | 1.7 D_x |
+| Yatay giriş kanalı (teğet düzleminden) | 2.000 m | türetilmiş |
+| Riser duvarlarının kanala eğimi | 45 ° | şematik |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.090 m | türetilmiş |
+| Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına) | 1.925 m | türetilmiş |
+| CFD domenindeki dik riser (dönüşün altında) | 3.150 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
-| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 235.17 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry

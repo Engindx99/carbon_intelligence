@@ -88,14 +88,14 @@ class CfdLock(unittest.TestCase):
         self.same(d["C4_IN_H"], c["H_INLET"], "C4 inlet height")
         self.same(d["C4_IN_W"], c["W_INLET"], "C4 inlet width")
         self.same(d["C4_TONGUE"], cc["INLET_TONGUE"], "C4 volute tongue")
-        self.same(d["C4_IN_L"], cc["L_INLET"], "C4 inlet duct length")
+        self.same(d["C4_IN_L"], c["L_INLET_C"], "C4 level inlet duct length")
         self.same(d["C4_OUT_RISE"], c["OUTLET_EXT_OVER_VORTEX_D"] * c["D_VORTEX"],
                   "C4 outlet pipe rise")
-        self.same(d["C4_OUT_R"], c["ELBOW_R_OVER_VORTEX_D"] * c["D_VORTEX"],
-                  "C4 outlet bend radius")
-        self.same(d["C4_OUT_RUN"], c["OUTLET_DOWN_OVER_VORTEX_D"] * c["D_VORTEX"],
-                  "C4 outlet leg")
-        self.assertEqual(c["OUTLET_TURN_DEG"], 90.0)
+        # since 17 Nov 2026 the outlet is straight and a riser turns in under
+        # the inlet (R2 / R3 as the plant has them)
+        self.assertEqual(c["OUTLET_TURN_DEG"], 0.0)
+        self.same(d["C4_OUT_R"], 0.0, "C4 outlet bend radius (none)")
+        self.same(d["RISER_SLOPE_DEG"], cc["RISER_IN_SLOPE_DEG"], "the risers' walls' slope")
 
     def test_c5_is_the_c4_domain_scaled(self):
         c5, c4, d = self.case["C5"], self.case["C4"], self.d
@@ -103,7 +103,7 @@ class CfdLock(unittest.TestCase):
         self.same(d["C5_HIN"], c5["H_INLET"], "C5 inlet height")
         k = d["C5_D"] / d["C4_D"]
         for key in ("H_BARREL", "H_CONE", "L_VORTEX", "D_VORTEX", "D_DUST",
-                    "H_INLET", "W_INLET"):
+                    "H_INLET", "W_INLET", "L_INLET_C"):
             self.same(c5[key], k * c4[key], f"cyclone.bas C5 {key} = C4 x {k:.4f}")
         for key in ("OUTLET_EXT_OVER_VORTEX_D", "ELBOW_R_OVER_VORTEX_D",
                     "OUTLET_DOWN_OVER_VORTEX_D", "OUTLET_TURN_DEG"):

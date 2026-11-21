@@ -78,7 +78,7 @@ lines:
   G106: {service: gas, sheet: PH, from: C3A.gas_out, to: R2A.gas_in, size: "derived:stage_riser(2).parts[0].D"}
   G107: {service: gas, sheet: PH, from: R2A.gas_out, to: C2A.gas_in, size: "derived:stage_riser(2).parts[0].D"}
   G108: {service: gas, sheet: PH, from: C2A.gas_out, to: R1A.gas_in, size: "derived:r1_path().parts[0].D"}
-  G109: {service: gas, sheet: PH, from: R1A.gas_out, to: C1A.gas_in, size: "yaml:risers.R1.D"}
+  G109: {service: gas, sheet: PH, from: R1A.gas_out, to: C1A.gas_in, size: "derived:cyclone('C2').D_vortex"}
   G110: {service: gas, sheet: PH, from: C1A.gas_out, to: IDFA.gas_in, size: "derived:cyclone('C1').D_vortex"}
   G111: {service: gas, sheet: PH, from: IDFA.gas_out, to: SNK.stack, size: absent}
   # ---- meal and dust

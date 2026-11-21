@@ -3,10 +3,11 @@ C5 is C4 x 6.50 / 6.30): every value geometry/macros/drawings.bas
 shows or lists, with where it comes from and how far to trust it
 (same scheme as cyclone.py).
 
-The solids are C4.SLDPRT / C5.SLDPRT (cyclone.bas, VOLUTE_ON, a 90 deg
-outlet). C5's body lengths scale; the vortex finder wall, the volute's
-tongue and the duct's length do not (cyclone.bas: they are in the
-shared block, not in the C5 case).
+The solids are C4.SLDPRT / C5.SLDPRT (cyclone.bas, VOLUTE_ON; since
+17 Nov 2026 a riser inlet turning in at 45 deg and a straight outlet).
+C5's lengths scale, the level duct and riser included; the vortex
+finder wall and the volute's tongue do not (cyclone.bas: they are in
+the shared block, not in the C5 case).
 """
 
 from geometry import plant_geometry as pg
@@ -16,11 +17,12 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 
 # What the macro dimensions (its log names them "dim <key> <mm>"), each
 # between edges the CFD solid really has. The volute's spiral is a
-# spline and the elbow's centreline radius has no edge, so they are
-# listed only.
+# spline, so it is listed only. Since 17 Nov 2026 the domain's outlet is
+# a straight pipe and its inlet a riser turning in at 45 deg (R2 / R3 as
+# the plant has them).
 DIMENSIONED = (
     "D_barrel", "H_barrel", "H_cone", "height", "D_dust", "D_vortex",
-    "L_vortex", "vortex_wall", "W_inlet", "H_inlet", "outlet_axis", "exit_x",
+    "L_vortex", "vortex_wall", "W_inlet", "H_inlet", "outlet_rise", "riser_offset",
 )
 
 # Cyclones whose sheet this one is (geometry/preheater: C2 and C3 are C4).
@@ -30,8 +32,8 @@ ALSO = {"C4": ["C2", "C3"]}
 ORDER = (
     "per_string", "D_barrel", "H_barrel", "H_cone", "height", "L_vortex",
     "D_vortex", "vortex_wall", "D_dust", "W_inlet", "H_inlet", "inlet_duct_length",
-    "tongue", "overlap", "volute", "outlet_turn", "outlet_rise", "outlet_bend_R",
-    "outlet_run", "outlet_axis", "exit_x", "top", "volume", "wet_area",
+    "tongue", "overlap", "volute", "riser_slope", "riser_offset", "riser_run",
+    "riser_stub", "outlet_turn", "outlet_rise", "top", "volume", "wet_area",
     "u_wall", "u_material", "u_flange", "u_support",
 )
 
@@ -39,8 +41,8 @@ ORDER = (
 def params(g, name):
     """{short key: Param} for the volute cyclone `name` (C4 or C5)."""
     c = pg.cyclone(g, name)
-    if not c["volute"] or c["outlet_turn"] != 90.0:
-        raise ValueError(f"{name} is not a volute cyclone with a 90 deg outlet")
+    if not c["volute"] or c["outlet_turn"] != 0.0 or not c["inlet_riser"]:
+        raise ValueError(f"{name} is not a volute cyclone with a riser inlet and a straight outlet")
     dom = "cyclone_domain"
     P = {}
 
@@ -60,30 +62,27 @@ def params(g, name):
     dim("D_dust", "Dust outlet diameter")
     dim("W_inlet", "Inlet width b (volute duct)")
     dim("H_inlet", "Inlet height a (volute duct)")
-    P["inlet_duct_length"] = pv.primary(g, f"{dom}.inlet_duct_length",
-                                        "Volute duct length (from tangent plane)")
+    dim("inlet_duct_length", "Level duct length (from tangent plane)")
     P["tongue"] = pv.primary(g, f"{dom}.volute_tongue", "Tongue (cut-water)")
     P["overlap"] = pv.primary(g, f"{dom}.volute_overlap", "Scroll's inner arc inside the barrel")
     dim("volute", "Volute")
-    dim("outlet_turn", "Outlet bend angle")
+    r = pg.cfd_riser_inlet(g, name)
+    slope = pv.primary(g, f"{dom}.riser_slope_deg", "Riser walls' slope into the duct")
+    clear = pv.primary(g, f"{dom}.riser_barrel_clearance", "Riser clear of the barrel")
+    stub_k = pv.primary(g, f"{dom}.riser_cfd_stub_over_D", "")
+    P["riser_slope"] = slope
+    P["riser_offset"] = pv.derived(f"{name}.riser_offset", "Riser axis from the barrel axis (the columns' offset)",
+                                   r["offset"], "m", [clear, P["D_barrel"], P["D_vortex"]])
+    P["riser_run"] = pv.derived(f"{name}.riser_run", "Transition's run, riser axis to the duct face",
+                                r["run"], "m", [P["riser_offset"], P["W_inlet"], P["inlet_duct_length"]])
+    P["riser_stub"] = pv.derived(f"{name}.riser_stub", "Vertical riser in the domain, under the turn",
+                                 r["stub"], "m", [stub_k, P["D_vortex"]])
+    dim("outlet_turn", "Outlet bend angle (0: straight)")
     rise_k = pv.cyclone_dim(g, name, "outlet_rise_over_Dx", "")
-    bend_k = pv.cyclone_dim(g, name, "outlet_bend_R_over_Dx", "")
-    run_k = pv.cyclone_dim(g, name, "outlet_run_over_Dx", "")
-    P["outlet_rise"] = pv.derived(f"{name}.outlet_rise", "Outlet pipe rise over the roof",
+    P["outlet_rise"] = pv.derived(f"{name}.outlet_rise", "Outlet pipe rise over the roof (the domain's end)",
                                   c["outlet_rise"], "m", [rise_k, P["D_vortex"]])
-    P["outlet_bend_R"] = pv.derived(f"{name}.outlet_bend_R", "Outlet bend centreline radius",
-                                    c["outlet_bend_R"], "m", [bend_k, P["D_vortex"]])
-    P["outlet_run"] = pv.derived(f"{name}.outlet_run", "Outlet run after the bend",
-                                 c["outlet_run"], "m", [run_k, P["D_vortex"]])
-    o = pg.cyclone_outlet(g, name)
-    P["outlet_axis"] = pv.derived(f"{name}.outlet_axis", "Roof to the outlet run's axis",
-                                  c["outlet_rise"] + c["outlet_bend_R"], "m",
-                                  [P["outlet_rise"], P["outlet_bend_R"]])
-    P["exit_x"] = pv.derived(f"{name}.exit_x", "Barrel axis to the gas outlet face",
-                             o["x_end"], "m", [P["outlet_bend_R"], P["outlet_run"]])
-    P["top"] = pv.derived(f"{name}.top", "Dust outlet to the top of the outlet pipe",
-                          o["z_leg"] + 0.5 * o["D"], "m",
-                          [P["height"], P["outlet_rise"], P["outlet_bend_R"], P["D_vortex"]])
+    P["top"] = pv.derived(f"{name}.top", "Dust outlet to the outlet face",
+                          c["height"] + c["outlet_rise"], "m", [P["height"], P["outlet_rise"]])
     P["volume"] = pv.derived(f"{name}.volume", "Volume (barrel + cone)", c["volume"], "m3",
                              [P["D_barrel"], P["H_barrel"], P["H_cone"], P["D_dust"]])
     P["wet_area"] = pv.derived(f"{name}.wet_area", "Wetted area (barrel, roof ring, cone)",

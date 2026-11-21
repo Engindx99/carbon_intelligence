@@ -18,19 +18,23 @@ Yayınlanmış olan yalnız çap D'dir (HFC2500); koni, vorteks bulucu ve toz ç
 | Silindirik gövde yüksekliği | 6.3 m | CFD kararı |
 | Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş |
 | Vorteks bulucu daldırması S | 3.9 m | CFD kararı |
-| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş |
+| D_x / D (= riser çapı / D) | 0.5 | CFD kararı |
+| Vorteks bulucu çapı D_x (= riser çapı) | 3.1500 m | 0.5 D |
 | Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş |
 | Giriş genişliği | 2.912 m | CFD kararı |
 | Giriş yüksekliği | 3.4 m | CFD kararı |
 | Giriş eğimi | 0 ° | CFD kararı |
 | Volüt | var | CFD kararı |
-| Çıkış dönüşü | 90 ° | CFD kararı |
-| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
-| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
-| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Çıkış dönüşü | 0 ° | CFD kararı |
+| Çıkış borusu yükselişi (çatının üstünde) | 5.355 m | 1.7 D_x |
+| Yatay giriş kanalı (teğet düzleminden) | 2.000 m | türetilmiş |
+| Riser duvarlarının kanala eğimi | 45 ° | şematik |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.090 m | türetilmiş |
+| Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına) | 1.925 m | türetilmiş |
+| CFD domenindeki dik riser (dönüşün altında) | 3.150 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
-| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 235.17 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry
@@ -43,7 +47,7 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
   - 9.44 m yükseklik 3.46 m'lik gövdeden uzun, koninin dibine (r ≈ 0.9 m) kadar iniyor;
   - açıklığın %66'sı vorteks bulucu ağzının altında kalıyor (C1'de reddedilen kısa devre).
 - Tesis böyle bir girişi volütle besler. Model de basit bir volüt kurar:
-  - çatıdan aşağı ekstrüde edilen düz bir kanal (3.0 m) ve 180°'de gövdeye inen bir Arşimet sarmalı;
+  - çatıdan aşağı ekstrüde edilen düz bir kanal (3.0 m; 17 Kasım 2026'dan beri 1.0 m, aşağıda) ve 180°'de gövdeye inen bir Arşimet sarmalı;
   - iki uçta 5 cm'lik dil (C1'deki `INLET_TONGUE` ile aynı gerekçe).
 - **Giriş 3.40 × 2.912 m = 9.90 m².** Katalog girişinin tesis debisindeki alanı: 56 kg/s ve 1033 K'de 16.0 m/s. Yükseklik, gövde henüz 3.46 m iken volüt tabanı gövde/koni kenarına denk gelmesin diye seçildi; genişlik alanı koruyor. Gövde uzadıktan sonra da korundu; daldırma bu yüksekliğe göre seçildi (aşağıda).
 
@@ -53,12 +57,15 @@ Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek üretil
 - Koni, vorteks bulucu çapı ve toz çıkışı katalogdaki gibi.
 - CFD gövdesinin hacmi yukarıdaki tabloda; katalog ölçüleriyle 194.5 m³'tü. 13 Ekim 2026'dan beri twin'in ön ısıtıcısı CFD gövdesinin hacmini ve ıslak alanını kullanır (aşağıda, Derived Properties).
 
-**Çıkış:**
-- Vorteks bulucu çatının 1.25 D_x (5.79 m) üstüne uzuyordu, C1'deki geri akış ölçümünün oranı; 14 Ekim 2026'dan beri 1.70 D_x (aşağıda).
-- Ardından gelen 90° dirsek (merkez çizgisi yarıçapı 1.0 D_x = 4.63 m) gazı +x yönünde 4.63 m'lik (1.0 D_x) yatay bir bacağa çevirir. Gaz çıkış yüzü x = 9.26 m'de.
-- C4'ün gazı R3 riser'ına gider, fana değil; bu yüzden C1'deki kaz boynu yerine 90° dirsek var. Dirsek girdabı kırar.
-- C1'in oranları (1.5 D_x dirsek, 1.25 D_x bacak) Ø4.63 m'lik boruda çıkışı domenin yarısından fazlası yapıyordu (378 / 666 m³). 1.0 D_x, C1'in riser dirseğindeki oran (kullanıcı kararı, 4 Ekim 2026).
-- Riser (R4) domende yok, giriş kanalında gaz düzgün profille girer.
+**Riser girişi ve düz çıkış (kullanıcı kararı, 17 Kasım 2026).** R2–R4 artık alttaki siklonun çıkış borusunun dik devamıdır: alttaki siklonun ekseninden kolon aralığı kadar (5.838 m) uzakta dik yükselir, üstü düzdür, oradan düz yüzeyli (ruled) bir geçişle üst siklonun kanalına girer. Geçişin dış duvarı 45° ile kanalın üst kenarına, iç duvarı daha dik (81.8°) kanal tabanına gider; kanal volütün 1.0 m önünde yataydır (siklona ulaşınca kısa bir mesafe eğim sıfır). C4'ün CFD domeni bunu taşır:
+- **Giriş:** R4'ün dik riser'ının 1.0·D (4.63 m) boyu, geçiş ve 1.0 m'lik yatay kanal. Gaz giriş yüzü riser'ın tabanında, Ø4.63, z 4.13 m; riser ekseni (x −3.523, y 4.656), kanalın ortasının altında.
+- **Çıkış:** vorteks bulucu çatının 1.70·D_x (7.871 m) üstüne düz uzanır ve orada biter (z 21.47 m). Dirsek yok: tesiste C3–C5'in çıkış borusu bir üstteki riser'dır ve dik yükselir; C2'ninki R1'dir, o da dik (17 Kasım 2026).
+- Riser'ın çapı burada C4'ün D_x'i (4.63 m). Tesiste R4, C5'in D_x'i (4.777 m) ile biraz geniştir; kolon aralığı en geniş riser'a (R4) göre seçildiği için R2 / R3 domenle birebir, R4 ise %3 geniş.
+- Riser'ın dik kısmı tesiste 9.26 m (R4 9.19 m); domen yalnız 1.0·D'sini taşır. Giriş profili (düzgün, dönmesiz) bu uzunlukta gelişmiş bir boru profili değildir; geçişin ayrılma bölgesini sürecek olan geçişin kendisidir, onun için 1.0·D yeterli sayıldı (ölçülmedi).
+- Katı `geometry/output/2500/C4.{SLDPRT,step,stl}`: **603.50 m³** (geçiş, ölçülen: 37.94 m³; `plant_geometry._ruled_loft` 38.24 m³ verir).
+- Bu domen henüz çözülmedi: aşağıdaki Eu 11.54, η 0.96 eski domenin (yatay 3.0 m kanal, 90° dirsek) sonuçlarıdır ve yeni çözüme kadar taşınır.
+
+Önce (4 Ekim – 17 Kasım 2026) giriş 3.0 m'lik yatay bir kanaldı (riser domende yoktu, gaz kanalda düzgün profille giriyordu). Çıkışta 90° dirsek (merkez çizgisi yarıçapı 1.0·D_x) gazı +x yönünde 4.63 m'lik yatay bir bacağa çeviriyordu, gaz çıkış yüzü x = 9.26 m'deydi.
 
 **Daldırma S = 3.90 m (kullanıcı kararı, 5 Ekim 2026; katalogdan sapma).**
 - Katalogdaki 3.17 m, 3.40 m'lik girişe karşı S/a 0.93 veriyordu: vorteks bulucu ağzı giriş tabanının 0.23 m üstündeydi.
@@ -327,12 +334,12 @@ Dosyalar (repo dışında, `C:\Users\engin\c4_rise170`):
 
 | Ad | Tip | Alan |
 |---|---|---|
-| `inlet_gas` | mass-flow-inlet | 9.90 m² (3.40 × 2.912) |
-| `gas_outlet` | pressure-outlet | 16.82 m² (Φ4.63, x = 9.26 m) |
-| `dust_outlet` | wall | 0.507 m² (Φ0.81) |
+| `inlet_gas` | mass-flow-inlet | 16.84 m² (Φ4.63, riser tabanı, z = 4.13 m) |
+| `gas_outlet` | pressure-outlet | 16.84 m² (Φ4.63, z = 21.47 m) |
+| `dust_outlet` | wall | 0.515 m² (Φ0.81) |
 | `wall` | wall | geri kalan |
 
-Mesh'teki named selection'lar C1'in adlarıyla gelmişti (`meal_feed` = giriş, `wall_dust` = toz çıkışı); Fluent'te yeniden adlandırıldı.
+17 Kasım 2026 domeninin yüzleri; önceki domende giriş volüt kanalının ucuydu (9.90 m², 3.40 × 2.912), çıkış x = 9.26 m'de. Mesh'teki named selection'lar C1'in adlarıyla gelmişti (`meal_feed` = giriş, `wall_dust` = toz çıkışı); Fluent'te yeniden adlandırıldı.
 
 ## Derived Properties
 

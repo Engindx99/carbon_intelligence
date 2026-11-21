@@ -20,6 +20,7 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 DIMENSIONED = (
     "D_throat", "L_throat", "H_cone", "D_vessel", "H_cylinder", "H_vessel",
     "D_leg", "D_fuel", "D_TA", "ta_x", "D_feed",
+    "dp_radius", "dp_thick", "dp_prot",
 )
 
 ALSO = {}
@@ -30,6 +31,7 @@ ORDER = (
     "D_neck", "neck_slope", "neck_piece", "neck_level", "channel", "D_leg", "arm_angle", "arm_run",
     "y_off", "x_leg", "leg_end_z", "width", "top",
     "D_TA", "ta_y", "ta_z", "ta_x", "D_feed", "feed_slope", "D_fuel", "fuel_slope",
+    "dp_exit", "dp_radius", "dp_prot", "dp_width", "dp_thick",
     "volume", "wet_area",
     "u_wall", "u_material", "u_flange", "u_support", "u_burner",
 )
@@ -120,6 +122,22 @@ def params(g, name="calciner"):
     P["D_fuel"] = pv.primary(g, "calciner.D_fuel", "Fuel pipe diameter (two)", key="calciner.D_fuel")
     P["fuel_slope"] = pv.primary(g, "calciner.fuel_slope", "Fuel pipes' slope to the horizontal",
                                  key="calciner.fuel_slope")
+
+    # the dispersion plates under the meal holes (model values; the type from KHD US 6,875,267
+    # and a manufacturer's image, calciner.md)
+    dp = pg.calciner_dispersion_plate(g)
+    P["dp_exit"] = pv.primary(g, "calciner.dispersion_plate_exit_angle", "Dispersion plate exit angle (above horizontal)",
+                              key="calciner.dp_exit")
+    dp_prot_k = pv.primary(g, "calciner.dispersion_plate_protrusion_over_D_feed", "Plate protrusion over D_feed")
+    P["dp_prot"] = pv.derived("calciner.dp_prot", "Dispersion plate edge past the wall", dp["protrusion"], "m",
+                              [d_feed, dp_prot_k])
+    P["dp_width"] = pv.derived("calciner.dp_width", "Dispersion plate width", dp["width"], "m",
+                               [d_feed, pv.primary(g, "calciner.dispersion_plate_width_over_D_feed",
+                                                   "Plate width over D_feed")])
+    P["dp_thick"] = pv.primary(g, "calciner.dispersion_plate_thickness", "Dispersion plate thickness",
+                               key="calciner.dp_thick")
+    P["dp_radius"] = pv.derived("calciner.dp_radius", "Dispersion plate meal face radius", dp["R_arc"], "m",
+                                [P["dp_prot"], P["dp_exit"], P["feed_slope"]])
 
     P["volume"] = pv.derived("calciner.volume", "Volume (cone + cylinder)", cal["vessel_volume"], "m3",
                              [P["D_vessel"], P["H_vessel"], P["D_throat"], cone])

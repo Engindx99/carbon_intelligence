@@ -39,7 +39,10 @@ cyclones:
     # a volute, a = 3.00 m (17.9 m/s at 28.76 kg/s per C1) and S/a 1.15,
     # as C4. The FLS ratios gave S 2.16 and a 4.97 (cyclone_C1.md).
     L_vortex:          {value: 3.45, unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
-    D_vortex:          {value: 2.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
+    # Vortex finder = the riser rising out of it, and D / D_riser = 2.0
+    # (user decision, 21 Nov 2026): D_x = 0.5 D, derived. The FLS ratio
+    # gave D_x 2.40 (C1) and 4.63 (C4).
+    D_vortex_over_D_barrel: {value: 0.5, unit: "-", source: cfd_decision, doc: preheater/cyclone_C1.md}
     D_dust:            {value: 0.4,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     W_inlet:           {value: 0.86, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C1.md}
     H_inlet:           {value: 3.0,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C1.md}
@@ -49,24 +52,35 @@ cyclones:
     outlet_rise_over_Dx: {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
     outlet_bend_R_over_Dx: {value: 1.5, unit: "-", source: model,       doc: preheater/cyclone_C1.md}
     outlet_run_over_Dx:  {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
-    boi_radius:        {value: 0.8,  unit: m,     source: model,        doc: preheater/cyclone_C1.md}
+    # the mesh sizing cylinder inside the vortex finder's bore, ~2/3 of
+    # its radius (0.8 at D_x 2.40; 21 Nov 2026 with D_x = D / 2)
+    boi_radius:        {value: 0.72, unit: m,     source: model,        doc: preheater/cyclone_C1.md}
   C4:
     per_string:        {value: 1,    unit: "-",   source: published,    doc: preheater/cyclone_C4.md}
     D_barrel:          {value: 6.3,  unit: m,     source: published,    doc: preheater/cyclone_C4.md}
     H_barrel:          {value: 6.3,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
     H_cone:            {value: 7.3,  unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
     L_vortex:          {value: 3.9,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
-    D_vortex:          {value: 4.63, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
+    D_vortex_over_D_barrel: {value: 0.5, unit: "-", source: cfd_decision, doc: preheater/cyclone_C4.md}
     D_dust:            {value: 0.81, unit: m,     source: derived_from_reference, doc: preheater/cyclone_C4.md}
     W_inlet:           {value: 2.912, unit: m,    source: cfd_decision, doc: preheater/cyclone_C4.md}
     H_inlet:           {value: 3.4,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
     inlet_slope:       {value: 0.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
     volute:            {value: true, unit: "-",   source: cfd_decision, doc: preheater/cyclone_C4.md}
-    outlet_turn:       {value: 90.0, unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
+    # R2-R4 (user decision, 17 Nov 2026): each riser is the cyclone
+    # below's outlet pipe, straight up beside the one above, both its
+    # walls turning in at cyclone_domain.riser_slope_deg into a short
+    # level duct and the volute. So the outlet does not turn (0: a
+    # straight pipe outlet_rise over the roof, the CFD domain's end;
+    # until then a 90 deg bend R 1.0 D_x and a 1.0 D_x leg), the level
+    # duct is inlet_duct_length (3.0 m before; 1.0 m on 17 Nov; 2.0 m
+    # user decision 21 Nov 2026, the 1.0 m looked too short) and a riser
+    # comes in under it (inlet_riser; C1 keeps its own branch, cyclone.bas RISER_ON).
+    outlet_turn:       {value: 0.0,  unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
     outlet_rise_over_Dx: {value: 1.7, unit: "-",  source: cfd_decision, doc: preheater/cyclone_C4.md}
-    outlet_bend_R_over_Dx: {value: 1.0, unit: "-", source: model,       doc: preheater/cyclone_C4.md}
-    outlet_run_over_Dx:  {value: 1.0, unit: "-",  source: model,        doc: preheater/cyclone_C4.md}
-    boi_radius:        {value: 1.5,  unit: m,     source: model,        doc: preheater/cyclone_C4.md}
+    inlet_duct_length: {value: 2.0,  unit: m,     source: cfd_decision, doc: preheater/cyclone_C4.md}
+    inlet_riser:       {value: true, unit: "-",   source: cfd_decision, doc: preheater/cyclone_C4.md}
+    boi_radius:        {value: 1.0,  unit: m,     source: model,        doc: preheater/cyclone_C4.md}
   C2: {same_as: C4, per_string: {value: 1, unit: "-", source: published, doc: preheater/cyclone_C2.md}}
   C3: {same_as: C4, per_string: {value: 1, unit: "-", source: published, doc: preheater/cyclone_C3.md}}
   C5:
@@ -75,7 +89,7 @@ cyclones:
     # scales, so C4's Euler number and volute swirl carry over
     D_barrel_published: {value: 6.5, unit: m,     source: published,    doc: preheater/cyclone_C5.md}
     per_string:        {value: 1,    unit: "-",   source: published,    doc: preheater/cyclone_C5.md}
-    boi_radius:        {value: 1.55, unit: m,     source: model,        doc: preheater/cyclone_C5.md}
+    boi_radius:        {value: 1.03, unit: m,     source: model,        doc: preheater/cyclone_C5.md}
 
 # Parts of the cyclone CFD domains that are not per cyclone
 # (geometry/macros/cyclone.bas)
@@ -96,16 +110,25 @@ cyclone_domain:
   c1_feed_height:      {value: 0.6,  unit: m,     source: literature,   doc: preheater/riser_R1.md}
   c1_feed_depth:       {value: 1.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
   meal_slope:          {value: 60.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
+  # R2-R4 into C2-C4 (and the C4 domain's own inlet; user decision,
+  # 17 Nov 2026): the vertical riser's walls turn in at this slope to
+  # the horizontal into the level duct, the riser axis under the duct
+  # and riser_barrel_clearance clear of the barrel above and of the
+  # level duct's face (whichever is further out sets the transition's
+  # length); the CFD domain starts riser_cfd_stub_over_D
+  # riser diameters below the turn. No source gives any of the three.
+  riser_slope_deg:     {value: 45.0, unit: deg,   source: schematic,    doc: preheater/cyclone_C4.md}
+  riser_barrel_clearance: {value: 0.3, unit: m,   source: model,        doc: preheater/cyclone_C4.md}
+  riser_cfd_stub_over_D: {value: 1.0, unit: "-",  source: model,        doc: preheater/cyclone_C4.md}
 
 # ---------------------------------------------------------------------
-# Risers: the gas from C(k+1) up to C(k). R2-R4 are C3-C5's CFD outlet
-# pipes themselves, rise + bend + leg (user decision, 14 Oct 2026; the
-# published Ø3.35-3.60 risers are not this plant's); only R1, from C2's
-# outlet up to the twin C1, has a bore of its own. The paths are
-# derived: plant_geometry.stage_riser / r1_path.
+# Risers: the gas from C(k+1) up to C(k). R1-R4 are C2-C5's outlet
+# pipes themselves, the vortex finder's bore carried straight up (user
+# decisions, 14 Oct 2026 and, for R1, 21 Nov 2026: the published R1
+# Ø3.07 and its reducer out of C2 are gone; the published Ø3.35-3.60
+# risers are not this plant's). No riser bore is written here; the
+# paths are derived: plant_geometry.stage_riser / r1_path.
 # ---------------------------------------------------------------------
-risers:
-  R1: {D: {value: 3.07, unit: m, source: published, doc: preheater/riser_R1.md}}
 
 # ---------------------------------------------------------------------
 # Calciner (ILC), PF5000, and its Y gooseneck
@@ -157,6 +180,23 @@ calciner:
   # directions)
   D_fuel:              {value: 0.2828, unit: m,   source: literature,   doc: calciner/calciner.md}
   fuel_slope:          {value: 30.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
+  # Dispersion plate under each meal pipe's hole (user decision, 16 Nov
+  # 2026). Type: a curved (ski-jump) plate at the meal inlet's lower lip,
+  # sticking out past the wall, throwing the meal near-horizontally into
+  # the rising gas (KHD US 6,875,267: meal slide + deflector slide through
+  # a wall opening; a manufacturer's video image the user supplied, 16 Nov
+  # 2026). No source publishes its dimensions: all model values, the exit
+  # angle read off that image. The plate starts tangent to the meal pipe's
+  # 60 deg slope lip_clearance below the hole's lowest point (no sliver of
+  # wall between them), turns on one arc to exit_angle above the horizontal
+  # and ends protrusion past the wall; its tail runs on tail along the pipe
+  # slope into the wall so its back end is clear of the vessel.
+  dispersion_plate_exit_angle: {value: 10.0, unit: deg, source: model,  doc: calciner/calciner.md}
+  dispersion_plate_protrusion_over_D_feed: {value: 0.5, unit: "-", source: model, doc: calciner/calciner.md}
+  dispersion_plate_width_over_D_feed: {value: 1.0, unit: "-", source: model, doc: calciner/calciner.md}
+  dispersion_plate_thickness: {value: 0.05, unit: m, source: model,     doc: calciner/calciner.md}
+  dispersion_plate_lip_clearance: {value: 0.05, unit: m, source: model, doc: calciner/calciner.md}
+  dispersion_plate_tail: {value: 0.1, unit: m,     source: model,       doc: calciner/calciner.md}
 
 gooseneck:
   D_leg:               {value: 3.5,  unit: m,     source: published,    doc: preheater/gooseneck.md}
@@ -296,6 +336,15 @@ kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
   mouth_clearance:     {value: 0.2,    unit: m,      source: model,       doc: kiln/kiln_inlet_chamber.md}   # the kiln mouth's circle stands this far clear of the roof's start and the ramp's lip (no tangent split line); no source
   gas_velocity_ref_holcim: {value: 23.0, unit: m/s,  source: literature,  doc: kiln/kiln_inlet_chamber.md}   # Holcim StDC 2022, one company's standard: reported, not the check
+  # User sketch, 21 Nov 2026 (topology drawing): no roof ledges; the
+  # throat's walls run down, the right one to the kiln's roof line, the
+  # left one to the ramp's top; the ramp falls at ramp_deg (over meal's
+  # 40-45 deg angle of repose) to a short foot at the kiln mouth's lower
+  # lip. The foot and the right wall's run to the mouth follow the kiln's
+  # slope (kiln.slope: the shell's lines carried in, the foot falling
+  # towards the kiln). plant_topology_2d draws it; the CFD solid not yet.
+  ramp_deg:            {value: 50.0,   unit: deg,    source: model,       doc: kiln/kiln_inlet_chamber.md}
+  ramp_foot:           {value: 1.5,    unit: m,      source: model,       doc: kiln/kiln_inlet_chamber.md}   # foot, ramp toe to the kiln mouth (horizontal run; falls at kiln.slope)
 
 # ---------------------------------------------------------------------
 # Meal pipes C1-C5 (user decision, 16 Nov 2026: scale the one literature
@@ -304,7 +353,7 @@ kiln_inlet_chamber:
 # ---------------------------------------------------------------------
 meal_pipe:
   feed_per_string:     {value: 44.85,   unit: kg/s,  source: model,       doc: preheater/meal_pipe_C4.md}
-  c5_meal_per_string:  {value: 30.2123, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
+  c5_meal_per_string:  {value: 30.3084, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
 
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it
@@ -320,19 +369,22 @@ layout:
   # C1's dust outlets over the top of C2's outlet pipe. Since R1 rises
   # straight on C2's axis (17 Nov 2026) the twin stand over C2, and both
   # C1 meal pipes run back to R2's upright at the inner column (60 deg,
-  # the near one joining at 50 deg): 9.41 m is the least that reaches it
-  # (plant_topology_2d.bas checks). 4.0 while R1 stood over C2's leg.
-  stage_gap:           {value: 9.5,  unit: m,     source: schematic,    doc: plant_topology.md}
-  column_offset:       {value: 15.0, unit: m,     source: schematic,    doc: plant_topology.md}
+  # the near one joining at 50 deg; plant_topology_2d.bas checks). 9.5
+  # with the 15 m columns (17 Nov 2026); back to 4.0 since the risers
+  # rise beside the cyclone above and the columns are 5.8 m apart.
+  stage_gap:           {value: 4.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  # C2-C4 over the cyclone below: each dust outlet this far over the
+  # roof (and riser top) under it -- the cyclone two below shares its
+  # column (user decision, 17 Nov 2026). The columns' offset follows
+  # from the risers (plant_geometry.riser_inlet); it was a free 15 m.
+  dust_over_roof:      {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
   # the twin C1 (mirror pair, inlet ducts facing each other, R1 on the
   # mirror plane in front): clear gap between the two branches' walls,
   # two lined walls (~0.3 m each) and access; the spacing and R1's Y
   # follow from it (plant_geometry.c1_twin). No source gives either.
   c1_twin_gap:         {value: 1.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
   r1_up_min:           {value: 0.5,  unit: m,     source: schematic,    doc: plant_topology.md}
-  # R1 straight up out of C2's outlet pipe, on C2's axis (user decision,
-  # 17 Nov 2026; before, C2's CFD bend and leg turned it over to R1's
-  # elbow): a conical reducer D_x 4.63 -> R1 3.07 at this half angle,
-  # the drawing's 45 deg pieces (contraction loss ~3 Pa).
-  r1_reducer_deg:      {value: 45.0, unit: deg,   source: schematic,    doc: plant_topology.md}
+  # R1 is C2's outlet pipe straight up on C2's axis (user decisions,
+  # 17 Nov 2026 and 21 Nov 2026: R1's bore = C2's D_x, so the conical
+  # reducer D_x 4.63 -> 3.07 at 45 deg it had is gone).
   cooler_drop:         {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}

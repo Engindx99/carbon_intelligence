@@ -15,7 +15,8 @@ Attribute VB_Name = "calciner"
 ' of three straight pieces -- 45 deg up, level, 45 deg down -- over the
 ' roof's top, then one vertical channel in front of the vessel, dividing
 ' at its lower end into two arms; user decision, 15 Nov 2026), the two meal feed pipes, the
-' tangential tertiary air duct and the two fuel pipes; the boundary faces are coloured and the solid is
+' tangential tertiary air duct and the two fuel pipes, and a curved dispersion plate under each meal
+' pipe's hole, cut out of the fluid (user decision, 16 Nov 2026); the boundary faces are coloured and the solid is
 ' exported (STEP AP214, STL, SLDPRT).
 '
 ' Coordinates: calciner axis = z, the kiln gas inlet face (bottom of
@@ -78,6 +79,13 @@ Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizon
 Const FEED_DEPTH                   As Double  = 1#           ' meal and fuel pipes past the wall [model, calciner/calciner.md]
 Const D_FUEL                       As Double  = 0.2828       ' [literature, calciner/calciner.md]
 Const FUEL_SLOPE_DEG               As Double  = 30#          ' below the horizontal [literature, calciner/calciner.md]
+Const DP_EXIT_DEG                  As Double  = 10#          ' dispersion plate's exit, above the horizontal [model, calciner/calciner.md]
+Const DP_PROT_OVER_D               As Double  = 0.5          ' its edge past the wall, x D_FEED [model, calciner/calciner.md]
+Const DP_WIDTH_OVER_D              As Double  = 1#           ' its width, x D_FEED [model, calciner/calciner.md]
+Const DP_THICKNESS                 As Double  = 0.05         ' [model, calciner/calciner.md]
+Const DP_LIP_CLEARANCE             As Double  = 0.05         ' its meal face under the hole's lowest point [model, calciner/calciner.md]
+Const DP_TAIL                      As Double  = 0.1          ' its tail on into the wall, along the pipe slope [model, calciner/calciner.md]
+Const DP_INSIDE_VESSEL             As Double  = 0.020139     ' one plate inside the vessel, m3 (the fluid it removes; plant_geometry.py) [derived]
 Const OVERLAP_N                    As Long    = 300          ' grid per axis, the bends' shared volume [plant_geometry.py]
 Const P_ATM                        As Double  = 101325#      ' Pa, the throat's gas [plant_geometry.py]
 Const R_GAS                        As Double  = 8.314462618  ' J/(mol K) [plant_geometry.py]
@@ -287,6 +295,19 @@ Dim rFuel As Double, uc As Double, us As Double
 Dim rhoFuel0 As Double, zFuelStart As Double, lFuel As Double
 Dim yFuelEnd As Double, zFuelEnd As Double  ' centre of the end face, the fuel_inlet, at y = +-yFuelEnd
 Dim yFuelMax As Double                      ' |y| of the end faces' outer edges
+' The dispersion plates, one under each meal pipe's hole, in the same
+' (rho, z) plane as the pipe: a slab between two arcs about (dpCr, dpCz),
+' from the pipe's slope (dpPhi0) to the exit angle (dpPhi1), extruded
+' +-dpW/2 across. A direction phi, inwards, is (-cos, sin) in (rho, z);
+' its upper normal n = (sin, cos).
+Dim dpPhi0 As Double, dpPhi1 As Double      ' start (the pipe's slope, down) and exit angles to the horizontal [rad]
+Dim dpRc As Double                          ' the meal face's radius
+Dim dpW As Double, dpT As Double            ' width across (y), thickness
+Dim dpZA As Double                          ' the meal face's start on the wall (rho = R), z
+Dim dpCr As Double, dpCz As Double          ' the arcs' centre, rho and z
+Dim dpRhoE As Double, dpZE As Double        ' the meal face's edge, past the wall by the protrusion
+Dim dpZLow As Double                        ' the lower face's lowest point, z
+Dim vDp As Double                           ' one plate's own volume (closed form)
 Dim outName As String                       ' file name the solid is written under
 
 ' Sketch axis directions, measured at run time by CalibrateSketchAxes.
@@ -307,7 +328,7 @@ Dim vTA As Double                           ' the tertiary air stub, the part ou
 Dim vFuel As Double                         ' one fuel pipe, the part outside the vessel
 Dim vStage1 As Double, vStage2 As Double, vStage3a As Double, vStage3b As Double
 Dim vStage4 As Double, vStage5a As Double, vStage5b As Double, vStage6 As Double
-Dim vStage7a As Double
+Dim vStage7a As Double, vStage7b As Double, vStage8a As Double
 Dim vFinal As Double
 
 Dim exportPrefsTouched As Boolean
@@ -357,8 +378,12 @@ Sub main()
 
     Restore
     WriteLog CALCINER_NAME & " built, verified and exported"
-    MsgBox CALCINER_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, _
-           vbInformation, "Calciner"
+    ' no message box when OUT_ROOT\quiet.flag exists (a run from WSL, tools/sw_run.py):
+    ' the log carries the result
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CALCINER_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, _
+               vbInformation, "Calciner"
+    End If
     Exit Sub
 
 Failed:
@@ -367,8 +392,10 @@ Failed:
     why = Err.Description
     Restore
     WriteLog CALCINER_NAME & " ABORTED while " & phase & ": " & why
-    MsgBox CALCINER_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
-           "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Calciner"
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CALCINER_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
+               "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Calciner"
+    End If
 
 End Sub
 
@@ -506,8 +533,35 @@ Private Sub Derive()
     vStage5a = vStage4 + vFeed             ' + the +x meal feed pipe
     vStage5b = vStage5a + vFeed            ' + the -x meal feed pipe
     vStage6 = vStage5b + vTA               ' + the tertiary air duct
+    ' Dispersion plates. The meal face starts DP_LIP_CLEARANCE under the
+    ' hole's lowest point, on the wall (rho = R), along the pipe's slope,
+    ' and turns on one arc to the exit angle; the protrusion past the wall
+    ' sets the arc: Rc (sin phi1 - sin phi0) = protrusion. Its own volume
+    ' is the annular sector between Rc and Rc + t plus the tail's
+    ' rectangle, times the width; what it takes out of the fluid
+    ' (DP_INSIDE_VESSEL) is the part of it inside the curved wall,
+    ' plant_geometry.py's integral.
+    If DP_EXIT_DEG <= -FEED_SLOPE_DEG Or DP_EXIT_DEG >= 90# Then
+        Fail "DP_EXIT_DEG is " & Fmt(DP_EXIT_DEG) & "; the plate has to turn the meal up from the pipe's " & _
+             Fmt(-FEED_SLOPE_DEG) & " deg and stay below the vertical."
+    End If
+    dpPhi0 = -FEED_SLOPE_DEG * PI / 180#
+    dpPhi1 = DP_EXIT_DEG * PI / 180#
+    dpW = DP_WIDTH_OVER_D * D_FEED
+    dpT = DP_THICKNESS
+    dpRc = DP_PROT_OVER_D * D_FEED / (Sin(dpPhi1) - Sin(dpPhi0))
+    dpZA = zFeed - rFeed / fc - (R - Sqr(R * R - rFeed * rFeed)) * (fs / fc) - DP_LIP_CLEARANCE
+    dpCr = R + dpRc * Sin(dpPhi0)
+    dpCz = dpZA + dpRc * Cos(dpPhi0)
+    dpRhoE = dpCr - dpRc * Sin(dpPhi1)
+    dpZE = dpCz - dpRc * Cos(dpPhi1)
+    dpZLow = dpCz - (dpRc + dpT)
+    vDp = (0.5 * (dpPhi1 - dpPhi0) * ((dpRc + dpT) ^ 2 - dpRc ^ 2) + DP_TAIL * dpT) * dpW
+
     vStage7a = vStage6 + vFuel             ' + the +y fuel pipe
-    vFinal = vStage7a + vFuel              ' + the -y fuel pipe
+    vStage7b = vStage7a + vFuel            ' + the -y fuel pipe
+    vStage8a = vStage7b - DP_INSIDE_VESSEL ' - the +x dispersion plate
+    vFinal = vStage8a - DP_INSIDE_VESSEL   ' - the -x dispersion plate
 
     outName = CALCINER_NAME
 
@@ -635,6 +689,29 @@ Private Sub PreChecks()
              "the cone at z = " & Fmt(zConeTop) & " m."
     End If
 
+    ' 10. the dispersion plates. A plate touching the hole's edge, the
+    '     wall at its back end or anything else leaves the boolean a
+    '     degenerate edge; its edge has to be wholly inside the vessel
+    '     (the edge face is checked by its area), and it has to stay
+    '     clear of the tertiary air duct below it and of the vessel axis.
+    If DP_THICKNESS <= 0# Or DP_TAIL <= 0# Or DP_LIP_CLEARANCE <= 0# Then
+        Fail "DP_THICKNESS, DP_TAIL and DP_LIP_CLEARANCE have to be positive: a plate on the hole's " & _
+             "edge, or with its back end on the wall, leaves the boolean a degenerate edge."
+    End If
+    If DP_PROT_OVER_D <= 0# Or DP_WIDTH_OVER_D <= 0# Then
+        Fail "DP_PROT_OVER_D and DP_WIDTH_OVER_D have to be positive."
+    End If
+    If Sqr((dpCr - (dpRc + dpT) * Sin(dpPhi1)) ^ 2 + 0.25 * dpW * dpW) >= R Or _
+       Sqr(dpRhoE * dpRhoE + 0.25 * dpW * dpW) >= R Then
+        Fail "the dispersion plate's edge reaches the wall at its corners; it has to stand wholly inside the vessel."
+    End If
+    If dpRhoE - dpT <= 0# Then
+        Fail "the dispersion plate reaches the vessel axis (edge at rho = " & Fmt(dpRhoE) & " m)."
+    End If
+    If dpZLow <= zTA + rTA Then
+        Fail "the dispersion plate's lowest point, z = " & Fmt(dpZLow) & " m, is not over the tertiary air duct's top."
+    End If
+
     Note "kiln gas: " & Fmt(M_KILN_GAS) & " kg/s at " & Fmt(T_KILN_GAS) & " K, rho " & _
          Fmt(rhoKiln) & " kg/m3, " & Fmt(qKiln) & " m3/s"
     Note "throat D " & Fmt(2# * rThroat) & " m at " & Fmt(U_THROAT) & " m/s, " & _
@@ -661,6 +738,10 @@ Private Sub PreChecks()
     Note "fuel: 2 pipes D " & Fmt(D_FUEL) & " m at " & Fmt(FUEL_SLOPE_DEG) & _
          " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (0, +-" & _
          Fmt(yFuelEnd) & ", " & Fmt(zFuelEnd) & "), " & Fmt(vFuel) & " m3 each outside the vessel"
+    Note "dispersion plates: 2, under the meal holes, meal face from z = " & Fmt(dpZA) & " m on the wall at " & _
+         Fmt(-FEED_SLOPE_DEG) & " deg turning on R " & Fmt(dpRc) & " m to " & Fmt(DP_EXIT_DEG) & " deg, edge at rho " & _
+         Fmt(dpRhoE) & " m, z " & Fmt(dpZE) & " m; " & Fmt(dpW) & " m wide, " & Fmt(dpT) & " m thick; " & _
+         Fmt(vDp) & " m3 each, " & Fmt(DP_INSIDE_VESSEL) & " m3 of it in the vessel"
     Note "vessel volume (cone + cylinder)   " & Fmt(vVessel) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
 End Sub
@@ -834,7 +915,12 @@ Private Sub Build()
     CheckStageVol "7a + fuel, +y", vStage7a
     AddPipe planeX0, 1, -1#, rFuel, uc, us, rhoFuel0, zFuelStart, lFuel, yFuelEnd, zFuelEnd, _
             vFuel, "fuel_inlet", "7b + fuel, -y"
-    CheckStageVol "7b + fuel, -y", vFinal
+    CheckStageVol "7b + fuel, -y", vStage7b
+
+    '--- 8. the two dispersion plates, cut out of the fluid ------------
+    ' Last, so no later union fills them in again.
+    AddDispersionPlate planeY0, 1#, vStage8a, "8a - dispersion plate, +x"
+    AddDispersionPlate planeY0, -1#, vFinal, "8b - dispersion plate, -x"
 
     swSkMgr.AddToDB = False
     swSkMgr.DisplayWhenAdded = True
@@ -1349,6 +1435,129 @@ Private Sub AddPipe(pl As SldWorks.Feature, ByVal ax As Long, ByVal side As Doub
              Fmt(side * rhoEnd) & ", z " & Fmt(zEnd) & "."
     End If
     CheckArea what & " end", face.GetArea, PI * rp * rp
+
+End Sub
+
+
+' One dispersion plate, at side +1 (+x) or -1 (-x), cut out of the fluid.
+' Its profile in the y = 0 plane, in (rho, z): the tail's top T, the meal
+' face's start A on the wall, the meal face (an arc of dpRc about the
+' centre) to the edge E, across the edge to E', the lower face (an arc of
+' dpRc + dpT) back to A', the tail's bottom T'. Extruded mid-plane to dpW
+' as a body of its own, its volume checked against the closed form, then
+' subtracted from the fluid (Combine, Subtract): the volume it takes out
+' is checked against DP_INSIDE_VESSEL, and its edge face, wholly inside the
+' vessel, by its area dpT x dpW.
+Private Sub AddDispersionPlate(planeY0 As SldWorks.Feature, ByVal side As Double, _
+                               ByVal expected As Double, ByVal stage As String)
+
+    Dim sk As SldWorks.Sketch
+    Dim skFeat As SldWorks.Feature
+    Dim f As SldWorks.Feature
+    Dim pr(5) As Double, pz(5) As Double      ' T, A, E, E', A', T'
+    Dim mr(1) As Double, mz(1) As Double      ' the arcs' middle points: meal face, lower face
+    Dim u(5) As Double, w(5) As Double, um(1) As Double, wm(1) As Double
+    Dim gx As Double, gy As Double
+    Dim phiM As Double, rad As Double
+    Dim i As Long
+    Dim bodies As Variant, tools(0) As Object
+    Dim fluid As SldWorks.Body2, plate As SldWorks.Body2
+    Dim mp As Variant, vA As Double, vB As Double
+    Dim before As Double, removed As Double
+    Dim face As SldWorks.Face2
+
+    uSign = uSignY: vSign = vSignY
+    before = BodiesVolume()
+
+    pr(1) = R:                                   pz(1) = dpZA
+    pr(2) = dpRhoE:                              pz(2) = dpZE
+    pr(3) = dpCr - (dpRc + dpT) * Sin(dpPhi1):   pz(3) = dpCz - (dpRc + dpT) * Cos(dpPhi1)
+    pr(4) = dpCr - (dpRc + dpT) * Sin(dpPhi0):   pz(4) = dpCz - (dpRc + dpT) * Cos(dpPhi0)
+    ' the tail, back from A and A' along the pipe's slope, out and up
+    pr(0) = pr(1) + DP_TAIL * Cos(dpPhi0):       pz(0) = pz(1) - DP_TAIL * Sin(dpPhi0)
+    pr(5) = pr(4) + DP_TAIL * Cos(dpPhi0):       pz(5) = pz(4) - DP_TAIL * Sin(dpPhi0)
+    phiM = 0.5 * (dpPhi0 + dpPhi1)
+    For i = 0 To 1
+        rad = dpRc + i * dpT
+        mr(i) = dpCr - rad * Sin(phiM): mz(i) = dpCz - rad * Cos(phiM)
+    Next i
+
+    swModel.ClearSelection2 True
+    planeY0.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
+    wRefSet = False
+    For i = 0 To 5
+        RadialToModel 0, side * pr(i), gx, gy
+        G2S sk, gx, gy, pz(i), u(i), w(i)
+    Next i
+    For i = 0 To 1
+        RadialToModel 0, side * mr(i), gx, gy
+        G2S sk, gx, gy, mz(i), um(i), wm(i)
+    Next i
+
+    If swSkMgr.CreateLine(u(0), w(0), 0#, u(1), w(1), 0#) Is Nothing Then Fail "CreateLine (tail top) failed at stage " & stage & "."
+    If swSkMgr.Create3PointArc(u(1), w(1), 0#, u(2), w(2), 0#, um(0), wm(0), 0#) Is Nothing Then _
+        Fail "Create3PointArc (meal face) failed at stage " & stage & "."
+    If swSkMgr.CreateLine(u(2), w(2), 0#, u(3), w(3), 0#) Is Nothing Then Fail "CreateLine (edge) failed at stage " & stage & "."
+    If swSkMgr.Create3PointArc(u(3), w(3), 0#, u(4), w(4), 0#, um(1), wm(1), 0#) Is Nothing Then _
+        Fail "Create3PointArc (lower face) failed at stage " & stage & "."
+    If swSkMgr.CreateLine(u(4), w(4), 0#, u(5), w(5), 0#) Is Nothing Then Fail "CreateLine (tail bottom) failed at stage " & stage & "."
+    If swSkMgr.CreateLine(u(5), w(5), 0#, u(0), w(0), 0#) Is Nothing Then Fail "CreateLine (tail end) failed at stage " & stage & "."
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+
+    ' a body of its own: mid-plane, so there is no direction to get wrong
+    swModel.ClearSelection2 True
+    skFeat.Select2 False, 0
+    Set f = swFeat.FeatureExtrusion3( _
+        True, False, False, _
+        swEndCondMidPlane, swEndCondBlind, _
+        dpW, 0.01, _
+        False, False, False, False, _
+        0#, 0#, _
+        False, False, False, False, _
+        False, True, True, _
+        swStartSketchPlane, 0#, False)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "the dispersion plate could not be extruded at stage " & stage & "."
+
+    bodies = swPart.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail "stage " & stage & ": the part has no solid body."
+    If UBound(bodies) <> 1 Then Fail "stage " & stage & ": expected the fluid and the plate as 2 bodies, found " & (UBound(bodies) + 1) & "."
+    mp = bodies(0).GetMassProperties(1000#): vA = mp(3)
+    mp = bodies(1).GetMassProperties(1000#): vB = mp(3)
+    If vA > vB Then
+        Set fluid = bodies(0): Set plate = bodies(1)
+    Else
+        Set fluid = bodies(1): Set plate = bodies(0): vB = vA
+    End If
+    Note "stage " & stage & ": plate body " & Fmt(vB) & " m3 (expected " & Fmt(vDp) & ")"
+    If Abs(vB - vDp) > VOL_TOL * vDp Then
+        Fail "stage " & stage & ": the plate body is " & Fmt(vB) & " m3 but should be " & Fmt(vDp) & _
+             " m3 (" & Fmt(100# * (vB - vDp) / vDp) & " %)."
+    End If
+
+    Set tools(0) = plate
+    Set f = swFeat.InsertCombineFeature(SWBODYCUT, fluid, tools)
+    If f Is Nothing Then Fail "stage " & stage & ": the plate could not be subtracted from the fluid."
+    If BodyCount() <> 1 Then Fail "stage " & stage & " left " & BodyCount() & " solid bodies, expected 1."
+
+    removed = before - BodiesVolume()
+    Note "stage " & stage & ": removed " & Fmt(removed) & " m3 of fluid (expected " & Fmt(DP_INSIDE_VESSEL) & ")"
+    If Abs(removed - DP_INSIDE_VESSEL) > FEED_VOL_TOL * DP_INSIDE_VESSEL + ADD_NOISE * BodiesVolume() Then
+        Fail "stage " & stage & " removed " & Fmt(removed) & " m3 but should remove " & Fmt(DP_INSIDE_VESSEL) & _
+             " m3 (" & Fmt(100# * (removed - DP_INSIDE_VESSEL) / DP_INSIDE_VESSEL) & " %)."
+    End If
+    CheckStageVol stage, expected
+
+    ' the edge face: normal to the exit direction (side * -cos, 0, sin), through E
+    Set face = PipeEndFace(Nothing, 0, side, -Cos(dpPhi1), Sin(dpPhi1), dpRhoE, dpZE)
+    If face Is Nothing Then
+        Fail "stage " & stage & ": no plate edge face at rho " & Fmt(side * dpRhoE) & ", z " & Fmt(dpZE) & "."
+    End If
+    CheckArea "dispersion plate edge", face.GetArea, dpT * dpW
 
 End Sub
 

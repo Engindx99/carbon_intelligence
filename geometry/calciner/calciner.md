@@ -19,6 +19,11 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 | Tersiyer hava kanalı çapı | 2.4393 m | FLS oranıyla türetilmiş |
 | Farin besleme borusu çapı | 0.8485 m | literatür; Fidaros 2007 × √2 |
 | Yakıt borusu çapı | 0.2828 m | literatür; Fidaros 2007 × √2 |
+| Dağıtma plakası çıkış açısı (yatayın üstü) | 10 ° | modelleme; tip: KHD US 6,875,267 + üretici görseli; açı görselden |
+| Dağıtma plakası yay yarıçapı | 0.408 m | çıkıntıdan ve açılardan |
+| Dağıtma plakası duvardan çıkıntısı | 0.424 m | 0.5 × farin borusu çapı (model) |
+| Dağıtma plakası genişliği | 0.8485 m | 1.0 × farin borusu çapı (model) |
+| Dağıtma plakası kalınlığı | 0.05 m | modelleme |
 | **Ekipman hacmi (koni + silindir)** | 1009.71 m³ | türetilmiş |
 | **Duvar alanı (silindir + koni + tavan halkası)** | 635.96 m² | türetilmiş |
 <!-- END GENERATED -->
@@ -64,9 +69,10 @@ Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0
 | 3b + kol −x | kanalla ortak 5.669, kolların ortak hacmi 4.122, üçünün 0.000 (sayısal, 300³ nokta) → gas_outlet_2 | 1665.724 |
 | 5a / 5b + farin boruları ±x | Ø0.8485, 60°, eksenleri duvarı z 11.385'da keser; deliğin alt kenarı z 10.491, uç yüzleri (±3.870, 0, 12.252) | 1666.297 / 1666.870 (+0.5730 her biri) |
 | 6 + tersiyer hava | Ø2.4393, teğetsel, eksen y -2.101, z 8.271; üst kenarı z 9.491, yüzü x 6.370 | 1684.956 (+18.087) |
-| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1685.019 / **1685.082** (+0.0629 her biri) |
+| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1685.019 / 1685.082 (+0.0629 her biri) |
+| 8a / 8b − dağıtma plakaları ±x | farin deliğinin en alt noktasının 0.05 altında, duvarda 60° eğimle başlar, R 0.408 yayla +10°'ye döner; kenarı ρ 2.946, z 10.243; en alt noktası z 10.187; genişlik 0.849, kalınlık 0.05; kuyruk 0.1 duvarın içine; akıştan kesilir (katı hacmi 0.0267) | 1685.062 / **1685.042** (−0.0201 her biri) |
 | **Uyarı: eski CFD sonuçları** | Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı | — |
-| Yeniden koşu: domen | geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py | 1685.082 |
+| Yeniden koşu: domen | geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py | 1685.042 |
 | Yeniden koşu: çıkışlar | gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±10.781, y = −12.135, z 23.522; yatay kol 2 çap (7.000), eğik parçadan 30° mitre sonrası | 9.621 m² her biri |
 <!-- END GENERATED -->
 

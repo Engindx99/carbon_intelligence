@@ -48,6 +48,7 @@ ALLOW = {
     ("C1.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section (-x side since the volute, as C4)",
     ("C4.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section",
     ("C5.pdf", "B", "line"): "detail circle's letter, placed by SolidWorks inside the section",
+    ("calciner.pdf", "C", "line"): "detail circle's letter (the dispersion plate), placed by SolidWorks inside the section",
 }
 
 

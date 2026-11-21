@@ -446,8 +446,8 @@
       "from": "C5A.gas_out",
       "to": "R4A.gas_in",
       "size_ref": "derived:stage_riser(4).parts[0].D",
-      "size_m": 4.776984126984128,
-      "size_text": "D 4.777 E",
+      "size_m": 3.2500000000000004,
+      "size_text": "D 3.250 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -458,8 +458,8 @@
       "from": "R4A.gas_out",
       "to": "C4A.gas_in",
       "size_ref": "derived:stage_riser(4).parts[0].D",
-      "size_m": 4.776984126984128,
-      "size_text": "D 4.777 E",
+      "size_m": 3.2500000000000004,
+      "size_text": "D 3.250 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -470,8 +470,8 @@
       "from": "C4A.gas_out",
       "to": "R3A.gas_in",
       "size_ref": "derived:stage_riser(3).parts[0].D",
-      "size_m": 4.63,
-      "size_text": "D 4.630 E",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -482,8 +482,8 @@
       "from": "R3A.gas_out",
       "to": "C3A.gas_in",
       "size_ref": "derived:stage_riser(3).parts[0].D",
-      "size_m": 4.63,
-      "size_text": "D 4.630 E",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -494,8 +494,8 @@
       "from": "C3A.gas_out",
       "to": "R2A.gas_in",
       "size_ref": "derived:stage_riser(2).parts[0].D",
-      "size_m": 4.63,
-      "size_text": "D 4.630 E",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -506,8 +506,8 @@
       "from": "R2A.gas_out",
       "to": "C2A.gas_in",
       "size_ref": "derived:stage_riser(2).parts[0].D",
-      "size_m": 4.63,
-      "size_text": "D 4.630 E",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -518,8 +518,8 @@
       "from": "C2A.gas_out",
       "to": "R1A.gas_in",
       "size_ref": "derived:r1_path().parts[0].D",
-      "size_m": 4.63,
-      "size_text": "D 4.630 E",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -529,13 +529,11 @@
       "sheet": "PH",
       "from": "R1A.gas_out",
       "to": "C1A.gas_in",
-      "size_ref": "yaml:risers.R1.D",
-      "size_m": 3.07,
-      "size_text": "D 3.070",
-      "status": "Verified",
-      "inputs": [
-        "risers.R1.D"
-      ]
+      "size_ref": "derived:cyclone('C2').D_vortex",
+      "size_m": 3.15,
+      "size_text": "D 3.150 E",
+      "status": "Estimated",
+      "inputs": []
     },
     {
       "line": "G110",
@@ -544,8 +542,8 @@
       "from": "C1A.gas_out",
       "to": "IDFA.gas_in",
       "size_ref": "derived:cyclone('C1').D_vortex",
-      "size_m": 2.4,
-      "size_text": "D 2.400 E",
+      "size_m": 2.16,
+      "size_text": "D 2.160 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -690,8 +688,8 @@
       "from": "C5A.dust_out",
       "to": "MP5A.in",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6964060208520898,
-      "size_text": "D 0.696 E",
+      "size_m": 0.6975127138913912,
+      "size_text": "D 0.698 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -702,8 +700,8 @@
       "from": "MP5A.out",
       "to": "OPC-03",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6964060208520898,
-      "size_text": "D 0.696 E",
+      "size_m": 0.6975127138913912,
+      "size_text": "D 0.698 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -928,8 +926,8 @@
       "from": "OPC-03",
       "to": "KIC.meal_in",
       "size_ref": "derived:meal_pipes()[5].D",
-      "size_m": 0.6964060208520898,
-      "size_text": "D 0.696 E",
+      "size_m": 0.6975127138913912,
+      "size_text": "D 0.698 E",
       "status": "Estimated",
       "inputs": []
     },
@@ -1075,7 +1073,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M103",
       "mount": "F",
-      "reference_value": 573.311770838523
+      "reference_value": 579.8978341331759
     },
     {
       "tag": "TT-105",
@@ -1085,7 +1083,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M105",
       "mount": "F",
-      "reference_value": 746.6425181914007
+      "reference_value": 756.100825482361
     },
     {
       "tag": "TT-107",
@@ -1095,7 +1093,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M107",
       "mount": "F",
-      "reference_value": 878.3701078534648
+      "reference_value": 887.3616260180706
     },
     {
       "tag": "TT-109",
@@ -1105,7 +1103,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "M109",
       "mount": "F",
-      "reference_value": 987.1907099207841
+      "reference_value": 994.3442332501179
     },
     {
       "tag": "TT-104",
@@ -1115,7 +1113,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G104",
       "mount": "F",
-      "reference_value": 979.7713609326748
+      "reference_value": 987.7456058625695
     },
     {
       "tag": "TT-106",
@@ -1125,7 +1123,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G106",
       "mount": "F",
-      "reference_value": 876.8079172427888
+      "reference_value": 885.5009036744303
     },
     {
       "tag": "TT-108",
@@ -1135,7 +1133,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G108",
       "mount": "F",
-      "reference_value": 744.3077159218448
+      "reference_value": 754.0549742276772
     },
     {
       "tag": "TT-110",
@@ -1145,7 +1143,7 @@
       "found_in": "tests/twin_harness.py STAGE_FIELDS",
       "at": "G110",
       "mount": "F",
-      "reference_value": 572.9686969240875
+      "reference_value": 579.5912610718487
     },
     {
       "tag": "AT-110",
@@ -1165,7 +1163,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G104",
       "mount": "F",
-      "reference_value": 112.53761508785718
+      "reference_value": 112.75207025579019
     },
     {
       "tag": "FT-111",
@@ -1175,7 +1173,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G111",
       "mount": "F",
-      "reference_value": 115.0514625377586
+      "reference_value": 115.05144391623051
     },
     {
       "tag": "FT-102",
@@ -1185,7 +1183,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G102",
       "mount": "F",
-      "reference_value": 6.713833428683365
+      "reference_value": 6.735203208141989
     },
     {
       "tag": "FT-105",
@@ -1205,7 +1203,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "M112",
       "mount": "F",
-      "reference_value": 67.13833428683367
+      "reference_value": 67.35203208141992
     },
     {
       "tag": "TI-101",
@@ -1315,7 +1313,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "M202",
       "mount": "F",
-      "reference_value": 93.89998597878832
+      "reference_value": 94.13582954771098
     },
     {
       "tag": "FT-203",
@@ -1325,7 +1323,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G203",
       "mount": "F",
-      "reference_value": 112.53761508785718
+      "reference_value": 112.75207025579019
     },
     {
       "tag": "TT-202",
@@ -1445,7 +1443,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "G303",
       "mount": "F",
-      "reference_value": 1366.6408501954766
+      "reference_value": 1361.4159299606413
     },
     {
       "tag": "FT-304",
@@ -1465,7 +1463,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "G303",
       "mount": "F",
-      "reference_value": 32.013813913195456
+      "reference_value": 32.20612330679206
     },
     {
       "tag": "FT-306",
@@ -1475,7 +1473,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "K301",
       "mount": "F",
-      "reference_value": 56.9049218612741
+      "reference_value": 56.904940482805124
     },
     {
       "tag": "TT-304",
@@ -1485,7 +1483,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "K301",
       "mount": "F",
-      "reference_value": 1843.8950546539468
+      "reference_value": 1833.2653532026056
     },
     {
       "tag": "TI-307",
@@ -1515,7 +1513,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "A401",
       "mount": "F",
-      "reference_value": 125.19082809480302
+      "reference_value": 125.19086906217129
     },
     {
       "tag": "FY-401",
@@ -1555,7 +1553,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "A404",
       "mount": "F",
-      "reference_value": 58.43133983946347
+      "reference_value": 58.43138080683175
     },
     {
       "tag": "TT-404",
@@ -1575,7 +1573,7 @@
       "found_in": "pyroprocess/globalstate.py",
       "at": "K402",
       "mount": "F",
-      "reference_value": 482.3610025500715
+      "reference_value": 480.78819113972224
     },
     {
       "tag": "FT-403",
@@ -1585,7 +1583,7 @@
       "found_in": "physics/steady_state_mass.py",
       "at": "K402",
       "mount": "F",
-      "reference_value": 56.9049218612741
+      "reference_value": 56.904940482805124
     },
     {
       "tag": "AT-401",

@@ -40,7 +40,9 @@ def params(g, name="C1_twin"):
     P = {}
 
     # the entries everything below rests on
-    r1 = pv.primary(g, "risers.R1.D", "R1 bore (published)", key="R1_D")
+    # R1 = C2's outlet pipe, its bore D_x = D / 2 (user decision, 21 Nov 2026)
+    r1 = pv.derived("R1_D", "R1 bore", pg.r1_D(g), "m",
+                    [pv.cyclone_dim(g, "C2", "D_vortex", "C2 vortex finder bore")])
     share = pv.primary(g, f"{dom}.c1_riser_area_share", "branch area share of R1")
     gap = pv.primary(g, "layout.c1_twin_gap", "Branches' walls apart")
     w_in = pv.cyclone_dim(g, "C1", "W_inlet", "inlet width")
@@ -53,7 +55,7 @@ def params(g, name="C1_twin"):
     bend = pv.primary(g, f"{dom}.c1_riser_bend_R_over_D", "bend R over D")
     below = pv.primary(g, f"{dom}.c1_riser_below_feed", "riser below the feed")
     above = pv.primary(g, f"{dom}.c1_riser_above_feed", "riser above the feed")
-    up_min = pv.primary(g, "layout.r1_up_min", "R1 over its reducer")
+    up_min = pv.primary(g, "layout.r1_up_min", "R1 over C2's CFD outlet pipe")
     stage = pv.primary(g, "layout.stage_gap", "stage gap")
     D_b = pv.cyclone_dim(g, "C1", "D_barrel", "Barrel inner diameter D")
     H_b = pv.cyclone_dim(g, "C1", "H_barrel", "Barrel height")

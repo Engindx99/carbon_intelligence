@@ -17,30 +17,32 @@
     {
       "key": "R1_D",
       "label": "R1 bore",
-      "value": 3.07,
+      "value": 3.15,
       "unit": "m",
-      "source": "published",
-      "status": "Verified",
-      "doc": "preheater/riser_R1.md",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C2.md",
       "inputs": [
-        "risers.R1.D"
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel"
       ],
-      "value_mm": 3070.0,
+      "value_mm": 3150.0,
       "short": "R1_D"
     },
     {
       "key": "c1_twin.branch_D",
       "label": "Branch bore (half R1's area)",
-      "value": 2.1708178182427007,
+      "value": 2.2273863607376247,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
-      "doc": "preheater/riser_R1.md",
+      "doc": "preheater/cyclone_C2.md",
       "inputs": [
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share"
       ],
-      "value_mm": 2170.817818,
+      "value_mm": 2227.386361,
       "short": "branch_D"
     },
     {
@@ -60,68 +62,72 @@
     {
       "key": "c1_twin.spacing",
       "label": "C1 axis to axis",
-      "value": 8.450817818242701,
+      "value": 8.507386360737623,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/riser_R1.md",
       "inputs": [
         "layout.c1_twin_gap",
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share",
         "cyclones.C1.W_inlet",
         "cyclone_domain.inlet_tangent_relief"
       ],
-      "value_mm": 8450.817818,
+      "value_mm": 8507.386361,
       "short": "spacing"
     },
     {
       "key": "c1_twin.barrel_gap",
       "label": "Barrel wall to wall",
-      "value": 4.130817818242701,
+      "value": 4.187386360737623,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/riser_R1.md",
       "inputs": [
         "layout.c1_twin_gap",
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share",
         "cyclones.C1.W_inlet",
         "cyclone_domain.inlet_tangent_relief",
         "cyclones.C1.D_barrel"
       ],
-      "value_mm": 4130.817818,
+      "value_mm": 4187.386361,
       "short": "barrel_gap"
     },
     {
       "key": "c1_twin.branch_pitch",
       "label": "Branch axis to axis (Y)",
-      "value": 3.1708178182427016,
+      "value": 3.227386360737624,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/riser_R1.md",
       "inputs": [
         "layout.c1_twin_gap",
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share",
         "cyclones.C1.W_inlet",
         "cyclone_domain.inlet_tangent_relief"
       ],
-      "value_mm": 3170.817818,
+      "value_mm": 3227.386361,
       "short": "branch_pitch"
     },
     {
       "key": "c1_twin.y_branch",
       "label": "R1 / branches in front of the C1 axes",
-      "value": 6.670817818242701,
+      "value": 6.727386360737625,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
-      "doc": "preheater/riser_R1.md",
+      "doc": "preheater/cyclone_C2.md",
       "inputs": [
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share",
         "cyclones.C1.W_inlet",
         "cyclones.C1.H_inlet",
@@ -132,31 +138,32 @@
         "cyclone_domain.c1_riser_transition",
         "cyclone_domain.c1_riser_bend_R_over_D"
       ],
-      "value_mm": 6670.817818,
+      "value_mm": 6727.386361,
       "short": "y_branch"
     },
     {
       "key": "c1_twin.y_rise",
       "label": "Y height (R1 top to the branches' floor)",
-      "value": 2.035,
+      "value": 2.075,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/riser_R1.md",
       "inputs": [
         "layout.c1_twin_gap",
-        "risers.R1.D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel",
         "cyclone_domain.c1_riser_area_share",
         "cyclones.C1.W_inlet",
         "cyclone_domain.inlet_tangent_relief"
       ],
-      "value_mm": 2035.0,
+      "value_mm": 2075.0,
       "short": "y_rise"
     },
     {
       "key": "c1_twin.r1_stub",
       "label": "R1 straight under its Y",
-      "value": 6.954182181757304,
+      "value": 2.1376136392623692,
       "unit": "m",
       "source": "derived",
       "status": "Schematic",
@@ -165,7 +172,7 @@
         "layout.r1_up_min",
         "layout.stage_gap"
       ],
-      "value_mm": 6954.182182,
+      "value_mm": 2137.613639,
       "short": "r1_stub"
     },
     {
@@ -200,21 +207,22 @@
     {
       "key": "C1.D_vortex",
       "label": "Vortex finder / outlet pipe bore Dx",
-      "value": 2.4,
+      "value": 2.16,
       "unit": "m",
-      "source": "derived_from_reference",
+      "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C1.md",
       "inputs": [
-        "cyclones.C1.D_vortex"
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel"
       ],
-      "value_mm": 2400.0,
+      "value_mm": 2160.0,
       "short": "D_vortex"
     },
     {
       "key": "c1_twin.top",
       "label": "Dust outlets to the top of the bends",
-      "value": 19.24,
+      "value": 18.46,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -222,11 +230,12 @@
       "inputs": [
         "cyclones.C1.H_barrel",
         "cyclones.C1.H_cone",
-        "cyclones.C1.D_vortex",
+        "cyclones.C1.D_vortex_over_D_barrel",
+        "cyclones.C1.D_barrel",
         "cyclones.C1.outlet_rise_over_Dx",
         "cyclones.C1.outlet_bend_R_over_Dx"
       ],
-      "value_mm": 19240.0,
+      "value_mm": 18460.0,
       "short": "top"
     },
     {

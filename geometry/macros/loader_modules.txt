@@ -1,0 +1,7 @@
+' Modules loader.bas (sw_loader.reload) imports: <file in geometry/macros without .bas> [module name]
+drawings
+pid
+calciner calciner_solid
+cyclone cyclone_solid
+c1_twin c1_twin_solid
+plant_topology_2d topology_drawing

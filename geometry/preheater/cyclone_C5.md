@@ -21,19 +21,23 @@ Katalog C5'i (FLS oranları; [catalog.md](../catalog.md)): gövde 3.53, koni 7.4
 | Silindirik gövde yüksekliği | 6.5000 m | C4 × 1.031746 |
 | Koni yüksekliği | 7.5317 m | C4 × 1.031746 |
 | Vorteks bulucu daldırması S | 4.0238 m | C4 × 1.031746 |
-| Vorteks bulucu çapı D_x | 4.7770 m | C4 × 1.031746 |
+| D_x / D (= riser çapı / D) | 0.5 | CFD kararı; C4 ile özdeş |
+| Vorteks bulucu çapı D_x (= riser çapı) | 3.2500 m | 0.5 D |
 | Toz çıkışı çapı | 0.8357 m | C4 × 1.031746 |
 | Giriş genişliği | 3.0044 m | C4 × 1.031746 |
 | Giriş yüksekliği | 3.5079 m | C4 × 1.031746 |
 | Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
 | Volüt | var | CFD kararı; C4 ile özdeş |
-| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
-| Çıkış borusu yükselişi (çatının üstünde) | 8.121 m | 1.7 D_x |
-| Çıkış dirseği merkez yarıçapı | 4.777 m | 1 D_x |
-| Çıkış bacağı / inişi | 4.777 m | 1 D_x |
+| Çıkış dönüşü | 0 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 5.525 m | 1.7 D_x |
+| Yatay giriş kanalı (teğet düzleminden) | 2.063 m | türetilmiş |
+| Riser duvarlarının kanala eğimi | 45 ° | şematik |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.283 m | türetilmiş |
+| Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına) | 1.988 m | türetilmiş |
+| CFD domenindeki dik riser (dönüşün altında) | 3.250 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 14.032 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 311.09 m³ | türetilmiş |
-| **Islak alan (gövde + çatı halkası + koni)** | 240.71 m² | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 250.34 m² | türetilmiş |
 <!-- END GENERATED -->
 
 Volüt giriş kesiti 10.54 m², C4'ün 9.90 m²'si × k². Katalogdaki yarık giriş gövde ile vorteks bulucu arasına sığmıyordu; C4'teki gibi basit bir volüt kurulur.
@@ -42,8 +46,11 @@ Volüt giriş kesiti 10.54 m², C4'ün 9.90 m²'si × k². Katalogdaki yarık gi
 
 Katı `cyclone.bas` ile `CYCLONE_NAME = "C5"` seçilerek kurulur. Modelleme seçimleri C4'ünkiyle aynı:
 - volüt (`VOLUTE_ON`);
-- 90° çıkış dirseği ve 1.0 D_x yatay bacak; gaz R4'e gider;
-- riser yok.
+- düz çıkış borusu (1.70·D_x); tesiste onun devamı R4'tür (17 Kasım 2026'ya kadar 90° dirsek ve 1.0 D_x yatay bacak);
+- girişte C4'ünkinin k katı riser ve 45°'lik geçiş (17 Kasım 2026), 1.03 m yatay kanal.
+- Katı `geometry/output/2500/C5.{SLDPRT,step,stl}`: 662.92 m³ (C4'ün 603.50 m³'ü × k³ = 662.73; fark makroda ölçeklenmeyen dil ve vorteks bulucu duvarı).
+
+**Giriş tesisinkinden farklı:** tesiste C5'i kalsinatörün kaz boynu kolu besler ([calciner.md](../calciner/calciner.md)), riser değil. Domen C4'ün geometrik benzeri olarak tutuldu, böylece C4'ün Eu'su C5'e taşınabiliyor. Kaz boynu kolundan gelen akımın (dirsek sonrası profil) C5'in ΔP ve η'sına etkisi ölçülmedi.
 
 Şimdilik C5 için CFD koşulmuyor; değerler aşağıda C4'ten ölçeklenir. Volüt dili (0.05 m) ve vorteks bulucu duvarı (0.08 m) makroda mutlak değerlerdir, ölçeklenmez; etkileri ihmal edilebilir. İki hattın C5'leri özdeştir; bir CFD koşulursa tek C5 çözülür, ikincisi onun kopyasıdır. Kalsinatör ile C5 ayrı domenlerdir; bağ kaz boynu kolunun çıkış yüzü üzerinden kurulur.
 

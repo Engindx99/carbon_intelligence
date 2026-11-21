@@ -5,23 +5,25 @@ Bağlantı: C5 → C4 (CFD_VIEW.pdf: "Riserler R1–R4 (C2→C1 … C5→C4)").
 
 ## Geometrik Ölçüler
 
-R4, C5'in CFD çıkış borusunun kendisidir: çatının üstündeki yükseliş, 90° dirsek ve C4'nin gövdesine giden yatay bacak, hepsi vorteks bulucu çapında (kullanıcı kararı, 14 Ekim 2026; [plant_topology.md](../plant_topology.md)). Bacağın boyu yerleşimden gelir (`layout.column_offset`). Girişe 45°'lik daralma ihmal edilir, boru tam çapta sayılır. Yayınlanmış HFC2500 riser'ı (Ø3.60 m, [catalog.md](../catalog.md)) ve FLS'nin `h_tot`'u (19.87 m) bu tesisin değildir; twin 13–14 Ekim 2026 arasında onlarla, düz silindir olarak çalıştı.
+R4, C5'in çıkış borusunun dik devamıdır (kullanıcı kararı, 17 Kasım 2026): C5'in ekseninde, vorteks bulucu çapında dik yükselir; üstü düzdür, oradan düz yüzeyli (ruled) bir geçişle C4'ün volüt kanalına girer. Geçişin dış duvarı 45° ile kanalın üst kenarına, iç duvarı daha dik kanal tabanına iner; kanal volütün 1.0 m önünde yataydır. Riser ekseni C4'ün ekseninden kolon aralığı kadar uzaktadır (`layout.column_offset`, en geniş riser'a, R4'e göre). İlk 1.70·D_x'i C5'in CFD çıkış borusudur. Yayınlanmış HFC2500 riser'ı (Ø3.60 m, [catalog.md](../catalog.md)) ve FLS'nin `h_tot`'u (19.87 m) bu tesisin değildir; twin 13–14 Ekim 2026 arasında onlarla, düz silindir olarak çalıştı. 14 Ekim – 17 Kasım 2026 arasında R4, C5'in CFD çıkış borusu, 90° dirseği ve C4'ün gövdesine giden yatay bacağıydı.
 
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|
-| Çap (C5'in vorteks bulucusu D_x) | 4.777 m | türetilmiş |
-| C5 çıkış borusu yükselişi | 8.121 m | türetilmiş |
-| 90° dirsek, merkez yayı | 7.504 m | türetilmiş |
-| Bacak, C4 gövdesine | 7.073 m | türetilmiş |
-| Toplam boy | 22.698 m | türetilmiş |
-| **Ekipman hacmi (hat başına)** | 406.80 m³ | türetilmiş |
-| **Duvar alanı (hat başına)** | 340.63 m² | türetilmiş |
+| Çap (C5'in vorteks bulucusu D_x) | 3.250 m | türetilmiş |
+| Dik riser, C5'in çatısından dönüşe (ilk 5.525 m CFD çıkış borusu) | 9.911 m | türetilmiş |
+| Duvarların içeri dönüş eğimi | 45 ° | şematik |
+| Eğik geçiş, eksen boyu (Ø → C4 girişi) | 2.347 m | türetilmiş |
+| Yatay kanal, C4'ün volütüne | 2.000 m | türetilmiş |
+| Riser ekseni, C4'ün ekseninden | 6.090 m | türetilmiş |
+| Toplam boy | 14.258 m | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 130.53 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 164.04 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry
 
-Ayrı katı yok: R4, C5'in CFD domeninin çıkış borusudur ([cyclone_C4.md](cyclone_C4.md)); domen bacağın 1.0 D_x'inde, gaz çıkış yüzünde biter.
+Ayrı katı yok. R4'ün CFD'deki karşılığı C4 domeninin girişidir ([cyclone_C4.md](cyclone_C4.md)): dik riser'ın 1.0·D'si, geçiş ve yatay kanal. R4 C5'in D_x'iyle (4.777 m) domenin riser'ından %3 geniştir; kolon aralığı aynıdır. Dik kısmın kalanı ve C5'in çıkış borusu ile birleşimi domende yok.
 
 ## Boundary Faces
 

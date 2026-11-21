@@ -62,8 +62,8 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | C1 (hat başına ikiz) | D 4.32, gövde 6.79 | cyclone_C1.md (CFD) |
 | C2 = C3 = C4 | D 6.30, gövde 6.30 (h = D) | cyclone_C4.md (CFD) |
 | C5 | D 6.50, gövde 6.50 (CFD C4 × 1.0317) | cyclone_C5.md |
-| R1 (hat başına) | Ø3.07 | riser_R1.md (HFC2500) |
-| R2 / R3 / R4 (hat başına) | Ø4.630 / Ø4.630 / Ø4.777 | C3 / C4 / C5'in CFD çıkış borusu (riser_R2–R4.md) |
+| R1 (hat başına) | Ø3.150 | C2'nin dik çıkış borusu, D_x = D/2 (riser_R1.md) |
+| R2 / R3 / R4 (hat başına) | Ø3.150 / Ø3.150 / Ø3.250 | C3 / C4 / C5'in dik çıkış borusu, 45° ile üst siklona (riser_R2–R4.md) |
 | Kalsinatör | Ø6.7404, 30.0 m (koni dahil), boğaz Ø3.130, koni 65° | calciner.md (PF5000) |
 | Kaz boynu | üç düz parçalı boyun (45°/0°/45°), Ø4.950, aşağıda 2 kol × Ø3.50, her kol C5 girişine iner | gooseneck.md |
 | Tersiyer hava kanalı | Ø2.4393 | calciner.md |
@@ -86,9 +86,9 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 <!-- BEGIN GENERATED (tools/gen_geometry.py) cfd -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Blok | Domen (donmuş) | Giriş yüzü | Çıkış yüzü |
 |---|---|---|---|
-| C1 (×4) | gövde, VF 3.45, Ø2.171 kol, 90° R 2.171 dirsek, 1.5 m geçiş, 0° kanal, 0.6 m oluk; 3.00 m çıkış borusu, R 3.60 180° dirsek, 3.00 m iniş | kolun tabanı, toz çıkışının 0.269 m üstü | inişin ucu, çatı kotunda, eksenden 7.20 m |
-| C2–C4 (×6) | gövde, VF 3.900, volüt ve 3.00 m giriş kanalı, 7.871 m (1.7·VD) çıkış borusu, R 4.630 90° dirsek, 4.630 m bacak | giriş kanalının ucu, eksenden 3.00 m (`C4_IN_L`) | bacağın ucu, eksenden 9.260 m, çatının 12.501 m üstünde |
-| C5 (×2) | C2–C4'ün 1.0317 katı (CFD'si ayrıca çözülmez) | eksenden 3.10 m | bacağın ucu, eksenden 9.554 m, çatının 12.898 m üstünde |
+| C1 (×4) | gövde, VF 3.45, Ø2.227 kol, 90° R 2.227 dirsek, 1.5 m geçiş, 0° kanal, 0.6 m oluk; 2.70 m çıkış borusu, R 3.24 180° dirsek, 2.70 m iniş | kolun tabanı, toz çıkışının 0.213 m üstü | inişin ucu, çatı kotunda, eksenden 6.48 m |
+| C2–C4 (×6) | Ø3.15 dik riser 3.15 m, 45° eğik geçiş (yatay 1.925 m), 2.00 m yatay kanal, volüt, gövde, VF 3.900, 5.355 m (1.7·VD) dik çıkış borusu | riser parçasının tabanı, gövde ekseninden 6.090 m, dönüşün 3.15 m altı | çıkış borusunun ucu, eksende, çatının 5.355 m üstünde |
+| C5 (×2) | C2–C4'ün 1.0317 katı (CFD'si ayrıca çözülmez) | riser parçasının tabanı, eksenden 6.283 m | çıkış borusunun ucu, eksende, çatının 5.525 m üstünde |
 <!-- END GENERATED -->
 
 **Serbest:**
@@ -167,29 +167,29 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C1_D` | 4.32 | plant_geometry.yaml |
 | `C1_HB` | 6.79 | plant_geometry.yaml |
 | `C1_HC` | 4.65 | plant_geometry.yaml |
-| `C1_VD` | 2.4 | plant_geometry.yaml |
+| `C1_VD` | 2.16 | plant_geometry.yaml |
 | `C1_DD` | 0.4 | plant_geometry.yaml |
 | `C4_D` | 6.3 | plant_geometry.yaml |
 | `C4_HB` | 6.3 | plant_geometry.yaml |
 | `C4_HC` | 7.3 | plant_geometry.yaml |
-| `C4_VD` | 4.63 | plant_geometry.yaml |
+| `C4_VD` | 3.15 | plant_geometry.yaml |
 | `C4_DD` | 0.81 | plant_geometry.yaml |
 | `C5_D` | 6.5 | plant_geometry.yaml |
 | `C5_HB` | 6.5 | plant_geometry.yaml |
 | `C5_HC` | 7.531746 | plant_geometry.yaml |
-| `C5_VD` | 4.776984 | plant_geometry.yaml |
+| `C5_VD` | 3.25 | plant_geometry.yaml |
 | `C5_DD` | 0.835714 | plant_geometry.yaml |
 | `C5_HIN` | 3.507937 | plant_geometry.yaml |
 | `C4_VF_S` | 3.9 | plant_geometry.yaml |
-| `C4_OUT_RISE` | 7.871 | plant_geometry.yaml |
-| `C4_OUT_R` | 4.63 | plant_geometry.yaml |
-| `C4_OUT_RUN` | 4.63 | plant_geometry.yaml |
+| `C4_OUT_RISE` | 5.355 | plant_geometry.yaml |
+| `C4_OUT_R` | 0 | plant_geometry.yaml |
+| `C4_OUT_RUN` | 0 | plant_geometry.yaml |
 | `C4_IN_H` | 3.4 | plant_geometry.yaml |
 | `C4_IN_W` | 2.912 | plant_geometry.yaml |
 | `C4_TONGUE` | 0.05 | plant_geometry.yaml |
-| `C4_IN_L` | 3 | plant_geometry.yaml |
+| `C4_IN_L` | 2 | plant_geometry.yaml |
 | `C1_VF_S` | 3.45 | plant_geometry.yaml |
-| `R1_D` | 3.07 | plant_geometry.yaml |
+| `R1_D` | 3.15 | plant_geometry.yaml |
 | `CALC_D` | 6.7404 | plant_geometry.yaml |
 | `CALC_H` | 30 | plant_geometry.yaml |
 | `CALC_THROAT_D` | 3.130077 | plant_geometry.yaml |
@@ -213,33 +213,41 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `COOLER_AREA` | 119.6 | plant_geometry.yaml |
 | `COOLER_W` | 4 | plant_geometry.yaml |
 | `COOLER_H` | 3 | plant_geometry.yaml |
-| `C1_RISER_X` | 6.670818 | plant_geometry.yaml |
-| `C1_RISER_Z0` | 0.269182 | plant_geometry.yaml |
-| `C1_BEND_Z` | 7.769182 | plant_geometry.yaml |
-| `C1_BEND_R` | 2.170818 | plant_geometry.yaml |
+| `C1_RISER_X` | 6.727386 | plant_geometry.yaml |
+| `C1_RISER_Z0` | 0.212614 | plant_geometry.yaml |
+| `C1_BEND_Z` | 7.712614 | plant_geometry.yaml |
+| `C1_BEND_R` | 2.227386 | plant_geometry.yaml |
 | `C1_BEND_DEG` | 90 | plant_geometry.yaml |
 | `C1_TRANS_L` | 1.5 | plant_geometry.yaml |
 | `C1_DUCT_H` | 3 | plant_geometry.yaml |
 | `C1_VOL_OUT` | 3.07 | plant_geometry.yaml |
 | `C1_VOL_FAR` | 2.226723 | plant_geometry.yaml |
-| `C1_FEED_Z` | 4.769182 | plant_geometry.yaml |
+| `C1_FEED_Z` | 4.712614 | plant_geometry.yaml |
 | `C1_FEED_L` | 1 | plant_geometry.yaml |
 | `C1_FEED_W` | 0.6 | plant_geometry.yaml |
-| `C1_OUT_RISE` | 3 | plant_geometry.yaml |
-| `C1_OUT_R` | 3.6 | plant_geometry.yaml |
-| `STAGE_GAP` | 9.5 | plant_geometry.yaml |
-| `ZIG_DX` | 15 | plant_geometry.yaml |
+| `C1_OUT_RISE` | 2.7 | plant_geometry.yaml |
+| `C1_OUT_R` | 3.24 | plant_geometry.yaml |
+| `STAGE_GAP` | 4 | plant_geometry.yaml |
+| `ZIG_DX` | 6.08966 | plant_geometry.yaml |
+| `DUST_OVER_ROOF` | 0.5 | plant_geometry.yaml |
+| `RISER_SLOPE_DEG` | 45 | plant_geometry.yaml |
+| `R4_RISE_V` | 9.91138 | plant_geometry.yaml |
+| `R3_RISE_V` | 9.86138 | plant_geometry.yaml |
+| `R2_RISE_V` | 9.86138 | plant_geometry.yaml |
+| `RISER_RUN` | 1.925 | plant_geometry.yaml |
+| `RISER_RUN4` | 1.925 | plant_geometry.yaml |
+| `RISER_Y` | 4.656 | plant_geometry.yaml |
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
 | `C1_TWIN_GAP` | 1 | plant_geometry.yaml |
-| `C1_TWIN_S` | 8.450818 | plant_geometry.yaml |
+| `C1_TWIN_S` | 8.507386 | plant_geometry.yaml |
 | `C1_DUCT_Y` | 2.64 | plant_geometry.yaml |
-| `R1_BRANCH_HALF` | 1.585409 | plant_geometry.yaml |
+| `R1_BRANCH_HALF` | 1.613693 | plant_geometry.yaml |
 | `R1_UP_MIN` | 0.5 | plant_geometry.yaml |
-| `R1_RED_DEG` | 45 | plant_geometry.yaml |
-| `R1_RED_L` | 0.78 | plant_geometry.yaml |
 | `KILN_AXIS_Z` | 10 | plant_geometry.yaml |
 | `CHAMBER_MARGIN` | 1 | plant_geometry.yaml |
+| `KIC_RAMP_DEG` | 50 | plant_geometry.yaml |
+| `KIC_RAMP_FOOT` | 1.5 | plant_geometry.yaml |
 | `COOLER_DROP` | 1 | plant_geometry.yaml |
 | `TA_BEND_R_OVER_D` | 1.5 | çizimin kendi Const'u |
 | `ID_FAN_L` | 2.5 | çizimin kendi Const'u |
@@ -247,7 +255,6 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `MEAL_ENTRY_UP` | 1.5 | çizimin kendi Const'u |
 | `MEAL_SIDE_L` | 1 | çizimin kendi Const'u |
 | `MEAL_DROP` | 1.5 | çizimin kendi Const'u |
-| `MEAL_OVER_GAP` | 0.3 | çizimin kendi Const'u |
 | `MEAL_JOIN_DEG` | 50 | çizimin kendi Const'u |
 | `C4_MEAL_DROP` | 3 | çizimin kendi Const'u |
 | `C5_MEAL_DROP` | 1 | çizimin kendi Const'u |
@@ -276,6 +283,8 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `FR_X0` | 0.02 | çizimin kendi Const'u |
 | `COL_X0` | 0.651 | çizimin kendi Const'u |
 | `LEVEL_X` | 50 | çizimin kendi Const'u |
+| `AXIS_OVER` | 0.6 | çizimin kendi Const'u |
+| `AXIS_UNDER` | 0.1 | çizimin kendi Const'u |
 | `LAYER_N` | 9 | çizimin kendi Const'u |
 | `EXT_TOL` | 0.0001 | çizimin kendi Const'u |
 <!-- END GENERATED -->
@@ -289,19 +298,19 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 <!-- BEGIN GENERATED (tools/gen_geometry.py) layout -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ne | Konum [m] |
 |---|---|
-| Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 13.400; taban rampası 40.5° |
+| Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 13.400; taban rampası 50.0° |
 | Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.505, kol inişi x = ±10.781, C5 giriş kotu z 36.922 |
 | Tersiyer hava kanalı | eksen z 21.671 |
 | İç kolon (C5, C3) | x = ±16.781 |
-| Dış kolon (C4, C2) | x = ±31.781 |
-| R1 | x = ±31.781 |
-| İkiz C1 | x = ±27.556 ve ±36.007 |
-| C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 46.793 |
-| C4 toz çıkışı / çıkış borusu tepesi | z 40.359 / 61.830 |
-| C3 toz çıkışı / çıkış borusu tepesi | z 55.175 / 76.646 |
-| C2 toz çıkışı / çıkış borusu tepesi | z 69.991 / 91.462 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 100.962 / 115.402 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 120.202 |
+| Dış kolon (C4, C2) | x = ±22.871 |
+| R1 | x = ±22.871 |
+| İkiz C1 | x = ±18.617 ve ±27.125 |
+| C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 44.197 |
+| C4 toz çıkışı / çıkış borusu tepesi | z 39.172 / 58.127 |
+| C3 toz çıkışı / çıkış borusu tepesi | z 53.272 / 72.227 |
+| C2 toz çıkışı / çıkış borusu tepesi | z 67.372 / 86.327 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 90.327 / 104.467 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 108.787 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |

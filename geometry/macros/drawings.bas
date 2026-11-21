@@ -41,18 +41,18 @@ Const C1_D_BARREL                  As Double  = 4.32         ' barrel inner D [p
 Const C1_H_BARREL                  As Double  = 6.79         ' barrel height [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_CONE                    As Double  = 4.65         ' cone height [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_L_VORTEX                  As Double  = 3.45         ' vortex finder immersion [cfd_decision, preheater/cyclone_C1.md]
-Const C1_D_VORTEX                  As Double  = 2.4          ' vortex finder / outlet pipe bore [derived_from_reference, preheater/cyclone_C1.md]
+Const C1_D_VORTEX                  As Double  = 2.16         ' vortex finder / outlet pipe bore, D / 2 [derived]
 Const C1_D_DUST                    As Double  = 0.4          ' dust outlet D [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_W_INLET                   As Double  = 0.86         ' inlet width [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_INLET                   As Double  = 3#           ' inlet height, normal to the duct [cfd_decision, preheater/cyclone_C1.md]
 Const C1_INLET_SLOPE_DEG           As Double  = 0#           ' inlet duct slope [cfd_decision, preheater/cyclone_C1.md]
 Const C1_VORTEX_WALL               As Double  = 0.08         ' vortex finder wall [model, preheater/cyclone_C1.md]
 Const C1_HEIGHT                    As Double  = 11.44        ' barrel + cone [derived]
-Const C1_OUT_RISE                  As Double  = 3#           ' outlet pipe rise over the roof [derived]
-Const C1_OUT_R                     As Double  = 3.6          ' outlet bend centreline R [derived]
-Const C1_OUT_RUN                   As Double  = 3#           ' outlet drop leg [derived]
-Const C1_LEG_X                     As Double  = 7.2          ' barrel axis to drop leg axis [derived]
-Const C1_TOP                       As Double  = 19.24        ' dust outlet to the top of the bend [derived]
+Const C1_OUT_RISE                  As Double  = 2.7          ' outlet pipe rise over the roof [derived]
+Const C1_OUT_R                     As Double  = 3.24         ' outlet bend centreline R [derived]
+Const C1_OUT_RUN                   As Double  = 2.7          ' outlet drop leg [derived]
+Const C1_LEG_X                     As Double  = 6.48         ' barrel axis to drop leg axis [derived]
+Const C1_TOP                       As Double  = 18.46        ' dust outlet to the top of the bend [derived]
 Const C1_Y_INNER                   As Double  = 2.21         ' inlet duct inner wall, y [derived]
 Const C1_Y_OUTER                   As Double  = 3.07         ' inlet duct outer wall, y [derived]
 Const C1_FACE_TOP_X                As Double  = -3#          ' inlet face, upper edge x [derived]
@@ -60,31 +60,31 @@ Const C1_FACE_TOP_Z                As Double  = 11.44        ' inlet face, upper
 Const C1_FACE_BOT_X                As Double  = -3#          ' inlet face, lower edge x [derived]
 Const C1_FACE_BOT_Z                As Double  = 8.44         ' inlet face, lower edge z [derived]
 Const C1_REACH                     As Double  = 0#           ' inlet opening's upstream end on the barrel, -x (0: a volute) [derived]
-Const C1_TAB_1                     As String  = "per_string~Number per string~2~-~published~Verified;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;H_barrel~Barrel height~6790~mm~FLS ratio~Estimated;H_cone~Cone height~4650~mm~FLS ratio~Estimated;height~Barrel + cone height~11440~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3450~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~2400~mm~FLS ratio~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~400~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~860~mm~FLS ratio~Estimated;H_inlet~Inlet height a (volute duct)~3000~mm~CFD decision~Estimated;" ' parameter table rows
-Const C1_TAB_2                     As String  = "inlet_slope~Inlet duct slope~0~deg~CFD decision~Estimated;inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;outlet_turn~Outlet bend angle~180~deg~CFD decision~Estimated;outlet_rise~Outlet pipe rise over the roof~3000~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~3600~mm~derived~Estimated;outlet_run~Outlet drop leg~3000~mm~derived~Estimated;leg_x~Barrel axis to drop leg axis~7200~mm~derived~Estimated;" ' parameter table rows
-Const C1_TAB_3                     As String  = "top~Dust outlet to top of the bend~19240~mm~derived~Estimated;volume~Volume (barrel + cone)~124.54~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~139.70~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_split~C1 Y split (riser to 2 cyclones)~-~~no source~Unknown;" ' parameter table rows
+Const C1_TAB_1                     As String  = "per_string~Number per string~2~-~published~Verified;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;H_barrel~Barrel height~6790~mm~FLS ratio~Estimated;H_cone~Cone height~4650~mm~FLS ratio~Estimated;height~Barrel + cone height~11440~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3450~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~2160~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~400~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~860~mm~FLS ratio~Estimated;H_inlet~Inlet height a (volute duct)~3000~mm~CFD decision~Estimated;" ' parameter table rows
+Const C1_TAB_2                     As String  = "inlet_slope~Inlet duct slope~0~deg~CFD decision~Estimated;inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;outlet_turn~Outlet bend angle~180~deg~CFD decision~Estimated;outlet_rise~Outlet pipe rise over the roof~2700~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~3240~mm~derived~Estimated;outlet_run~Outlet drop leg~2700~mm~derived~Estimated;leg_x~Barrel axis to drop leg axis~6480~mm~derived~Estimated;" ' parameter table rows
+Const C1_TAB_3                     As String  = "top~Dust outlet to top of the bend~18460~mm~derived~Estimated;volume~Volume (barrel + cone)~124.54~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~140.56~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_split~C1 Y split (riser to 2 cyclones)~-~~no source~Unknown;" ' parameter table rows
 Const C1_TAB_4                     As String  = ""           ' parameter table rows
 Const C1_TAB_5                     As String  = ""           ' parameter table rows
 Const C1_TAB_6                     As String  = ""           ' parameter table rows
 Const C1_TAB_7                     As String  = ""           ' parameter table rows
 Const C1_TAB_8                     As String  = ""           ' parameter table rows
-Const TW_R1_D                      As Double  = 3.07         ' R1 bore [published, preheater/riser_R1.md]
+Const TW_R1_D                      As Double  = 3.15         ' R1 bore = C2's D_x [derived]
 Const TW_GAP                       As Double  = 1#           ' the branches' walls apart [model, preheater/riser_R1.md]
-Const TW_S                         As Double  = 8.450818     ' C1 axis to axis [derived]
-Const TW_BRANCH_HALF               As Double  = 1.585409     ' each branch from R1's axis, x [derived]
-Const TW_BRANCH_D                  As Double  = 2.170818     ' branch bore [derived]
-Const TW_Y_BRANCH                  As Double  = -6.670818    ' branches and R1 in front of the C1 axes, y [derived]
-Const TW_Z_BRANCH                  As Double  = 0.269182     ' the branches' floor [derived]
-Const TW_Z_SPLIT                   As Double  = -1.765818    ' R1's top: the Y starts [derived]
-Const TW_R1_STUB_L                 As Double  = 6.954182     ' R1 straight under its Y, from its reducer [derived]
-Const TW_Z_CUT                     As Double  = 6.777195     ' section A-A: clear of the feed chutes and the bends [derived]
+Const TW_S                         As Double  = 8.507386     ' C1 axis to axis [derived]
+Const TW_BRANCH_HALF               As Double  = 1.613693     ' each branch from R1's axis, x [derived]
+Const TW_BRANCH_D                  As Double  = 2.227386     ' branch bore [derived]
+Const TW_Y_BRANCH                  As Double  = -6.727386    ' branches and R1 in front of the C1 axes, y [derived]
+Const TW_Z_BRANCH                  As Double  = 0.212614     ' the branches' floor [derived]
+Const TW_Z_SPLIT                   As Double  = -1.862386    ' R1's top: the Y starts [derived]
+Const TW_R1_STUB_L                 As Double  = 2.137614     ' R1 straight under its Y, from C2's CFD outlet top [derived]
+Const TW_Z_CUT                     As Double  = 6.720626     ' section A-A: clear of the feed chutes and the bends [derived]
 Const TW_C1_R                      As Double  = 2.16         ' barrel radius [derived]
 Const TW_C1_FAR                    As Double  = 2.226723     ' each C1's outer side from its axis: the barrel, or the volute's scroll end [derived]
-Const TW_Y_MIN                     As Double  = -8.516034    ' the feed chutes' far side, y (the C1_riser solid's -x) [derived]
-Const TW_Y_MAX                     As Double  = 8.4          ' the outlet legs' far side, y [derived]
-Const TW_TOP                       As Double  = 19.24        ' the outlet bends' crown [derived]
-Const C1_twin_TAB_1                As String  = "R1_D~R1 bore~3070~mm~published~Verified;branch_D~Branch bore (half R1's area)~2171~mm~derived~Estimated;twin_gap~Branches' walls apart~1000~mm~model parameter~Estimated;spacing~C1 axis to axis~8451~mm~derived~Estimated;barrel_gap~Barrel wall to wall~4131~mm~derived~Estimated;branch_pitch~Branch axis to axis (Y)~3171~mm~derived~Estimated;y_branch~R1 / branches in front of the C1 axes~6671~mm~derived~Estimated;y_rise~Y height (R1 top to the branches' floor)~2035~mm~derived~Estimated;r1_stub~R1 straight under its Y~6954~mm~derived~Schematic;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;height~Barrel + cone height~11440~mm~derived~Estimated;" ' parameter table rows
-Const C1_twin_TAB_2                As String  = "D_vortex~Vortex finder / outlet pipe bore Dx~2400~mm~FLS ratio~Estimated;top~Dust outlets to the top of the bends~19240~mm~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const TW_Y_MIN                     As Double  = -8.600887    ' the feed chutes' far side, y (the C1_riser solid's -x) [derived]
+Const TW_Y_MAX                     As Double  = 7.56         ' the outlet legs' far side, y [derived]
+Const TW_TOP                       As Double  = 18.46        ' the outlet bends' crown [derived]
+Const C1_twin_TAB_1                As String  = "R1_D~R1 bore~3150~mm~derived~Estimated;branch_D~Branch bore (half R1's area)~2227~mm~derived~Estimated;twin_gap~Branches' walls apart~1000~mm~model parameter~Estimated;spacing~C1 axis to axis~8507~mm~derived~Estimated;barrel_gap~Barrel wall to wall~4187~mm~derived~Estimated;branch_pitch~Branch axis to axis (Y)~3227~mm~derived~Estimated;y_branch~R1 / branches in front of the C1 axes~6727~mm~derived~Estimated;y_rise~Y height (R1 top to the branches' floor)~2075~mm~derived~Estimated;r1_stub~R1 straight under its Y~2138~mm~derived~Schematic;D_barrel~Barrel inner diameter D~4320~mm~published~Verified;height~Barrel + cone height~11440~mm~derived~Estimated;" ' parameter table rows
+Const C1_twin_TAB_2                As String  = "D_vortex~Vortex finder / outlet pipe bore Dx~2160~mm~derived~Estimated;top~Dust outlets to the top of the bends~18460~mm~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C1_twin_TAB_3                As String  = ""           ' parameter table rows
 Const C1_twin_TAB_4                As String  = ""           ' parameter table rows
 Const C1_twin_TAB_5                As String  = ""           ' parameter table rows
@@ -95,23 +95,26 @@ Const C4_D_BARREL                  As Double  = 6.3          ' barrel inner D [d
 Const C4_H_BARREL                  As Double  = 6.3          ' barrel height [derived]
 Const C4_H_CONE                    As Double  = 7.3          ' cone height [derived]
 Const C4_L_VORTEX                  As Double  = 3.9          ' vortex finder immersion [derived]
-Const C4_D_VORTEX                  As Double  = 4.63         ' vortex finder / outlet pipe bore [derived]
+Const C4_D_VORTEX                  As Double  = 3.15         ' vortex finder / outlet pipe bore [derived]
 Const C4_D_DUST                    As Double  = 0.81         ' dust outlet D [derived]
 Const C4_W_INLET                   As Double  = 2.912        ' volute duct width [derived]
 Const C4_H_INLET                   As Double  = 3.4          ' volute duct height [derived]
 Const C4_VORTEX_WALL               As Double  = 0.08         ' vortex finder wall (not scaled) [model, preheater/cyclone_C1.md]
 Const C4_TONGUE                    As Double  = 0.05         ' volute tongue (not scaled) [model, preheater/cyclone_C4.md]
-Const C4_L_DUCT                    As Double  = 3#           ' volute duct length (not scaled) [model, preheater/cyclone_C4.md]
+Const C4_L_DUCT                    As Double  = 2#           ' level volute duct length [derived]
 Const C4_HEIGHT                    As Double  = 13.6         ' barrel + cone [derived]
-Const C4_OUT_RISE                  As Double  = 7.871        ' outlet pipe rise over the roof [derived]
-Const C4_OUT_R                     As Double  = 4.63         ' outlet bend centreline R [derived]
-Const C4_OUT_RUN                   As Double  = 4.63         ' outlet run after the bend [derived]
-Const C4_EXIT_X                    As Double  = 9.26         ' barrel axis to the gas outlet face [derived]
-Const C4_Z_LEG                     As Double  = 26.101       ' the outlet run's axis, z [derived]
-Const C4_TOP                       As Double  = 28.416       ' top of the outlet pipe [derived]
-Const C4_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6300~mm~published~Verified;H_barrel~Barrel height~6300~mm~CFD decision~Estimated;H_cone~Cone height~7300~mm~FLS ratio~Estimated;height~Barrel + cone height~13600~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3900~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4630~mm~FLS ratio~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~810~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~2912~mm~CFD decision~Estimated;H_inlet~Inlet height a (volute duct)~3400~mm~CFD decision~Estimated;" ' parameter table rows
-Const C4_TAB_2                     As String  = "inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;outlet_turn~Outlet bend angle~90~deg~CFD decision~Estimated;outlet_rise~Outlet pipe rise over the roof~7871~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~4630~mm~derived~Estimated;outlet_run~Outlet run after the bend~4630~mm~derived~Estimated;outlet_axis~Roof to the outlet run's axis~12501~mm~derived~Estimated;exit_x~Barrel axis to the gas outlet face~9260~mm~derived~Estimated;" ' parameter table rows
-Const C4_TAB_3                     As String  = "top~Dust outlet to the top of the outlet pipe~28416~mm~derived~Estimated;volume~Volume (barrel + cone)~283.25~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~226.13~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const C4_OUT_RISE                  As Double  = 5.355        ' outlet pipe rise over the roof [derived]
+Const C4_TOP                       As Double  = 18.955       ' the straight outlet pipe's end face, z [derived]
+Const C4_RISER_D                   As Double  = 3.15         ' riser inlet D [derived]
+Const C4_RISER_X                   As Double  = -3.925       ' riser axis, x (the duct runs to -x) [derived]
+Const C4_RISER_Y                   As Double  = 4.656        ' riser axis, y (under the duct's middle) [derived]
+Const C4_RISER_OFFSET              As Double  = 6.08966      ' riser axis from the barrel axis [derived]
+Const C4_RISER_ZTOP                As Double  = 9.36138      ' the riser's cut, its low (inner) point, z [derived]
+Const C4_RISER_ZOUT                As Double  = 11.767075    ' the riser's cut, its high (outer) point, z [derived]
+Const C4_RISER_ZBOT                As Double  = 6.21138      ' the riser's gas inlet face, z [derived]
+Const C4_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6300~mm~published~Verified;H_barrel~Barrel height~6300~mm~CFD decision~Estimated;H_cone~Cone height~7300~mm~FLS ratio~Estimated;height~Barrel + cone height~13600~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3900~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~3150~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~810~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~2912~mm~CFD decision~Estimated;H_inlet~Inlet height a (volute duct)~3400~mm~CFD decision~Estimated;" ' parameter table rows
+Const C4_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2000~mm~CFD decision~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;riser_slope~Riser walls' slope into the duct~45~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~6090~mm~derived~Estimated;riser_run~Transition's run, riser axis to the duct face~1925~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the turn~3150~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~CFD decision~Estimated;" ' parameter table rows
+Const C4_TAB_3                     As String  = "outlet_rise~Outlet pipe rise over the roof (the domain's end)~5355~mm~derived~Estimated;top~Dust outlet to the outlet face~18955~mm~derived~Estimated;volume~Volume (barrel + cone)~283.25~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~235.17~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C4_TAB_4                     As String  = ""           ' parameter table rows
 Const C4_TAB_5                     As String  = ""           ' parameter table rows
 Const C4_TAB_6                     As String  = ""           ' parameter table rows
@@ -121,23 +124,26 @@ Const C5_D_BARREL                  As Double  = 6.5          ' barrel inner D [d
 Const C5_H_BARREL                  As Double  = 6.5          ' barrel height [derived]
 Const C5_H_CONE                    As Double  = 7.531746     ' cone height [derived]
 Const C5_L_VORTEX                  As Double  = 4.02381      ' vortex finder immersion [derived]
-Const C5_D_VORTEX                  As Double  = 4.776984     ' vortex finder / outlet pipe bore [derived]
+Const C5_D_VORTEX                  As Double  = 3.25         ' vortex finder / outlet pipe bore [derived]
 Const C5_D_DUST                    As Double  = 0.835714     ' dust outlet D [derived]
 Const C5_W_INLET                   As Double  = 3.004444     ' volute duct width [derived]
 Const C5_H_INLET                   As Double  = 3.507937     ' volute duct height [derived]
 Const C5_VORTEX_WALL               As Double  = 0.08         ' vortex finder wall (not scaled) [model, preheater/cyclone_C1.md]
 Const C5_TONGUE                    As Double  = 0.05         ' volute tongue (not scaled) [model, preheater/cyclone_C4.md]
-Const C5_L_DUCT                    As Double  = 3#           ' volute duct length (not scaled) [model, preheater/cyclone_C4.md]
+Const C5_L_DUCT                    As Double  = 2.063492     ' level volute duct length [derived]
 Const C5_HEIGHT                    As Double  = 14.031746    ' barrel + cone [derived]
-Const C5_OUT_RISE                  As Double  = 8.120873     ' outlet pipe rise over the roof [derived]
-Const C5_OUT_R                     As Double  = 4.776984     ' outlet bend centreline R [derived]
-Const C5_OUT_RUN                   As Double  = 4.776984     ' outlet run after the bend [derived]
-Const C5_EXIT_X                    As Double  = 9.553968     ' barrel axis to the gas outlet face [derived]
-Const C5_Z_LEG                     As Double  = 26.929603    ' the outlet run's axis, z [derived]
-Const C5_TOP                       As Double  = 29.318095    ' top of the outlet pipe [derived]
-Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~published~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~4777~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
-Const C5_TAB_2                     As String  = "inlet_duct_length~Volute duct length (from tangent plane)~3000~mm~model parameter~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;outlet_turn~Outlet bend angle~90~deg~derived~Estimated;outlet_rise~Outlet pipe rise over the roof~8121~mm~derived~Estimated;outlet_bend_R~Outlet bend centreline radius~4777~mm~derived~Estimated;outlet_run~Outlet run after the bend~4777~mm~derived~Estimated;outlet_axis~Roof to the outlet run's axis~12898~mm~derived~Estimated;exit_x~Barrel axis to the gas outlet face~9554~mm~derived~Estimated;" ' parameter table rows
-Const C5_TAB_3                     As String  = "top~Dust outlet to the top of the outlet pipe~29318~mm~derived~Estimated;volume~Volume (barrel + cone)~311.09~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~240.71~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
+Const C5_OUT_RISE                  As Double  = 5.525        ' outlet pipe rise over the roof [derived]
+Const C5_TOP                       As Double  = 19.556746    ' the straight outlet pipe's end face, z [derived]
+Const C5_RISER_D                   As Double  = 3.25         ' riser inlet D [derived]
+Const C5_RISER_X                   As Double  = -4.051485    ' riser axis, x (the duct runs to -x) [derived]
+Const C5_RISER_Y                   As Double  = 4.802222     ' riser axis, y (under the duct's middle) [derived]
+Const C5_RISER_OFFSET              As Double  = 6.282983     ' riser axis from the barrel axis [derived]
+Const C5_RISER_ZTOP                As Double  = 9.657065     ' the riser's cut, its low (inner) point, z [derived]
+Const C5_RISER_ZOUT                As Double  = 12.138359    ' the riser's cut, its high (outer) point, z [derived]
+Const C5_RISER_ZBOT                As Double  = 6.407065     ' the riser's gas inlet face, z [derived]
+Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~published~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~3250~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
+Const C5_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2063~mm~derived~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;riser_slope~Riser walls' slope into the duct~45~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~6283~mm~derived~Estimated;riser_run~Transition's run, riser axis to the duct face~1988~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the turn~3250~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~derived~Estimated;" ' parameter table rows
+Const C5_TAB_3                     As String  = "outlet_rise~Outlet pipe rise over the roof (the domain's end)~5525~mm~derived~Estimated;top~Dust outlet to the outlet face~19557~mm~derived~Estimated;volume~Volume (barrel + cone)~311.09~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~250.34~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C5_TAB_4                     As String  = ""           ' parameter table rows
 Const C5_TAB_5                     As String  = ""           ' parameter table rows
 Const C5_TAB_6                     As String  = ""           ' parameter table rows
@@ -175,10 +181,24 @@ Const CAL_FUEL_D                   As Double  = 0.2828       ' fuel pipe D [deri
 Const CAL_FUEL_Y                   As Double  = 4.236225     ' fuel pipe end face centre, y [derived]
 Const CAL_FUEL_Z                   As Double  = 11.885494    ' fuel pipe end face centre, z [derived]
 Const CAL_BOX_Y                    As Double  = 4.306925     ' the fuel pipes' far side, y [derived]
+Const CAL_DP_R                     As Double  = 0.408061     ' dispersion plate (+x): the meal face's radius [derived]
+Const CAL_DP_T                     As Double  = 0.05         ' its thickness [derived]
+Const CAL_DP_CX                    As Double  = 3.016809     ' the arcs' centre, x [derived]
+Const CAL_DP_CZ                    As Double  = 10.644589    ' the arcs' centre, z [derived]
+Const CAL_DP_AX                    As Double  = 3.3702       ' the meal face's start on the wall, x [derived]
+Const CAL_DP_AZ                    As Double  = 10.440558    ' the meal face's start on the wall, z [derived]
+Const CAL_DP_EX                    As Double  = 2.94595      ' the meal face's edge, x [derived]
+Const CAL_DP_EZ                    As Double  = 10.242727    ' the meal face's edge, z [derived]
+Const CAL_DP_ELX                   As Double  = 2.937268     ' the lower face's edge, x [derived]
+Const CAL_DP_ELZ                   As Double  = 10.193487    ' the lower face's edge, z [derived]
+Const CAL_DP_ZLOW                  As Double  = 10.186528    ' the lower face's lowest point, z [derived]
+Const CAL_DP_PROT                  As Double  = 0.42425      ' the edge past the wall [derived]
+Const CAL_DP_EXIT                  As Double  = 10#          ' the exit angle above the horizontal, deg [derived]
+Const CAL_DP_SLOPE                 As Double  = 60#          ' the meal pipe's slope, where the plate starts, deg [derived]
 Const calciner_TAB_1               As String  = "D_throat~Throat (kiln gas inlet) diameter~3130~mm~derived~Estimated;L_throat~Throat length~3130~mm~derived~Estimated;H_cone~Cone height~3871~mm~derived~Estimated;D_vessel~Vessel inner diameter D~6740~mm~FLS ratio~Estimated;H_cylinder~Cylinder height~26129~mm~derived~Estimated;H_vessel~Vessel height (cone + cylinder)~30000~mm~published~Verified;D_neck~Gooseneck neck diameter (both arms' area)~4950~mm~derived~Estimated;neck_slope~Neck slope~45~deg~model parameter~Estimated;neck_piece~Neck's inclined pieces (2): length~4950~mm~derived~Estimated;neck_level~Neck's level piece: length~4950~mm~derived~Estimated;channel~Vertical channel below the neck: length~7425~mm~derived~Estimated;" ' parameter table rows
 Const calciner_TAB_2               As String  = "D_leg~Gooseneck arm bore~3500~mm~published~Verified;arm_angle~Arm angle to the vertical~60~deg~model parameter~Estimated;arm_run~Arms' level run to the outlet face: length~7000~mm~derived~Estimated;y_off~Channel and arms in front of the vessel axis~12135~mm~derived~Estimated;x_leg~Barrel axis to an arm's outlet face~10781~mm~derived~Schematic;leg_end_z~Throat foot to the arms' level runs' axis (C5's inlet axis)~23522~mm~derived~Schematic;width~Overall width over the arms' outlet faces~21563~mm~derived~Schematic;top~Throat foot to the neck's crown~39105~mm~derived~Estimated;D_TA~Tertiary air duct diameter~2439~mm~FLS ratio~Estimated;" ' parameter table rows
-Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential)~-2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;" ' parameter table rows
-Const calciner_TAB_4               As String  = "u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
+Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential)~-2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;dp_exit~Dispersion plate exit angle (above horizontal)~10~deg~model parameter~Estimated;dp_radius~Dispersion plate meal face radius~408~mm~derived~Estimated;" ' parameter table rows
+Const calciner_TAB_4               As String  = "dp_prot~Dispersion plate edge past the wall~424~mm~derived~Estimated;dp_width~Dispersion plate width~849~mm~derived~Estimated;dp_thick~Dispersion plate thickness~50~mm~model parameter~Estimated;volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
 Const calciner_TAB_5               As String  = ""           ' parameter table rows
 Const calciner_TAB_6               As String  = ""           ' parameter table rows
 Const calciner_TAB_7               As String  = ""           ' parameter table rows
@@ -289,6 +309,11 @@ Const CAL_FRONT_X As Double = 0.33
 Const CAL_LEFT_X  As Double = 0.47
 Const CAL_DET_X   As Double = 0.57
 Const CAL_DET_Y   As Double = 0.18
+' detail C, the dispersion plate at 1:10 (user request, 16 Nov 2026: the plate,
+' 0.42 m, is 2 mm in A-A and 8 mm in detail B): between the plan and detail B
+Const CAL_DETC_X  As Double = 0.4
+Const CAL_DETC_Y  As Double = 0.15
+Const CAL_DETC_D  As Double = 10#
 
 ' kiln (1:200): the side view, the end view (1:50) under it
 Const KIL_SIDE_X  As Double = 0.3
@@ -354,8 +379,8 @@ Dim equip As String              ' "C1", "C1_twin", "C4", "C5", "calciner", "kil
 ' a volute cyclone's values (C4 / C5), loaded by LoadVolute
 Dim vD As Double, vHb As Double, vHc As Double, vLv As Double, vDv As Double, vDd As Double
 Dim vW As Double, vH As Double, vWall As Double, vTongue As Double, vLduct As Double
-Dim vHeight As Double, vRise As Double, vBendR As Double, vRun As Double, vExitX As Double
-Dim vZleg As Double, vTopZ As Double
+Dim vHeight As Double, vRise As Double, vTopZ As Double
+Dim vRiD As Double, vRiX As Double, vRiY As Double, vRiOff As Double, vRiTop As Double, vRiBot As Double, vRiOut As Double
 Dim scaleD As Double, detailD As Double
 Dim detX As Double, detY As Double
 Dim partPath As String
@@ -534,13 +559,15 @@ Private Sub LoadVolute()
     Case "C4"
         vD = C4_D_BARREL: vHb = C4_H_BARREL: vHc = C4_H_CONE: vLv = C4_L_VORTEX: vDv = C4_D_VORTEX
         vDd = C4_D_DUST: vW = C4_W_INLET: vH = C4_H_INLET: vWall = C4_VORTEX_WALL: vTongue = C4_TONGUE
-        vLduct = C4_L_DUCT: vHeight = C4_HEIGHT: vRise = C4_OUT_RISE: vBendR = C4_OUT_R: vRun = C4_OUT_RUN
-        vExitX = C4_EXIT_X: vZleg = C4_Z_LEG: vTopZ = C4_TOP
+        vLduct = C4_L_DUCT: vHeight = C4_HEIGHT: vRise = C4_OUT_RISE: vTopZ = C4_TOP
+        vRiD = C4_RISER_D: vRiX = C4_RISER_X: vRiY = C4_RISER_Y: vRiOff = C4_RISER_OFFSET
+        vRiTop = C4_RISER_ZTOP: vRiBot = C4_RISER_ZBOT: vRiOut = C4_RISER_ZOUT
     Case "C5"
         vD = C5_D_BARREL: vHb = C5_H_BARREL: vHc = C5_H_CONE: vLv = C5_L_VORTEX: vDv = C5_D_VORTEX
         vDd = C5_D_DUST: vW = C5_W_INLET: vH = C5_H_INLET: vWall = C5_VORTEX_WALL: vTongue = C5_TONGUE
-        vLduct = C5_L_DUCT: vHeight = C5_HEIGHT: vRise = C5_OUT_RISE: vBendR = C5_OUT_R: vRun = C5_OUT_RUN
-        vExitX = C5_EXIT_X: vZleg = C5_Z_LEG: vTopZ = C5_TOP
+        vLduct = C5_L_DUCT: vHeight = C5_HEIGHT: vRise = C5_OUT_RISE: vTopZ = C5_TOP
+        vRiD = C5_RISER_D: vRiX = C5_RISER_X: vRiY = C5_RISER_Y: vRiOff = C5_RISER_OFFSET
+        vRiTop = C5_RISER_ZTOP: vRiBot = C5_RISER_ZBOT: vRiOut = C5_RISER_ZOUT
     End Select
 End Sub
 
@@ -667,12 +694,20 @@ Private Sub CheckVoluteBox(doc As SldWorks.ModelDoc2)
     Set b = bodies(0)
     box = ExactBox(b)
     rT = 0.5 * vD + vTongue
-    want(0) = -vLduct: If vLduct < 0.5 * vD Then want(0) = -0.5 * vD
-    want(3) = vExitX
+    ' x min: the riser's far wall; x max: the scroll's bulge on +x (a
+    ' spline, bounded like y min); y max: the riser's or the duct's side
+    want(0) = vRiX - 0.5 * vRiD
+    want(3) = 0.5 * vD
     want(1) = -rT: want(4) = rT + vW
+    If vRiY + 0.5 * vRiD > want(4) Then want(4) = vRiY + 0.5 * vRiD
     want(2) = 0#: want(5) = vTopZ
     For i = 0 To 5
-        If i = 1 Then
+        If i = 3 Then
+            If box(3) < want(3) - 0.01 Or box(3) > want(3) + vTongue + vW + 0.2 Then
+                Fail partPath & ": x max is " & Num(box(3), 3) & " m, today's " & equip & " scroll lies between " & _
+                     Num(want(3), 3) & " and " & Num(want(3) + vTongue + vW + 0.2, 3) & " -- rebuild it with cyclone.bas."
+            End If
+        ElseIf i = 1 Then
             If box(1) > want(1) + 0.01 Or box(1) < want(1) - 0.2 Then
                 Fail partPath & ": y min is " & Num(box(1), 3) & " m, today's " & equip & " scroll ends at " & Num(want(1), 3) & _
                      " (a spline may bulge 0.2 m past it) -- rebuild it with cyclone.bas."
@@ -1046,8 +1081,10 @@ Private Sub MakeViewsVolute()
 
     ' A-A: along y = 0 through the whole cyclone and its outlet; the
     ' direction it is drawn in sets which way SolidWorks looks (found by
-    ' trying: it must show x right, z up)
-    xa = -(R + 1#): xb = vExitX + 1#
+    ' trying: it must show x right, z up). It runs past the scroll's
+    ' bulge on +x (at y = 0 it stands out to ~R + W/2): a line ending
+    ' inside the part makes a partial, uncut section (21 Nov 2026).
+    xa = -(R + 1#): xb = 0.5 * vD + vTongue + vW + 1#
     For tries = 0 To 1
         If tries = 0 Then
             ToSheet vTop, xb, 0#, vHeight, ax, ay
@@ -1134,6 +1171,17 @@ Private Sub MakeViewsCalciner()
     Set vDet = DetailFrom(vSec, 4.2, 10.4, 3.2, "B")
     Note "views: front " & vFront.Name & ", left " & vLeft.Name & ", detail B " & vDet.Name
     LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
+
+    ' detail C: the +x dispersion plate, its edge, the wall under it and the
+    ' meal pipe's lower lip; DetailFrom places and scales by the globals, set
+    ' for this one and put back
+    Dim bX As Double, bY As Double, bD As Double
+    bX = detX: bY = detY: bD = detailD
+    detX = CAL_DETC_X: detY = CAL_DETC_Y: detailD = CAL_DETC_D
+    Set vDetC = DetailFrom(vSec, CAL_DP_CX + 0.1, CAL_DP_AZ - 0.05, 0.55, "C")
+    LogMap vDetC, "detail C", detailD
+    detX = bX: detY = bY: detailD = bD
+    Note "views: detail C " & vDetC.Name
 End Sub
 
 
@@ -1630,12 +1678,12 @@ Private Sub DimensionVolute()
         "circle", 0, -rd, 0, rd, 0, _
         "circle", 0, -R, zr, R, zr, _
         0, -R - 2.4, 0.5 * zr
-    ' the outlet run's axis above the roof: the roof ring's circle and the
-    ' bend's end circle (face-on from -x), centre to centre
-    DimEdges "outlet_axis", vRise + vBendR, vLeft, _
-        "circle", 0, 0, zr, R, zr, _
-        "circle", vBendR, 0, vZleg, rx, vZleg, _
-        0, -R - 3.8, zr + 0.5 * (vRise + vBendR), "v"
+    ' the straight outlet pipe's rise over the roof: the roof's circle and
+    ' the pipe's end face (both edge-on), centre to centre
+    DimEdges "outlet_rise", vRise, vLeft, _
+        "circle", 0, -R, zr, R, zr, _
+        "circle", 0, -rx, vTopZ, rx, vTopZ, _
+        0, -R - 3.8, zr + 0.5 * vRise, "v"
 
     ' the volute's duct end face, seen face-on from -x: its height
     DimEdges "H_inlet", vH, vLeft, _
@@ -1658,12 +1706,19 @@ Private Sub DimensionVolute()
         "hline", -0.5 * vLduct, rT, zr, 0, zr, _
         "hline", -0.5 * vLduct, rS, zr, 0, zr, _
         -vLduct + 0.9, ym, zr
-    ' the gas outlet face's distance from the barrel axis: the pipe's circle
-    ' over the roof and the exit face (edge-on), centre to centre
-    DimEdges "exit_x", vExitX, vTop, _
-        "circle", 0, 0, zr, rx + t, zr, _
-        "circle", vExitX, 0, vZleg, rx, vZleg, _
-        0.5 * vExitX, -rx - 1.4, vZleg, "h"
+    ' the riser's axis from the barrel axis (the columns' offset): the
+    ' outlet pipe's end face and the riser's oblique cut (since 21 Nov
+    ' 2026 an ellipse, seen from above as the riser's circle; the gas
+    ' inlet face under it is hidden), centre to centre along the slant
+    ' (the text on the centres' line past the riser, 1.5 m outside its
+    ' circle, where the sheet is empty: between the centres the barrel's,
+    ' the riser's and the loft's lines cross it, 21 Nov)
+    Dim ru As Double
+    ru = Sqr(vRiX * vRiX + vRiY * vRiY)
+    DimEdges "riser_offset", vRiOff, vTop, _
+        "circle", rx, 0, vTopZ, rx, vTopZ, _
+        "ellipse", vRiX * (1# + 0.5 * vRiD / ru), vRiY * (1# + 0.5 * vRiD / ru), vRiOut, 0.5 * vRiD, 0.5 * (vRiTop + vRiOut), _
+        vRiX * (1# + (0.5 * vRiD + 1.5) / ru), vRiY * (1# + (0.5 * vRiD + 1.5) / ru), vTopZ
 
     ' detail B: the vortex finder's wall at its mouth
     DimEdges "vortex_wall", vWall, vDet, _
@@ -1958,6 +2013,28 @@ Private Sub DimensionCalciner()
         "", 0, 0, 0, 0, 0, _
         CAL_FEED_X + 0.6 * 0.5, 0, CAL_FEED_Z + 0.6 * Sqr(3#) * 0.5
 
+    ' detail C (1:10): the dispersion plate. Its meal face, an arc about
+    ' (CAL_DP_CX, CAL_DP_CZ), picked at its middle, the text over it towards
+    ' the centre; the edge (a straight edge across the plate, CAL_DP_T long),
+    ' the text inside the vessel beside it; the edge past the wall: the wall
+    ' line under the plate to the meal face's corner at the edge (the edge
+    ' itself is 10 deg off the wall: two lines make an angle), horizontally,
+    ' the text under the plate.
+    Dim pm As Double
+    pm = 0.5 * (CAL_DP_EXIT * PI / 180# - (CAL_DP_SLOPE * PI / 180#))
+    DimEdges "dp_radius", CAL_DP_R, vDetC, _
+        "circle", CAL_DP_CX - CAL_DP_R * Sin(pm), 0, CAL_DP_CZ - CAL_DP_R * Cos(pm), CAL_DP_R, CAL_DP_CZ, _
+        "", 0, 0, 0, 0, 0, _
+        CAL_DP_CX - 0.4, 0, CAL_DP_CZ + 0.3
+    DimEdges "dp_thick", CAL_DP_T, vDetC, _
+        "line", 0.5 * (CAL_DP_EX + CAL_DP_ELX), 0, 0.5 * (CAL_DP_EZ + CAL_DP_ELZ), 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        CAL_DP_ELX - 0.12, 0, CAL_DP_ELZ - 0.03
+    DimEdges "dp_prot", CAL_DP_PROT, vDetC, _
+        "vline", R, 0, CAL_DP_ZLOW - 0.2, R, 0, _
+        "lineend", CAL_DP_EX, 0, CAL_DP_EZ, CAL_DP_ELX, CAL_DP_ELZ, _
+        0.5 * (R + CAL_DP_EX), 0, CAL_DP_ZLOW - 0.22, "h"
+
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
 
@@ -2133,6 +2210,7 @@ End Sub
 '   kind "vline":  a line along z at x = p1
 '   kind "line":   any line through the pick point
 '   kind "":       no second edge
+'   kind "lineend": the end vertex at the pick point of the line through it and (p1, y, p2)
 Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.View, _
         ByVal k1 As String, ByVal x1 As Double, ByVal y1 As Double, ByVal z1 As Double, ByVal p11 As Double, ByVal p12 As Double, _
         ByVal k2 As String, ByVal x2 As Double, ByVal y2 As Double, ByVal z2 As Double, ByVal p21 As Double, ByVal p22 As Double, _
@@ -2211,6 +2289,47 @@ Private Function PickEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
     Dim sd As SldWorks.SelectData
     Dim nSeen As Long, nFit As Long
 
+    ' kind "lineend": the end vertex at (x, y, z) of the line edge
+    ' through (x, y, z) and (p1, y, p2) (21 Nov 2026: the dispersion
+    ' plate's edge is 10 deg off the wall, so two lines made an angle;
+    ' the wall line to the edge's corner is the distance)
+    If kind = "lineend" Then
+        Dim vx As SldWorks.Vertex
+        Set vx = LineEnd(v, x, y, z, p1, p2, nSeen)
+        If vx Is Nothing Then
+            Note "MISSING dim " & what & ": no " & kind & " of " & v.Name & " (" & nSeen & " seen) is at (" & _
+                 Num(x, 3) & ", " & Num(y, 3) & ", " & Num(z, 3) & ")"
+            Exit Function
+        End If
+        Set ent = vx
+        Dim vp As Variant, vsx As Double, vsy As Double, vhow As String
+        Set sd = swModel.SelectionManager.CreateSelectData
+        sd.View = v
+        If v.SelectEntity(ent, append) Then
+            vhow = "SelectEntity"
+        ElseIf ent.Select4(append, sd) Then
+            vhow = "Select4"
+        Else
+            swDraw.EditSheet
+            vp = vx.GetPoint
+            ToSheet v, vp(0), vp(1), vp(2), vsx, vsy
+            If swModel.Extension.SelectByID2("", "VERTEX", vsx, vsy, 0#, append, 0, Nothing, 0) Then
+                vhow = "SelectByID2 at (" & Num(1000 * vsx, 1) & ", " & Num(1000 * vsy, 1) & ") mm"
+            Else
+                Note "MISSING dim " & what & ": the vertex was found but no way selected it in " & v.Name
+                Exit Function
+            End If
+        End If
+        If vhow <> "SelectEntity" Then Note "(" & what & " selected by " & vhow & ")"
+        If swModel.SelectionManager.GetSelectedObjectCount2(-1) <> IIf(append, 2, 1) Then
+            Note "MISSING dim " & what & ": " & swModel.SelectionManager.GetSelectedObjectCount2(-1) & _
+                 " objects selected after picking it in " & v.Name
+            Exit Function
+        End If
+        PickEdge = True
+        Exit Function
+    End If
+
     ' Picking at a sheet point (SelectByID2 "EDGE") found nothing in any
     ' view in run 5; the view's own edges are searched instead, and the
     ' one asked for is selected in that view.
@@ -2286,6 +2405,12 @@ Private Function FindEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
                 cp = crv.CircleParams         ' centre x y z, axis x y z, radius
                 fits = Abs(cp(6) - p1) < SEL_TOL And Abs(cp(2) - p2) < SEL_TOL
             End If
+        Case "ellipse"
+            ' p1 the minor radius (the riser's), p2 the centre's z
+            If crv.IsEllipse Then
+                cp = crv.GetEllipseParams     ' centre x y z, major radius, major axis x y z, minor radius, minor axis x y z
+                fits = Abs(cp(7) - p1) < SEL_TOL And Abs(cp(2) - p2) < SEL_TOL
+            End If
         Case "hline", "vline", "line"
             If crv.IsLine Then
                 lp = crv.LineParams           ' root x y z, direction x y z
@@ -2303,6 +2428,23 @@ Private Function FindEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
         End If
     Next i
     foundDist = best
+End Function
+
+
+' The end vertex at (x, y, z) of view v's line edge through (x, y, z)
+' and (xb, y, zb); Nothing if no such edge or end. nSeen: edges seen.
+Private Function LineEnd(v As SldWorks.View, ByVal x As Double, ByVal y As Double, ByVal z As Double, _
+                         ByVal xb As Double, ByVal zb As Double, ByRef nSeen As Long) As SldWorks.Vertex
+    Dim ed As SldWorks.Edge, nFit As Long, k As Long, vt As SldWorks.Vertex, p As Variant
+    Set ed = FindEdge(v, "line", 0.5 * (x + xb), y, 0.5 * (z + zb), 0, 0, nSeen, nFit)
+    If ed Is Nothing Then Exit Function
+    For k = 0 To 1
+        If k = 0 Then Set vt = ed.GetStartVertex Else Set vt = ed.GetEndVertex
+        If Not vt Is Nothing Then
+            p = vt.GetPoint
+            If Sqr((p(0) - x) ^ 2 + (p(1) - y) ^ 2 + (p(2) - z) ^ 2) < SEL_TOL Then Set LineEnd = vt: Exit Function
+        End If
+    Next k
 End Function
 
 
@@ -2566,7 +2708,7 @@ Private Sub DrawNotes()
         If equip = "C4" Then
             LabelPH COL_X0, y + 0.007, "4. C2 and C3 are this cyclone (same geometry); 1 per string.  Dimensions mm.", TEXT_H
         Else
-            LabelPH COL_X0, y + 0.007, "4. C4 x 6.50/6.30; finder wall, tongue, duct length unscaled; 1 per string.  Dimensions mm.", TEXT_H
+            LabelPH COL_X0, y + 0.007, "4. C4 x 6.50/6.30; finder wall and tongue unscaled; 1 per string.  Dimensions mm.", TEXT_H
         End If
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_" & equip & ".md", TEXT_H
     Else
@@ -2601,19 +2743,19 @@ Private Sub DrawFlows()
 End Sub
 
 
-' A volute cyclone's flows: gas and meal into the volute's duct (top
-' view), the gas out of the pipe's end and the meal out of the dust outlet
-' (A-A), and which way it swirls.
+' A volute cyclone's flows: gas and meal up into the riser's inlet face
+' (left view), the gas out of the pipe's end and the meal out of the dust
+' outlet (A-A), and which way it swirls.
 Private Sub DrawFlowsVolute()
     Dim R As Double, rT As Double, ym As Double
     R = 0.5 * vD: rT = R + vTongue: ym = rT + 0.5 * vW
     UseLayer L_FLOW
-    ArrowM3 vTop, -vLduct - 2.4, ym, vHeight, -vLduct - 0.3, ym, vHeight
-    ArrowM3 vSec, vExitX + 0.3, 0#, vZleg, vExitX + 2.1, 0#, vZleg
+    ArrowM3 vLeft, vRiX, vRiY, vRiBot - 2.2, vRiX, vRiY, vRiBot - 0.3
+    ArrowM3 vSec, 0#, 0#, vTopZ + 0.3, 0#, 0#, vTopZ + 2.1
     ArrowM3 vSec, 0#, 0#, -0.2, 0#, 0#, -1.4
     UseLayer L_TEXT
-    LabelM3 vTop, -vLduct - 4.6, ym + 0.8, vHeight, "Gas + meal in"
-    LabelM3 vSec, vExitX + 0.3, 0#, vZleg + 1#, "Gas out"
+    LabelM3 vLeft, vRiX, vRiY + 0.5 * vRiD, vRiBot - 3.2, "Gas + meal in (riser)"
+    LabelM3 vSec, 0.5, 0#, vTopZ + 1.4, "Gas out"
     LabelM3 vSec, 0.4, 0#, -0.8, "Meal out (to the stage below)"
     LabelM3 vTop, -R, -R - 1.2, vHeight, "Swirl clockwise seen from above"
 End Sub
@@ -2756,6 +2898,19 @@ Private Sub DrawFlowsCalciner()
     ' arrow, right of that line, between section A-A's line and the 2439
     ' dimension's extension line)
     LabelM3 vTop, CAL_TA_X + 0.2, CAL_TA_Y + 2#, CAL_TA_Z, "Tertiary air in"
+    ' detail C: the meal down the pipe floor onto the plate, and off its edge
+    ' at the exit angle into the vessel
+    UseLayer L_FLOW
+    ArrowM3 vDetC, CAL_DP_AX + 0.35 * Cos((CAL_DP_SLOPE * PI / 180#)), 0#, CAL_DP_AZ + 0.12 + 0.35 * Sin((CAL_DP_SLOPE * PI / 180#)), _
+            CAL_DP_AX + 0.04, 0#, CAL_DP_AZ + 0.12
+    ArrowM3 vDetC, CAL_DP_EX - 0.03 * Cos(CAL_DP_EXIT * PI / 180#), 0#, CAL_DP_EZ + 0.03 + 0.03 * Sin(CAL_DP_EXIT * PI / 180#), _
+            CAL_DP_EX - 0.33 * Cos(CAL_DP_EXIT * PI / 180#), 0#, CAL_DP_EZ + 0.03 + 0.33 * Sin(CAL_DP_EXIT * PI / 180#)
+    UseLayer L_TEXT
+    ' (21 Nov sheet check: both crossed the detail's circle, "Meal in" its
+    ' arrow too: now outside the circle, left of the exit arrow's tip and
+    ' right of the meal arrow's tail)
+    LabelM3 vDetC, CAL_DP_EX - 0.68, 0#, CAL_DP_EZ + 0.17, "Meal out, " & Fmt(CAL_DP_EXIT) & ChrW(176) & " up"
+    LabelM3 vDetC, CAL_DP_AX + 0.2, 0#, CAL_DP_AZ + 0.46, "Meal in"
     LabelM3 vLeft, 0#, CAL_FUEL_Y + 3#, CAL_FUEL_Z - 0.4, "Fuel in"
     ' SolidWorks leaves the scale off this section's label even with the
     ' section's scale set (C1, C4, C5 print it): the second line by hand,
@@ -2880,17 +3035,20 @@ Private Sub DrawAxes()
 End Sub
 
 
-' A volute cyclone's centre lines: its axis up its outlet pipe and the
-' run's axis in A-A, the axis in the left view, the cross in the top view.
+' A volute cyclone's centre lines: its axis up its outlet pipe in A-A,
+' the axis and the riser's in the left view, the crosses of the barrel and
+' the riser in the top view.
 Private Sub DrawAxesVolute()
     Dim R As Double
     R = 0.5 * vD
     UseLayer L_AXIS
-    AxisM vSec, 0#, 0#, -0.6, 0#, 0#, vZleg
-    AxisM vSec, vBendR - 0.6, 0#, vZleg, vExitX + 0.6, 0#, vZleg
-    AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ
-    AxisM vTop, -R - 0.6, 0#, vHeight, vExitX + 0.6, 0#, vHeight
+    AxisM vSec, 0#, 0#, -0.6, 0#, 0#, vTopZ + 0.6
+    AxisM vLeft, 0#, 0#, -0.6, 0#, 0#, vTopZ + 0.6
+    AxisM vLeft, vRiX, vRiY, vRiBot - 0.6, vRiX, vRiY, vRiOut + 0.6
+    AxisM vTop, -R - 0.6, 0#, vHeight, R + 0.6, 0#, vHeight
     AxisM vTop, 0#, -R - 0.6, vHeight, 0#, R + 0.6, vHeight
+    AxisM vTop, vRiX - 0.5 * vRiD - 0.6, vRiY, vHeight, vRiX + 0.5 * vRiD + 0.6, vRiY, vHeight
+    AxisM vTop, vRiX, vRiY - 0.5 * vRiD - 0.6, vHeight, vRiX, vRiY + 0.5 * vRiD + 0.6, vHeight
 End Sub
 
 

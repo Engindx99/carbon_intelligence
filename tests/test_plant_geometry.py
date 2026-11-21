@@ -42,11 +42,11 @@ class TheDerivedValuesAreTodaysTest(unittest.TestCase):
 
     def test_cyclones(self):
         for name, vol, area, h in (
-            ("C1", 124.54, 139.7, 11.44),
-            ("C2", 283.2, 226.1, 13.60),
-            ("C3", 283.2, 226.1, 13.60),
-            ("C4", 283.2, 226.1, 13.60),
-            ("C5", 311.0, 240.7, 14.03),
+            ("C1", 124.54, 140.56, 11.44),
+            ("C2", 283.2, 235.17, 13.60),
+            ("C3", 283.2, 235.17, 13.60),
+            ("C4", 283.2, 235.17, 13.60),
+            ("C5", 311.0, 250.34, 14.03),
         ):
             c = pg.cyclone(self.g, name)
             with self.subTest(cyclone=name):
@@ -201,7 +201,7 @@ class TheMacrosAgreeWithTheSourceTest(unittest.TestCase):
         ):
             with self.subTest(key=key):
                 self.assertAlmostEqual(pg.v(d[key]), self.cc[macro], delta=TOL)
-        self.assertAlmostEqual(pg.v(self.g["risers"]["R1"]["D"]), self.cc["D_RISER_SRC"], delta=TOL)
+        self.assertAlmostEqual(pg.r1_D(self.g), self.cc["D_RISER_SRC"], delta=TOL)
 
     def test_calciner_consts(self):
         c, gn = self.g["calciner"], self.g["gooseneck"]
@@ -258,8 +258,8 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
             ("kiln_axis_z", "KILN_AXIS_Z"), ("chamber_margin", "CHAMBER_MARGIN"),
             ("c5_over_tertiary_air", "C5_OVER_TA"), ("gooseneck_to_c5_gap", "GN_TO_C5_GAP"),
             ("stage_gap", "STAGE_GAP"),
-            ("column_offset", "ZIG_DX"), ("c1_twin_gap", "C1_TWIN_GAP"),
-            ("r1_up_min", "R1_UP_MIN"), ("r1_reducer_deg", "R1_RED_DEG"), ("cooler_drop", "COOLER_DROP"),
+            ("dust_over_roof", "DUST_OVER_ROOF"), ("c1_twin_gap", "C1_TWIN_GAP"),
+            ("r1_up_min", "R1_UP_MIN"), ("cooler_drop", "COOLER_DROP"),
         ):
             with self.subTest(key=key):
                 self.assertAlmostEqual(pg.v(L[key]), self.drw[macro], delta=TOL)
@@ -309,6 +309,49 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
         for got, want, what in checks:
             with self.subTest(what):
                 self.assertAlmostEqual(got, want, delta=2e-6)
+
+
+class DispersionPlateGeometryTest(unittest.TestCase):
+    """plant_geometry.calciner_dispersion_plate: the arc meets its ends,
+    the plate clears the meal pipe, the hole, the tertiary air duct and
+    the wall at its edge, and its in-vessel volume is bounded by its own."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.dp = pg.calciner_dispersion_plate(cls.g)
+        cls.cal = pg.calciner(cls.g)
+        cls.meal = pg.calciner_inlets(cls.g)["meal"]
+
+    def test_the_arc_runs_from_the_pipe_slope_to_the_exit(self):
+        dp, R = self.dp, self.cal["R"]
+        cx, cz = dp["centre"]
+        for p, rad in ((dp["A"], dp["R_arc"]), (dp["E"], dp["R_arc"]),
+                       (dp["A_low"], dp["R_arc"] + dp["thickness"]), (dp["E_low"], dp["R_arc"] + dp["thickness"])):
+            self.assertAlmostEqual(math.hypot(p[0] - cx, p[1] - cz), rad, places=12)
+        self.assertAlmostEqual(dp["A"][0], R, places=12)
+        self.assertAlmostEqual(R - dp["E"][0], dp["protrusion"], places=12)
+        # tangent at A along the pipe (down-inward at the slope), at E at the exit angle
+        ta = (dp["A"][1] - cz, -(dp["A"][0] - cx))   # radius rotated: the inward travel direction
+        self.assertAlmostEqual(math.degrees(math.atan2(ta[1], -ta[0])), -self.meal["slope"], places=9)
+        te = (dp["E"][1] - cz, -(dp["E"][0] - cx))
+        self.assertAlmostEqual(math.degrees(math.atan2(te[1], -te[0])), dp["exit_angle"], places=9)
+
+    def test_it_clears_the_pipe_the_duct_and_the_wall(self):
+        dp, R = self.dp, self.cal["R"]
+        self.assertGreater(dp["pipe_clearance"], 0.0)
+        self.assertLess(dp["A"][1], self.meal["hole_bottom"])
+        self.assertGreater(dp["z_low"], pg.calciner_inlets(self.g)["tertiary_air"]["top"])
+        for p in (dp["E"], dp["E_low"]):
+            self.assertLess(math.hypot(p[0], 0.5 * dp["width"]), R)
+        # the tail's end lies outside the vessel, so the plate's back end is in the wall
+        self.assertGreater(min(dp["T"][0], dp["T_low"][0]), R)
+
+    def test_the_volumes(self):
+        dp = self.dp
+        self.assertAlmostEqual(dp["volume"], dp["profile_area"] * dp["width"], places=12)
+        self.assertGreater(dp["inside_vessel"], 0.5 * dp["volume"])
+        self.assertLess(dp["inside_vessel"], dp["volume"])
 
 
 CALCINER_LOG = REPO_ROOT / "geometry" / "output" / "2500" / "calciner_build.log"
@@ -427,6 +470,22 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
                 # read 1.5, 2.9 and 8 % off on three builds
                 self.assertAlmostEqual(got, dv, delta=1e-2 * dv + 5e-6 * steps["1 "] * 1.6)
 
+    def test_the_dispersion_plates(self):
+        """Stages 8a / 8b: each plate body to the closed form (0.1 %), the
+        fluid it removes to plant_geometry's integral (the ADD_NOISE floor),
+        the body after it to the running total."""
+        if "dispersion plate" not in self.log:
+            self.skipTest("the build log predates the dispersion plates")
+        dp = pg.calciner_dispersion_plate(self.g)
+        for tag in ("8a", "8b"):
+            with self.subTest(stage=tag):
+                got, want = self.num(rf"stage {tag}[^:\n]*: plate body # m3 \(expected #\)")
+                self.assertAlmostEqual(want, dp["volume"], delta=1e-5)
+                self.assertAlmostEqual(got, dp["volume"], delta=1e-3 * dp["volume"])
+                got, want = self.num(rf"stage {tag}[^:\n]*: removed # m3 of fluid \(expected #\)")
+                self.assertAlmostEqual(want, dp["inside_vessel"], delta=1e-5)
+                self.assertAlmostEqual(got, dp["inside_vessel"], delta=1e-2 * dp["inside_vessel"] + 5e-6 * 1690.0 * 1.6)
+
     def test_the_boundary_faces(self):
         """Each named face found once, with the area of what it is."""
         cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
@@ -479,14 +538,44 @@ class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
     def setUpClass(cls):
         cls.g = pg.load()
 
-    def test_r2_r4_are_the_outlet_pipes(self):
+    def test_r2_r4_rise_beside_the_cyclone_above(self):
+        """User decision, 17 Nov 2026: R(k) is C(k+1)'s outlet pipe
+        straight up (its CFD outlet the first part), its walls turning in
+        at riser_slope_deg into C(k)'s level duct, the riser clear of
+        C(k)'s barrel; the columns as far apart as the widest riser asks
+        and each dust outlet dust_over_roof over the roof below."""
+        L, d = pg.layout(self.g), self.g["cyclone_domain"]
         for k in (2, 3, 4):
             r = pg.stage_riser(self.g, k)
-            c = pg.cyclone(self.g, f"C{k + 1}")
+            c, up = pg.cyclone(self.g, f"C{k + 1}"), pg.cyclone(self.g, f"C{k}")
+            ri = r["riser"]
             with self.subTest(riser=k):
-                self.assertTrue(all(p["D"] == c["D_vortex"] for p in r["parts"]))
-                self.assertAlmostEqual(r["parts"][0]["length"], c["outlet_rise"], places=12)
-                self.assertGreater(r["parts"][2]["length"], c["outlet_run"])   # past the CFD face
+                self.assertEqual(r["parts"][0]["D"], c["D_vortex"])
+                self.assertGreaterEqual(r["parts"][0]["length"], c["outlet_rise"])   # the CFD outlet inside
+                self.assertAlmostEqual(r["parts"][2]["length"], up["inlet_duct_length"], places=12)
+                self.assertGreaterEqual(ri["clearance"], pg.v(d["riser_barrel_clearance"]) - 1e-9)
+                self.assertAlmostEqual(ri["offset"], L["column_offset"], places=12)
+                # the riser's oblique cut (user sketch, 21 Nov 2026): its low
+                # point as low as the floor asks to rise at the slope to the
+                # duct face's floor corners; its high point where the ceiling
+                # runs parallel to the floor in the plant section
+                c_k = pg.cyclone(self.g, f"C{k}")
+                th = pg.v(d["riser_slope_deg"])
+                a = 0.5 * ri["D"]
+                corner = math.degrees(math.atan2(ri["drop"] - c_k["H_inlet"],
+                                                 pg.riser_floor_run(ri["run"], ri["D"], c_k["W_inlet"])))
+                self.assertAlmostEqual(corner, th, places=9)
+                self.assertGreater(ri["inner_deg"], th)
+                self.assertLess(ri["drop_out"], ri["drop"])
+                self.assertGreater(ri["drop_out"], 0.0)
+                ceiling = ri["drop_out"] / (ri["t_out"] + a)
+                floor = (ri["drop"] - c_k["H_inlet"]) / (ri["t_in"] - a)
+                self.assertAlmostEqual(ceiling, floor, places=9)
+                self.assertGreaterEqual(L["z_dust"][k] - L["z_roof"][k + 1],
+                                        pg.v(self.g["layout"]["dust_over_roof"]) - 1e-9)
+                # the roofs step by the riser: vertical + its turn
+                self.assertAlmostEqual(L["z_roof"][k] - L["z_roof"][k + 1],
+                                       L["riser_vertical"][k] + ri["drop"], places=9)
 
     def test_the_gooseneck_reaches_c5(self):
         gp, L = pg.gooseneck_plant(self.g), pg.layout(self.g)

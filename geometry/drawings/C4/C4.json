@@ -101,15 +101,16 @@
     {
       "key": "C4.D_vortex",
       "label": "Vortex finder / outlet pipe bore Dx",
-      "value": 4.63,
+      "value": 3.15,
       "unit": "m",
-      "source": "derived_from_reference",
+      "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclones.C4.D_vortex"
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel"
       ],
-      "value_mm": 4630.0,
+      "value_mm": 3150.0,
       "short": "D_vortex"
     },
     {
@@ -169,17 +170,17 @@
       "short": "H_inlet"
     },
     {
-      "key": "cyclone_domain.inlet_duct_length",
-      "label": "Volute duct length (from tangent plane)",
-      "value": 3.0,
+      "key": "C4.inlet_duct_length",
+      "label": "Level duct length (from tangent plane)",
+      "value": 2.0,
       "unit": "m",
-      "source": "model",
+      "source": "cfd_decision",
       "status": "Estimated",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.inlet_duct_length"
+        "cyclones.C4.inlet_duct_length"
       ],
-      "value_mm": 3000.0,
+      "value_mm": 2000.0,
       "short": "inlet_duct_length"
     },
     {
@@ -224,9 +225,72 @@
       "short": "volute"
     },
     {
+      "key": "cyclone_domain.riser_slope_deg",
+      "label": "Riser walls' slope into the duct",
+      "value": 45.0,
+      "unit": "deg",
+      "source": "schematic",
+      "status": "Schematic",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.riser_slope_deg"
+      ],
+      "short": "riser_slope"
+    },
+    {
+      "key": "C4.riser_offset",
+      "label": "Riser axis from the barrel axis (the columns' offset)",
+      "value": 6.089660171142557,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.riser_barrel_clearance",
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.D_vortex_over_D_barrel"
+      ],
+      "value_mm": 6089.660171,
+      "short": "riser_offset"
+    },
+    {
+      "key": "C4.riser_run",
+      "label": "Transition's run, riser axis to the duct face",
+      "value": 1.9250000000000007,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.riser_barrel_clearance",
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.W_inlet",
+        "cyclones.C4.inlet_duct_length"
+      ],
+      "value_mm": 1925.0,
+      "short": "riser_run"
+    },
+    {
+      "key": "C4.riser_stub",
+      "label": "Vertical riser in the domain, under the turn",
+      "value": 3.15,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.riser_cfd_stub_over_D",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel"
+      ],
+      "value_mm": 3150.0,
+      "short": "riser_stub"
+    },
+    {
       "key": "C4.outlet_turn",
-      "label": "Outlet bend angle",
-      "value": 90.0,
+      "label": "Outlet bend angle (0: straight)",
+      "value": 0.0,
       "unit": "deg",
       "source": "cfd_decision",
       "status": "Estimated",
@@ -238,85 +302,24 @@
     },
     {
       "key": "C4.outlet_rise",
-      "label": "Outlet pipe rise over the roof",
-      "value": 7.8709999999999996,
+      "label": "Outlet pipe rise over the roof (the domain's end)",
+      "value": 5.3549999999999995,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
         "cyclones.C4.outlet_rise_over_Dx",
-        "cyclones.C4.D_vortex"
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel"
       ],
-      "value_mm": 7871.0,
+      "value_mm": 5355.0,
       "short": "outlet_rise"
     },
     {
-      "key": "C4.outlet_bend_R",
-      "label": "Outlet bend centreline radius",
-      "value": 4.63,
-      "unit": "m",
-      "source": "derived",
-      "status": "Estimated",
-      "doc": "preheater/cyclone_C4.md",
-      "inputs": [
-        "cyclones.C4.outlet_bend_R_over_Dx",
-        "cyclones.C4.D_vortex"
-      ],
-      "value_mm": 4630.0,
-      "short": "outlet_bend_R"
-    },
-    {
-      "key": "C4.outlet_run",
-      "label": "Outlet run after the bend",
-      "value": 4.63,
-      "unit": "m",
-      "source": "derived",
-      "status": "Estimated",
-      "doc": "preheater/cyclone_C4.md",
-      "inputs": [
-        "cyclones.C4.outlet_run_over_Dx",
-        "cyclones.C4.D_vortex"
-      ],
-      "value_mm": 4630.0,
-      "short": "outlet_run"
-    },
-    {
-      "key": "C4.outlet_axis",
-      "label": "Roof to the outlet run's axis",
-      "value": 12.501,
-      "unit": "m",
-      "source": "derived",
-      "status": "Estimated",
-      "doc": "preheater/cyclone_C4.md",
-      "inputs": [
-        "cyclones.C4.outlet_rise_over_Dx",
-        "cyclones.C4.D_vortex",
-        "cyclones.C4.outlet_bend_R_over_Dx"
-      ],
-      "value_mm": 12501.0,
-      "short": "outlet_axis"
-    },
-    {
-      "key": "C4.exit_x",
-      "label": "Barrel axis to the gas outlet face",
-      "value": 9.26,
-      "unit": "m",
-      "source": "derived",
-      "status": "Estimated",
-      "doc": "preheater/cyclone_C4.md",
-      "inputs": [
-        "cyclones.C4.outlet_bend_R_over_Dx",
-        "cyclones.C4.D_vortex",
-        "cyclones.C4.outlet_run_over_Dx"
-      ],
-      "value_mm": 9260.0,
-      "short": "exit_x"
-    },
-    {
       "key": "C4.top",
-      "label": "Dust outlet to the top of the outlet pipe",
-      "value": 28.416,
+      "label": "Dust outlet to the outlet face",
+      "value": 18.955,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -325,10 +328,10 @@
         "cyclones.C4.H_barrel",
         "cyclones.C4.H_cone",
         "cyclones.C4.outlet_rise_over_Dx",
-        "cyclones.C4.D_vortex",
-        "cyclones.C4.outlet_bend_R_over_Dx"
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C4.D_barrel"
       ],
-      "value_mm": 28416.0,
+      "value_mm": 18955.0,
       "short": "top"
     },
     {
@@ -350,7 +353,7 @@
     {
       "key": "C4.wet_area",
       "label": "Wetted area (barrel, roof ring, cone)",
-      "value": 226.12826475740712,
+      "value": 235.1716533700307,
       "unit": "m2",
       "source": "derived",
       "status": "Estimated",
@@ -360,7 +363,7 @@
         "cyclones.C4.H_barrel",
         "cyclones.C4.H_cone",
         "cyclones.C4.D_dust",
-        "cyclones.C4.D_vortex"
+        "cyclones.C4.D_vortex_over_D_barrel"
       ],
       "short": "wet_area"
     },
@@ -420,8 +423,8 @@
     "vortex_wall",
     "W_inlet",
     "H_inlet",
-    "outlet_axis",
-    "exit_x"
+    "outlet_rise",
+    "riser_offset"
   ],
   "also_the_sheet_of": [
     "C2",

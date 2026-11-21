@@ -161,6 +161,13 @@ def cyclone_dim(g, name, dim, label):
     """One of a cyclone's resolved dimensions (cyclone(): C2, C3 =
     C4; C5 = C4 x D_C5 / D_C4), with the entries it rests on."""
     node = g["cyclones"][name]
+    if dim == "D_vortex":
+        # D_x = D_vortex_over_D_barrel x D, the riser's bore (user decision, 21 Nov 2026)
+        base = node.get("same_as") or node.get("scaled_from") or name
+        parts = [primary(g, f"cyclones.{base}.D_vortex_over_D_barrel", label),
+                 cyclone_dim(g, name, "D_barrel", label)]
+        return derived(f"{name}.{dim}", label, pg.cyclone(g, name)[dim], "m", parts,
+                       doc=node["per_string"]["doc"])
     if "same_as" in node:
         base = node["same_as"]
         p = primary(g, f"cyclones.{base}.{dim}", label, key=f"{name}.{dim}")

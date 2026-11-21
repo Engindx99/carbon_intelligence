@@ -12,22 +12,20 @@ Fiziksel sonucu: C2'nin vorteks bulucusundan çıkan dönen akım dirseklerle bo
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|
-| C2 çıkış borusu yükselişi (Ø4.630) | 7.871 m | türetilmiş |
-| R1 daraltıcısı yarım açısı (C2 ekseninde, dik) | 45 ° | şematik |
-| R1 daraltıcısı boyu (Ø4.630 → Ø3.070) | 0.780 m | türetilmiş |
-| R1 iç çapı | 3.07 m | yayınlanmış |
-| R1 dik boyu, daraltıcıdan Y'ye | 6.954 m | türetilmiş |
-| İkiz C1 kolu çapı (R1 alanının yarısı) | 2.171 m | türetilmiş |
-| Kol başına boy (dik + 90° dirsek + geçiş + kanal) | 17.445 m | türetilmiş |
+| C2 çıkış borusu yükselişi (Ø3.150) | 5.355 m | türetilmiş |
+| R1 iç çapı (= C2 D_x, daraltıcı yok) | 3.150 m | türetilmiş |
+| R1 dik boyu, C2 CFD çıkışından Y'ye | 2.138 m | türetilmiş |
+| İkiz C1 kolu çapı (R1 alanının yarısı) | 2.227 m | türetilmiş |
+| Kol başına boy (dik + 90° dirsek + geçiş + kanal) | 17.574 m | türetilmiş |
 | Kol sayısı | 2 | türetilmiş |
 | İkiz C1 kolları arası boşluk (cidardan cidara) | 1 m | modelleme |
-| İkiz C1 eksenleri arası | 8.451 m | türetilmiş |
-| İkiz C1 gövdeleri arası boşluk | 4.131 m | türetilmiş |
-| Y'den her kolun R1 eksenine uzaklığı | 1.585 m | türetilmiş |
-| Y'nin yüksekliği (R1 tepesinden kolların dik kısmına) | 2.035 m | türetilmiş |
-| R1 ve kollar, C1 eksenlerinin önünde | 6.671 m | türetilmiş |
-| **Ekipman hacmi (hat başına)** | 322.33 m³ | türetilmiş |
-| **Duvar alanı (hat başına)** | 432.84 m² | türetilmiş |
+| İkiz C1 eksenleri arası | 8.507 m | türetilmiş |
+| İkiz C1 gövdeleri arası boşluk | 4.187 m | türetilmiş |
+| Y'den her kolun R1 eksenine uzaklığı | 1.614 m | türetilmiş |
+| Y'nin yüksekliği (R1 tepesinden kolların dik kısmına) | 2.075 m | türetilmiş |
+| R1 ve kollar, C1 eksenlerinin önünde | 6.727 m | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 195.35 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 320.09 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry

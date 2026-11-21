@@ -17,33 +17,38 @@ Tesiste iki özdeş 2500 t/d hattı var; her hatta bu siklondan bir tane, CFD ö
 | Silindirik gövde yüksekliği | 6.3 m | CFD kararı; C4 ile özdeş |
 | Koni yüksekliği | 7.3 m | FLS oranıyla türetilmiş; C4 ile özdeş |
 | Vorteks bulucu daldırması S | 3.9 m | CFD kararı; C4 ile özdeş |
-| Vorteks bulucu çapı D_x | 4.63 m | FLS oranıyla türetilmiş; C4 ile özdeş |
+| D_x / D (= riser çapı / D) | 0.5 | CFD kararı; C4 ile özdeş |
+| Vorteks bulucu çapı D_x (= riser çapı) | 3.1500 m | 0.5 D |
 | Toz çıkışı çapı | 0.81 m | FLS oranıyla türetilmiş; C4 ile özdeş |
 | Giriş genişliği | 2.912 m | CFD kararı; C4 ile özdeş |
 | Giriş yüksekliği | 3.4 m | CFD kararı; C4 ile özdeş |
 | Giriş eğimi | 0 ° | CFD kararı; C4 ile özdeş |
 | Volüt | var | CFD kararı; C4 ile özdeş |
-| Çıkış dönüşü | 90 ° | CFD kararı; C4 ile özdeş |
-| Çıkış borusu yükselişi (çatının üstünde) | 7.871 m | 1.7 D_x |
-| Çıkış dirseği merkez yarıçapı | 4.630 m | 1 D_x |
-| Çıkış bacağı / inişi | 4.630 m | 1 D_x |
+| Çıkış dönüşü | 0 ° | CFD kararı; C4 ile özdeş |
+| Çıkış borusu yükselişi (çatının üstünde) | 5.355 m | 1.7 D_x |
+| Yatay giriş kanalı (teğet düzleminden) | 2.000 m | türetilmiş |
+| Riser duvarlarının kanala eğimi | 45 ° | şematik |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.090 m | türetilmiş |
+| Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına) | 1.925 m | türetilmiş |
+| CFD domenindeki dik riser (dönüşün altında) | 3.150 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |
-| **Islak alan (gövde + çatı halkası + koni)** | 226.13 m² | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 235.17 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry
 
-Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek kurulur: C2, C4'ün CFD domeniyle özdeştir ([cyclone_C4.md](cyclone_C4.md)) — volütlü giriş, h = D gövde, daldırma 3.90 m, 90° çıkış dirseği. Tesiste çıkış borusu R1'in başıdır ([riser_R1.md](riser_R1.md)).
+Katı `geometry/macros/cyclone.bas` ile `CYCLONE_NAME = "C4"` seçilerek kurulur: C2, C4'ün CFD domeniyle özdeştir ([cyclone_C4.md](cyclone_C4.md)) — R3'ün dik riser'ı ve 45°'lik geçişi, 1.0 m yatay kanal, volütlü giriş, h = D gövde, daldırma 3.90 m, 1.70·D_x düz çıkış borusu. Tesiste çıkış borusu R1'in başıdır ([riser_R1.md](riser_R1.md)).
 
 **Tesiste C2'nin çıkışı dönmez (kullanıcı kararı, 17 Kasım 2026).** R1, C2'nin ekseninde dik yükselir:
 CFD'nin 7.871 m'lik çıkış borusu, ucunda 45°'lik bir daraltıcı (Ø4.63 → Ø3.07, 0.78 m) ve R1. İkiz
-C1'ler bu yüzden C2'nin üstündedir. Yukarıdaki tablodaki 90° dirsek ve 4.63 m'lik bacak C4'ün CFD
-domenine aittir; C3–C5'te durur (R2–R4 onların çıkış borusudur), C2'de yoktur. C2'nin ΔP'si yine
-C4'ün Euler sayısıyla (11.54) taşınır. O sayı dirseği içerir; düz çıkışın farkı ölçülmedi, çıkış
-borusunun 1.25 → 1.70·D_x uzaması Eu'yu %1.4 değiştirmişti, fark bu mertebede beklenir. Ölçmek
-için C4 geometrisi düz çıkışla bir kez çözülebilir; bu koşu R1'e giren dönen akımın profilini de
-verir, ikiz C1'in Y'li giriş domeninin giriş koşulu odur.
+C1'ler bu yüzden C2'nin üstündedir.
+
+Aynı gün C4'ün CFD domeninin de 90° dirseği kalktı (R2–R4 dik riser'lar; [cyclone_C4.md](cyclone_C4.md)).
+C2 böylece hem girişinde (R3, kolon aralığı 5.838 m) hem çıkışında domenle birebirdir; önceki
+sapma (C2'nin ΔP'si dirsekli domenin Eu'suyla taşınıyordu) kapandı. Domen henüz çözülmedi: Eu
+11.54 eski domenin sonucudur. Yeni çözüm C2'nin Eu'sunu ve R1'e giren dönen akımın profilini
+birlikte verecek; ikiz C1'in Y'li giriş domeninin giriş koşulu odur.
 Önce (13 Ekim – 17 Kasım 2026) C2'nin CFD dirseği ve bacağı gazı kalsinatöre doğru 11.3 m taşıyor,
 R1 orada bir dirsekle yükseliyordu.
 

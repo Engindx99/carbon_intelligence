@@ -22,19 +22,20 @@ Yayınlanmış olan yalnız çap D'dir (HFC2500); gövde, koni, vorteks bulucu, 
 | Silindirik gövde yüksekliği | 6.79 m | FLS oranıyla türetilmiş |
 | Koni yüksekliği | 4.65 m | FLS oranıyla türetilmiş |
 | Vorteks bulucu daldırması S | 3.45 m | CFD kararı |
-| Vorteks bulucu çapı D_x | 2.4 m | FLS oranıyla türetilmiş |
+| D_x / D (= riser çapı / D) | 0.5 | CFD kararı |
+| Vorteks bulucu çapı D_x (= riser çapı) | 2.1600 m | 0.5 D |
 | Toz çıkışı çapı | 0.4 m | FLS oranıyla türetilmiş |
 | Giriş genişliği | 0.86 m | FLS oranıyla türetilmiş |
 | Giriş yüksekliği | 3 m | CFD kararı |
 | Giriş eğimi | 0 ° | CFD kararı |
 | Volüt | var | CFD kararı |
 | Çıkış dönüşü | 180 ° | CFD kararı |
-| Çıkış borusu yükselişi (çatının üstünde) | 3.000 m | 1.25 D_x |
-| Çıkış dirseği merkez yarıçapı | 3.600 m | 1.5 D_x |
-| Çıkış bacağı / inişi | 3.000 m | 1.25 D_x |
+| Çıkış borusu yükselişi (çatının üstünde) | 2.700 m | 1.25 D_x |
+| Çıkış dirseği merkez yarıçapı | 3.240 m | 1.5 D_x |
+| Çıkış bacağı / inişi | 2.700 m | 1.25 D_x |
 | Toplam yükseklik (gövde + koni) | 11.440 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 124.54 m³ | türetilmiş |
-| **Islak alan (gövde + çatı halkası + koni)** | 139.70 m² | türetilmiş |
+| **Islak alan (gövde + çatı halkası + koni)** | 140.56 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ### Farin Girişi

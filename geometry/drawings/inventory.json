@@ -70,7 +70,7 @@
         },
         {
           "key": "meal_pipe.c5_meal_per_string",
-          "value": 30.2123,
+          "value": 30.3084,
           "unit": "kg/s",
           "source": "model",
           "status": "Estimated",
@@ -137,10 +137,10 @@
           "doc": "preheater/cyclone_C1.md"
         },
         {
-          "key": "cyclones.C1.D_vortex",
-          "value": 2.4,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C1.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C1.md"
         },
@@ -218,7 +218,7 @@
         },
         {
           "key": "cyclones.C1.boi_radius",
-          "value": 0.8,
+          "value": 0.72,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -324,10 +324,10 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -373,7 +373,7 @@
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -388,24 +388,24 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
+          "key": "cyclones.C4.inlet_duct_length",
+          "value": 2.0,
+          "unit": "m",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
+          "key": "cyclones.C4.inlet_riser",
+          "value": true,
           "unit": "-",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.boi_radius",
-          "value": 1.5,
+          "value": 1.0,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -479,10 +479,10 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -528,7 +528,7 @@
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -543,24 +543,24 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
+          "key": "cyclones.C4.inlet_duct_length",
+          "value": 2.0,
+          "unit": "m",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
+          "key": "cyclones.C4.inlet_riser",
+          "value": true,
           "unit": "-",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.boi_radius",
-          "value": 1.5,
+          "value": 1.0,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -634,10 +634,10 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -683,7 +683,7 @@
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -698,24 +698,24 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
+          "key": "cyclones.C4.inlet_duct_length",
+          "value": 2.0,
+          "unit": "m",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
+          "key": "cyclones.C4.inlet_riser",
+          "value": true,
           "unit": "-",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.boi_radius",
-          "value": 1.5,
+          "value": 1.0,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -813,10 +813,10 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -862,7 +862,7 @@
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -877,24 +877,24 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
+          "key": "cyclones.C4.inlet_duct_length",
+          "value": 2.0,
+          "unit": "m",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
+          "key": "cyclones.C4.inlet_riser",
+          "value": true,
           "unit": "-",
-          "source": "model",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.boi_radius",
-          "value": 1.5,
+          "value": 1.0,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -918,7 +918,7 @@
         },
         {
           "key": "cyclones.C5.boi_radius",
-          "value": 1.55,
+          "value": 1.03,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -952,10 +952,10 @@
           "doc": "preheater/cyclone_C1.md"
         },
         {
-          "key": "cyclones.C1.D_vortex",
-          "value": 2.4,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C1.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C1.md"
         },
@@ -968,10 +968,10 @@
           "doc": "preheater/cyclone_C4.md"
         },
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -1002,12 +1002,20 @@
       "connections": "R1: C2 -> its Y -> the twin C1",
       "dimensions": [
         {
-          "key": "risers.R1.D",
-          "value": 3.07,
+          "key": "cyclones.C4.D_barrel",
+          "value": 6.3,
           "unit": "m",
           "source": "published",
           "status": "Verified",
-          "doc": "preheater/riser_R1.md"
+          "doc": "preheater/cyclone_C4.md"
+        },
+        {
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "layout.c1_twin_gap",
@@ -1020,7 +1028,7 @@
       ],
       "status_counts": {
         "Verified": 1,
-        "Estimated": 1
+        "Estimated": 2
       },
       "missing": [
         "preheater/riser_R1.md: the route above R1's stub is the C2 outlet pipe (drawn on the C4 sheet)"
@@ -1039,16 +1047,16 @@
       "connections": "R2: C3 -> C2; R3: C4 -> C3 (each the CFD outlet pipe: rise, 90 deg bend, leg)",
       "dimensions": [
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -1061,26 +1069,10 @@
           "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
-        },
-        {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
-          "status": "Estimated",
-          "doc": "preheater/cyclone_C4.md"
-        },
-        {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
-          "status": "Estimated",
-          "doc": "preheater/cyclone_C4.md"
         }
       ],
       "status_counts": {
-        "Estimated": 5
+        "Estimated": 3
       },
       "missing": [
         "preheater/riser_R2.md, R3.md: the leg's length to the next cyclone is layout (schematic); the solid ends 1.0 D_x into it"
@@ -1099,16 +1091,16 @@
       "connections": "R4: C5 -> C4 (the CFD outlet pipe: rise, 90 deg bend, leg)",
       "dimensions": [
         {
-          "key": "cyclones.C4.D_vortex",
-          "value": 4.63,
-          "unit": "m",
-          "source": "derived_from_reference",
+          "key": "cyclones.C4.D_vortex_over_D_barrel",
+          "value": 0.5,
+          "unit": "-",
+          "source": "cfd_decision",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
         {
           "key": "cyclones.C4.outlet_turn",
-          "value": 90.0,
+          "value": 0.0,
           "unit": "deg",
           "source": "cfd_decision",
           "status": "Estimated",
@@ -1119,22 +1111,6 @@
           "value": 1.7,
           "unit": "-",
           "source": "cfd_decision",
-          "status": "Estimated",
-          "doc": "preheater/cyclone_C4.md"
-        },
-        {
-          "key": "cyclones.C4.outlet_bend_R_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
-          "status": "Estimated",
-          "doc": "preheater/cyclone_C4.md"
-        },
-        {
-          "key": "cyclones.C4.outlet_run_over_Dx",
-          "value": 1.0,
-          "unit": "-",
-          "source": "model",
           "status": "Estimated",
           "doc": "preheater/cyclone_C4.md"
         },
@@ -1156,7 +1132,7 @@
         },
         {
           "key": "cyclones.C5.boi_radius",
-          "value": 1.55,
+          "value": 1.03,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -1164,7 +1140,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 6,
+        "Estimated": 4,
         "Verified": 2
       },
       "missing": [
@@ -1655,6 +1631,22 @@
           "doc": "kiln/kiln_inlet_chamber.md"
         },
         {
+          "key": "kiln_inlet_chamber.ramp_deg",
+          "value": 50.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        },
+        {
+          "key": "kiln_inlet_chamber.ramp_foot",
+          "value": 1.5,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_inlet_chamber.md"
+        },
+        {
           "key": "layout.chamber_margin",
           "value": 1.0,
           "unit": "m",
@@ -1664,7 +1656,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 4
+        "Estimated": 6
       },
       "missing": [
         "kiln/kiln_inlet_chamber.md: no published size; shape is the user-approved model (layout square passing the velocity check, one ramp, flat roof); bypass and lining unknown; no twin volume"
