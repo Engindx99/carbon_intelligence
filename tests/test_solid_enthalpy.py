@@ -71,6 +71,16 @@ class MeltTest(unittest.TestCase):
         self.assertGreater(sensible, 40.0 * 1150.0)
         self.assertLess(sensible, 40.0 * 1250.0)
 
+    def test_cp_is_continuous_across_the_band(self):
+        """h is C1: Cp has no step at the band's ends (21 Nov 2026).
+        A step there made the solid rows' Newton linearisation flip
+        between two slopes at a bed node on the kink, a limit cycle
+        that stopped the dynamic solve."""
+        for T_edge in (MELT_T_ONSET, MELT_T_END):
+            below = cp_solid(T_edge - 1e-6)
+            above = cp_solid(T_edge + 1e-6)
+            self.assertAlmostEqual(below, above, delta=0.01)
+
     def test_freezing_returns_the_heat(self):
         # The same function on the way down: a melt that freezes in
         # the cooler gives back exactly what it took in the kiln.

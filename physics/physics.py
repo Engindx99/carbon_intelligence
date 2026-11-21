@@ -192,6 +192,27 @@ def h_gas(T, T_ref):
 # a 60 kJ/kg ramp over 1593.15-1633.15 K plus 80 J/(kg K)
 # above it. It is part of h, so the cooler gets the same heat
 # back when the liquid freezes, and the handoffs conserve it.
+#
+# SMOOTH MELT CURVE (21 Nov 2026). The latent heat is taken up
+# along a smoothstep in s = (T - onset) / (end - onset),
+# L (3 s^2 - 2 s^3), not a straight ramp, and the 80 J/(kg K)
+# comes in over the band as 80 dT (s^3 - s^2), which meets
+# 80 (T - end) at the end with the same slope. So h is C1 and
+# Cp continuous everywhere. With the straight ramp Cp jumped by
+# ~1500 J/(kg K) at both ends of the band: the solid rows
+# linearise h at the iterate (Newton), and a bed node sitting on
+# the kink at 1633.15 K flipped between the two slopes, a
+# 7-sweep limit cycle that stopped the dynamic solve (burning
+# node 4, t = 350 s of a 5 % fuel step). Unchanged: the 60 kJ/kg
+# total, the band, and h below and above the band exactly; only
+# the shape inside the band moves (by at most 5.9 kJ/kg, the
+# latent's S-curve against the line); Cp peaks at 1.5x the old
+# ramp's 1500 J/(kg K) at the band's middle. A melt fraction that
+# starts and ends smoothly is no less physical than the line:
+# the source gives the total and the band, not the shape. The
+# 80 J/(kg K) term is slightly negative inside the band (Cp
+# down by at most 27 J/(kg K) at s = 1/3, against a total of
+# >1200), so Cp stays positive and h strictly increasing.
 # ======================================================
 
 CP_SOLID_A = 924.488  # J/(kg K)
@@ -206,7 +227,7 @@ MELT_CP_EXTRA = 80.0  # J/(kg K), further melting above MELT_T_END
 T_SOLID_MIN = 200.0  # K
 T_SOLID_MAX = 4000.0  # K
 
-_MELT_RAMP = MELT_LATENT / (MELT_T_END - MELT_T_ONSET)
+_MELT_DT = MELT_T_END - MELT_T_ONSET
 
 
 def _H_solid_abs(T):
@@ -218,8 +239,11 @@ def _H_solid_abs(T):
         + CP_SOLID_C / T
     )
 
+    s = np.clip((T - MELT_T_ONSET) / _MELT_DT, 0.0, 1.0)
+
     melt = (
-        _MELT_RAMP * (np.clip(T, MELT_T_ONSET, MELT_T_END) - MELT_T_ONSET)
+        MELT_LATENT * s * s * (3.0 - 2.0 * s)
+        + MELT_CP_EXTRA * _MELT_DT * s * s * (s - 1.0)
         + MELT_CP_EXTRA * np.maximum(T - MELT_T_END, 0.0)
     )
 
@@ -233,12 +257,14 @@ def cp_solid(T):
     scalar = np.ndim(T) == 0
     T = np.asarray(T, dtype=float)
 
+    s = np.clip((T - MELT_T_ONSET) / _MELT_DT, 0.0, 1.0)
+
     cp = (
         CP_SOLID_A
         + CP_SOLID_B * T
         - CP_SOLID_C / (T * T)
-        + np.where((T > MELT_T_ONSET) & (T <= MELT_T_END), _MELT_RAMP, 0.0)
-        + np.where(T > MELT_T_END, MELT_CP_EXTRA, 0.0)
+        + (MELT_LATENT / _MELT_DT) * 6.0 * s * (1.0 - s)
+        + MELT_CP_EXTRA * np.where(T >= MELT_T_END, 1.0, s * (3.0 * s - 2.0))
     )
 
     return float(cp) if scalar else cp
