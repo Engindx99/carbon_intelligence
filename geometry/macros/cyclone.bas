@@ -2797,9 +2797,11 @@ Private Function RiserDuctIn(planeRiserC As SldWorks.Feature, planeRiserIn As Sl
 
     If w0Ri > W_INLET + 0.000001 Then
         ' the sides: outside the taper line, from the riser's front on,
-        ' to past the floors' corner, on both sides of the duct
+        ' to just past the floors' corner, on both sides of the duct --
+        ' no wider than the duct (w0Ri) + mg: the barrel's side is close
+        ' (a 0.2 m margin cut into it, 22 Nov 2026)
         Dim mg As Double, sg As Long, q(3) As Double, qy(3) As Double, uu(3) As Double, ww(3) As Double
-        mg = 0.2
+        mg = 0.02
         uSign = uSignI: vSign = vSignI
         swModel.ClearSelection2 True
         planeRiserIn.Select2 False, 0
