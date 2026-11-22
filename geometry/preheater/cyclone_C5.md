@@ -31,9 +31,11 @@ Katalog C5'i (FLS oranları; [catalog.md](../catalog.md)): gövde 3.53, koni 7.4
 | Çıkış dönüşü | 0 ° | CFD kararı; C4 ile özdeş |
 | Çıkış borusu yükselişi (çatının üstünde) | 5.525 m | 1.7 D_x |
 | Yatay giriş kanalı (teğet düzleminden) | 2.063 m | türetilmiş |
-| Riserın dirsek altındaki eğik kesimi | 30 ° | şematik |
-| Riser ekseni, gövde ekseninden (kolon aralığı) | 7.007 m | türetilmiş |
-| Dirsek merkez yarıçapı (riser ekseninden kanal ağzına) | 3.039 m | türetilmiş |
+| Riserdan kanala eğik kanalın eğimi | 45 ° | şematik |
+| Eğik kanalın yan duvarlarının daralma açısı (en çok) | 15 ° | CFD kararı |
+| Eğik kanalın daralan boyu (D → W) | 0.704 m | 9.9° yan duvar |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 7.019 m | türetilmiş |
+| Riser ekseninden kanal ağzına yatay mesafe | 3.055 m | türetilmiş |
 | CFD domenindeki dik riser (dönüşün altında) | 3.250 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 14.032 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 311.09 m³ | türetilmiş |

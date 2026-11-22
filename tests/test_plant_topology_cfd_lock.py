@@ -95,7 +95,8 @@ class CfdLock(unittest.TestCase):
         # the inlet (R2 / R3 as the plant has them)
         self.assertEqual(c["OUTLET_TURN_DEG"], 0.0)
         self.same(d["C4_OUT_R"], 0.0, "C4 outlet bend radius (none)")
-        self.same(d["RISER_CUT_DEG"], cc["RISER_CUT_DEG"], "the risers' cut under the elbow")
+        self.same(d["RISER_SLOPE_DEG"], cc["RISER_SLOPE_DEG"], "the risers' inclined duct")
+        self.same(d["RISER_TAPER_DEG"], cc["RISER_TAPER_DEG"], "the inclined duct's narrowing")
 
     def test_c5_is_the_c4_domain_scaled(self):
         c5, c4, d = self.case["C5"], self.case["C4"], self.d

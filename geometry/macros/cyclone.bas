@@ -12,9 +12,8 @@ Attribute VB_Name = "cyclone"
 ' OUTLET_TURN_DEG 90 the outlet turns into a horizontal run instead,
 ' with 0 it ends straight. With RISER_IN_ON (C4 / C5 since 17 Nov
 ' 2026) a round riser stands under the volute's level duct, its top
-' cut obliquely (RISER_CUT_DEG), and an elbow lofts from the cut to the
-' duct's face along a quarter circle (22 Nov 2026): R2 / R3 as the
-' plant has them.
+' and a flat-faced duct climbs from it at RISER_SLOPE_DEG into the
+' level duct, mitred to it (22 Nov 2026): R2 / R3 as the plant has them.
 ' Nothing structural is modelled -- no shell, no refractory
 ' (CLAUDE.md rule 8).
 '
@@ -64,7 +63,8 @@ Const FEED_W                       As Double  = 0.6          ' [literature, preh
 Const FEED_H                       As Double  = 0.6          ' [literature, preheater/riser_R1.md]
 Const FEED_DEPTH                   As Double  = 1#           ' [model, preheater/riser_R1.md]
 Const FEED_SLOPE_DEG               As Double  = 60#          ' [literature, calciner/calciner.md]
-Const RISER_CUT_DEG                As Double  = 30#          ' [schematic, preheater/cyclone_C4.md]
+Const RISER_SLOPE_DEG              As Double  = 45#          ' [schematic, preheater/cyclone_C4.md]
+Const RISER_TAPER_DEG              As Double  = 15#          ' [cfd_decision, preheater/cyclone_C4.md]
 Const RISER_IN_CLEAR               As Double  = 0.3          ' [model, preheater/cyclone_C4.md]
 Const RISER_IN_STUB_OVER_D         As Double  = 1#           ' [model, preheater/cyclone_C4.md]
 Const D_RISER_SRC                  As Double  = 3.15         ' R1 inner D = C2's D_x [derived]
@@ -103,7 +103,7 @@ Const C4_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' not given: the de
 Const C4_L_INLET_CASE              As Double  = 2#           ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_RISER_IN_ON               As Boolean = True         ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_BOI_RADIUS                As Double  = 1#           ' [model, preheater/cyclone_C4.md]
-Const C4_RISER_IN_OFFSET           As Double  = 6.791633     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
+Const C4_RISER_IN_OFFSET           As Double  = 6.802848     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
 Const C5_D_BARREL                  As Double  = 6.5          ' [published, preheater/cyclone_C5.md]
 Const C5_H_BARREL                  As Double  = 6.5          ' C4 x 1.031746 [derived]
 Const C5_H_CONE                    As Double  = 7.531746     ' C4 x 1.031746 [derived]
@@ -121,7 +121,7 @@ Const C5_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' as C4
 Const C5_L_INLET_CASE              As Double  = 2.063492     ' C4 x 1.031746 [derived]
 Const C5_RISER_IN_ON               As Boolean = True         ' as C4
 Const C5_BOI_RADIUS                As Double  = 1.03         ' [model, preheater/cyclone_C5.md]
-Const C5_RISER_IN_OFFSET           As Double  = 7.007241     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
+Const C5_RISER_IN_OFFSET           As Double  = 7.018812     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
 ' END GENERATED
 
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
@@ -540,10 +540,11 @@ Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the chute's end face, th
 Dim zRiserBendTop As Double                 ' highest point of the riser bend
 Dim outName As String                       ' file name the solid is written under
 Dim rRi As Double, xRi As Double, runRi As Double   ' riser inlet: radius, axis x (y = yMid), axis to duct face
-Dim zRiTop As Double, zRiBot As Double      ' riser inlet: its cut's low (inner) point, its gas inlet face
-Dim zRiHigh As Double, zRiMid As Double     ' riser inlet: its cut's high (outer) point and centre
+Dim zRiTop As Double, zRiBot As Double      ' riser inlet: the seam's foot (inclined floor at its axis), its gas inlet face
+Dim zRiHigh As Double                       ' riser inlet: its top on its axis (the inclined roof)
 Dim uSignC As Double, vSignC As Double      ' y = yMid, the elbow's centreline
-Dim rBendRi As Double                       ' riser inlet elbow: centreline radius (runRi / cos cut)
+Dim xRmRi As Double, xFmRi As Double        ' riser inlet duct: where its roof / floor meet the level duct's
+Dim w0Ri As Double                          ' riser inlet duct: its width at the riser (D, or W if wider)
 Dim vRiStub As Double, vRiMid As Double, vRiLo As Double, vRiHi As Double
 Dim uSignI As Double, vSignI As Double      ' z = zRiTop, the riser inlet's top
 Dim rTongue As Double                       ' volute: duct inner wall / spiral end radius, R + t
@@ -825,10 +826,9 @@ Private Sub SelectCyclone()
         ' 2026): up a round riser of C4's own D_x (R2 / R3 are C3 / C4's
         ' outlet pipes) under the volute's level duct, now L_INLET_C
         ' (1.0 m) long, its axis RISER_IN_OFFSET (the plant's column
-        ' offset) from the barrel axis. Its top is cut at RISER_CUT_DEG
-        ' and an elbow lofts from the cut to the duct's face along a
-        ' quarter circle, radius the riser axis' run back from the face
-        ' (22 Nov 2026). The domain starts RISER_IN_STUB_OVER_D
+        ' offset) from the barrel axis. A flat-faced duct climbs from
+        ' it at RISER_SLOPE_DEG into the level duct (22 Nov 2026; see
+        ' plant_geometry.riser_elbow). The domain starts RISER_IN_STUB_OVER_D
         ' diameters of riser below the cut.
         L_INLET_C = C4_L_INLET_CASE
         RISER_IN_ON = C4_RISER_IN_ON
@@ -1000,21 +1000,24 @@ Private Sub Derive()
     If OUTLET_TURN_DEG = 0# Then xBoxMax = MaxD(xHi2, rVortex)
 
     ' The riser inlet (RISER_IN_ON): its axis under the duct's middle,
-    ' RISER_IN_OFFSET from the barrel axis; its top cut by a plane tilted
-    ' RISER_CUT_DEG about the horizontal across the duct, high on the side
-    ' away from it -- a mitre (22 Nov 2026; plant_geometry.riser_elbow).
-    ' The elbow starts on the cut with a rectangle circumscribing its
-    ' ellipse and tapers linearly to the duct's face, its centreline
-    ' turning the remaining 90 - RISER_CUT_DEG on a circle of radius
-    ' runRi / cos(cut), tangent to the duct.
+    ' RISER_IN_OFFSET from the barrel axis, straight up into a flat-faced
+    ' duct that climbs at RISER_SLOPE_DEG into the level duct (22 Nov
+    ' 2026; plant_geometry.riser_elbow): its centreline through the duct
+    ' face's centre, H_INLET deep normal to it, w0Ri wide at the riser
+    ' (its sides tangent to it) narrowing to W_INLET from the riser's
+    ' front to xRmRi. Its roof cuts the riser's top (zRiHigh on the
+    ' axis); its floor meets the riser's front half along half an
+    ' ellipse, its foot zRiTop at the riser's sides. Roofs meet at xRmRi,
+    ' floors at xFmRi (the mitre).
     rRi = rVortex
     If RISER_IN_ON And RISER_IN_OFFSET > Abs(yMid) Then
         runRi = Sqr(RISER_IN_OFFSET * RISER_IN_OFFSET - yMid * yMid) - L_INLET_C
         xRi = -(runRi + L_INLET_C)
-        rBendRi = runRi / Cos(RISER_CUT_DEG * PI / 180#)
-        zRiMid = zRoof - 0.5 * H_INLET - rBendRi * (1# - Sin(RISER_CUT_DEG * PI / 180#))
-        zRiTop = zRiMid - rRi * Tan(RISER_CUT_DEG * PI / 180#)
-        zRiHigh = zRiMid + rRi * Tan(RISER_CUT_DEG * PI / 180#)
+        xRmRi = -L_INLET_C - 0.5 * H_INLET * Tan(0.5 * RISER_SLOPE_DEG * PI / 180#)
+        xFmRi = -L_INLET_C + 0.5 * H_INLET * Tan(0.5 * RISER_SLOPE_DEG * PI / 180#)
+        w0Ri = MaxD(2# * rRi, W_INLET)
+        zRiTop = RiFloorZ(xRi)
+        zRiHigh = RiFloorZ(xRi) + H_INLET / Cos(RISER_SLOPE_DEG * PI / 180#)
         zRiBot = zRiTop - RISER_IN_STUB_OVER_D * 2# * rRi
     End If
 
@@ -1124,18 +1127,14 @@ Private Sub Derive()
         vFinal = vStage9 + vFeed           ' + meal feed chute; re-based on the measured loft
         outName = CYCLONE_NAME & "_riser"
     ElseIf RISER_IN_ON Then
-        ' The riser stub, a second body for now, up to its oblique cut,
-        ' then the elbow's loft from its cut that joins it on: its
-        ' sections along the centreline, the dimensions linear (Pappus,
-        ' as rectangles), held within +-40 %; the measured value re-bases
-        ' the final.
-        Dim w0Ri As Double, h0Ri As Double, arcRi As Double
-        w0Ri = 2# * rRi: h0Ri = 2# * rRi / Cos(RISER_CUT_DEG * PI / 180#)
-        arcRi = rBendRi * (0.5 * PI - RISER_CUT_DEG * PI / 180#)
-        vRiStub = PI * rRi * rRi * (zRiMid - zRiBot)
-        vRiMid = arcRi * (w0Ri * h0Ri + 0.5 * (w0Ri * (H_INLET - h0Ri) + h0Ri * (W_INLET - w0Ri)) _
-                 + (W_INLET - w0Ri) * (H_INLET - h0Ri) / 3#)
-        vRiLo = 0.6 * vRiMid: vRiHi = 1.4 * vRiMid
+        ' The riser stub, a second body for now, up to the inclined
+        ' roof; then the inclined duct (the mitre's outline extruded,
+        ' its sides narrowed) joins it on: the duct's volume outside the
+        ' riser's front half (RiDuctVolume, exact), held within +-1 %;
+        ' the measured value re-bases the final.
+        vRiStub = PI * rRi * rRi * (zRiHigh - zRiBot)
+        vRiMid = RiDuctVolume() - 0.5 * PI * rRi * rRi * H_INLET / Cos(RISER_SLOPE_DEG * PI / 180#)
+        vRiLo = 0.99 * vRiMid: vRiHi = 1.01 * vRiMid
         vStage7 = vStage6 + vRiStub
         vStage8 = vStage7 + vRiMid
         vFinal = vStage8
@@ -1294,11 +1293,10 @@ Private Sub RiserNote()
     If RISER_IN_ON Then
         Note "riser inlet: D " & Fmt(2# * rRi) & " m at (" & Fmt(xRi) & ", " & Fmt(yMid) & "), " & _
              Fmt(RISER_IN_OFFSET) & " m off the axis (" & Fmt(RISER_IN_OFFSET - R - rRi) & " m clear), z " & _
-             Fmt(zRiBot) & " .. " & Fmt(zRiTop) & " (cut, inner) .. " & Fmt(zRiHigh) & " m (cut, outer; " & _
-             Fmt(RISER_CUT_DEG) & " deg); elbow from the cut's " & Fmt(2# * rRi) & " x " & _
-             Fmt(2# * rRi / Cos(RISER_CUT_DEG * PI / 180#)) & " ellipse to the duct's face, centreline R " & _
-             Fmt(rBendRi) & " m (" & Fmt(rBendRi / H_INLET) & " H) over " & Fmt(90# - RISER_CUT_DEG) & " deg from z " & Fmt(zRiMid)
-        Note "riser inlet volumes: stub " & Fmt(vRiStub) & " m3, loft expected " & Fmt(vRiLo) & _
+             Fmt(zRiBot) & " .. " & Fmt(zRiTop) & " (seam's foot) .. " & Fmt(zRiHigh) & " m (top, on the axis); " & _
+             "inclined duct at " & Fmt(RISER_SLOPE_DEG) & " deg, " & Fmt(w0Ri) & " -> " & Fmt(W_INLET) & " x " & _
+             Fmt(H_INLET) & ", roofs meet at x " & Fmt(xRmRi) & ", floors at x " & Fmt(xFmRi)
+        Note "riser inlet volumes: stub " & Fmt(vRiStub) & " m3, duct expected " & Fmt(vRiLo) & _
              " .. " & Fmt(vRiHi) & " m3"
     End If
     If RISER_ON Then
@@ -1493,8 +1491,8 @@ Private Sub RiserPreChecks()
     If RISER_IN_ON Then
     If RISER_ON Then Fail "RISER_ON and RISER_IN_ON are both set; a cyclone has one riser."
     If Not VOLUTE_ON Then Fail "RISER_IN_ON needs the volute's level duct (VOLUTE_ON)."
-    If RISER_CUT_DEG < 0# Or RISER_CUT_DEG >= 75# Then
-        Fail "RISER_CUT_DEG is " & Fmt(RISER_CUT_DEG) & "; the riser's cut tilts between 0 and 75 deg."
+    If RISER_SLOPE_DEG <= 10# Or RISER_SLOPE_DEG >= 80# Then
+        Fail "RISER_SLOPE_DEG is " & Fmt(RISER_SLOPE_DEG) & "; the inclined duct climbs between 10 and 80 deg."
     End If
     If RISER_IN_OFFSET - R - rRi < RISER_IN_CLEAR - 0.000001 Then
         Fail "the riser inlet's axis " & Fmt(RISER_IN_OFFSET) & " m off the barrel axis leaves it " & _
@@ -1504,11 +1502,16 @@ Private Sub RiserPreChecks()
         Fail "the riser inlet stands under the level duct (its wall " & Fmt(runRi - rRi) & _
              " m from the duct's face); there is no room to turn in."
     End If
-    If rBendRi - 0.5 * MaxD(H_INLET, 2# * rRi / Cos(RISER_CUT_DEG * PI / 180#)) <= 0# Then
-        Fail "the riser inlet's elbow (R " & Fmt(rBendRi) & " m) has no inner radius."
+    If xRi + rRi > xRmRi + 0.000001 Then
+        Fail "the riser inlet's front (x " & Fmt(xRi + rRi) & ") is past where the inclined duct's roof meets " & _
+             "the level duct's (x " & Fmt(xRmRi) & "); no room to narrow it."
+    End If
+    If w0Ri > W_INLET And Atn(0.5 * (w0Ri - W_INLET) / (xRmRi - xRi - rRi)) > RISER_TAPER_DEG * PI / 180# + 0.000001 Then
+        Fail "the inclined duct narrows at " & Fmt(Atn(0.5 * (w0Ri - W_INLET) / (xRmRi - xRi - rRi)) * 180# / PI) & _
+             " deg a side, over RISER_TAPER_DEG " & Fmt(RISER_TAPER_DEG) & "."
     End If
     If zRiHigh >= zRoof Then
-        Fail "the riser inlet's cut reaches z = " & Fmt(zRiHigh) & " m, over the roof."
+        Fail "the riser inlet's top reaches z = " & Fmt(zRiHigh) & " m, over the roof."
     End If
     If zRiBot <= 0# Then
         Fail "the riser inlet's gas inlet face is at z = " & Fmt(zRiBot) & " m, at or below the dust outlet."
@@ -1751,16 +1754,16 @@ Private Sub Build()
     End If
 
     ' The riser inlet (C4 / C5): the stub apart from the cyclone first,
-    ' a second body, up from its gas inlet face to its oblique cut, then
-    ' the loft from the cut to the duct's face joins the two.
+    ' a second body, up from its gas inlet face to the inclined roof,
+    ' then the inclined duct joins the two.
     If RISER_IN_ON Then
         '--- 7. round riser stub under the duct ----------------------
         Set f = ExtrudeRiserIn(planeRiserIn)
         CheckBodies "7  + riser inlet stub", 2, vStage7, _
                     xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
-        '--- 8. the elbow: loft, the cut -> the duct's face ----------
-        Set f = LoftRiserIn(planeRiserC)
+        '--- 8. the inclined duct into the level duct ----------------
+        Set f = RiserDuctIn(planeRiserC, planeRiserIn)
         CheckStage "8  + riser inlet turn", vFinal, _
                    xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
     End If
@@ -2608,7 +2611,7 @@ Private Function ExtrudeRiserIn(planeRiserIn As SldWorks.Feature) As SldWorks.Fe
 
     ' up to the oblique cut (a plane through three points of it)
     Dim cutPlane As SldWorks.Feature
-    Set cutPlane = RiserCutPlane()
+    Set cutPlane = RiserRoofPlane()
     Dim selCut As SldWorks.SelectData
 
     For k = 0 To 1
@@ -2649,21 +2652,23 @@ Private Function ExtrudeRiserIn(planeRiserIn As SldWorks.Feature) As SldWorks.Fe
 End Function
 
 
-' The riser inlet's cut: a reference plane through three points of it,
-' made in a 3D sketch (hidden after): the low point on the rim nearest
-' the duct's face (+x), the high point on the far rim, and a side point
-' level with the centre. Its tilt axis is horizontal, across the duct.
-Private Function RiserCutPlane() As SldWorks.Feature
+' The riser inlet's top: the inclined duct's roof plane, a reference
+' plane through three points of it made in a 3D sketch (hidden after):
+' on the riser's axis, D/2 behind and in front of it in y = yMid, and
+' D/2 aside. Its tilt axis is horizontal, across the duct.
+Private Function RiserRoofPlane() As SldWorks.Feature
     Dim p1 As SldWorks.SketchPoint, p2 As SldWorks.SketchPoint, p3 As SldWorks.SketchPoint
     Dim skFeat As SldWorks.Feature, pl As SldWorks.Feature
     Dim sd As SldWorks.SelectData
+    Dim hv As Double
+    hv = H_INLET / Cos(RISER_SLOPE_DEG * PI / 180#)
 
     swModel.ClearSelection2 True
     swSkMgr.Insert3DSketch True
-    Set p1 = swSkMgr.CreatePoint(xRi + rRi, yMid, zRiTop)
-    Set p2 = swSkMgr.CreatePoint(xRi - rRi, yMid, zRiHigh)
-    Set p3 = swSkMgr.CreatePoint(xRi, yMid + rRi, zRiMid)
-    If p1 Is Nothing Or p2 Is Nothing Or p3 Is Nothing Then Fail "the riser inlet's cut points could not be sketched."
+    Set p1 = swSkMgr.CreatePoint(xRi + rRi, yMid, RiFloorZ(xRi + rRi) + hv)
+    Set p2 = swSkMgr.CreatePoint(xRi - rRi, yMid, RiFloorZ(xRi - rRi) + hv)
+    Set p3 = swSkMgr.CreatePoint(xRi, yMid + rRi, zRiHigh)
+    If p1 Is Nothing Or p2 Is Nothing Or p3 Is Nothing Then Fail "the riser inlet's roof points could not be sketched."
     swSkMgr.Insert3DSketch True
     Set skFeat = LastFeature("3DProfileFeature")
 
@@ -2674,144 +2679,180 @@ Private Function RiserCutPlane() As SldWorks.Feature
     sd.Mark = 2: p3.Select4 True, sd
     Set pl = swFeat.InsertRefPlane(4, 0#, 4, 0#, 4, 0#)  ' swRefPlaneReferenceConstraint_Coincident x 3
     swModel.ClearSelection2 True
-    If pl Is Nothing Then Fail "InsertRefPlane failed for the riser inlet's cut."
+    If pl Is Nothing Then Fail "InsertRefPlane failed for the riser inlet's roof."
 
     skFeat.Select2 False, 0
     swModel.BlankSketch
     swModel.ClearSelection2 True
-    Set RiserCutPlane = pl
+    Set RiserRoofPlane = pl
 End Function
 
 
-' The riser inlet's elbow (22 Nov 2026): a loft from the stub's oblique
-' cut (its ellipse, RiserCutPlane; no step) to the duct's upright face
-' (x = -L_INLET_C), along a centreline in the plane y = yMid -- from the
-' cut's centre, normal to the cut, a circle of radius rBendRi over
-' 90 - RISER_CUT_DEG to the face's centre, tangent to the duct. The
-' section goes over linearly from the ellipse to the duct's W x H. It
-' merges the stub and the cyclone; the centreline sketch is hidden.
-Private Function LoftRiserIn(planeRiserC As SldWorks.Feature) As SldWorks.Feature
+' The inclined duct's floor at x, z (the plane through the level duct
+' face's centre line, rising at RISER_SLOPE_DEG, H_INLET / 2 normal
+' under its centreline).
+Private Function RiFloorZ(ByVal x As Double) As Double
+    Dim a As Double
+    a = RISER_SLOPE_DEG * PI / 180#
+    RiFloorZ = zRoof - 0.5 * H_INLET + (x + L_INLET_C) * Tan(a) - 0.5 * H_INLET / Cos(a)
+End Function
 
-    Dim bodies As Variant, faces As Variant
-    Dim fc As SldWorks.Face2
-    Dim duct As SldWorks.Face2, cutFace As SldWorks.Face2
-    Dim ent As SldWorks.Entity
-    Dim surf As SldWorks.Surface
-    Dim selData As SldWorks.SelectData
-    Dim p As Variant, bx As Variant
-    Dim f As SldWorks.Feature
-    Dim b As Long, i As Long
-    Dim got As Double
+' its width at x: w0Ri to the riser's front, W_INLET from xRmRi on
+Private Function RiWidth(ByVal x As Double) As Double
+    If x <= xRi + rRi Then
+        RiWidth = w0Ri
+    ElseIf x >= xRmRi Then
+        RiWidth = W_INLET
+    Else
+        RiWidth = w0Ri + (W_INLET - w0Ri) * (x - xRi - rRi) / (xRmRi - xRi - rRi)
+    End If
+End Function
 
-    bodies = swPart.GetBodies2(swSolidBody, True)
-    If IsEmpty(bodies) Then Fail "no body to loft the riser inlet on."
-    For b = 0 To UBound(bodies)
-        faces = bodies(b).GetFaces
-        For i = 0 To UBound(faces)
-            Set fc = faces(i)
-            Set surf = fc.GetSurface
-            If surf.IsPlane Then
-                p = surf.PlaneParams
-                If Abs(Abs(p(0)) - 1#) < DIR_TOL And Abs(p(3) + L_INLET_C) < 0.0001 Then
-                    Set duct = fc
-                ElseIf Abs(p(2)) > 0.05 And Abs(p(2)) < 1# - DIR_TOL Then
-                    ' the stub's oblique cut, centred on the riser's axis (no
-                    ' other face of the domain is tilted): the elbow starts on it
-                    bx = fc.GetBox
-                    If Abs(0.5 * (bx(0) + bx(3)) - xRi) < 0.01 And Abs(0.5 * (bx(1) + bx(4)) - yMid) < 0.01 Then Set cutFace = fc
-                End If
-            End If
-        Next i
-    Next b
-    If duct Is Nothing Then Fail "the riser inlet's loft could not find the duct's end face."
-    If cutFace Is Nothing Then Fail "the riser inlet's loft could not find the stub's oblique cut."
+' the mitre outline's depth at x, outside the level duct (x > -L_INLET_C
+' only the floor's wedge under it)
+Private Function RiDepth(ByVal x As Double) As Double
+    Dim hv As Double
+    hv = H_INLET / Cos(RISER_SLOPE_DEG * PI / 180#)
+    If x <= xRmRi Then
+        RiDepth = hv
+    ElseIf x <= -L_INLET_C Then
+        RiDepth = zRoof - RiFloorZ(x)
+    Else
+        RiDepth = MaxD(0#, zRoof - H_INLET - RiFloorZ(x))
+    End If
+End Function
 
-    ' the start profile: the cut's ellipse itself, as four arcs split
-    ' where it meets the diagonals of the riser's square footprint, so
-    ' the loft pairs them with the duct face's four sides and does not
-    ' twist (a 3D sketch of splines through points of the exact ellipse,
-    ' model coordinates; the cut face itself has no vertices to align)
-    Dim prof As SldWorks.Feature
-    Dim q As Long, m As Long, th As Double
-    Const N_SP As Long = 16
-    Dim pd(0 To 3 * (N_SP + 1) - 1) As Double
-    swModel.ClearSelection2 True
-    swSkMgr.Insert3DSketch True
-    For q = 0 To 3
-        For m = 0 To N_SP
-            th = PI / 4# + (q + m / N_SP) * PI / 2#
-            pd(3 * m) = xRi + rRi * Cos(th)
-            pd(3 * m + 1) = yMid + rRi * Sin(th)
-            pd(3 * m + 2) = zRiMid - rRi * Tan(RISER_CUT_DEG * PI / 180#) * Cos(th)
-        Next m
-        If swSkMgr.CreateSpline2((pd), False) Is Nothing Then Fail "CreateSpline2 failed on the riser inlet elbow's start ellipse."
-    Next q
-    swSkMgr.Insert3DSketch True
-    Set prof = LastFeature("3DProfileFeature")
+' The inclined duct's own volume, the riser to the mitre: width x depth
+' along x, both piecewise linear, so Simpson on each piece is exact
+' (the pieces split where either kinks or jumps).
+Private Function RiDuctVolume() As Double
+    Dim br(5) As Double, k As Long, x0 As Double, x1 As Double, xm As Double, v As Double
+    br(0) = xRi: br(1) = xRi + rRi: br(2) = xRmRi: br(3) = -L_INLET_C: br(4) = xFmRi
+    For k = 0 To 3
+        x0 = br(k): x1 = br(k + 1): xm = 0.5 * (x0 + x1)
+        If x1 > x0 Then
+            ' the ends a hair inside: the depth jumps at the duct's face
+            v = v + (x1 - x0) / 6# * (RiWidth(x0) * RiDepth(x0 + 0.000000001) + 4# * RiWidth(xm) * RiDepth(xm) _
+                                    + RiWidth(x1) * RiDepth(x1 - 0.000000001))
+        End If
+    Next k
+    RiDuctVolume = v
+End Function
 
-    ' the centreline: from the cut's centre, normal to it, a circle of
-    ' radius rBendRi over 90 - cut to the face's centre, tangent to the duct
-    Dim sk As SldWorks.Sketch, skFeat As SldWorks.Feature, arc As SldWorks.SketchSegment
-    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double, u2 As Double, v2 As Double
-    Dim zc As Double, phm As Double
-    zc = zRoof - 0.5 * H_INLET - rBendRi
-    phm = 0.5 * (RISER_CUT_DEG * PI / 180# + 0.5 * PI)
+
+' The riser inlet's inclined duct (22 Nov 2026): the mitre's outline in
+' the plane y = yMid (planeRiserC) -- up the riser's axis from the floor
+' to the roof, the roof line to the level roof, along it to the duct's
+' face, down the face, the level floor forward to where the inclined
+' floor meets it, the inclined floor back -- extruded w0Ri wide about
+' that plane; then, if the riser is wider than the duct, its sides cut
+' to narrow from the riser's front to W_INLET at xRmRi (two through-all
+' cuts from planeRiserIn, outside the duct's width only). The riser's
+' front half lies inside it, its back half stays round up to the roof.
+Private Function RiserDuctIn(planeRiserC As SldWorks.Feature, planeRiserIn As SldWorks.Feature) As SldWorks.Feature
+    Dim sk As SldWorks.Sketch, skFeat As SldWorks.Feature, f As SldWorks.Feature
+    Dim px(5) As Double, pz(5) As Double, u(5) As Double, w(5) As Double
+    Dim k As Long, got As Double, bodies As Variant
+    Dim hv As Double
+    hv = H_INLET / Cos(RISER_SLOPE_DEG * PI / 180#)
+    px(0) = xRi: pz(0) = zRiTop
+    px(1) = xRi: pz(1) = zRiHigh
+    px(2) = xRmRi: pz(2) = zRoof
+    px(3) = -L_INLET_C: pz(3) = zRoof
+    px(4) = -L_INLET_C: pz(4) = zRoof - H_INLET
+    px(5) = xFmRi: pz(5) = zRoof - H_INLET
+
     uSign = uSignC: vSign = vSignC
     swModel.ClearSelection2 True
     planeRiserC.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the riser inlet elbow's centreline sketch."
+    If sk Is Nothing Then Fail "could not open the riser inlet duct's sketch."
     wRefSet = False
-    G2S sk, xRi, yMid, zRiMid, u0, v0
-    G2S sk, -L_INLET_C, yMid, zRoof - 0.5 * H_INLET, u1, v1
-    G2S sk, -L_INLET_C - rBendRi * Cos(phm), yMid, zc + rBendRi * Sin(phm), u2, v2
-    Set arc = swSkMgr.Create3PointArc(u0, v0, 0#, u1, v1, 0#, u2, v2, 0#)
-    If arc Is Nothing Then Fail "Create3PointArc failed on the riser inlet elbow's centreline."
+    For k = 0 To 5
+        G2S sk, px(k), yMid, pz(k), u(k), w(k)
+    Next k
+    For k = 0 To 5
+        If swSkMgr.CreateLine(u(k), w(k), 0#, u((k + 1) Mod 6), w((k + 1) Mod 6), 0#) Is Nothing Then
+            Fail "CreateLine failed on the riser inlet duct's outline."
+        End If
+    Next k
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
 
     swModel.ClearSelection2 True
-    Set selData = swModel.SelectionManager.CreateSelectData
-    selData.Mark = 1
-    prof.Select4 False, selData
-    Set ent = duct
-    ent.Select4 True, selData
-    selData.Mark = 4                                ' the loft's centreline
-    arc.Select4 True, selData
-
-    Set f = swFeat.InsertProtrusionBlend2( _
-        False, True, False, 1#, _
-        0, 0, 1#, 1#, True, True, _
-        False, 0#, 0#, 0, _
-        True, True, True, 0)
-    swModel.ClearSelection2 True
-    If f Is Nothing Then
-        Fail "InsertProtrusionBlend2 refused the elbow's loft between the riser inlet's cut and the duct's face."
-    End If
     skFeat.Select2 False, 0
-    swModel.BlankSketch
-    prof.Select2 False, 0
-    swModel.BlankSketch
+    Set f = swFeat.FeatureExtrusion3( _
+        True, False, False, _
+        swEndCondMidPlane, swEndCondBlind, _
+        w0Ri, 0.01, _
+        False, False, False, False, _
+        0#, 0#, _
+        False, False, False, False, _
+        True, True, True, _
+        swStartSketchPlane, 0#, False)
     swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "the riser inlet's inclined duct could not be extruded."
+    Set RiserDuctIn = f
+
+    If w0Ri > W_INLET + 0.000001 Then
+        ' the sides: outside the taper line, from the riser's front on,
+        ' to past the floors' corner, on both sides of the duct
+        Dim mg As Double, sg As Long, q(3) As Double, qy(3) As Double, uu(3) As Double, ww(3) As Double
+        mg = 0.2
+        uSign = uSignI: vSign = vSignI
+        swModel.ClearSelection2 True
+        planeRiserIn.Select2 False, 0
+        swSkMgr.InsertSketch True
+        Set sk = swSkMgr.ActiveSketch
+        If sk Is Nothing Then Fail "could not open the riser inlet duct's taper sketch."
+        wRefSet = False
+        For sg = -1 To 1 Step 2
+            q(0) = xRi + rRi: qy(0) = yMid + sg * 0.5 * w0Ri
+            q(1) = xRmRi: qy(1) = yMid + sg * 0.5 * W_INLET
+            q(2) = xFmRi + mg: qy(2) = yMid + sg * 0.5 * W_INLET
+            q(3) = xRi + rRi: qy(3) = yMid + sg * (0.5 * w0Ri + mg)
+            For k = 0 To 3
+                G2S sk, q(k), qy(k), zRiBot, uu(k), ww(k)
+            Next k
+            ' a pentagon: the taper line, the duct's side, out, back
+            If swSkMgr.CreateLine(uu(0), ww(0), 0#, uu(1), ww(1), 0#) Is Nothing Then Fail "CreateLine failed on the taper cut."
+            If swSkMgr.CreateLine(uu(1), ww(1), 0#, uu(2), ww(2), 0#) Is Nothing Then Fail "CreateLine failed on the taper cut."
+            Dim u4 As Double, w4 As Double
+            G2S sk, xFmRi + mg, yMid + sg * (0.5 * w0Ri + mg), zRiBot, u4, w4
+            If swSkMgr.CreateLine(uu(2), ww(2), 0#, u4, w4, 0#) Is Nothing Then Fail "CreateLine failed on the taper cut."
+            If swSkMgr.CreateLine(u4, w4, 0#, uu(3), ww(3), 0#) Is Nothing Then Fail "CreateLine failed on the taper cut."
+            If swSkMgr.CreateLine(uu(3), ww(3), 0#, uu(0), ww(0), 0#) Is Nothing Then Fail "CreateLine failed on the taper cut."
+        Next sg
+        swSkMgr.InsertSketch True
+        Set skFeat = LastFeature("ProfileFeature")
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 0
+        Set f = swFeat.FeatureCut4( _
+            False, False, False, _
+            swEndCondThroughAll, swEndCondThroughAll, 0.01, 0.01, _
+            False, False, False, False, 0#, 0#, _
+            False, False, False, False, _
+            False, True, True, True, True, False, _
+            swStartSketchPlane, 0#, False, False)
+        swModel.ClearSelection2 True
+        If f Is Nothing Then Fail "the riser inlet duct's sides could not be narrowed."
+    End If
 
     bodies = swPart.GetBodies2(swSolidBody, True)
     If UBound(bodies) <> 0 Then
-        Fail "the riser inlet's loft left " & (UBound(bodies) + 1) & " bodies; it did not join " & _
+        Fail "the riser inlet's duct left " & (UBound(bodies) + 1) & " bodies; it did not join " & _
              "the riser to the cyclone."
     End If
     got = BodiesVolume()
     If got < vStage7 + vRiLo Or got > vStage7 + vRiHi Then
-        Fail "the riser inlet's loft added " & Fmt(got - vStage7) & " m3; expected " & _
+        Fail "the riser inlet's duct added " & Fmt(got - vStage7) & " m3; expected " & _
              Fmt(vRiLo) & " .. " & Fmt(vRiHi) & " m3."
     End If
-
-    Note "riser inlet elbow " & Fmt(got - vStage7) & " m3 (frustum estimate " & Fmt(vRiMid) & ", " & _
+    Note "riser inlet duct " & Fmt(got - vStage7) & " m3 (closed form " & Fmt(vRiMid) & ", " & _
          Fmt(100# * (got - vStage7 - vRiMid) / vRiMid) & " %)"
     vStage8 = got
     vFinal = vStage8
-    Set LoftRiserIn = f
-
 End Function
 
 

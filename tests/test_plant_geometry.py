@@ -555,21 +555,29 @@ class TheGasPathsAreTheDecisionsTest(unittest.TestCase):
                 self.assertAlmostEqual(r["parts"][2]["length"], up["inlet_duct_length"], places=12)
                 self.assertGreaterEqual(ri["clearance"], pg.v(d["riser_barrel_clearance"]) - 1e-9)
                 self.assertAlmostEqual(ri["offset"], L["column_offset"], places=12)
-                # the elbow (22 Nov 2026): a mitre on the riser's cut at
-                # riser_cut_deg, then a tapering bend over the rest of 90 deg,
-                # its centreline radius run / cos(cut), riser_bend_R_over_H x H
-                # at least; the cut's centre H/2 + R (1 - sin) under the roof
+                # the inclined duct (22 Nov 2026): the riser straight up,
+                # a flat-faced duct climbing at riser_duct_slope_deg from it
+                # into the level duct; the riser no closer than the mitre,
+                # the taper (riser_taper_deg at most) and its radius allow
                 c_k = pg.cyclone(self.g, f"C{k}")
-                a = 0.5 * ri["D"]
-                bt = math.radians(pg.v(d["riser_cut_deg"]))
-                self.assertGreaterEqual(ri["bend_R"], pg.v(d["riser_bend_R_over_H"]) * c_k["H_inlet"] - 1e-9)
-                self.assertAlmostEqual(ri["bend_R"] * math.cos(bt), ri["run"], places=12)
-                self.assertGreater(ri["bend_R_inner"], 0.0)
-                self.assertAlmostEqual(ri["drop_mid"], 0.5 * c_k["H_inlet"] + ri["bend_R"] * (1.0 - math.sin(bt)),
+                al = math.radians(pg.v(d["riser_duct_slope_deg"]))
+                H_k, W_k = c_k["H_inlet"], c_k["W_inlet"]
+                self.assertGreaterEqual(ri["run"], pg.riser_duct_run_min(
+                    ri["D"], W_k, H_k, pg.v(d["riser_duct_slope_deg"]), pg.v(d["riser_taper_deg"])) - 1e-9)
+                self.assertLessEqual(ri["taper_deg"], pg.v(d["riser_taper_deg"]) + 1e-9)
+                self.assertAlmostEqual(ri["mitre_back"], 0.5 * H_k * math.tan(0.5 * al), places=12)
+                self.assertAlmostEqual(ri["taper_L"], ri["run"] - 0.5 * ri["D"] - ri["mitre_back"], places=12)
+                # the seam's foot: the floor plane at the riser's axis
+                self.assertAlmostEqual(ri["drop"], 0.5 * H_k + ri["run"] * math.tan(al) + 0.5 * H_k / math.cos(al),
                                        places=12)
-                self.assertAlmostEqual(ri["drop"], ri["drop_mid"] + a * math.tan(bt), places=12)
-                self.assertAlmostEqual(ri["drop_high"], ri["drop_mid"] - a * math.tan(bt), places=12)
-                self.assertAlmostEqual(ri["start_H"], ri["D"] / math.cos(bt), places=12)
+                self.assertAlmostEqual(ri["drop"] - ri["drop_top"], H_k / math.cos(al), places=12)
+                # the volume: more than the inclined duct's straight part
+                # behind the mitre plus the riser's back half
+                a = 0.5 * ri["D"]
+                v_lo = W_k * H_k / math.cos(al) * (ri["run"] - ri["mitre_back"]) \
+                    + 0.5 * math.pi * a * a * H_k / math.cos(al)
+                self.assertGreater(ri["volume"], v_lo)
+                self.assertLess(ri["volume"], v_lo * 1.3)
                 self.assertGreaterEqual(L["z_dust"][k] - L["z_roof"][k + 1],
                                         pg.v(self.g["layout"]["dust_over_roof"]) - 1e-9)
                 # the roofs step by the riser: vertical + its turn

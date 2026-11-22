@@ -243,54 +243,78 @@
       "short": "volute"
     },
     {
-      "key": "cyclone_domain.riser_cut_deg",
-      "label": "Riser's cut under the elbow, tilt",
-      "value": 30.0,
+      "key": "cyclone_domain.riser_duct_slope_deg",
+      "label": "Inclined duct, riser to the level duct, slope",
+      "value": 45.0,
       "unit": "deg",
       "source": "schematic",
       "status": "Schematic",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_cut_deg"
+        "cyclone_domain.riser_duct_slope_deg"
       ],
-      "short": "riser_cut"
+      "short": "riser_slope"
+    },
+    {
+      "key": "C5.riser_taper",
+      "label": "Inclined duct narrowing D -> W (sides 9.9 deg)",
+      "value": 0.7038162253862801,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "preheater/cyclone_C4.md",
+      "inputs": [
+        "cyclone_domain.riser_taper_deg",
+        "cyclone_domain.riser_duct_slope_deg",
+        "cyclones.C4.D_vortex_over_D_barrel",
+        "cyclones.C5.D_barrel_published",
+        "cyclones.C4.W_inlet",
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.H_inlet"
+      ],
+      "value_mm": 703.816225,
+      "short": "riser_taper"
     },
     {
       "key": "C5.riser_offset",
       "label": "Riser axis from the barrel axis (the columns' offset)",
-      "value": 7.007240600753556,
+      "value": 7.01881151631767,
       "unit": "m",
       "source": "derived",
-      "status": "Estimated",
+      "status": "Schematic",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_bend_R_over_H",
-        "cyclones.C4.H_inlet",
+        "cyclone_domain.riser_duct_slope_deg",
+        "cyclone_domain.riser_taper_deg",
+        "cyclones.C4.D_vortex_over_D_barrel",
         "cyclones.C5.D_barrel_published",
-        "cyclones.C4.D_barrel",
         "cyclones.C4.W_inlet",
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.H_inlet",
         "cyclones.C4.inlet_duct_length"
       ],
-      "value_mm": 7007.240601,
+      "value_mm": 7018.811516,
       "short": "riser_offset"
     },
     {
       "key": "C5.riser_run",
-      "label": "Elbow centreline radius, riser axis to the duct face",
-      "value": 3.039456355338379,
+      "label": "Riser axis to the duct face, horizontal",
+      "value": 3.0553336641517883,
       "unit": "m",
       "source": "derived",
-      "status": "Estimated",
+      "status": "Schematic",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_bend_R_over_H",
-        "cyclones.C4.H_inlet",
+        "cyclone_domain.riser_duct_slope_deg",
+        "cyclone_domain.riser_taper_deg",
+        "cyclones.C4.D_vortex_over_D_barrel",
         "cyclones.C5.D_barrel_published",
-        "cyclones.C4.D_barrel",
         "cyclones.C4.W_inlet",
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.H_inlet",
         "cyclones.C4.inlet_duct_length"
       ],
-      "value_mm": 3039.456355,
+      "value_mm": 3055.333664,
       "short": "riser_run"
     },
     {

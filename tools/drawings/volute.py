@@ -34,7 +34,7 @@ ALSO = {"C4": ["C2", "C3"]}
 ORDER = (
     "per_string", "D_barrel", "H_barrel", "H_cone", "height", "L_vortex",
     "D_vortex", "vortex_wall", "D_dust", "W_inlet", "H_inlet", "inlet_duct_length",
-    "tongue", "overlap", "volute", "riser_cut", "riser_offset", "riser_run",
+    "tongue", "overlap", "volute", "riser_slope", "riser_taper", "riser_offset", "riser_run",
     "riser_stub", "outlet_turn", "outlet_rise", "top", "volume", "wet_area",
     "u_wall", "u_material", "u_flange", "u_support",
 )
@@ -69,13 +69,16 @@ def params(g, name):
     P["overlap"] = pv.primary(g, f"{dom}.volute_overlap", "Scroll's inner arc inside the barrel")
     dim("volute", "Volute")
     r = pg.cfd_riser_inlet(g, name)
-    cut = pv.primary(g, f"{dom}.riser_cut_deg", "Riser's cut under the elbow, tilt")
-    bend_k = pv.primary(g, f"{dom}.riser_bend_R_over_H", "")
+    slope = pv.primary(g, f"{dom}.riser_duct_slope_deg", "Inclined duct, riser to the level duct, slope")
     stub_k = pv.primary(g, f"{dom}.riser_cfd_stub_over_D", "")
-    P["riser_cut"] = cut
+    P["riser_slope"] = slope
+    tp_k = pv.primary(g, f"{dom}.riser_taper_deg", "")
+    P["riser_taper"] = pv.derived(f"{name}.riser_taper", f"Inclined duct narrowing D -> W (sides {r['taper_deg']:.1f} deg)",
+                                  r["taper_L"], "m", [tp_k, slope, P["D_vortex"], P["W_inlet"], P["H_inlet"]])
     P["riser_offset"] = pv.derived(f"{name}.riser_offset", "Riser axis from the barrel axis (the columns' offset)",
-                                   r["offset"], "m", [bend_k, P["H_inlet"], P["W_inlet"], P["inlet_duct_length"]])
-    P["riser_run"] = pv.derived(f"{name}.riser_run", "Elbow centreline radius, riser axis to the duct face",
+                                   r["offset"], "m", [P["riser_slope"], P["riser_taper"], P["W_inlet"],
+                                                      P["inlet_duct_length"]])
+    P["riser_run"] = pv.derived(f"{name}.riser_run", "Riser axis to the duct face, horizontal",
                                 r["run"], "m", [P["riser_offset"], P["W_inlet"], P["inlet_duct_length"]])
     P["riser_stub"] = pv.derived(f"{name}.riser_stub", "Vertical riser in the domain, under the cut",
                                  r["stub"], "m", [stub_k, P["D_vortex"]])

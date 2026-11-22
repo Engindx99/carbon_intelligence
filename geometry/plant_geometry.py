@@ -1199,13 +1199,11 @@ def riser_inlet(g, name, D_riser=None, offset=None):
 
     The riser (D_riser, the cyclone below's outlet bore; C(name)'s own
     D_x if not given) stands vertical under the duct's axis (y = the
-    duct's middle). Its round top is cut obliquely and an elbow starts
-    on the cut, turning it into the level duct, tangent to the duct's
-    face (riser_elbow). The elbow's centreline radius is
-    riser_bend_R_over_H x H at least (the riser axis then that x cos
-    riser_cut_deg back from the face), the riser riser_barrel_clearance
-    clear of the barrel; `offset` (a column spacing shared by several
-    risers) puts it, and so the radius, further out."""
+    duct's middle) and an inclined flat-faced duct climbs from it into
+    the level duct (riser_elbow). Its axis is riser_duct_run_min back
+    from the face at least, the riser riser_barrel_clearance clear of
+    the barrel; `offset` (a column spacing shared by several risers)
+    puts it further out (the inclined duct then longer)."""
 
     c = cyclone(g, name)
     if not c["inlet_riser"]:
@@ -1217,7 +1215,8 @@ def riser_inlet(g, name, D_riser=None, offset=None):
     H, W = c["H_inlet"], c["W_inlet"]
     y_d = 0.5 * (s["y_inner"] + s["y_outer"])
     clr = v(d["riser_barrel_clearance"])
-    run_min = v(d["riser_bend_R_over_H"]) * H * math.cos(math.radians(v(d["riser_cut_deg"])))
+    slope, taper = v(d["riser_duct_slope_deg"]), v(d["riser_taper_deg"])
+    run_min = riser_duct_run_min(D, W, H, slope, taper)
     least = max(R + 0.5 * D + clr, math.hypot(s["length"] + run_min, y_d))
     off = least if offset is None else offset
     if off < least - 1e-9:
@@ -1225,7 +1224,7 @@ def riser_inlet(g, name, D_riser=None, offset=None):
                          f"(needs {least:.3f})")
     x_j = math.sqrt(off * off - y_d * y_d)       # the riser axis back from x = 0
     run = x_j - s["length"]                       # riser axis back from the duct face
-    el = riser_elbow(run, D, W, H, v(d["riser_cut_deg"]))
+    el = riser_elbow(run, D, W, H, slope, taper)
     w = 0.5 * W
     dots = (s["length"] * x_j + (y_d + w) * y_d, s["length"] * x_j + (y_d - w) * y_d)
     out = {
@@ -1248,90 +1247,98 @@ def riser_inlet(g, name, D_riser=None, offset=None):
     return out
 
 
-def riser_elbow(run, D, W, H, cut_deg):
-    """A riser's top turned into a level duct (user decisions, 22 Nov
-    2026, from a plant's riser duct + elbow duct). The round riser is
-    cut by a plane tilted cut_deg (b) about the horizontal across the
-    duct, high on the side away from it -- a mitre: the elbow starts on
-    the cut's ellipse itself (D across, D / cos b along the slope; no
-    step), and its section goes over linearly (a constant taper) to the
-    duct face's W x H while its centreline turns the remaining 90 - b
-    deg on a circle of radius bend_R = run / cos b (run: the riser axis
-    back from the duct face), tangent to the duct.
+def riser_duct_run_min(D, W, H, slope_deg, taper_deg):
+    """The least run (riser axis back from the level duct's face) of
+    riser_elbow: the mitre's roof corner (H/2) tan(slope/2) behind the
+    face, the side walls' taper from the riser's D to W at taper_deg
+    each, and the riser's radius."""
+    taper = max(0.0, 0.5 * (D - W)) / math.tan(math.radians(taper_deg))
+    return 0.5 * H * math.tan(0.5 * math.radians(slope_deg)) + taper + 0.5 * D
 
-    drop_mid: roof down to the cut's centre (H/2 + bend_R (1 - sin b));
-    drop: to the cut's low point (the riser's straight part ends there);
-    drop_high: to its high point. Volume and wall: the elbow as a ruled
-    loft of the centreline's length between the ellipse and the
-    rectangle (_vertical_loft; Pappus), and the riser over the cut's
-    low point."""
-    b = math.radians(cut_deg)
-    R_b = run / math.cos(b)
-    a = 0.5 * D
-    if R_b - 0.5 * H <= 0.0 or R_b - a / math.cos(b) <= 0.0:
-        raise ValueError(f"the elbow's radius {R_b:.3f} m leaves no inner radius")
-    tilt = a * math.tan(b)
-    drop_mid = 0.5 * H + R_b * (1.0 - math.sin(b))
-    arc = R_b * (0.5 * math.pi - b)
-    w0, h0 = D, D / math.cos(b)
-    el = _vertical_loft(D, H, W, arc, h0)
+
+def riser_elbow(run, D, W, H, slope_deg, taper_deg, n=4000):
+    """A riser's top into C(k)'s level duct (user decision, 22 Nov 2026,
+    "aynısını yapalım", from a plant image: the riser goes straight up
+    and a flat-faced rectangular duct climbs from it to the cyclone's
+    inlet). In the level duct's frame (x along it, its face at x = 0
+    here; z from its centreline, H high): the inclined duct's centreline
+    rises at slope_deg (a) through the face's centre, its section H
+    (normal to it) by w(x); the union with the level duct mitres them --
+    the roof lines meet (H/2) tan(a/2) behind the face, the floors as far
+    in front. The riser (D, axis `run` behind the face) stands up into
+    it and is cut by the inclined roof; the inclined floor -- one plane,
+    constant slope -- meets the riser's front half along half an ellipse
+    (the "parabolic" seam). The duct is D wide back to the riser's axis
+    (its sides tangent to the riser, its back the riser itself) and
+    narrows to W at taper_deg at most, from the riser's front to the
+    roof's mitre. No step anywhere.
+
+    drop: the level duct's roof down to the seam's lowest points (the
+    riser's sides, where its straight part ends); drop_top: down to the
+    riser's top on its axis (the inclined roof). Volume and wall (exact,
+    the union above the seam's foot, the level duct x > -0 not counted
+    but for the mitre's floor wedge under it): the riser's back half,
+    the inclined duct, the mitre's wedge."""
+    a = math.radians(slope_deg)
+    if run < riser_duct_run_min(D, W, H, slope_deg, taper_deg) - 1e-9:
+        raise ValueError(f"a riser {run:.3f} m behind the duct face leaves no room for the inclined duct")
+    r = 0.5 * D
+    w0 = max(D, W)
+    ta, ca = math.tan(a), math.cos(a)
+    hv = H / ca                                     # the inclined duct's vertical depth
+    x_r = -run                                      # riser axis
+    x_rm = -0.5 * H * math.tan(0.5 * a)             # roofs meet
+    x_fm = -x_rm                                    # floors meet
+    x_t0, x_t1 = x_r + r, x_rm                      # the sides narrow, w0 -> W
+
+    def floor(x):
+        return x * ta - 0.5 * hv                    # z from the level duct's centreline
+
+    def roof(x):
+        return x * ta + 0.5 * hv
+
+    def width(x):
+        if x <= x_t0:
+            return w0
+        if x >= x_t1:
+            return W
+        return w0 + (W - w0) * (x - x_t0) / (x_t1 - x_t0)
+
+    def h_side(x):                                  # the side walls' depth outside the level duct
+        if x <= x_rm:
+            return hv
+        if x <= 0.0:
+            return 0.5 * H - floor(x)
+        return max(0.0, -0.5 * H - floor(x))
+
+    xs = np.linspace(x_r, x_fm, n + 1)
+    ws = np.array([width(x) for x in xs])
+    hs = np.array([h_side(x) for x in xs])
+    slope_w = np.gradient(ws, xs)
+    vol = np.trapz(ws * hs, xs) + 0.5 * math.pi * r * r * hv
+    taper_len = x_t1 - x_t0
+    ang = math.degrees(math.atan(0.5 * (w0 - W) / taper_len)) if taper_len > 0 else 0.0
+    a_floor = np.trapz(ws, xs) / ca - 0.5 * math.pi * r * r / ca
+    m_roof = xs <= x_rm
+    a_roof = np.trapz(ws[m_roof], xs[m_roof]) / ca
+    a_side = 2.0 * np.trapz(hs * np.sqrt(1.0 + (0.5 * slope_w) ** 2), xs)
+    a_riser = math.pi * r * hv + 0.5 * math.pi * r * r / ca
+    # the level roof gains W x (-x_rm) behind the face, its floor loses
+    # as much in front of it (x_fm = -x_rm): they cancel
+    drop = 0.5 * H - floor(x_r)
     return {
-        "bend_R": R_b,
-        "bend_R_inner": R_b - 0.5 * max(H, h0),
-        "cut_deg": cut_deg,
-        "bend_deg": 90.0 - cut_deg,
-        "start_W": w0,
-        "start_H": h0,
-        "drop_mid": drop_mid,
-        "drop": drop_mid + tilt,
-        "drop_high": drop_mid - tilt,
-        "length": arc,                            # the centreline, the cut's centre to the duct face
-        "bend_volume": el["volume"],
-        "volume": el["volume"] + math.pi * a * a * tilt,
-        "wall_area": el["wall_area"] + 2.0 * math.pi * a * tilt,
+        "slope_deg": slope_deg,
+        "taper_deg": ang,
+        "taper_L": taper_len,
+        "width0": w0,
+        "mitre_back": -x_rm,                        # the roofs' corner behind the face
+        "mitre_front": x_fm,                        # the floors' corner in front of it
+        "drop": drop,
+        "drop_top": 0.5 * H - roof(x_r),
+        "length": 0.5 * hv + run / ca,              # riser axis from the seam's foot, then the duct's centreline
+        "volume": vol,
+        "wall_area": a_floor + a_roof + a_side + a_riser,
     }
-
-
-@lru_cache(maxsize=None)
-def _vertical_loft(D, H, W, L, D_h=None, n=720, phases=128):
-    """A ruled loft between a circle (D; an ellipse D x D_h, D_h along
-    H, if given) and a rectangle (H x W) in
-    parallel planes L apart, centred on one axis, as SolidWorks builds
-    it with no guides: each perimeter at equal arc-length steps, of the
-    pairings (start, sense) the untwisted one, which encloses the most.
-    The section's area is quadratic along the axis, so Simpson's rule
-    (ends and the paired mid-curve) is exact; the wall is the ruled
-    quads' area."""
-    t = np.arange(n) / n
-    P = 2.0 * (W + H)
-    s = t * P
-    x = np.where(s < H, -0.5 * H + s,
-        np.where(s < H + W, 0.5 * H,
-        np.where(s < 2 * H + W, 0.5 * H - (s - H - W), -0.5 * H)))
-    y = np.where(s < H, -0.5 * W,
-        np.where(s < H + W, -0.5 * W + (s - H),
-        np.where(s < 2 * H + W, 0.5 * W, 0.5 * W - (s - 2 * H - W))))
-
-    def area(px, py):
-        return 0.5 * abs(np.dot(px, np.roll(py, -1)) - np.dot(py, np.roll(px, -1)))
-
-    Dh = D if D_h is None else D_h
-    a0, a1 = 0.25 * math.pi * D * Dh, W * H
-    best = None
-    for k in range(phases):
-        for sense in (1.0, -1.0):
-            ang = 2.0 * math.pi * (k / phases + sense * t)
-            cx, cy = 0.5 * Dh * np.cos(ang), 0.5 * D * np.sin(ang)
-            am = area(0.5 * (cx + x), 0.5 * (cy + y))
-            vol = L / 6.0 * (a0 + 4.0 * am + a1)
-            if best is None or vol > best[0]:
-                p0 = np.stack([cx, cy, np.zeros(n)], axis=1)
-                p1 = np.stack([x, y, np.full(n, L)], axis=1)
-                q0, q1 = np.roll(p0, -1, axis=0), np.roll(p1, -1, axis=0)
-                wall = 0.5 * (np.linalg.norm(np.cross(q0 - p0, p1 - p0), axis=1)
-                              + np.linalg.norm(np.cross(p1 - q0, q1 - q0), axis=1)).sum()
-                best = (vol, wall)
-    return {"volume": best[0], "wall_area": best[1]}
 
 
 def cfd_riser_inlet(g, name):
@@ -1360,7 +1367,8 @@ def cfd_riser_inlet(g, name):
         x_j = math.sqrt(r["offset"] ** 2 - r["y"] ** 2)
         r["x"] = -x_j
         r["run"] = x_j - r["level"]
-        r.update(riser_elbow(r["run"], r["D"], c["W_inlet"], c["H_inlet"], v(d["riser_cut_deg"])))
+        r.update(riser_elbow(r["run"], r["D"], c["W_inlet"], c["H_inlet"], v(d["riser_duct_slope_deg"]),
+                             v(d["riser_taper_deg"])))
         w = 0.5 * c["W_inlet"]
         dots = (r["level"] * x_j + (r["y"] + w) * r["y"], r["level"] * x_j + (r["y"] - w) * r["y"])
         r["t_out"] = r["offset"] - max(dots) / r["offset"]

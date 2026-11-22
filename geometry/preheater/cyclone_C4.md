@@ -28,9 +28,11 @@ Yayınlanmış olan yalnız çap D'dir (HFC2500); koni, vorteks bulucu ve toz ç
 | Çıkış dönüşü | 0 ° | CFD kararı |
 | Çıkış borusu yükselişi (çatının üstünde) | 5.355 m | 1.7 D_x |
 | Yatay giriş kanalı (teğet düzleminden) | 2.000 m | türetilmiş |
-| Riserın dirsek altındaki eğik kesimi | 30 ° | şematik |
-| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.792 m | türetilmiş |
-| Dirsek merkez yarıçapı (riser ekseninden kanal ağzına) | 2.944 m | türetilmiş |
+| Riserdan kanala eğik kanalın eğimi | 45 ° | şematik |
+| Eğik kanalın yan duvarlarının daralma açısı (en çok) | 15 ° | CFD kararı |
+| Eğik kanalın daralan boyu (D → W) | 0.681 m | 9.9° yan duvar |
+| Riser ekseni, gövde ekseninden (kolon aralığı) | 6.803 m | türetilmiş |
+| Riser ekseninden kanal ağzına yatay mesafe | 2.960 m | türetilmiş |
 | CFD domenindeki dik riser (dönüşün altında) | 3.150 m | türetilmiş |
 | Toplam yükseklik (gövde + koni) | 13.600 m | türetilmiş |
 | **Ekipman hacmi (gövde + koni)** | 283.25 m³ | türetilmiş |

@@ -69,8 +69,9 @@ cyclones:
     volute:            {value: true, unit: "-",   source: cfd_decision, doc: preheater/cyclone_C4.md}
     # R2-R4 (user decision, 17 Nov 2026): each riser is the cyclone
     # below's outlet pipe, straight up beside the one above, turning
-    # into a short level duct and the volute through a rectangular
-    # elbow (cyclone_domain.riser_bend_R_over_H; 22 Nov 2026). So the outlet does not turn (0: a
+    # into a short level duct and the volute through an inclined
+    # flat-faced duct (cyclone_domain.riser_duct_slope_deg; 22 Nov
+    # 2026). So the outlet does not turn (0: a
     # straight pipe outlet_rise over the roof, the CFD domain's end;
     # until then a 90 deg bend R 1.0 D_x and a 1.0 D_x leg), the level
     # duct is inlet_duct_length (3.0 m before; 1.0 m on 17 Nov; 2.0 m
@@ -110,23 +111,25 @@ cyclone_domain:
   c1_feed_height:      {value: 0.6,  unit: m,     source: literature,   doc: preheater/riser_R1.md}
   c1_feed_depth:       {value: 1.0,  unit: m,     source: model,        doc: preheater/riser_R1.md}
   meal_slope:          {value: 60.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
-  # R2-R4 into C2-C4 (and the C4 domain's own inlet). The riser stands
-  # under the level duct's axis; its round top is cut by a plane tilted
-  # riser_cut_deg about the horizontal across the duct, high on the
-  # side away from the duct, and an elbow starts on that cut: a loft
-  # from the cut's ellipse to the duct's W x H face along a quarter
-  # circle centreline of radius riser_bend_R_over_H duct heights,
-  # tangent to the riser's axis and to the duct's (user decisions, 22
-  # Nov 2026, from a plant's "riser duct" + "elbow duct" image: the
-  # riser meets the elbow along an oblique seam; a 90 deg bend at R/H 1
-  # loses ~0.2-0.3 dynamic heads against ~1 for a sharp turn). Before
-  # (17-21 Nov) a straight loft turned it in at 45 deg. The riser axis
-  # is that radius back from the duct's face, and riser_barrel_clearance
+  # R2-R4 into C2-C4 (and the C4 domain's own inlet), as a plant has
+  # them (user decision, 22 Nov 2026, from a plant image: "aynısını
+  # yapalım"): the round riser goes straight up under the level duct's
+  # axis and a flat-faced rectangular duct climbs from it at
+  # riser_duct_slope_deg into the level duct, mitred to it. The riser's
+  # top is cut by the inclined roof; the inclined floor, one plane of
+  # constant slope, meets the riser's front half along half an ellipse
+  # (the seam that looks parabolic). The inclined duct is the riser's D
+  # wide at the riser (sides tangent to it, no step) and narrows to the
+  # level duct's W at riser_taper_deg per side at most (a converging
+  # duct; 15 deg as for the transitions before). Before (17-22 Nov): a
+  # level duct with an elbow, a 45 deg loft before that. The riser axis
+  # is as close to the face as the mitre, the taper and its radius allow
+  # (plant_geometry.riser_duct_run_min), and riser_barrel_clearance
   # clear of the barrel; the CFD domain starts riser_cfd_stub_over_D
-  # riser diameters below the cut. No source gives the cut's angle
-  # (read off the image), the clearance or the stub.
-  riser_bend_R_over_H: {value: 1.0,  unit: "-",   source: cfd_decision, doc: preheater/cyclone_C4.md}
-  riser_cut_deg:       {value: 30.0, unit: deg,   source: schematic,    doc: preheater/cyclone_C4.md}
+  # riser diameters below the seam. No source gives the slope (read off
+  # the image), the clearance or the stub.
+  riser_duct_slope_deg: {value: 45.0, unit: deg, source: schematic,   doc: preheater/cyclone_C4.md}
+  riser_taper_deg:     {value: 15.0, unit: deg,   source: cfd_decision, doc: preheater/cyclone_C4.md}
   riser_barrel_clearance: {value: 0.3, unit: m,   source: model,        doc: preheater/cyclone_C4.md}
   riser_cfd_stub_over_D: {value: 1.0, unit: "-",  source: model,        doc: preheater/cyclone_C4.md}
 
