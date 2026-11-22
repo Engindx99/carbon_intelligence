@@ -106,14 +106,14 @@ Const C4_HEIGHT                    As Double  = 13.6         ' barrel + cone [de
 Const C4_OUT_RISE                  As Double  = 5.355        ' outlet pipe rise over the roof [derived]
 Const C4_TOP                       As Double  = 18.955       ' the straight outlet pipe's end face, z [derived]
 Const C4_RISER_D                   As Double  = 3.15         ' riser inlet D [derived]
-Const C4_RISER_X                   As Double  = -3.925       ' riser axis, x (the duct runs to -x) [derived]
+Const C4_RISER_X                   As Double  = -4.944486    ' riser axis, x (the duct runs to -x) [derived]
 Const C4_RISER_Y                   As Double  = 4.656        ' riser axis, y (under the duct's middle) [derived]
-Const C4_RISER_OFFSET              As Double  = 6.08966      ' riser axis from the barrel axis [derived]
-Const C4_RISER_ZTOP                As Double  = 9.36138      ' the riser's cut, its low (inner) point, z [derived]
-Const C4_RISER_ZOUT                As Double  = 11.767075    ' the riser's cut, its high (outer) point, z [derived]
-Const C4_RISER_ZBOT                As Double  = 6.21138      ' the riser's gas inlet face, z [derived]
+Const C4_RISER_OFFSET              As Double  = 6.791633     ' riser axis from the barrel axis [derived]
+Const C4_RISER_ZTOP                As Double  = 9.290673     ' the riser's cut, its low (inner) point, z [derived]
+Const C4_RISER_ZOUT                As Double  = 11.109327    ' the riser's cut, its high (outer) point, z [derived]
+Const C4_RISER_ZBOT                As Double  = 6.140673     ' the riser's gas inlet face, z [derived]
 Const C4_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6300~mm~published~Verified;H_barrel~Barrel height~6300~mm~CFD decision~Estimated;H_cone~Cone height~7300~mm~FLS ratio~Estimated;height~Barrel + cone height~13600~mm~derived~Estimated;L_vortex~Vortex finder immersion S~3900~mm~CFD decision~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~3150~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~810~mm~FLS ratio~Estimated;W_inlet~Inlet width b (volute duct)~2912~mm~CFD decision~Estimated;H_inlet~Inlet height a (volute duct)~3400~mm~CFD decision~Estimated;" ' parameter table rows
-Const C4_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2000~mm~CFD decision~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;riser_slope~Riser walls' slope into the duct~45~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~6090~mm~derived~Estimated;riser_run~Transition's run, riser axis to the duct face~1925~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the turn~3150~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~CFD decision~Estimated;" ' parameter table rows
+Const C4_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2000~mm~CFD decision~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~CFD decision~Estimated;riser_cut~Riser's cut under the elbow, tilt~30~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~6792~mm~derived~Estimated;riser_run~Elbow centreline radius, riser axis to the duct face~2944~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the cut~3150~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~CFD decision~Estimated;" ' parameter table rows
 Const C4_TAB_3                     As String  = "outlet_rise~Outlet pipe rise over the roof (the domain's end)~5355~mm~derived~Estimated;top~Dust outlet to the outlet face~18955~mm~derived~Estimated;volume~Volume (barrel + cone)~283.25~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~235.17~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C4_TAB_4                     As String  = ""           ' parameter table rows
 Const C4_TAB_5                     As String  = ""           ' parameter table rows
@@ -135,14 +135,14 @@ Const C5_HEIGHT                    As Double  = 14.031746    ' barrel + cone [de
 Const C5_OUT_RISE                  As Double  = 5.525        ' outlet pipe rise over the roof [derived]
 Const C5_TOP                       As Double  = 19.556746    ' the straight outlet pipe's end face, z [derived]
 Const C5_RISER_D                   As Double  = 3.25         ' riser inlet D [derived]
-Const C5_RISER_X                   As Double  = -4.051485    ' riser axis, x (the duct runs to -x) [derived]
+Const C5_RISER_X                   As Double  = -5.102948    ' riser axis, x (the duct runs to -x) [derived]
 Const C5_RISER_Y                   As Double  = 4.802222     ' riser axis, y (under the duct's middle) [derived]
-Const C5_RISER_OFFSET              As Double  = 6.282983     ' riser axis from the barrel axis [derived]
-Const C5_RISER_ZTOP                As Double  = 9.657065     ' the riser's cut, its low (inner) point, z [derived]
-Const C5_RISER_ZOUT                As Double  = 12.138359    ' the riser's cut, its high (outer) point, z [derived]
-Const C5_RISER_ZBOT                As Double  = 6.407065     ' the riser's gas inlet face, z [derived]
+Const C5_RISER_OFFSET              As Double  = 7.007241     ' riser axis from the barrel axis [derived]
+Const C5_RISER_ZTOP                As Double  = 9.584753     ' the riser's cut, its low (inner) point, z [derived]
+Const C5_RISER_ZOUT                As Double  = 11.461141    ' the riser's cut, its high (outer) point, z [derived]
+Const C5_RISER_ZBOT                As Double  = 6.334753     ' the riser's gas inlet face, z [derived]
 Const C5_TAB_1                     As String  = "per_string~Number per string~1~-~published~Verified;D_barrel~Barrel inner diameter D~6500~mm~published~Verified;H_barrel~Barrel height~6500~mm~derived~Estimated;H_cone~Cone height~7532~mm~derived~Estimated;height~Barrel + cone height~14032~mm~derived~Estimated;L_vortex~Vortex finder immersion S~4024~mm~derived~Estimated;D_vortex~Vortex finder / outlet pipe bore Dx~3250~mm~derived~Estimated;vortex_wall~Vortex finder wall~80~mm~model parameter~Estimated;D_dust~Dust outlet diameter~836~mm~derived~Estimated;W_inlet~Inlet width b (volute duct)~3004~mm~derived~Estimated;H_inlet~Inlet height a (volute duct)~3508~mm~derived~Estimated;" ' parameter table rows
-Const C5_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2063~mm~derived~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;riser_slope~Riser walls' slope into the duct~45~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~6283~mm~derived~Estimated;riser_run~Transition's run, riser axis to the duct face~1988~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the turn~3250~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~derived~Estimated;" ' parameter table rows
+Const C5_TAB_2                     As String  = "inlet_duct_length~Level duct length (from tangent plane)~2063~mm~derived~Estimated;tongue~Tongue (cut-water)~50~mm~model parameter~Estimated;overlap~Scroll's inner arc inside the barrel~100~mm~model parameter~Estimated;volute~Volute~yes~-~derived~Estimated;riser_cut~Riser's cut under the elbow, tilt~30~deg~schematic~Schematic;riser_offset~Riser axis from the barrel axis (the columns' offset)~7007~mm~derived~Estimated;riser_run~Elbow centreline radius, riser axis to the duct face~3039~mm~derived~Estimated;riser_stub~Vertical riser in the domain, under the cut~3250~mm~derived~Estimated;outlet_turn~Outlet bend angle (0: straight)~0~deg~derived~Estimated;" ' parameter table rows
 Const C5_TAB_3                     As String  = "outlet_rise~Outlet pipe rise over the roof (the domain's end)~5525~mm~derived~Estimated;top~Dust outlet to the outlet face~19557~mm~derived~Estimated;volume~Volume (barrel + cone)~311.09~m3~derived~Estimated;wet_area~Wetted area (barrel, roof ring, cone)~250.34~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;" ' parameter table rows
 Const C5_TAB_4                     As String  = ""           ' parameter table rows
 Const C5_TAB_5                     As String  = ""           ' parameter table rows
@@ -1706,19 +1706,9 @@ Private Sub DimensionVolute()
         "hline", -0.5 * vLduct, rT, zr, 0, zr, _
         "hline", -0.5 * vLduct, rS, zr, 0, zr, _
         -vLduct + 0.9, ym, zr
-    ' the riser's axis from the barrel axis (the columns' offset): the
-    ' outlet pipe's end face and the riser's oblique cut (since 21 Nov
-    ' 2026 an ellipse, seen from above as the riser's circle; the gas
-    ' inlet face under it is hidden), centre to centre along the slant
-    ' (the text on the centres' line past the riser, 1.5 m outside its
-    ' circle, where the sheet is empty: between the centres the barrel's,
-    ' the riser's and the loft's lines cross it, 21 Nov)
-    Dim ru As Double
-    ru = Sqr(vRiX * vRiX + vRiY * vRiY)
-    DimEdges "riser_offset", vRiOff, vTop, _
-        "circle", rx, 0, vTopZ, rx, vTopZ, _
-        "ellipse", vRiX * (1# + 0.5 * vRiD / ru), vRiY * (1# + 0.5 * vRiD / ru), vRiOut, 0.5 * vRiD, 0.5 * (vRiTop + vRiOut), _
-        vRiX * (1# + (0.5 * vRiD + 1.5) / ru), vRiY * (1# + (0.5 * vRiD + 1.5) / ru), vTopZ
+    ' the riser's axis from the barrel axis (the columns' offset) is in the
+    ' table only since 22 Nov 2026: the riser meets its elbow along four
+    ' spline arcs, no circle or ellipse edge to dimension to from above
 
     ' detail B: the vortex finder's wall at its mouth
     DimEdges "vortex_wall", vWall, vDet, _

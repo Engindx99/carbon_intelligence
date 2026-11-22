@@ -115,7 +115,7 @@ DOMAIN_KEYS = (  # cyclone_domain key -> module Const
     ("c1_riser_below_feed", "RISER_BELOW_FEED"),
     ("c1_feed_width", "FEED_W"), ("c1_feed_height", "FEED_H"),
     ("c1_feed_depth", "FEED_DEPTH"), ("meal_slope", "FEED_SLOPE_DEG"),
-    ("riser_slope_deg", "RISER_IN_SLOPE_DEG"),
+    ("riser_cut_deg", "RISER_CUT_DEG"),
     ("riser_barrel_clearance", "RISER_IN_CLEAR"),
     ("riser_cfd_stub_over_D", "RISER_IN_STUB_OVER_D"),
 )
@@ -299,7 +299,7 @@ def drawing_bas(g):
         src("STAGE_GAP", lay["stage_gap"]),
         der("ZIG_DX", L["column_offset"], "outer column outboard of the inner: the widest riser's offset"),
         src("DUST_OVER_ROOF", lay["dust_over_roof"], "C4..C2's dust outlet over the roof below"),
-        src("RISER_SLOPE_DEG", d["riser_slope_deg"], "R2..R4's walls turn in at this slope"),
+        src("RISER_CUT_DEG", d["riser_cut_deg"], "R2..R4's round top cut at this tilt, the elbow starting on it"),
         der("R4_RISE_V", L["riser_vertical"][4], "R4 vertical, C5's roof to its turn"),
         der("R3_RISE_V", L["riser_vertical"][3], "R3 vertical, C4's roof to its turn"),
         der("R2_RISE_V", L["riser_vertical"][2], "R2 vertical, C3's roof to its turn"),
@@ -435,7 +435,7 @@ def _volute_sheet_consts(g):
             der(f"{name}_RISER_Y", r["y"], "riser axis, y (under the duct's middle)"),
             der(f"{name}_RISER_OFFSET", r["offset"], "riser axis from the barrel axis"),
             der(f"{name}_RISER_ZTOP", c["height"] - r["drop"], "the riser's cut, its low (inner) point, z"),
-            der(f"{name}_RISER_ZOUT", c["height"] - r["drop_out"], "the riser's cut, its high (outer) point, z"),
+            der(f"{name}_RISER_ZOUT", c["height"] - r["drop_high"], "the riser's cut, its high (outer) point, z"),
             der(f"{name}_RISER_ZBOT", c["height"] - r["drop"] - r["stub"], "the riser's gas inlet face, z"),
         ]
         out += _table_consts(name, dvo.params(g, name), dvo.ORDER)
@@ -840,9 +840,9 @@ def _cyclone_rows(g, name):
         r = pg.cfd_riser_inlet(g, name)
         rows += [
             row_der("Yatay giriş kanalı (teğet düzleminden)", c["inlet_duct_length"], "m", 3),
-            row_src("Riser duvarlarının kanala eğimi", g["cyclone_domain"]["riser_slope_deg"]),
+            row_src("Riserın dirsek altındaki eğik kesimi", g["cyclone_domain"]["riser_cut_deg"]),
             row_der("Riser ekseni, gövde ekseninden (kolon aralığı)", r["offset"], "m", 3),
-            row_der("Eğik geçiş, yatay boyu (riser ekseninden kanal ağzına)", r["run"], "m", 3),
+            row_der("Dirsek merkez yarıçapı (riser ekseninden kanal ağzına)", r["run"], "m", 3),
             row_der("CFD domenindeki dik riser (dönüşün altında)", r["stub"], "m", 3),
         ]
     rows += [
@@ -883,8 +883,8 @@ def _riser_rows(g, k):
             row_der(f"Çap (C{k + 1}'in vorteks bulucusu D_x)", p[0]["D"], "m"),
             row_der(f"Dik riser, C{k + 1}'in çatısından dönüşe (ilk {pg.cyclone(g, f'C{k + 1}')['outlet_rise']:.3f} m CFD çıkış borusu)",
                     p[0]["length"], "m"),
-            row_src("Duvarların içeri dönüş eğimi", g["cyclone_domain"]["riser_slope_deg"]),
-            row_der(f"Eğik geçiş, eksen boyu (Ø → C{k} girişi)", p[1]["length"], "m"),
+            row_src("Riserın dirsek altındaki eğik kesimi", g["cyclone_domain"]["riser_cut_deg"]),
+            row_der(f"Dirsek, merkez çizgisi boyu (Ø → C{k} girişi)", p[1]["length"], "m"),
             row_der(f"Yatay kanal, C{k}{GEN[k]} volütüne", p[2]["length"], "m"),
             row_der(f"Riser ekseni, C{k}{GEN[k]} ekseninden", r["riser"]["offset"], "m"),
             row_der("Toplam boy", sum(q["length"] for q in p), "m"),
@@ -1182,8 +1182,8 @@ def _topology_cfd(g):
     r4 = pg.cfd_riser_inlet(g, "C4")
 
     def mid(c, k=1.0):
-        return (f"Ø{r4['D']:.2f} dik riser {r4['stub']:.2f} m, {pg.v(d['riser_slope_deg']):g}° eğik geçiş "
-                f"(yatay {r4['run']:.3f} m), {L_in:.2f} m yatay kanal, volüt, gövde, VF {c['L_vortex']:.3f}, "
+        return (f"Ø{r4['D']:.2f} dik riser {r4['stub']:.2f} m, {pg.v(d['riser_cut_deg']):g}° eğik kesim, dirsek "
+                f"(R {r4['run']:.3f} m), {L_in:.2f} m yatay kanal, volüt, gövde, VF {c['L_vortex']:.3f}, "
                 f"{c['outlet_rise']:.3f} m ({c['outlet_rise_over_Dx']:g}·VD) dik çıkış borusu")
 
     def out(c):

@@ -87,8 +87,8 @@ Kalsinatör, Y kaz boynu, TAD, fırın ve soğutucu 5000 t/d'nindir: PF5000'den,
 | Blok | Domen (donmuş) | Giriş yüzü | Çıkış yüzü |
 |---|---|---|---|
 | C1 (×4) | gövde, VF 3.45, Ø2.227 kol, 90° R 2.227 dirsek, 1.5 m geçiş, 0° kanal, 0.6 m oluk; 2.70 m çıkış borusu, R 3.24 180° dirsek, 2.70 m iniş | kolun tabanı, toz çıkışının 0.213 m üstü | inişin ucu, çatı kotunda, eksenden 6.48 m |
-| C2–C4 (×6) | Ø3.15 dik riser 3.15 m, 45° eğik geçiş (yatay 1.925 m), 2.00 m yatay kanal, volüt, gövde, VF 3.900, 5.355 m (1.7·VD) dik çıkış borusu | riser parçasının tabanı, gövde ekseninden 6.090 m, dönüşün 3.15 m altı | çıkış borusunun ucu, eksende, çatının 5.355 m üstünde |
-| C5 (×2) | C2–C4'ün 1.0317 katı (CFD'si ayrıca çözülmez) | riser parçasının tabanı, eksenden 6.283 m | çıkış borusunun ucu, eksende, çatının 5.525 m üstünde |
+| C2–C4 (×6) | Ø3.15 dik riser 3.15 m, 30° eğik kesim, dirsek (R 2.944 m), 2.00 m yatay kanal, volüt, gövde, VF 3.900, 5.355 m (1.7·VD) dik çıkış borusu | riser parçasının tabanı, gövde ekseninden 6.792 m, dönüşün 3.15 m altı | çıkış borusunun ucu, eksende, çatının 5.355 m üstünde |
+| C5 (×2) | C2–C4'ün 1.0317 katı (CFD'si ayrıca çözülmez) | riser parçasının tabanı, eksenden 7.007 m | çıkış borusunun ucu, eksende, çatının 5.525 m üstünde |
 <!-- END GENERATED -->
 
 **Serbest:**
@@ -228,14 +228,14 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `C1_OUT_RISE` | 2.7 | plant_geometry.yaml |
 | `C1_OUT_R` | 3.24 | plant_geometry.yaml |
 | `STAGE_GAP` | 4 | plant_geometry.yaml |
-| `ZIG_DX` | 6.08966 | plant_geometry.yaml |
+| `ZIG_DX` | 6.791633 | plant_geometry.yaml |
 | `DUST_OVER_ROOF` | 0.5 | plant_geometry.yaml |
-| `RISER_SLOPE_DEG` | 45 | plant_geometry.yaml |
-| `R4_RISE_V` | 9.91138 | plant_geometry.yaml |
-| `R3_RISE_V` | 9.86138 | plant_geometry.yaml |
-| `R2_RISE_V` | 9.86138 | plant_geometry.yaml |
-| `RISER_RUN` | 1.925 | plant_geometry.yaml |
-| `RISER_RUN4` | 1.925 | plant_geometry.yaml |
+| `RISER_CUT_DEG` | 30 | plant_geometry.yaml |
+| `R4_RISE_V` | 9.761806 | plant_geometry.yaml |
+| `R3_RISE_V` | 9.790673 | plant_geometry.yaml |
+| `R2_RISE_V` | 9.790673 | plant_geometry.yaml |
+| `RISER_RUN` | 2.944486 | plant_geometry.yaml |
+| `RISER_RUN4` | 2.944486 | plant_geometry.yaml |
 | `RISER_Y` | 4.656 | plant_geometry.yaml |
 | `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
@@ -302,9 +302,9 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.505, kol inişi x = ±10.781, C5 giriş kotu z 36.922 |
 | Tersiyer hava kanalı | eksen z 21.671 |
 | İç kolon (C5, C3) | x = ±16.781 |
-| Dış kolon (C4, C2) | x = ±22.871 |
-| R1 | x = ±22.871 |
-| İkiz C1 | x = ±18.617 ve ±27.125 |
+| Dış kolon (C4, C2) | x = ±23.573 |
+| R1 | x = ±23.573 |
+| İkiz C1 | x = ±19.319 ve ±27.827 |
 | C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 44.197 |
 | C4 toz çıkışı / çıkış borusu tepesi | z 39.172 / 58.127 |
 | C3 toz çıkışı / çıkış borusu tepesi | z 53.272 / 72.227 |

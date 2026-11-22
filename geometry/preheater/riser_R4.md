@@ -11,14 +11,14 @@ R4, C5'in çıkış borusunun dik devamıdır (kullanıcı kararı, 17 Kasım 20
 | Ölçü | Değer | Kaynak |
 |---|---|---|
 | Çap (C5'in vorteks bulucusu D_x) | 3.250 m | türetilmiş |
-| Dik riser, C5'in çatısından dönüşe (ilk 5.525 m CFD çıkış borusu) | 9.911 m | türetilmiş |
-| Duvarların içeri dönüş eğimi | 45 ° | şematik |
-| Eğik geçiş, eksen boyu (Ø → C4 girişi) | 2.347 m | türetilmiş |
+| Dik riser, C5'in çatısından dönüşe (ilk 5.525 m CFD çıkış borusu) | 9.762 m | türetilmiş |
+| Riserın dirsek altındaki eğik kesimi | 30 ° | şematik |
+| Dirsek, merkez çizgisi boyu (Ø → C4 girişi) | 3.560 m | türetilmiş |
 | Yatay kanal, C4'ün volütüne | 2.000 m | türetilmiş |
-| Riser ekseni, C4'ün ekseninden | 6.090 m | türetilmiş |
-| Toplam boy | 14.258 m | türetilmiş |
-| **Ekipman hacmi (hat başına)** | 130.53 m³ | türetilmiş |
-| **Duvar alanı (hat başına)** | 164.04 m² | türetilmiş |
+| Riser ekseni, C4'ün ekseninden | 6.792 m | türetilmiş |
+| Toplam boy | 15.322 m | türetilmiş |
+| **Ekipman hacmi (hat başına)** | 143.42 m³ | türetilmiş |
+| **Duvar alanı (hat başına)** | 176.63 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## CFD Geometry

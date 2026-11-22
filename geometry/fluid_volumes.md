@@ -13,9 +13,9 @@ Kademe numaraları twin'in gaz sırasıdır (kademe 1 = C4). Ön ısıtıcı sat
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Twin bölgesi | Ekipman | Hacim [m³] |
 |---|---|---|
-| Ön ısıtıcı, kademe 1 | R4 + 1 C4 (×2) | 261.06 + 566.49 = **827.55** |
-| Ön ısıtıcı, kademe 2 | R3 + 1 C3 (×2) | 249.48 + 566.49 = **815.97** |
-| Ön ısıtıcı, kademe 3 | R2 + 1 C2 (×2) | 249.48 + 566.49 = **815.97** |
+| Ön ısıtıcı, kademe 1 | R4 + 1 C4 (×2) | 286.84 + 566.49 = **853.33** |
+| Ön ısıtıcı, kademe 2 | R3 + 1 C3 (×2) | 273.98 + 566.49 = **840.47** |
+| Ön ısıtıcı, kademe 3 | R2 + 1 C2 (×2) | 273.98 + 566.49 = **840.47** |
 | Ön ısıtıcı, kademe 4 | R1 + 2 C1 (×2) | 390.69 + 498.16 = **888.86** |
 | Kalsinatör bölgesi | kalsinatör gövdesi, farin girişinden tavana (yakıt burada) | **775.91** |
 | Kalsinatör bölgesi | kaz boynu, C5 girişlerine kadar | **684.84** |

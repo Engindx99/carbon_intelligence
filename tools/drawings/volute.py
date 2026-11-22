@@ -22,8 +22,10 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 # the plant has them).
 DIMENSIONED = (
     "D_barrel", "H_barrel", "H_cone", "height", "D_dust", "D_vortex",
-    "L_vortex", "vortex_wall", "W_inlet", "H_inlet", "outlet_rise", "riser_offset",
+    "L_vortex", "vortex_wall", "W_inlet", "H_inlet", "outlet_rise",
 )
+# riser_offset is in the table only since 22 Nov 2026: the riser meets its
+# elbow along four spline arcs (no circle or ellipse edge to dimension to)
 
 # Cyclones whose sheet this one is (geometry/preheater: C2 and C3 are C4).
 ALSO = {"C4": ["C2", "C3"]}
@@ -32,7 +34,7 @@ ALSO = {"C4": ["C2", "C3"]}
 ORDER = (
     "per_string", "D_barrel", "H_barrel", "H_cone", "height", "L_vortex",
     "D_vortex", "vortex_wall", "D_dust", "W_inlet", "H_inlet", "inlet_duct_length",
-    "tongue", "overlap", "volute", "riser_slope", "riser_offset", "riser_run",
+    "tongue", "overlap", "volute", "riser_cut", "riser_offset", "riser_run",
     "riser_stub", "outlet_turn", "outlet_rise", "top", "volume", "wet_area",
     "u_wall", "u_material", "u_flange", "u_support",
 )
@@ -67,15 +69,15 @@ def params(g, name):
     P["overlap"] = pv.primary(g, f"{dom}.volute_overlap", "Scroll's inner arc inside the barrel")
     dim("volute", "Volute")
     r = pg.cfd_riser_inlet(g, name)
-    slope = pv.primary(g, f"{dom}.riser_slope_deg", "Riser walls' slope into the duct")
-    clear = pv.primary(g, f"{dom}.riser_barrel_clearance", "Riser clear of the barrel")
+    cut = pv.primary(g, f"{dom}.riser_cut_deg", "Riser's cut under the elbow, tilt")
+    bend_k = pv.primary(g, f"{dom}.riser_bend_R_over_H", "")
     stub_k = pv.primary(g, f"{dom}.riser_cfd_stub_over_D", "")
-    P["riser_slope"] = slope
+    P["riser_cut"] = cut
     P["riser_offset"] = pv.derived(f"{name}.riser_offset", "Riser axis from the barrel axis (the columns' offset)",
-                                   r["offset"], "m", [clear, P["D_barrel"], P["D_vortex"]])
-    P["riser_run"] = pv.derived(f"{name}.riser_run", "Transition's run, riser axis to the duct face",
+                                   r["offset"], "m", [bend_k, P["H_inlet"], P["W_inlet"], P["inlet_duct_length"]])
+    P["riser_run"] = pv.derived(f"{name}.riser_run", "Elbow centreline radius, riser axis to the duct face",
                                 r["run"], "m", [P["riser_offset"], P["W_inlet"], P["inlet_duct_length"]])
-    P["riser_stub"] = pv.derived(f"{name}.riser_stub", "Vertical riser in the domain, under the turn",
+    P["riser_stub"] = pv.derived(f"{name}.riser_stub", "Vertical riser in the domain, under the cut",
                                  r["stub"], "m", [stub_k, P["D_vortex"]])
     dim("outlet_turn", "Outlet bend angle (0: straight)")
     rise_k = pv.cyclone_dim(g, name, "outlet_rise_over_Dx", "")

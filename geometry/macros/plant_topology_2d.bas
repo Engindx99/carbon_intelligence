@@ -108,14 +108,14 @@ Const C1_FEED_W                    As Double  = 0.6          ' C1 feed chute sid
 Const C1_OUT_RISE                  As Double  = 2.7          ' C1 outlet pipe rise [derived]
 Const C1_OUT_R                     As Double  = 3.24         ' C1 outlet 180 deg bend centreline R [derived]
 Const STAGE_GAP                    As Double  = 4#           ' [schematic, plant_topology.md]
-Const ZIG_DX                       As Double  = 6.08966      ' outer column outboard of the inner: the widest riser's offset [derived]
+Const ZIG_DX                       As Double  = 6.791633     ' outer column outboard of the inner: the widest riser's offset [derived]
 Const DUST_OVER_ROOF               As Double  = 0.5          ' C4..C2's dust outlet over the roof below [schematic, plant_topology.md]
-Const RISER_SLOPE_DEG              As Double  = 45#          ' R2..R4's walls turn in at this slope [schematic, preheater/cyclone_C4.md]
-Const R4_RISE_V                    As Double  = 9.91138      ' R4 vertical, C5's roof to its turn [derived]
-Const R3_RISE_V                    As Double  = 9.86138      ' R3 vertical, C4's roof to its turn [derived]
-Const R2_RISE_V                    As Double  = 9.86138      ' R2 vertical, C3's roof to its turn [derived]
-Const RISER_RUN                    As Double  = 1.925        ' R2/R3's transition: horizontal run, riser axis to the level duct's face [derived]
-Const RISER_RUN4                   As Double  = 1.925        ' R4's transition: horizontal run [derived]
+Const RISER_CUT_DEG                As Double  = 30#          ' R2..R4's round top cut at this tilt, the elbow starting on it [schematic, preheater/cyclone_C4.md]
+Const R4_RISE_V                    As Double  = 9.761806     ' R4 vertical, C5's roof to its turn [derived]
+Const R3_RISE_V                    As Double  = 9.790673     ' R3 vertical, C4's roof to its turn [derived]
+Const R2_RISE_V                    As Double  = 9.790673     ' R2 vertical, C3's roof to its turn [derived]
+Const RISER_RUN                    As Double  = 2.944486     ' R2/R3's transition: horizontal run, riser axis to the level duct's face [derived]
+Const RISER_RUN4                   As Double  = 2.944486     ' R4's transition: horizontal run [derived]
 Const RISER_Y                      As Double  = 4.656        ' a riser's axis across from its cyclone's axis (depth): under the duct [derived]
 Const C5_OVER_TA                   As Double  = 1.75         ' [schematic, plant_topology.md]
 Const GN_TO_C5_GAP                 As Double  = 1#           ' [schematic, plant_topology.md]
@@ -155,14 +155,15 @@ Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant
 '    C4_OUT_RISE: 1.70 D_x (1.25 until 14 Oct 2026); the CFD part of each riser
 '    C4_OUT_R, C4_OUT_RUN: 0, the outlet does not turn (17 Nov 2026)
 '    C4_IN_L: the level inlet duct's length from the barrel's tangent plane
-'    ZIG_DX, RISER_SLOPE_DEG, RISER_RUN, RISER_RUN4, R2_RISE_V .. R4_RISE_V, DUST_OVER_ROOF: R4..R2 (user decision,
+'    ZIG_DX, RISER_CUT_DEG, RISER_RUN, RISER_RUN4, R2_RISE_V .. R4_RISE_V, DUST_OVER_ROOF: R4..R2 (user decision,
 '      17 Nov 2026): each the outlet pipe of the cyclone below, straight up beside the one above, under its
-'      level duct; its top level, its outer wall turning in at RISER_SLOPE_DEG to the roof, the inner one to
-'      the duct's floor. RISER_RUN(4): riser axis to the duct's face (true, along the duct); the riser's top
-'      (RISER_RUN + D/2) tan(slope) under the roof. The columns ZIG_DX apart (the widest riser's offset,
+'      level duct; its round top cut at RISER_CUT_DEG (high on the side away from the duct, a mitre) and an
+'      elbow from the cut's ellipse, tapering to the duct's face (22 Nov 2026, plant_geometry.riser_elbow).
+'      RISER_RUN(4): riser axis to the duct's face (true, along the duct); the elbow's centreline radius
+'      RISER_RUN / cos(cut) over 90 - cut deg, the cut's centre H/2 + Rb (1 - sin) under the roof. The columns ZIG_DX apart (the widest riser's offset,
 '      plant_geometry.riser_inlet); each C4..C2 with its dust outlet DUST_OVER_ROOF over the roof below.
-'      In this view the turn and the level duct are projected on the sheet (RiserTurnT, 21 Nov 2026; they
-'      run obliquely in depth): the riser's top to the duct face's corners, the duct level on to the barrel
+'      In this view the elbow and the level duct are projected on the sheet (RiserElbowP; they run obliquely
+'      in depth): the riser's outline from the cut, the elbow's outer / inner walls, the duct level on
 '    C1_VF_S: C1's vortex finder, down from the roof (C1 CFD)
 
 ' Risers [m] -- HFC2500 (published), catalog.md; R_k carries the gas
@@ -541,27 +542,58 @@ Private Function CfdRise(ByVal s As Long) As Double
     CfdRise = Kc(s) * C4_OUT_RISE
 End Function
 
-' R(k) (k = 2..4), its level top under C(k)'s roof: (run + D/2) tan,
-' the outer wall rising at RISER_SLOPE_DEG from it to the roof
+' R(k) (k = 2..4): its round top's cut, the low point under C(k)'s roof
+' (the riser's straight part ends there). The cut tilts RISER_CUT_DEG
+' (a mitre), its centre the elbow centreline's start, H/2 + Rb (1 - sin)
+' under the roof, Rb = run / cos (plant_geometry.riser_elbow, 22 Nov 2026)
 Private Function RiserDrop(ByVal k As Long) As Double
-    Dim run As Double
+    Dim run As Double, cb As Double
     If k = 4 Then run = RISER_RUN4 Else run = RISER_RUN
-    ' the riser's cut, its low (inner) point: the floor rises at
-    ' RISER_SLOPE_DEG to the duct face's floor corners
-    ' (plant_geometry.riser_top, 21 Nov 2026)
-    RiserDrop = Kc(k) * C4_IN_H + (Sqr(run * run + 0.25 * (Kc(k) * C4_IN_W) ^ 2) - StubR(k + 1)) _
-                * Tan(RISER_SLOPE_DEG * PI / 180#)
+    cb = Cos(RISER_CUT_DEG * PI / 180#)
+    RiserDrop = 0.5 * Kc(k) * C4_IN_H + (run / cb) * (1# - Sin(RISER_CUT_DEG * PI / 180#)) _
+                + StubR(k + 1) * Tan(RISER_CUT_DEG * PI / 180#)
 End Function
 
-' the cut's high (outer) point under C(k)'s roof: the ceiling (outer rim
-' -> the duct's top edge at tOut) parallel to the floor (inner rim ->
-' the duct's floor at tIn) on the sheet (user sketch, 21 Nov 2026)
-Private Function RiserDropOut(ByVal k As Long) As Double
-    Dim tOut As Double, tIn As Double, a As Double
-    RiserTurnT k, tOut, tIn
+' A point of R(k)'s elbow outline on the sheet, f = 0 (on the cut) .. 1
+' (at the duct's face), its outer (outerSide) or inner wall: t from the
+' riser's axis towards C(k)'s and z. In C(k)'s frame (RiserTurnT) the
+' centreline is a circle of radius Rb = run / cos(cut) centred under the
+' duct face's centre, from the cut's centre (at the cut's angle) to the
+' face; the section goes over linearly from the cut's ellipse (D
+' across, D / cos along the slope; no step) to the duct's W x H; the
+' outline runs from the ellipse's high / low point to the duct face's
+' outer top / inner bottom corner (the sheet's extremes).
+Private Sub RiserElbowP(ByVal k As Long, ByVal f As Double, ByVal outerSide As Boolean, _
+                        ByRef t As Double, ByRef z As Double)
+    Dim run As Double, xj As Double, yd As Double, w As Double, hh As Double, a As Double
+    Dim bt As Double, rb As Double, zc As Double, ph As Double, h As Double, wv As Double
+    Dim px As Double, py As Double, sg As Double
+    If k = 4 Then run = RISER_RUN4 Else run = RISER_RUN
+    xj = run + Kc(k) * C4_IN_L
+    yd = Kc(k) * RISER_Y: w = 0.5 * Kc(k) * C4_IN_W: hh = 0.5 * Kc(k) * C4_IN_H
     a = StubR(k + 1)
-    RiserDropOut = RiserDrop(k)
-    If tIn > a Then RiserDropOut = Min2(RiserDrop(k), (tOut + a) * (RiserDrop(k) - Kc(k) * C4_IN_H) / (tIn - a))
+    bt = RISER_CUT_DEG * PI / 180#
+    rb = run / Cos(bt)
+    zc = zRoof(k) - hh - rb
+    ph = bt + (0.5 * PI - bt) * f
+    h = (a / Cos(bt)) * (1# - f) + hh * f
+    wv = w * f
+    If outerSide Then sg = 1# Else sg = -1#
+    px = -Kc(k) * C4_IN_L - (rb + sg * h) * Cos(ph)
+    py = yd + sg * wv
+    z = zc + (rb + sg * h) * Sin(ph)
+    t = ZIG_DX - (-px * xj + py * yd) / ZIG_DX
+End Sub
+
+' the round riser's silhouette (t = -/+ D/2, outer / inner) where it
+' meets the cut, z
+Private Function RiserCutSilZ(ByVal k As Long, ByVal outerSide As Boolean) As Double
+    Dim run As Double, xj As Double, sg As Double
+    If k = 4 Then run = RISER_RUN4 Else run = RISER_RUN
+    xj = run + Kc(k) * C4_IN_L
+    If outerSide Then sg = 1# Else sg = -1#
+    RiserCutSilZ = zRoof(k) - RiserDrop(k) + StubR(k + 1) * Tan(RISER_CUT_DEG * PI / 180#) _
+                   * (1# + sg * xj / ZIG_DX)
 End Function
 
 Private Function RiserTopZ(ByVal k As Long) As Double
@@ -1240,44 +1272,73 @@ End Sub
 
 
 ' R(s - 1) (s = 3..5; user decision, 17 Nov 2026): C(s)'s outlet pipe
-' (drawn with C(s) up to zTop) straight on up to its level top beside
-' C(s - 1), towards dr (+1 / -1), to its level top; the turn and the
+' (drawn with C(s) up to zTop) straight on up beside C(s - 1), towards
+' dr (+1 / -1), to its oblique cut; the elbow (22 Nov 2026) and the
 ' level duct (its top flush with the roof) into the barrel, projected
-' on the sheet (RiserTurnT): the duct runs obliquely in depth.
+' on the sheet (RiserElbowP): they run obliquely in depth.
 Private Sub RiserUp(ByVal s As Long, ByVal xc As Double, ByVal dr As Double, ByVal side As String)
-    Dim k As Long
-    Dim a As Double, zt As Double, zr As Double, zu As Double, h As Double, xb As Double, zo As Double
-    Dim tOuter As Double, tInner As Double
+    Const N_EL As Long = 24
+    Dim k As Long, i As Long
+    Dim a As Double, zt As Double, zu As Double, h As Double, xb As Double
+    Dim t0 As Double, z0 As Double, t1 As Double, z1 As Double, zOut As Double, zIn As Double
+    Dim tOc As Double, zOc As Double, tIc As Double, zIc As Double
     k = s - 1
-    a = StubR(s): zt = zTop(s): zr = RiserTopZ(k): zu = zRoof(k): h = Kc(k) * C4_IN_H
+    a = StubR(s): zt = zTop(s): zu = zRoof(k): h = Kc(k) * C4_IN_H
     xb = xc + dr * (ZIG_DX - CycR(k))
-    RiserTurnT k, tOuter, tInner
-    zo = zu - RiserDropOut(k)
-    DuctEdge xc - dr * a, zt, xc - dr * a, zo
-    DuctEdge xc - dr * a, zo, xc + dr * tOuter, zu
-    DuctEdge xc + dr * tOuter, zu, xb, zu
-    DuctEdge xc + dr * a, zt, xc + dr * a, zr
-    DuctEdge xc + dr * a, zr, xc + dr * tInner, zu - h
-    DuctEdge xc + dr * tInner, zu - h, xb, zu - h
-    ArrowAt xc, 0.5 * (zt + zr), 0#, 1#
-    Note "-- gas: R" & k & " " & side & " (D " & Fmt(2# * a) & ") straight up " & Fmt(zr - zRoof(s)) & _
-         " m from C" & s & "'s roof (its outer side " & Fmt(zo - zRoof(s)) & " m), turning in, ceiling and floor " & _
-         Fmt(Atn((zu - h - zr) / (tInner - a)) * 180# / PI) & " deg on the sheet, into C" & k
+    zOut = RiserCutSilZ(k, True): zIn = RiserCutSilZ(k, False)
+    RiserElbowP k, 0#, True, tOc, zOc
+    RiserElbowP k, 0#, False, tIc, zIc
+    ' the riser up to its cut; the cut's ellipse (the elbow's start)
+    ' from the riser's outline to its high / low point
+    DuctEdge xc - dr * a, zt, xc - dr * a, zOut
+    DuctEdge xc + dr * a, zt, xc + dr * a, zIn
+    DuctEdge xc - dr * a, zOut, xc + dr * tOc, zOc
+    DuctEdge xc + dr * a, zIn, xc + dr * tIc, zIc
+    For i = 0 To N_EL - 1
+        RiserElbowP k, i / N_EL, True, t0, z0
+        RiserElbowP k, (i + 1) / N_EL, True, t1, z1
+        DuctEdge xc + dr * t0, z0, xc + dr * t1, z1
+        If i = N_EL - 1 Then DuctEdge xc + dr * t1, z1, xb, zu
+        RiserElbowP k, i / N_EL, False, t0, z0
+        RiserElbowP k, (i + 1) / N_EL, False, t1, z1
+        DuctEdge xc + dr * t0, z0, xc + dr * t1, z1
+        If i = N_EL - 1 Then DuctEdge xc + dr * t1, z1, xb, zu - h
+    Next i
+    ArrowAt xc, 0.5 * (zt + zIn), 0#, 1#
+    Note "-- gas: R" & k & " " & side & " (D " & Fmt(2# * a) & ") straight up " & Fmt(RiserTopZ(k) - zRoof(s)) & _
+         " m from C" & s & "'s roof to its cut (" & Fmt(RISER_CUT_DEG) & " deg), an elbow from the cut's ellipse, R " & _
+         Fmt(IIf(k = 4, RISER_RUN4, RISER_RUN) / Cos(RISER_CUT_DEG * PI / 180#)) & " m over " & _
+         Fmt(90# - RISER_CUT_DEG) & " deg into C" & k
 End Sub
 
 
 ' RiserUp's outline, closed, from the roof below, for the crossing
 ' check (a meal pipe behind it is drawn broken).
 Private Sub RiserBody(ByVal s As Long, ByVal xc As Double, ByVal dr As Double)
-    Dim k As Long
-    Dim a As Double, zr As Double, zu As Double, h As Double, xb As Double
-    Dim tOuter As Double, tInner As Double
+    Const N_EL As Long = 12
+    Dim k As Long, i As Long, n As Long
+    Dim a As Double, zu As Double, h As Double, xb As Double, t As Double, z As Double
+    Dim pts() As Variant
     k = s - 1
-    a = StubR(s): zr = RiserTopZ(k): zu = zRoof(k): h = Kc(k) * C4_IN_H
+    a = StubR(s): zu = zRoof(k): h = Kc(k) * C4_IN_H
     xb = xc + dr * (ZIG_DX - CycR(k))
-    RiserTurnT k, tOuter, tInner
-    BodyM Array(xc - dr * a, zRoof(s), xc - dr * a, zu - RiserDropOut(k), xc + dr * tOuter, zu, xb, zu, _
-                xb, zu - h, xc + dr * tInner, zu - h, xc + dr * a, zr, xc + dr * a, zRoof(s))
+    ReDim pts(0 To 2 * (2 * (N_EL + 1) + 6) - 1)
+    n = 0
+    pts(n) = xc - dr * a: pts(n + 1) = zRoof(s): n = n + 2
+    pts(n) = xc - dr * a: pts(n + 1) = RiserCutSilZ(k, True): n = n + 2
+    For i = 0 To N_EL
+        RiserElbowP k, i / N_EL, True, t, z
+        pts(n) = xc + dr * t: pts(n + 1) = z: n = n + 2
+    Next i
+    pts(n) = xb: pts(n + 1) = zu: n = n + 2
+    pts(n) = xb: pts(n + 1) = zu - h: n = n + 2
+    For i = N_EL To 0 Step -1
+        RiserElbowP k, i / N_EL, False, t, z
+        pts(n) = xc + dr * t: pts(n + 1) = z: n = n + 2
+    Next i
+    pts(n) = xc + dr * a: pts(n + 1) = RiserCutSilZ(k, False): n = n + 2
+    pts(n) = xc + dr * a: pts(n + 1) = zRoof(s): n = n + 2
+    BodyM pts
 End Sub
 
 

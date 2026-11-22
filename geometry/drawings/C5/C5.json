@@ -243,56 +243,59 @@
       "short": "volute"
     },
     {
-      "key": "cyclone_domain.riser_slope_deg",
-      "label": "Riser walls' slope into the duct",
-      "value": 45.0,
+      "key": "cyclone_domain.riser_cut_deg",
+      "label": "Riser's cut under the elbow, tilt",
+      "value": 30.0,
       "unit": "deg",
       "source": "schematic",
       "status": "Schematic",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_slope_deg"
+        "cyclone_domain.riser_cut_deg"
       ],
-      "short": "riser_slope"
+      "short": "riser_cut"
     },
     {
       "key": "C5.riser_offset",
       "label": "Riser axis from the barrel axis (the columns' offset)",
-      "value": 6.282982716258195,
+      "value": 7.007240600753556,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_barrel_clearance",
+        "cyclone_domain.riser_bend_R_over_H",
+        "cyclones.C4.H_inlet",
         "cyclones.C5.D_barrel_published",
-        "cyclones.C4.D_vortex_over_D_barrel"
+        "cyclones.C4.D_barrel",
+        "cyclones.C4.W_inlet",
+        "cyclones.C4.inlet_duct_length"
       ],
-      "value_mm": 6282.982716,
+      "value_mm": 7007.240601,
       "short": "riser_offset"
     },
     {
       "key": "C5.riser_run",
-      "label": "Transition's run, riser axis to the duct face",
-      "value": 1.9879932864992527,
+      "label": "Elbow centreline radius, riser axis to the duct face",
+      "value": 3.039456355338379,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "preheater/cyclone_C4.md",
       "inputs": [
-        "cyclone_domain.riser_barrel_clearance",
+        "cyclone_domain.riser_bend_R_over_H",
+        "cyclones.C4.H_inlet",
         "cyclones.C5.D_barrel_published",
-        "cyclones.C4.D_vortex_over_D_barrel",
-        "cyclones.C4.W_inlet",
         "cyclones.C4.D_barrel",
+        "cyclones.C4.W_inlet",
         "cyclones.C4.inlet_duct_length"
       ],
-      "value_mm": 1987.993286,
+      "value_mm": 3039.456355,
       "short": "riser_run"
     },
     {
       "key": "C5.riser_stub",
-      "label": "Vertical riser in the domain, under the turn",
+      "label": "Vertical riser in the domain, under the cut",
       "value": 3.2500000000000004,
       "unit": "m",
       "source": "derived",
@@ -448,8 +451,7 @@
     "vortex_wall",
     "W_inlet",
     "H_inlet",
-    "outlet_rise",
-    "riser_offset"
+    "outlet_rise"
   ],
   "also_the_sheet_of": []
 }
