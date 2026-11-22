@@ -81,8 +81,8 @@ EQUIPMENT = [
     ("Rotary kiln", "KWALL", "Kiln wall: brick and shell (as the twin)", "1",
      ["kiln.shell_t", "kiln.lining_t", "kiln.brick_"],
      "-",
-     ["kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); 4 brick rings modelled brick by brick"],
-     "kiln_lining.SLDPRT (not a CFD input)"),
+     ["kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); the 2 end rings modelled brick by brick; drawn on the kiln sheet"],
+     "kiln_wall.SLDPRT (not a CFD input)"),
     ("Rotary kiln", "KIC", "Kiln inlet chamber", "1",
      ["kiln_inlet_chamber.", "layout.chamber_margin"], "C5 meal + kiln gas -> calciner throat",
      ["kiln/kiln_inlet_chamber.md: no published size; shape is the user's 21 Nov sketch (throat walls down, 50 deg ramp, the kiln's lines carried in, a stub of the kiln tube as the inlet); bypass and lining unknown; no twin volume"], "kiln_inlet_chamber.SLDPRT"),
@@ -103,7 +103,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln_lining", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):
@@ -136,7 +136,8 @@ def build(g, drawn, ready=(), pid_sheets=None):
             "missing": missing,
             "cfd_solid": solid,
             "pid_sheets": pid_sheets.get(tag, []),
-            "drawing": ("drawn: geometry/drawings/" + SAME_SHEET.get(tag, tag) + "/")
+            "drawing": ("drawn: geometry/drawings/" + SAME_SHEET.get(tag, tag) + "/"
+                        + SAME_SHEET.get(tag, tag) + ".pdf")
                        if SAME_SHEET.get(tag, tag) in drawn else
                        "drawings.bas ready, not yet run" if SAME_SHEET.get(tag, tag) in ready else
                        ("no data: source research first" if not dims else "to draw"),

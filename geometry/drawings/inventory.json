@@ -274,7 +274,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C1/"
+      "drawing": "drawn: geometry/drawings/C1/C1.pdf"
     },
     {
       "area": "Preheater",
@@ -429,7 +429,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C4/"
+      "drawing": "drawn: geometry/drawings/C4/C4.pdf"
     },
     {
       "area": "Preheater",
@@ -584,7 +584,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C4/"
+      "drawing": "drawn: geometry/drawings/C4/C4.pdf"
     },
     {
       "area": "Preheater",
@@ -763,7 +763,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C4/"
+      "drawing": "drawn: geometry/drawings/C4/C4.pdf"
     },
     {
       "area": "Preheater",
@@ -934,7 +934,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C5/"
+      "drawing": "drawn: geometry/drawings/C5/C5.pdf"
     },
     {
       "area": "Preheater",
@@ -1037,7 +1037,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C1_twin/"
+      "drawing": "drawn: geometry/drawings/C1_twin/C1_twin.pdf"
     },
     {
       "area": "Preheater",
@@ -1081,7 +1081,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C4/"
+      "drawing": "drawn: geometry/drawings/C4/C4.pdf"
     },
     {
       "area": "Preheater",
@@ -1150,7 +1150,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/C5/"
+      "drawing": "drawn: geometry/drawings/C5/C5.pdf"
     },
     {
       "area": "Calciner",
@@ -1225,7 +1225,7 @@
       "pid_sheets": [
         "2 CA"
       ],
-      "drawing": "drawn: geometry/drawings/calciner/"
+      "drawing": "drawn: geometry/drawings/calciner/calciner.pdf"
     },
     {
       "area": "Calciner",
@@ -1364,7 +1364,7 @@
       "pid_sheets": [
         "2 CA"
       ],
-      "drawing": "drawn: geometry/drawings/calciner/"
+      "drawing": "drawn: geometry/drawings/calciner/calciner.pdf"
     },
     {
       "area": "Calciner",
@@ -1456,7 +1456,7 @@
       "pid_sheets": [
         "2 CA"
       ],
-      "drawing": "drawn: geometry/drawings/calciner/"
+      "drawing": "drawn: geometry/drawings/calciner/calciner.pdf"
     },
     {
       "area": "Calciner",
@@ -1514,7 +1514,7 @@
       "pid_sheets": [
         "2 CA"
       ],
-      "drawing": "drawn: geometry/drawings/calciner/"
+      "drawing": "drawn: geometry/drawings/calciner/calciner.pdf"
     },
     {
       "area": "Rotary kiln",
@@ -1597,7 +1597,7 @@
       "pid_sheets": [
         "3 KI"
       ],
-      "drawing": "drawn: geometry/drawings/kiln/"
+      "drawing": "drawn: geometry/drawings/kiln/kiln.pdf"
     },
     {
       "area": "Rotary kiln",
@@ -1643,11 +1643,11 @@
         "Estimated": 4
       },
       "missing": [
-        "kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); 4 brick rings modelled brick by brick"
+        "kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); the 2 end rings modelled brick by brick; drawn on the kiln sheet"
       ],
-      "cfd_solid": "kiln_lining.SLDPRT (not a CFD input)",
+      "cfd_solid": "kiln_wall.SLDPRT (not a CFD input)",
       "pid_sheets": [],
-      "drawing": "drawn: geometry/drawings/kiln_lining/"
+      "drawing": "drawn: geometry/drawings/kiln/kiln.pdf"
     },
     {
       "area": "Rotary kiln",
@@ -1715,7 +1715,7 @@
       "pid_sheets": [
         "3 KI"
       ],
-      "drawing": "drawn: geometry/drawings/kiln_inlet_chamber/"
+      "drawing": "drawn: geometry/drawings/kiln_inlet_chamber/kiln_inlet_chamber.pdf"
     },
     {
       "area": "Rotary kiln",
@@ -1896,7 +1896,7 @@
       "pid_sheets": [
         "4 CO"
       ],
-      "drawing": "drawn: geometry/drawings/cooler/"
+      "drawing": "drawn: geometry/drawings/cooler/cooler.pdf"
     },
     {
       "area": "ID fan",
@@ -2148,7 +2148,7 @@
       "pid_sheets": [
         "1 PH"
       ],
-      "drawing": "drawn: geometry/drawings/id_fan/"
+      "drawing": "drawn: geometry/drawings/id_fan/id_fan.pdf"
     }
   ]
 }

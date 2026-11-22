@@ -775,7 +775,7 @@ class PlantWallStackTest(unittest.TestCase):
 
 class KilnLiningGeometryTest(unittest.TestCase):
     """The wall the twin conducts and stores heat through is the wall
-    kiln_lining.bas builds (plant_geometry.kiln()['wall']): the twin's
+    kiln_wall.bas builds (plant_geometry.kiln()['wall']): the twin's
     kiln zones place their stack at r_inner = D / 2 (burning.py,
     transition.py), D being the flow bore in both zones (user decision,
     22 Nov 2026), and the wall is one: the same stack thickness in both."""
@@ -822,7 +822,7 @@ class KilnLiningGeometryTest(unittest.TestCase):
         # circle with A on the shell side and an equivalent B in that range
         for z in self.stacks:
             n = self.w[f"brick_n_{z}"]
-            self.assertEqual(n % 4, 0, msg=z)   # no joint on x = 0 / y = 0 (kiln_lining.bas)
+            self.assertEqual(n % 4, 0, msg=z)   # no joint on x = 0 / y = 0 (kiln_wall.bas)
             self.assertAlmostEqual(self.w[f"brick_cold_chord_{z}"], 0.103, delta=0.0005, msg=z)
             self.assertTrue(0.088 <= self.w[f"brick_hot_chord_{z}"] <= 0.0973, msg=z)
             self.assertAlmostEqual(self.w[f"V_brick_ring_{z}"] * self.w[f"brick_rings_{z}"],

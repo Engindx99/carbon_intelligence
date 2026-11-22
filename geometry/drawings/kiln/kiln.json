@@ -16,7 +16,7 @@
   "params": [
     {
       "key": "kiln.D",
-      "label": "Kiln inner diameter (effective)",
+      "label": "Flow bore D = brick hot face (whole tube)",
       "value": 4.8,
       "unit": "m",
       "source": "published",
@@ -29,8 +29,24 @@
       "short": "D_kiln"
     },
     {
+      "key": "kiln.D_shell",
+      "label": "Shell outer D (one tube)",
+      "value": 5.3,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.shell_t"
+      ],
+      "value_mm": 5300.0,
+      "short": "D_shell"
+    },
+    {
       "key": "kiln.L",
-      "label": "Kiln length",
+      "label": "Kiln length (all lined)",
       "value": 74.0,
       "unit": "m",
       "source": "published",
@@ -44,7 +60,7 @@
     },
     {
       "key": "kiln.z_cfd0",
-      "label": "Back end to the solid (in the kiln inlet chamber's solid)",
+      "label": "CFD solid from z0 (the KIC's stub before it)",
       "value": 2.4,
       "unit": "m",
       "source": "derived",
@@ -59,7 +75,7 @@
     },
     {
       "key": "kiln.L_cfd",
-      "label": "Solid's length (L minus the chamber's stub)",
+      "label": "CFD solid's length (L minus the KIC's stub)",
       "value": 71.6,
       "unit": "m",
       "source": "derived",
@@ -75,7 +91,7 @@
     },
     {
       "key": "kiln.slope",
-      "label": "Slope (installed, not built into the solid)",
+      "label": "Slope (installed, not built in)",
       "value": 3.0,
       "unit": "%",
       "source": "published",
@@ -88,7 +104,7 @@
     },
     {
       "key": "kiln.transition_L",
-      "label": "Transition zone from the back end (model split)",
+      "label": "Transition zone (alumina), model split",
       "value": 30.83,
       "unit": "m",
       "source": "model",
@@ -102,7 +118,7 @@
     },
     {
       "key": "kiln.burning_L",
-      "label": "Burning zone (model split)",
+      "label": "Burning zone (magnesia-spinel)",
       "value": 43.17,
       "unit": "m",
       "source": "derived",
@@ -117,7 +133,7 @@
     },
     {
       "key": "kiln.volume_cfd",
-      "label": "Volume (solid)",
+      "label": "Gas volume (CFD solid)",
       "value": 1295.643075822888,
       "unit": "m3",
       "source": "derived",
@@ -132,7 +148,7 @@
     },
     {
       "key": "kiln.wall_area_cfd",
-      "label": "Wetted area (solid)",
+      "label": "Wetted area (CFD solid)",
       "value": 1079.70256318574,
       "unit": "m2",
       "source": "derived",
@@ -146,64 +162,223 @@
       "short": "wall_area"
     },
     {
-      "key": "kiln.shell",
-      "label": "Shell / refractory thickness",
-      "value": null,
-      "unit": "",
-      "source": "unknown",
-      "status": "Unknown",
-      "doc": "kiln/kiln.md: CFD fluid volume, no structure modelled",
-      "inputs": [],
-      "short": "u_wall"
+      "key": "kiln.shell_t",
+      "label": "Steel shell plate",
+      "value": 0.03,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.shell_t"
+      ],
+      "value_mm": 30.0,
+      "short": "shell_t"
     },
     {
-      "key": "kiln.material",
-      "label": "Material",
+      "key": "kiln.lining_t",
+      "label": "Brick ring H (both zones)",
+      "value": 0.22,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.lining_t"
+      ],
+      "value_mm": 220.0,
+      "short": "brick_t"
+    },
+    {
+      "key": "kiln.V_brick_transition",
+      "label": "Volume, alumina brick",
+      "value": 106.9669949878355,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.transition_L"
+      ],
+      "short": "V_brick_transition"
+    },
+    {
+      "key": "kiln.V_brick_burning",
+      "label": "Volume, magnesia-spinel brick",
+      "value": 149.78154958238272,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.L",
+        "kiln.transition_L"
+      ],
+      "short": "V_brick_burning"
+    },
+    {
+      "key": "kiln.V_shell",
+      "label": "Volume, steel shell",
+      "value": 36.75474909140825,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.shell_t",
+        "kiln.L"
+      ],
+      "short": "V_shell"
+    },
+    {
+      "key": "kiln.brick_cold_face",
+      "label": "Brick cold face A (ISO 5417)",
+      "value": 0.103,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.brick_cold_face"
+      ],
+      "value_mm": 103.0,
+      "short": "brick_A"
+    },
+    {
+      "key": "kiln.brick_length",
+      "label": "Brick length L, one ring (ISO 5417)",
+      "value": 0.198,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.brick_length"
+      ],
+      "value_mm": 198.0,
+      "short": "brick_L"
+    },
+    {
+      "key": "kiln.brick_hot_chord",
+      "label": "Brick hot face B, equivalent (ISO 522/622 mix)",
+      "value": 0.09424172381101584,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.brick_cold_face"
+      ],
+      "value_mm": 94.241724,
+      "short": "brick_B"
+    },
+    {
+      "key": "kiln.brick_n",
+      "label": "Bricks per ring",
+      "value": 160,
+      "unit": "-",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.brick_cold_face"
+      ],
+      "short": "brick_n"
+    },
+    {
+      "key": "kiln.brick_rings",
+      "label": "Rings (each zone's last one cut)",
+      "value": 375,
+      "unit": "-",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.L",
+        "kiln.transition_L",
+        "kiln.brick_length"
+      ],
+      "short": "brick_rings"
+    },
+    {
+      "key": "kiln.brick_total",
+      "label": "Bricks in all (2 end rings modelled brick by brick)",
+      "value": 60000,
+      "unit": "-",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln.lining_t",
+        "kiln.brick_cold_face",
+        "kiln.L",
+        "kiln.transition_L",
+        "kiln.brick_length"
+      ],
+      "short": "brick_total"
+    },
+    {
+      "key": "kiln.coating",
+      "label": "Clinker coating (left out, user 22 Nov 2026)",
       "value": null,
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
-      "doc": "kiln/kiln.md: no source",
+      "doc": "kiln/kiln.md: not modelled for now",
       "inputs": [],
-      "short": "u_material"
+      "short": "u_coating"
     },
     {
       "key": "kiln.tyres",
-      "label": "Tyres / support rollers",
+      "label": "Tyres, rollers, drive, seals (kiln_rotax.SLDPRT, ROTAX-2)",
       "value": null,
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
-      "doc": "kiln/kiln.md: no source",
+      "doc": "kiln/kiln.md: not on this sheet",
       "inputs": [],
       "short": "u_tyre"
     },
     {
-      "key": "kiln.drive",
-      "label": "Drive / girth gear",
+      "key": "kiln.brick_joints",
+      "label": "Joints, mortar, metal plates, key bricks",
       "value": null,
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
       "doc": "kiln/kiln.md: no source",
       "inputs": [],
-      "short": "u_drive"
+      "short": "u_shape"
     },
     {
-      "key": "kiln.seals",
-      "label": "Inlet and outlet seals",
+      "key": "kiln.end_castables",
+      "label": "Inlet / outlet castable, nose ring",
       "value": null,
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
       "doc": "kiln/kiln.md: no source",
       "inputs": [],
-      "short": "u_seal"
+      "short": "u_ends"
     }
   ],
   "dimensioned": [
     "D_kiln",
-    "L_cfd"
+    "D_shell",
+    "L_kiln",
+    "brick_t",
+    "shell_t"
   ],
   "also_the_sheet_of": []
 }

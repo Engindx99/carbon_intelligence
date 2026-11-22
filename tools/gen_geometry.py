@@ -400,7 +400,6 @@ def drawings_bas(g):
     out += _volute_sheet_consts(g)
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
-    out += _kiln_lining_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
     out += _idf_sheet_consts(g)
@@ -511,25 +510,10 @@ def _calciner_sheet_consts(g):
 
 
 def _kiln_sheet_consts(g):
-    """What drawings.bas needs for the kiln sheet, under a KIL_ prefix,
-    and its table."""
-    from tools.drawings import kiln as dki
-
-    k = pg.kiln(g)
-    out = [
-        der("KIL_D", k["D"], "kiln inner D"),
-        der("KIL_L", k["L"], "kiln length, back end to hood end"),
-        der("KIL_Z0", k["z_cfd0"], "the solid's back face (the KIC stub's end)"),
-    ]
-    out += _table_consts("kiln", dki.params(g), dki.ORDER)
-    return out
-
-
-def _kiln_lining_sheet_consts(g):
-    """What drawings.bas needs for the kiln_lining sheet (the wall as the
+    """What drawings.bas needs for the kiln sheet (its bore and its wall as the
     twin models it), under a KLN_ prefix: the radii, the layer legend
     from physics/shell.py's stacks, and the table."""
-    from tools.drawings import kiln_lining as dkl
+    from tools.drawings import kiln as dkl
 
     k = pg.kiln(g)
     w = k["wall"]
@@ -537,6 +521,7 @@ def _kiln_lining_sheet_consts(g):
         der("KLN_L", k["L"], "kiln length, all lined"),
         der("KLN_TL", k["transition_L"], "the transition (alumina) zone from the back end"),
         der("KLN_R_FLOW", w["r_flow"], "the flow bore: the brick's hot face, both zones"),
+        der("KLN_Z_CFD0", k["z_cfd0"], "the CFD solid's back face (kiln.SLDPRT; the KIC's stub before it)"),
         der("KLN_BRICK_L", pg.v(g["kiln"]["brick_length"]), "one brick ring along the axis (ISO 5417)"),
         der("KLN_BRICK_N", w["brick_n_burning"], "bricks per ring (both zones)"),
     ]
@@ -547,7 +532,7 @@ def _kiln_lining_sheet_consts(g):
     for i, (body, where, name, kc, rho, cp) in enumerate(dkl.layer_properties()):
         text = (f"{body} ({where}): {name}, k {kc:g} W/(m K), rho {rho:g} kg/m3, cp {cp:g} J/(kg K)")
         out.append(Const(f"KLN_LAYER_{i + 1}", text, "physics/shell.py DEFAULT_WALL_STACKS", kind="String"))
-    out += _table_consts("kiln_lining", dkl.params(g), dkl.ORDER)
+    out += _table_consts("kiln", dkl.params(g), dkl.ORDER)
     return out
 
 
@@ -783,7 +768,7 @@ def kiln_bas(g):
     ]
 
 
-def kiln_lining_bas(g):
+def kiln_wall_bas(g):
     k, w = g["kiln"], pg.kiln(g)["wall"]
     n_t, n_b = w["brick_n_transition"], w["brick_n_burning"]
     if n_t != n_b or w["V_brick_ring_transition"] != w["V_brick_ring_burning"]:
@@ -803,6 +788,41 @@ def kiln_lining_bas(g):
     ]
 
 
+KRX_CHUNKS = 20
+
+
+def _fixed(q):
+    t = f"{q:.9f}".rstrip("0").rstrip(".")
+    return "0" if t in ("", "-0") else t
+
+
+def kiln_rotax_bas(g):
+    """kiln_rotax.bas: every body plant_geometry.kiln_rotax() lays out as
+    name|kind|params|V|box (x0 y0 z0 x1 y1 z1)|r g b, the bodies joined by
+    ";" into KRX_CHUNKS strings (a VBA line holds about 1000 characters;
+    the macro joins KRX_1 .. KRX_20)."""
+    r = pg.kiln_rotax(g)
+    recs = []
+    for b in r["bodies"]:
+        nums = list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])
+        # fixed point (VBA's Val reads it in any locale; no exponent)
+        recs.append("|".join([b["name"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > KRX_CHUNKS:
+        raise ValueError(f"kiln_rotax: {len(chunks)} chunks, the macro joins {KRX_CHUNKS}")
+    chunks += [""] * (KRX_CHUNKS - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    out += [Const(f"KRX_{i + 1}", c, "plant_geometry.kiln_rotax() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    return out
+
+
 def pid_bas(g):
     """The P&ID macro's records (geometry/pid/pid.yaml; tools/pid/)."""
     from tools.pid import encode, model
@@ -813,7 +833,8 @@ def pid_bas(g):
 TARGETS = {
     "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
-    "kiln_lining.bas": kiln_lining_bas,
+    "kiln_wall.bas": kiln_wall_bas,
+    "kiln_rotax.bas": kiln_rotax_bas,
     "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
     "id_fan.bas": id_fan_bas,
     "cyclone.bas": cyclone_bas,
@@ -1032,6 +1053,7 @@ def _calciner_rows(g):
 
 def _kiln_rows(g):
     k, kk = g["kiln"], pg.kiln(g)
+    rx = pg.kiln_rotax(g)
     return [
         row_src("Efektif iç çap", k["D"]),
         row_src("Boy", k["L"]),
@@ -1042,6 +1064,18 @@ def _kiln_rows(g):
         row_src("Tuğla (astar) kalınlığı", k["lining_t"], digits=3),
         row_src("Tuğla soğuk yüzü A (ISO 5417)", k["brick_cold_face"], digits=3),
         row_src("Tuğla boyu L, bir halka (ISO 5417)", k["brick_length"], digits=3),
+        # ROTAX-2 mechanical parts (kiln_rotax.bas)
+        row_src("Giriş tayrı, L'nin oranı (ROTAX-2)", g["kiln_rotax"]["tyre_inlet_at"], digits=2),
+        row_src("Çıkış tayrı, L'nin oranı (ROTAX-2)", g["kiln_rotax"]["tyre_outlet_at"], digits=2),
+        row_der("Tayr açıklığı", rx["tyre_span"], "m", 2),
+        row_src("Tayr genişliği", g["kiln_rotax"]["tyre_width"], digits=2),
+        row_src("Tayr kalınlığı (radyal)", g["kiln_rotax"]["tyre_thickness"], digits=2),
+        row_src("Tayr ile sac arası (teğet askı)", g["kiln_rotax"]["tyre_gap"], digits=2),
+        row_der("Tayr dış çapı", rx["D_tyre"], "m", 2),
+        row_src("Tayr altı sac kalınlığı", g["kiln_rotax"]["tyre_section_t"], digits=3),
+        row_src("Makara çapı / tayr çapı", g["kiln_rotax"]["roller_over_tyre"], digits=3),
+        row_src("Makara açısı (düşeyden)", g["kiln_rotax"]["roller_angle"], digits=1),
+        row_der("Makara çapı", rx["D_roller"], "m", 2),
         row_der("**Ekipman hacmi**", kk["volume"], "m³", 2),
         row_der("**Duvar alanı**", kk["wall_area"], "m²", 2),
     ]

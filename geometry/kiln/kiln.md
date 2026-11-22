@@ -17,6 +17,17 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000; değerler `c99b93a^:geometry/ca
 | Tuğla (astar) kalınlığı | 0.220 m | literatür |
 | Tuğla soğuk yüzü A (ISO 5417) | 0.103 m | literatür |
 | Tuğla boyu L, bir halka (ISO 5417) | 0.198 m | literatür |
+| Giriş tayrı, L'nin oranı (ROTAX-2) | 0.33 | FLS oranıyla türetilmiş |
+| Çıkış tayrı, L'nin oranı (ROTAX-2) | 0.85 | FLS oranıyla türetilmiş |
+| Tayr açıklığı | 38.48 m | türetilmiş |
+| Tayr genişliği | 0.90 m | FLS oranıyla türetilmiş |
+| Tayr kalınlığı (radyal) | 0.45 m | FLS oranıyla türetilmiş |
+| Tayr ile sac arası (teğet askı) | 0.35 m | FLS oranıyla türetilmiş |
+| Tayr dış çapı | 6.90 m | türetilmiş |
+| Tayr altı sac kalınlığı | 0.090 m | literatür |
+| Makara çapı / tayr çapı | 0.324 | literatür |
+| Makara açısı (düşeyden) | 30.0 ° | literatür |
+| Makara çapı | 2.24 m | türetilmiş |
 | **Ekipman hacmi** | 1339.07 m³ | türetilmiş |
 | **Duvar alanı** | 1115.89 m² | türetilmiş |
 <!-- END GENERATED -->

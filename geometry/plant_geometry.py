@@ -693,6 +693,190 @@ def kiln(g):
     }
 
 
+def kiln_rotax(g):
+    """The kiln's mechanical parts after FLS ROTAX-2 (user, 22 Nov 2026:
+    the kiln's dimensions stay, these parts are added as simple
+    envelopes; kiln_rotax.bas builds them). The kiln's frame as
+    kiln_wall.bas: axis z (back end 0, hood end L), y up, x across; the
+    slope is not built in, the piers reach the sloped ground.
+
+    Returns the scalars and "bodies": [{name, kind, p, V, box, rgb}], kind
+      ring  p = (r0, r1, z0, z1)                     annulus about z
+      box   p = (x0, x1, y0, y1, z0, z1)             axis-aligned
+      rbox  p = (r0, r1, w, z0, z1, theta)           a box on the +y axis
+                                                     (x +-w/2, y r0..r1), turned
+                                                     theta about +z (+y towards -x)
+      cyl   p = (bx, by, bz, ax, ay, az, r, length)  base centre, unit axis
+    V the volume, box the exact extent (x0, y0, z0, x1, y1, z1).
+    """
+    k, x = g["kiln"], g["kiln_rotax"]
+    kk = kiln(g)
+    L = kk["L"]
+    r_sh = kk["wall"]["r_shell_burning"]
+    t_sh = v(k["shell_t"])
+    alpha = math.atan(v(k["slope"]) / 100.0)
+    axis_z0 = v(g["layout"]["kiln_axis_z"])        # axis over the ground at the back end
+
+    w_t, t_t, gap = v(x["tyre_width"]), v(x["tyre_thickness"]), v(x["tyre_gap"])
+    r_tb = r_sh + gap                                # tyre bore
+    r_to = r_tb + t_t                                # tyre OD / 2
+    r_band = r_sh + v(x["tyre_section_t"]) - t_sh    # the tyre section's extra plate
+    L_band = v(x["tyre_section_L"])
+    n_br, w_br, oh = int(v(x["bracket_n"])), v(x["bracket_w"]), v(x["bracket_overhang"])
+    r_r = 0.5 * v(x["roller_over_tyre"]) * 2.0 * r_to
+    w_r = w_t + v(x["roller_extra_width"])
+    ang = math.radians(v(x["roller_angle"]))
+    d_r = r_to + r_r                                 # tyre centre to roller centre
+    x_r, y_r = d_r * math.sin(ang), -d_r * math.cos(ang)
+    r_sd = 0.5 * v(x["roller_shaft_D"])
+    b_s, b_L = v(x["bearing_size"]), v(x["bearing_length"])
+    f_t = v(x["frame_t"])
+    y_top = y_r - 0.5 * b_s                          # frame top: under the bearings
+    y_pier = y_top - f_t                             # pier top
+    p_hw, p_hl = v(x["pier_half_width"]), v(x["pier_half_length"])
+    gb_r, gb_L = 0.5 * v(x["gearbox_D"]), v(x["gearbox_L"])
+    m_s, m_L, gap_d = v(x["motor_size"]), v(x["motor_L"]), v(x["drive_gap"])
+    h_r, h_t = 0.5 * v(x["htd_D"]), v(x["htd_t"])
+    z_in, z_out = v(x["tyre_inlet_at"]) * L, v(x["tyre_outlet_at"]) * L
+
+    def ground(z):                                   # the ground's y under z
+        return -(axis_z0 - z * math.sin(alpha))
+
+    bodies = []
+
+    def ring(name, r0, r1, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "ring", "p": (r0, r1, z0, z1),
+                       "V": math.pi * (r1 * r1 - r0 * r0) * (z1 - z0),
+                       "box": (-r1, -r1, z0, r1, r1, z1), "rgb": rgb})
+
+    def box(name, x0, x1, y0, y1, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "box", "p": (x0, x1, y0, y1, z0, z1),
+                       "V": (x1 - x0) * (y1 - y0) * (z1 - z0),
+                       "box": (x0, y0, z0, x1, y1, z1), "rgb": rgb})
+
+    def rbox(name, r0, r1, w, z0, z1, th, rgb):
+        c, s = math.cos(th), math.sin(th)
+        pts = [(-s * yy + c * xx, c * yy + s * xx) for xx in (-0.5 * w, 0.5 * w) for yy in (r0, r1)]
+        xs, ys = [p[0] for p in pts], [p[1] for p in pts]
+        bodies.append({"name": name, "kind": "rbox", "p": (r0, r1, w, z0, z1, th),
+                       "V": w * (r1 - r0) * (z1 - z0),
+                       "box": (min(xs), min(ys), z0, max(xs), max(ys), z1), "rgb": rgb})
+
+    def cyl(name, base, axis, r, length, rgb):
+        n = math.sqrt(sum(a * a for a in axis))
+        a = tuple(ai / n for ai in axis)
+        end = tuple(b + length * ai for b, ai in zip(base, a))
+        half = tuple(r * math.sqrt(max(0.0, 1.0 - ai * ai)) for ai in a)
+        lo = tuple(min(b, e) - h for b, e, h in zip(base, end, half))
+        hi = tuple(max(b, e) + h for b, e, h in zip(base, end, half))
+        bodies.append({"name": name, "kind": "cyl", "p": base + a + (r, length),
+                       "V": math.pi * r * r * length, "box": lo + hi, "rgb": rgb})
+
+    BLUE, STEEL, GREY, CONCRETE = (0.1, 0.16, 0.72), (0.62, 0.64, 0.66), (0.45, 0.46, 0.48), (0.78, 0.77, 0.74)
+    drive_z0 = None
+    for st, z in (("inlet", z_in), ("outlet", z_out)):
+        ring(f"tyre_{st}", r_tb, r_to, z - 0.5 * w_t, z + 0.5 * w_t, BLUE)
+        ring(f"tyre_section_{st}", r_sh, r_band, z - 0.5 * L_band, z + 0.5 * L_band, STEEL)
+        for i in range(n_br):
+            rbox(f"bracket_{st}_{i:02d}", r_band, r_tb, w_br, z - 0.5 * w_t - oh, z + 0.5 * w_t + oh,
+                 (i + 0.5) * 2.0 * math.pi / n_br, STEEL)
+        for side, sx in (("L", -1.0), ("R", 1.0)):
+            xr = sx * x_r
+            cyl(f"roller_{st}_{side}", (xr, y_r, z - 0.5 * w_r), (0.0, 0.0, 1.0), r_r, w_r, BLUE)
+            cyl(f"shaft_{st}_{side}", (xr, y_r, z - 0.5 * w_r - b_L), (0.0, 0.0, 1.0), r_sd, w_r + 2.0 * b_L, GREY)
+            for end, sz in (("back", -1.0), ("hood", 1.0)):
+                za, zb = sorted((z + sz * 0.5 * w_r, z + sz * (0.5 * w_r + b_L)))
+                box(f"bearing_{st}_{side}_{end}", xr - 0.5 * b_s, xr + 0.5 * b_s, y_r - 0.5 * b_s, y_r + 0.5 * b_s,
+                    za, zb, GREY)
+            if st == "inlet":
+                # the friction drive: gearbox, then the main motor, back-end side
+                zg1 = z - 0.5 * w_r - b_L - gap_d
+                cyl(f"gearbox_{side}", (xr, y_r, zg1 - gb_L), (0.0, 0.0, 1.0), gb_r, gb_L, BLUE)
+                zm1 = zg1 - gb_L - gap_d
+                box(f"motor_{side}", xr - 0.5 * m_s, xr + 0.5 * m_s, y_r - 0.5 * m_s, y_r + 0.5 * m_s,
+                    zm1 - m_L, zm1, GREY)
+                drive_z0 = zm1 - m_L
+        zf = 0.5 * w_r + b_L
+        box(f"frame_{st}", -(x_r + 0.5 * b_s), x_r + 0.5 * b_s, y_pier, y_top, z - zf, z + zf, GREY)
+        # the inlet pier also carries the drive; the outlet pier reaches
+        # the hood end, under the outlet seal and the nose ring fan (images)
+        za = min(z - p_hl, drive_z0 - gap_d) if st == "inlet" else z - p_hl
+        zb = z + p_hl if st == "inlet" else max(z + p_hl, L)
+        box(f"pier_{st}", -p_hw, p_hw, ground(z), y_pier, za, zb, CONCRETE)
+    # the hydraulic thrust device: a level roller on the inlet tyre's hood-side face
+    zc = z_in + 0.5 * w_t + h_r
+    yh = -0.5 * (r_tb + r_to)
+    cyl("htd", (0.0, yh - 0.5 * h_t, zc), (0.0, 1.0, 0.0), h_r, h_t, BLUE)
+    box("htd_stand", -0.5 * h_r, 0.5 * h_r, y_top, yh - 0.5 * h_t, zc - 0.5 * h_r, zc + 0.5 * h_r, GREY)
+    # seals: graphite blocks in ring housings over the shell's ends
+    r_is = r_sh + v(x["inlet_seal_depth"])
+    L_is = v(x["inlet_seal_L"])
+    ring("inlet_seal", r_sh, r_is, -0.5 * L_is, 0.5 * L_is, BLUE)
+    r_os = r_sh + v(x["outlet_seal_depth"])
+    L_os = v(x["outlet_seal_L"])
+    ring("outlet_seal", r_sh, r_os, L - L_os, L, BLUE)
+    # the dust chutes: from the seal housing's underside down to the outlet
+    # pier (the images' legs to the platform)
+    c_r = 0.5 * v(x["chute_D"])
+    for i, sx in ((1, -1.0), (2, 1.0)):
+        xc = sx * 0.5 * r_sh
+        y_c = -math.sqrt(r_os * r_os - xc * xc)
+        cyl(f"outlet_chute_{i}", (xc, y_pier, L - 0.5 * L_os), (0.0, 1.0, 0.0), c_r, y_c - y_pier, BLUE)
+    # cooling: the nose ring fan aimed at the outlet seal, three shell fans
+    f_r, f_L = 0.5 * v(x["fan_D"]), v(x["fan_L"])
+    f_c = v(x["fan_clearance"])
+    w_w, d_w = v(x["walkway_width"]), v(x["walkway_depth"])
+    x_w0, x_w1 = -p_hw, -p_hw + w_w
+    xf = 0.5 * (x_w0 + x_w1)
+    y_f = y_pier + f_r                               # a fan's base centre, its rim on the deck
+    # the nose ring fan: on the outlet pier, square to the kiln (its axis in
+    # the plane z = the seal housing's middle, aimed at the kiln's axis; user,
+    # 22 Nov 2026), its outlet f_c off the housing, its base on the deck
+    r_n = r_os + f_c + f_L                           # base centre's distance from the axis
+    base_n = (-math.sqrt(r_n * r_n - y_f * y_f), y_f, L - 0.5 * L_os)
+    if base_n[0] < -p_hw:
+        raise ValueError(f"kiln_rotax: the nose ring fan at x {base_n[0]:.2f}, off the pier")
+    d = (-base_n[0], -base_n[1], 0.0)
+    def fan(name, base, axis):
+        """A fan and its stand: a post under the fan's base centre, from the
+        deck (the pier / walkway top) up to the tilted base face. The face is
+        y = y_b - (ax (x - x_b) + az (z - z_b)) / ay; the post's top reaches
+        its highest point over the post, so the post meets the face all
+        over (and runs a little into the fan where the face is lower)."""
+        n_ = math.sqrt(sum(q * q for q in axis))
+        a_ = tuple(q / n_ for q in axis)
+        if a_[1] <= 0.0:
+            raise ValueError(f"kiln_rotax: {name} does not point up; no post under it")
+        cyl(name, base, axis, f_r, f_L, STEEL)
+        h = 0.35 * f_r                               # the post's half width: its top stays inside the fan
+        y_top = base[1] + h * (abs(a_[0]) + abs(a_[2])) / a_[1]
+        y_low = base[1] - f_r * math.sqrt(1.0 - a_[1] ** 2)
+        if y_low <= y_pier:
+            raise ValueError(f"kiln_rotax: {name} reaches below the deck")
+        box(f"{name}_stand", base[0] - h, base[0] + h, y_pier, y_top, base[2] - h, base[2] + h, GREY)
+
+    fan("nose_ring_fan", base_n, d)
+    box("walkway", x_w0, x_w1, y_pier - d_w, y_pier, z_in + p_hl, z_out - p_hl, GREY)
+    # shell fans: on the walkway, aimed at the axis, their outlet f_c off the
+    # shell (images: tilted at the shell's side, close to it)
+    r_f = r_sh + f_c + f_L                           # base centre's distance from the axis
+    xb = -math.sqrt(r_f * r_f - y_f * y_f)
+    if not x_w0 <= xb <= x_w1:
+        raise ValueError(f"kiln_rotax: shell fans at x {xb:.2f}, off the walkway {x_w0:.2f} .. {x_w1:.2f}")
+    for i in range(int(v(x["fan_n"]))):
+        zf_i = z_out - v(x["fan_first_before_tyre"]) + i * v(x["fan_pitch"])
+        fan(f"shell_fan_{i + 1}", (xb, y_f, zf_i), (-xb, -y_f, 0.0))
+    names = [b["name"] for b in bodies]
+    assert len(set(names)) == len(names), "kiln_rotax: a body name twice"
+    return {
+        "z_tyre_inlet": z_in, "z_tyre_outlet": z_out, "tyre_span": z_out - z_in,
+        "r_tyre_bore": r_tb, "r_tyre": r_to, "D_tyre": 2.0 * r_to,
+        "r_roller": r_r, "D_roller": 2.0 * r_r, "w_roller": w_r, "x_roller": x_r, "y_roller": y_r,
+        "y_pier_top": y_pier, "ground_inlet": ground(z_in), "ground_outlet": ground(z_out),
+        "bodies": bodies,
+    }
+
+
 def cooler(g):
     c = g["cooler"]
     w, h = v(c["width"]), v(c["casing_height"])

@@ -1058,7 +1058,7 @@ DEFAULT_WALL_STACKS = {
 }
 
 
-def _kiln_lining(cfg):
+def _kiln_wall(cfg):
     """The kiln's lining thicknesses [m]: from the config when the
     geometry has been put in (main.load_cfg), else from the source."""
 
@@ -1078,7 +1078,7 @@ def _thickness(cfg, zone, thickness):
     if not isinstance(thickness, str):
         return thickness
 
-    lining = _kiln_lining(cfg)
+    lining = _kiln_wall(cfg)
 
     if thickness not in lining:
         raise KeyError(

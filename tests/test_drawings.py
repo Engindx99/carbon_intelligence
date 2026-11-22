@@ -38,7 +38,7 @@ def _yaml_entry(dotted):
 
 
 def _payload(name):
-    return json.loads((gen_drawings.OUT / name / f"{name}.json").read_text(encoding="utf-8"))
+    return json.loads((gen_drawings.sheet_dir(name) / f"{name}.json").read_text(encoding="utf-8"))
 
 
 class TheDataFilesTest(unittest.TestCase):
@@ -172,7 +172,9 @@ class TheViewsOutOfPlaceAreLabelledTest(unittest.TestCase):
     'view label <text>'; skipped until the macro has run here."""
 
     WANT = {
-        "kiln": {"arrows": ["A"], "labels": ["A (1:50)"]},
+        # the kiln sheet (bore + wall, 22 Nov 2026): end view C from the hood
+        "kiln": {"arrows": ["C"], "labels": ["C (1:50) - hood end, the end ring",
+                                            "SIDE VIEW - back end left, hood end right"]},
         "cooler": {"arrows": ["A", "B"], "labels": ["A", "B (1:50)"]},
     }
 

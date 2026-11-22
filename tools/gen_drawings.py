@@ -27,10 +27,15 @@ if str(ROOT) not in sys.path:
     sys.path.insert(0, str(ROOT))
 
 from geometry import plant_geometry as pg  # noqa: E402
-from tools.drawings import calciner, cooler, cyclone, id_fan, inventory, kiln, kiln_inlet_chamber, kiln_lining, twin, volute  # noqa: E402
+from tools.drawings import calciner, cooler, cyclone, id_fan, inventory, kiln, kiln_inlet_chamber, twin, volute  # noqa: E402
 from tools.pid import encode as pid_encode, model as pid_model  # noqa: E402
 
 OUT = ROOT / "geometry" / "drawings"
+
+
+def sheet_dir(name):
+    """geometry/drawings/<name>: the sheet's folder."""
+    return OUT / name
 LOG_DIR = ROOT / "geometry" / "output" / "2500"
 
 STATUS_RULE = ("published -> Verified; derived_from_reference, literature, cfd_decision, "
@@ -45,7 +50,6 @@ EQUIPMENT = {
     "C5": volute,
     "calciner": calciner,
     "kiln": kiln,
-    "kiln_lining": kiln_lining,
     "cooler": cooler,
     "kiln_inlet_chamber": kiln_inlet_chamber,
     "id_fan": id_fan,
@@ -53,7 +57,7 @@ EQUIPMENT = {
 
 # Drawings made in SolidWorks and checked against their build log; the
 # rest of EQUIPMENT is ready in drawings.bas but not yet run.
-DRAWN = ("C1", "C1_twin", "C4", "C5", "calciner", "kiln", "kiln_lining", "cooler", "kiln_inlet_chamber", "id_fan")
+DRAWN = ("C1", "C1_twin", "C4", "C5", "calciner", "kiln", "cooler", "kiln_inlet_chamber", "id_fan")
 
 
 def payload(name, g=None):
@@ -85,7 +89,7 @@ def _text(data):
 def files(g=None):
     """{path: text} of every file this writes."""
     g = g or pg.load()
-    out = {OUT / n / f"{n}.json": _text(payload(n, g)) for n in EQUIPMENT}
+    out = {sheet_dir(n) / f"{n}.json": _text(payload(n, g)) for n in EQUIPMENT}
     pid = pid_model.load()
     out[OUT / "pid" / "pid.json"] = _text(pid_encode.payload(pid, g))
     inv = inventory.build(g, drawn=DRAWN, ready=[n for n in EQUIPMENT if n not in DRAWN],

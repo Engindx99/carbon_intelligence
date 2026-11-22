@@ -7,4 +7,5 @@ c1_twin c1_twin_solid
 plant_topology_2d topology_drawing
 kiln_inlet_chamber kic_solid
 kiln kiln_solid
-kiln_lining kiln_lining_solid
+kiln_wall kiln_wall_solid
+kiln_rotax kiln_rotax_solid

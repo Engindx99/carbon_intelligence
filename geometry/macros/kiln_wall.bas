@@ -1,4 +1,4 @@
-Attribute VB_Name = "kiln_lining"
+Attribute VB_Name = "kiln_wall"
 '==================================================================
 ' Rotary kiln WALL as the twin models it  ->  SLDPRT + STEP (AP214)
 '
@@ -40,15 +40,15 @@ Attribute VB_Name = "kiln_lining"
 '
 ' SI ONLY. The SolidWorks API is always metres and radians.
 '
-' To run: python3 tools/sw_run.py kiln_lining_solid.main from WSL, or
+' To run: python3 tools/sw_run.py kiln_wall_solid.main from WSL, or
 ' import this .bas in SolidWorks' VBA editor and run `main`.
-' Outputs geometry\output\2500\kiln_lining.SLDPRT, .step and
-' kiln_lining_build.log.
+' Outputs geometry\output\2500\kiln_wall.SLDPRT, .step and
+' kiln_wall_build.log.
 '==================================================================
 
 Option Explicit
 
-Const PART_NAME As String = "kiln_lining"
+Const PART_NAME As String = "kiln_wall"
 Const LINE_KEY As String = "2500"
 
 ' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
@@ -590,12 +590,12 @@ End Sub
 
 
 Private Sub Fail(ByVal msg As String)
-    Err.Raise vbObjectError + 1, "kiln_lining", msg
+    Err.Raise vbObjectError + 1, "kiln_wall", msg
 End Sub
 
 
 Private Function LogPath() As String
-    LogPath = OUT_ROOT & LINE_KEY & "\kiln_lining_build.log"
+    LogPath = OUT_ROOT & LINE_KEY & "\kiln_wall_build.log"
 End Function
 
 

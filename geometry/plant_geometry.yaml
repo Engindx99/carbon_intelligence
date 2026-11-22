@@ -250,7 +250,7 @@ kiln:
   # the bore (user decision, 12 Oct 2026), so the stack is added outward:
   # D is the flow bore and the brick's hot face, in both zones (user,
   # 22 Nov 2026); one wall over the tube, the shell 5.30 m throughout
-  # (kiln_lining.bas, plant_geometry.kiln()["wall"]). With the published
+  # (kiln_wall.bas, plant_geometry.kiln()["wall"]). With the published
   # shell the real bore would be 4.8 - 2 (0.030 + 0.220) = 4.30 m (open
   # item, 15 Nov 2026).
   # Steel plate: welded kilns 25-35 mm (cementkilns.co.uk, "Design features
@@ -273,6 +273,93 @@ kiln:
   # drawings or the twin for now): the brick is the innermost layer.
   # The burning coating was 0.200 m (held the shell at Sadighi et al.
   # 2011's 190-220 C), the transition coating had no source.
+
+# ---------------------------------------------------------------------
+# The kiln's mechanical parts, FLS ROTAX-2 as the reference (user, 22 Nov
+# 2026: the kiln's own dimensions stay, only these parts are added; simple
+# envelopes). kiln_rotax.bas; not a CFD input, not a fabrication drawing.
+# FLS publishes no ROTAX-2 dimension: what the user's ROTAX-2 3D model
+# images (FLS) show is read as a ratio to the kiln's L or shell diameter
+# (derived_from_reference); the rest is literature or schematic.
+#   Two supports, tangentially suspended tyres on self-aligning rollers,
+#   friction drive through the inlet station's two rollers (no girth
+#   gear), hydraulic thrust device, graphite inlet and outlet seals
+#   (fuller-technologies.com ROTAX-2 page; the user's images).
+# ---------------------------------------------------------------------
+kiln_rotax:
+  # Tyre centres along the tube from the back end, read off the ROTAX-2
+  # side view (shell ends to tyre centres). Span 0.52 L = 38.5 m = 7.3 x
+  # the shell D: past the ~7 D a two-tyre kiln can carry (cementkilns.co.uk,
+  # "Design features of rotary kilns") -- this kiln is longer (L/D 15) than
+  # a two-support kiln (10-14); kept as the user's reference shows it.
+  tyre_inlet_at:       {value: 0.33,  unit: "-",  source: derived_from_reference, doc: kiln/kiln.md}
+  tyre_outlet_at:      {value: 0.85,  unit: "-",  source: derived_from_reference, doc: kiln/kiln.md}
+  # Tyre ring: width and radial thickness about 0.17 and 0.085 x the
+  # shell D in the images; the tangential suspension's brackets keep its
+  # bore this far off the shell (bracket height, images).
+  tyre_width:          {value: 0.90,  unit: m,    source: derived_from_reference, doc: kiln/kiln.md}
+  tyre_thickness:      {value: 0.45,  unit: m,    source: derived_from_reference, doc: kiln/kiln.md}
+  tyre_gap:            {value: 0.35,  unit: m,    source: derived_from_reference, doc: kiln/kiln.md}
+  # Shell under the tyre: "triple-thickness shell under the tyre chairs"
+  # (cementkilns.co.uk); its length about four tyre widths (images).
+  # Modelled as the extra plate outside the shell (the shell's D stays).
+  tyre_section_t:      {value: 0.090, unit: m,    source: literature,   doc: kiln/kiln.md}
+  tyre_section_L:      {value: 3.60,  unit: m,    source: derived_from_reference, doc: kiln/kiln.md}
+  # Tangential suspension: brackets round the shell (images: ~16), each
+  # this wide, spanning the tyre and this far either side of it.
+  bracket_n:           {value: 16,    unit: "-",  source: derived_from_reference, doc: kiln/kiln.md}
+  bracket_w:           {value: 0.30,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  bracket_overhang:    {value: 0.50,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Support rollers: OD / tyre OD = 1500 / 4630 and 30 deg from the
+  # vertical to each roller (Wisner, Metso, TAPPI PEERS 2019, worked
+  # example; "rollers subtend 60 deg at the tyre centre", cementkilns.co.uk).
+  # Wider than the tyre (cementkilns.co.uk; the margin has no source).
+  roller_over_tyre:    {value: 0.324, unit: "-",  source: literature,   doc: kiln/kiln.md}
+  roller_angle:        {value: 30.0,  unit: deg,  source: literature,   doc: kiln/kiln.md}
+  roller_extra_width:  {value: 0.20,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  roller_shaft_D:      {value: 0.60,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  bearing_size:        {value: 1.00,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  bearing_length:      {value: 0.70,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  frame_t:             {value: 0.60,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Concrete piers, down to the ground under the sloped axis
+  # (layout.kiln_axis_z at the back end, kiln.slope): half width across
+  # the kiln, half length along it; the inlet pier also carries the drive.
+  pier_half_width:     {value: 4.50,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  pier_half_length:    {value: 3.00,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Friction drive at the inlet station: per roller a gearbox and a main
+  # motor in line with the roller's shaft, on the back-end side (images).
+  gearbox_D:           {value: 1.60,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  gearbox_L:           {value: 1.40,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  motor_size:          {value: 1.20,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  motor_L:             {value: 2.00,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  drive_gap:           {value: 0.40,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Hydraulic thrust device: a horizontal roller on the inlet tyre's
+  # hood-side face (images).
+  htd_D:               {value: 1.40,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  htd_t:               {value: 0.35,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Seals (graphite blocks in a ring housing): radial depth and length
+  # of each housing, over the shell end; two dust chutes under the outlet.
+  # The outlet pier reaches the hood end (images: the platform under the
+  # outlet seal and the nose ring fan).
+  inlet_seal_depth:    {value: 0.65,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  inlet_seal_L:        {value: 0.90,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  outlet_seal_depth:   {value: 0.90,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  outlet_seal_L:       {value: 1.30,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # (the chutes reach down to the outlet pier: their length follows)
+  chute_D:             {value: 0.50,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Shell cooling fans: three axial fans (images) on the walkway, blowing
+  # up at the burning zone's shell, from this far before the outlet tyre,
+  # this far apart; the nose ring fan under the outlet seal.
+  fan_n:               {value: 3,     unit: "-",  source: derived_from_reference, doc: kiln/kiln.md}
+  fan_D:               {value: 1.25,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  fan_L:               {value: 1.60,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # each fan's outlet this far off the surface it cools (images: ~1 m)
+  fan_clearance:       {value: 1.0,   unit: m,    source: derived_from_reference, doc: kiln/kiln.md}
+  fan_first_before_tyre: {value: 15.0, unit: m,   source: schematic,    doc: kiln/kiln.md}
+  fan_pitch:           {value: 4.0,   unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Walkway truss between the piers, beside the kiln (images).
+  walkway_width:       {value: 2.0,   unit: m,    source: schematic,    doc: kiln/kiln.md}
+  walkway_depth:       {value: 1.2,   unit: m,    source: schematic,    doc: kiln/kiln.md}
 
 # ---------------------------------------------------------------------
 # Grate cooler: PF5000 grate area, FLS reference cooler width and height
