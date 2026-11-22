@@ -346,7 +346,7 @@
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
-      "doc": "kiln/kiln.md: not on this sheet",
+      "doc": "kiln/kiln.md: on the kiln_rotax sheet",
       "inputs": [],
       "short": "u_tyre"
     },

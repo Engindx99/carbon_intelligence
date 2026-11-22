@@ -83,6 +83,11 @@ EQUIPMENT = [
      "-",
      ["kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); the 2 end rings modelled brick by brick; drawn on the kiln sheet"],
      "kiln_wall.SLDPRT (not a CFD input)"),
+    ("Rotary kiln", "KROT", "Kiln mechanical parts after FLS ROTAX-2", "1",
+     ["kiln_rotax."],
+     "-",
+     ["kiln/kiln.md: FLS publishes no ROTAX-2 size: image ratios, literature or schematic; simple envelopes"],
+     "kiln_rotax.SLDPRT (not a CFD input)"),
     ("Rotary kiln", "KIC", "Kiln inlet chamber", "1",
      ["kiln_inlet_chamber.", "layout.chamber_margin"], "C5 meal + kiln gas -> calciner throat",
      ["kiln/kiln_inlet_chamber.md: no published size; shape is the user's 21 Nov sketch (throat walls down, 50 deg ramp, the kiln's lines carried in, a stub of the kiln tube as the inlet); bypass and lining unknown; no twin volume"], "kiln_inlet_chamber.SLDPRT"),
@@ -103,7 +108,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln", "KROT": "kiln_rotax", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

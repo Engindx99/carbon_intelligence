@@ -400,6 +400,7 @@ def drawings_bas(g):
     out += _volute_sheet_consts(g)
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
+    out += _kiln_rotax_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
     out += _idf_sheet_consts(g)
@@ -533,6 +534,54 @@ def _kiln_sheet_consts(g):
         text = (f"{body} ({where}): {name}, k {kc:g} W/(m K), rho {rho:g} kg/m3, cp {cp:g} J/(kg K)")
         out.append(Const(f"KLN_LAYER_{i + 1}", text, "physics/shell.py DEFAULT_WALL_STACKS", kind="String"))
     out += _table_consts("kiln", dkl.params(g), dkl.ORDER)
+    return out
+
+
+def _kiln_rotax_sheet_consts(g):
+    """What drawings.bas needs for the kiln_rotax sheet (the ROTAX-2 parts
+    of kiln_rotax.SLDPRT), under an RTX_ prefix: the part's body count and
+    joint extent (the box check), the radii and places the views, the
+    dimensions and the kiln shell's phantom outline use, and the table."""
+    from tools.drawings import kiln_rotax as drx
+
+    r = pg.kiln_rotax(g)
+    k = pg.kiln(g)
+    by = {b["name"]: b for b in r["bodies"]}
+    box = [min(b["box"][i] for b in r["bodies"]) for i in range(3)] + \
+          [max(b["box"][i] for b in r["bodies"]) for i in range(3, 6)]
+    t = by["tyre_inlet"]["p"]                       # ring r0, r1, z0, z1
+    band = by["tyre_section_inlet"]["p"]
+    rol = by["roller_inlet_R"]["p"]                 # cyl base, axis, r, length
+    out = [
+        der("RTX_N", len(r["bodies"]), "bodies in kiln_rotax.SLDPRT"),
+        der("RTX_X0", box[0], "the part's x min"), der("RTX_Y0", box[1], "the part's y min (the inlet pier's foot)"),
+        der("RTX_Z0", box[2], "the part's z min (the inlet pier, behind the drive)"),
+        der("RTX_X1", box[3], "the part's x max"), der("RTX_Y1", box[4], "the part's y max (the tyres' top)"),
+        der("RTX_Z1", box[5], "the part's z max (the hood end)"),
+        der("RTX_L", k["L"], "kiln length (the shell's phantom outline)"),
+        der("RTX_R_SHELL", k["wall"]["r_shell_burning"], "kiln shell's outer radius (phantom outline)"),
+        der("RTX_Z_IN", r["z_tyre_inlet"], "inlet tyre centre"),
+        der("RTX_Z_OUT", r["z_tyre_outlet"], "outlet tyre centre"),
+        der("RTX_TZ0", t[2], "inlet tyre's back face"), der("RTX_TZ1", t[3], "inlet tyre's hood face"),
+        der("RTX_OUT_TZ0", by["tyre_outlet"]["p"][2], "outlet tyre's back face"),
+        der("RTX_R_TB", t[0], "tyre bore radius"), der("RTX_R_TO", t[1], "tyre outer radius"),
+        der("RTX_R_BAND", band[1], "tyre section plate's outer radius"),
+        der("RTX_BZ0", band[2], "inlet tyre section's back end"), der("RTX_BZ1", band[3], "inlet tyre section's hood end"),
+        der("RTX_R_R", rol[6], "support roller radius"),
+        der("RTX_RZ1", rol[2] + rol[7], "inlet rollers' hood face (A-A cuts just past it)"),
+        der("RTX_R_IS", by["inlet_seal"]["p"][1], "inlet seal housing's outer radius"),
+        der("RTX_X_R", rol[0], "support roller centre, x (+)"), der("RTX_Y_R", rol[1], "support roller centre, y"),
+        der("RTX_Y_PIER", r["y_pier_top"], "pier top"),
+        der("RTX_G_IN", r["ground_inlet"], "ground under the inlet pier"),
+        der("RTX_G_OUT", r["ground_outlet"], "ground under the outlet pier"),
+        der("RTX_Z_HTD", by["htd"]["p"][2], "thrust roller's centre, z"),
+        der("RTX_Z_MOTOR", by["motor_R"]["p"][4], "main motors' back end"),
+        der("RTX_Z_FAN1", by["shell_fan_1"]["p"][2], "first shell fan, z"),
+        der("RTX_X_WALK", 0.5 * (by["walkway"]["p"][0] + by["walkway"]["p"][1]), "walkway's middle, x"),
+        der("RTX_Y_WALK", by["walkway"]["p"][2], "walkway's underside"),
+        der("RTX_Z_NOSE", by["nose_ring_fan"]["p"][2], "nose ring fan, z"),
+    ]
+    out += _table_consts("kiln_rotax", drx.params(g), drx.ORDER)
     return out
 
 

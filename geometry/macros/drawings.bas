@@ -222,6 +222,47 @@ Const kiln_TAB_5                   As String  = ""           ' parameter table r
 Const kiln_TAB_6                   As String  = ""           ' parameter table rows
 Const kiln_TAB_7                   As String  = ""           ' parameter table rows
 Const kiln_TAB_8                   As String  = ""           ' parameter table rows
+Const RTX_N                        As Double  = 75           ' bodies in kiln_rotax.SLDPRT [derived]
+Const RTX_X0                       As Double  = -4.715289    ' the part's x min [derived]
+Const RTX_Y0                       As Double  = -9.267729    ' the part's y min (the inlet pier's foot) [derived]
+Const RTX_Z0                       As Double  = -0.45        ' the part's z min (the inlet pier, behind the drive) [derived]
+Const RTX_X1                       As Double  = 4.5          ' the part's x max [derived]
+Const RTX_Y1                       As Double  = 3.55         ' the part's y max (the tyres' top) [derived]
+Const RTX_Z1                       As Double  = 74#          ' the part's z max (the hood end) [derived]
+Const RTX_L                        As Double  = 74#          ' kiln length (the shell's phantom outline) [derived]
+Const RTX_R_SHELL                  As Double  = 2.65         ' kiln shell's outer radius (phantom outline) [derived]
+Const RTX_Z_IN                     As Double  = 24.42        ' inlet tyre centre [derived]
+Const RTX_Z_OUT                    As Double  = 62.9         ' outlet tyre centre [derived]
+Const RTX_TZ0                      As Double  = 23.97        ' inlet tyre's back face [derived]
+Const RTX_TZ1                      As Double  = 24.87        ' inlet tyre's hood face [derived]
+Const RTX_OUT_TZ0                  As Double  = 62.45        ' outlet tyre's back face [derived]
+Const RTX_R_TB                     As Double  = 3#           ' tyre bore radius [derived]
+Const RTX_R_TO                     As Double  = 3.45         ' tyre outer radius [derived]
+Const RTX_R_BAND                   As Double  = 2.71         ' tyre section plate's outer radius [derived]
+Const RTX_BZ0                      As Double  = 22.62        ' inlet tyre section's back end [derived]
+Const RTX_BZ1                      As Double  = 26.22        ' inlet tyre section's hood end [derived]
+Const RTX_R_R                      As Double  = 1.1178       ' support roller radius [derived]
+Const RTX_RZ1                      As Double  = 24.97        ' inlet rollers' hood face (A-A cuts just past it) [derived]
+Const RTX_R_IS                     As Double  = 3.3          ' inlet seal housing's outer radius [derived]
+Const RTX_X_R                      As Double  = 2.2839       ' support roller centre, x (+) [derived]
+Const RTX_Y_R                      As Double  = -3.955831    ' support roller centre, y [derived]
+Const RTX_Y_PIER                   As Double  = -5.055831    ' pier top [derived]
+Const RTX_G_IN                     As Double  = -9.267729    ' ground under the inlet pier [derived]
+Const RTX_G_OUT                    As Double  = -8.113849    ' ground under the outlet pier [derived]
+Const RTX_Z_HTD                    As Double  = 25.57        ' thrust roller's centre, z [derived]
+Const RTX_Z_MOTOR                  As Double  = 18.97        ' main motors' back end [derived]
+Const RTX_Z_FAN1                   As Double  = 47.9         ' first shell fan, z [derived]
+Const RTX_X_WALK                   As Double  = -3.5         ' walkway's middle, x [derived]
+Const RTX_Y_WALK                   As Double  = -6.255831    ' walkway's underside [derived]
+Const RTX_Z_NOSE                   As Double  = 73.35        ' nose ring fan, z [derived]
+Const kiln_rotax_TAB_1             As String  = "tyre_inlet_at~Inlet tyre along L (ROTAX-2 image)~0.33~-~FLS ratio~Estimated;z_tyre_inlet~Inlet tyre centre from the back end~24420~mm~derived~Estimated;tyre_outlet_at~Outlet tyre along L (ROTAX-2 image)~0.85~-~FLS ratio~Estimated;z_tyre_outlet~Outlet tyre centre from the back end~62900~mm~derived~Estimated;tyre_span~Tyre span (7.3 x shell D, past about 7 D)~38480~mm~derived~Estimated;tyre_width~Tyre width~900~mm~FLS ratio~Estimated;tyre_thickness~Tyre radial thickness~450~mm~FLS ratio~Estimated;tyre_gap~Shell to tyre bore (tangential suspension)~350~mm~FLS ratio~Estimated;D_tyre~Tyre outer D~6900~mm~derived~Estimated;" ' parameter table rows
+Const kiln_rotax_TAB_2             As String  = "tyre_section_t~Shell under the tyre (triple plate)~90~mm~literature~Estimated;tyre_section_L~Tyre section length~3600~mm~FLS ratio~Estimated;bracket_n~Suspension brackets per tyre~16~-~FLS ratio~Estimated;roller_over_tyre~Roller D / tyre D (TAPPI 2019)~0.324~-~literature~Estimated;roller_angle~Roller from the vertical (60 deg pair)~30~deg~literature~Estimated;D_roller~Support roller D~2236~mm~derived~Estimated;w_roller~Support roller width~1100~mm~derived~Schematic;pier_top~Pier top under the kiln axis~-5056~mm~derived~Schematic;ground_inlet~Ground under the axis, inlet pier~-9268~mm~derived~Schematic;ground_outlet~Ground under the axis, outlet pier~-8114~mm~derived~Schematic;" ' parameter table rows
+Const kiln_rotax_TAB_3             As String  = "gearbox_D~Drive gearbox D (2, inlet station)~1600~mm~schematic~Schematic;motor_size~Main motor size (2, inlet station)~1200~mm~schematic~Schematic;htd_D~Hydraulic thrust roller D~1400~mm~schematic~Schematic;inlet_seal_depth~Inlet seal housing, radial~650~mm~schematic~Schematic;outlet_seal_depth~Outlet seal housing, radial~900~mm~schematic~Schematic;fan_n~Shell cooling fans (ROTAX-2 image)~3~-~FLS ratio~Estimated;fan_D~Cooling fan D~1250~mm~schematic~Schematic;fan_clearance~Fan outlet to the surface it cools~1000~mm~FLS ratio~Estimated;walkway_width~Walkway width~2000~mm~schematic~Schematic;u_power~Drive motor power, speed range~-~~no source~Unknown;" ' parameter table rows
+Const kiln_rotax_TAB_4             As String  = "u_seal~Seal blocks, wire ropes, cooling air~-~~no source~Unknown;u_foundation~Foundations, platforms, stairs, railings~-~~no source~Unknown;" ' parameter table rows
+Const kiln_rotax_TAB_5             As String  = ""           ' parameter table rows
+Const kiln_rotax_TAB_6             As String  = ""           ' parameter table rows
+Const kiln_rotax_TAB_7             As String  = ""           ' parameter table rows
+Const kiln_rotax_TAB_8             As String  = ""           ' parameter table rows
 Const COO_L                        As Double  = 29.9         ' grate length, hot end x = 0 to the cold end [derived]
 Const COO_W                        As Double  = 4#           ' grate width [derived]
 Const COO_H                        As Double  = 3#           ' grate to roof [derived]
@@ -351,6 +392,21 @@ Const KLN_DETD_Y  As Double = 0.39
 Const KLN_DETD_D  As Double = 5#
 Const KLN_DETD_R  As Double = 0.22      ' its circle [m, model]
 
+' kiln_rotax (1:200): the side view, the plan under it, section A-A across
+' the inlet station (1:50) at the bottom left, detail B of the inlet tyre
+' (1:25) beside it
+Const RTX_SIDE_X  As Double = 0.31
+Const RTX_SIDE_Y  As Double = 0.505
+Const RTX_PLAN_Y  As Double = 0.39
+Const RTX_SEC_X   As Double = 0.15
+Const RTX_SEC_Y   As Double = 0.165
+Const RTX_SEC_D   As Double = 50#
+Const RTX_DET_X   As Double = 0.45
+Const RTX_DET_Y   As Double = 0.175
+Const RTX_DET_D   As Double = 25#
+Const RTX_DET_R   As Double = 2#        ' detail B's circle [m, model]
+Const RTX_CUT_DZ  As Double = 0.02      ' A-A's plane this far past the inlet rollers' hood face
+
 ' cooler (1:100): side view, plan under it, floor view under that, the end
 ' view (1:50) at the bottom left
 Const COO_X       As Double = 0.33
@@ -389,6 +445,7 @@ Const L_TEXT  As String = "YAZI"
 Const L_DIM   As String = "OLCU"
 Const L_FLOW  As String = "AKIS"
 Const L_AXIS  As String = "EKSEN"
+Const L_REF   As String = "REFERANS"    ' kiln_rotax: the kiln shell, phantom (not in the solid)
 
 Const SEL_TOL As Double = 0.0005        ' a picked edge vs the one asked for [m, model]
 Const DIM_TOL As Double = 0.0001        ' a dimension read back vs the source [m]
@@ -423,6 +480,7 @@ Dim tKey() As String, tLabel() As String, tVal() As String, tUnit() As String
 Dim tSrc() As String, tStat() As String
 Dim nRows As Long
 
+Dim zFarSec As Double            ' kiln_rotax: the faces A-A sees beyond its plane are at z < this
 Dim ySec As Double               ' kiln_wall: +1 when A-A shows model +x up, -1 when down
 
 Dim nDims As Long, nDimsOk As Long
@@ -469,6 +527,14 @@ Sub kiln()
 End Sub
 
 
+' The kiln's mechanical parts after FLS ROTAX-2 (kiln_rotax.bas): simple
+' envelopes, not the fluid geometry, an exception to this macro's rule
+' (see .claude/rules/geometry.md); the kiln shell is a phantom outline.
+Sub kiln_rotax()
+    Build "kiln_rotax"
+End Sub
+
+
 Sub cooler()
     Build "cooler"
 End Sub
@@ -502,6 +568,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = 50#: detX = CAL_DET_X: detY = CAL_DET_Y
     ElseIf equip = "kiln" Then
         scaleD = 200#: detailD = KLN_DET_D: detX = KLN_DET_X: detY = KLN_DET_Y
+    ElseIf equip = "kiln_rotax" Then
+        scaleD = 200#: detailD = RTX_DET_D: detX = RTX_DET_X: detY = RTX_DET_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "id_fan" Then
@@ -629,6 +697,9 @@ Private Sub ParseTable()
     ElseIf equip = "kiln" Then
         all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & _
               kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
+    ElseIf equip = "kiln_rotax" Then
+        all = kiln_rotax_TAB_1 & kiln_rotax_TAB_2 & kiln_rotax_TAB_3 & kiln_rotax_TAB_4 & _
+              kiln_rotax_TAB_5 & kiln_rotax_TAB_6 & kiln_rotax_TAB_7 & kiln_rotax_TAB_8
     Else
         all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
               C1_twin_TAB_7 & C1_twin_TAB_8
@@ -1000,6 +1071,9 @@ Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
     ElseIf equip = "kiln" Then
         CheckLiningBox doc
         Exit Sub
+    ElseIf equip = "kiln_rotax" Then
+        CheckRotaxBox doc
+        Exit Sub
     ElseIf equip = "C1_twin" Then
         CheckTwinBox doc
         Exit Sub
@@ -1096,6 +1170,7 @@ Private Sub MakeLayers()
     AddOneLayer lm, L_DIM, "dimensions (01.1, 0.25)", swLineCONTINUOUS, swLW_THIN
     AddOneLayer lm, L_FLOW, "flow arrows (01.1, 0.35)", swLineCONTINUOUS, swLW_NORMAL
     AddOneLayer lm, L_AXIS, "axes (04.1, 0.25)", swLineCENTER, swLW_THIN
+    If equip = "kiln_rotax" Then AddOneLayer lm, L_REF, "adjacent parts, phantom (05.1, 0.25)", swLinePHANTOM, swLW_THIN
 End Sub
 
 
@@ -1127,6 +1202,8 @@ Private Sub MakeViews()
         MakeViewsCalciner
     ElseIf equip = "kiln" Then
         MakeViewsLining
+    ElseIf equip = "kiln_rotax" Then
+        MakeViewsRotax
     ElseIf equip = "cooler" Then
         MakeViewsCooler
     ElseIf equip = "id_fan" Then
@@ -1770,6 +1847,8 @@ Private Sub DimensionAll()
         DimensionCalciner
     ElseIf equip = "kiln" Then
         DimensionLining
+    ElseIf equip = "kiln_rotax" Then
+        DimensionRotax
     ElseIf equip = "cooler" Then
         DimensionCooler
     ElseIf equip = "id_fan" Then
@@ -2750,7 +2829,8 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
     LabelPH COL_X0 + 0.0015, 0.0255, IIf(equip = "kiln", _
         "Gas bore (CFD), wall as the twin models it - not a fabrication drawing", _
-        "Inner (fluid) geometry, dimensioned - not a fabrication drawing"), TEXT_H
+        IIf(equip = "kiln_rotax", "FLS ROTAX-2 parts, envelopes - not a fabrication drawing", _
+        "Inner (fluid) geometry, dimensioned - not a fabrication drawing")), TEXT_H
     ' CI-<area>-<equipment>-001; the calciner is its own area, CA (16 Nov
     ' sheet review, item 9: it was numbered in the preheater's, PH)
     Cell 0.771, 0.037, "Identification number", "CI-" & AreaCode() & "-" & equip & "-001"
@@ -2760,6 +2840,8 @@ Private Sub DrawTitle()
     CellS 0.816, 0.028, "Sheet", "1/1"
     If equip = "kiln" Then
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (C 1:50, B 1:" & Fmt(detailD) & ", D 1:" & Fmt(KLN_DETD_D) & ")"
+    ElseIf equip = "kiln_rotax" Then
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (A-A 1:" & Fmt(RTX_SEC_D) & ", B 1:" & Fmt(detailD) & ")"
     Else
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "id_fan", " (rotor 1:" & Fmt(detailD) & ")", IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"))
     End If
@@ -2774,7 +2856,7 @@ End Sub
 Private Function AreaCode() As String
     Select Case equip
     Case "calciner": AreaCode = "CA"
-    Case "kiln", "kiln_inlet_chamber": AreaCode = "RK"
+    Case "kiln", "kiln_inlet_chamber", "kiln_rotax": AreaCode = "RK"
     Case "cooler": AreaCode = "CL"
     Case Else: AreaCode = "PH"
     End Select
@@ -2848,6 +2930,7 @@ Private Function TitleText() As String
     Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     Case "kiln": TitleText = "ROTARY KILN"
+    Case "kiln_rotax": TitleText = "KILN: ROTAX-2 PARTS"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
     Case "id_fan": TitleText = "PREHEATER ID FAN (1 PER STRING)"
@@ -2863,6 +2946,9 @@ Private Sub DrawNotes()
     If equip = "kiln" Then
         LabelPH COL_X0, y + 0.032, "1. Bore = the gas volume; wall as the twin models it (physics/shell.py). CFD solid:", TEXT_H
         LabelPH COL_X0, y + 0.027, "   kiln.SLDPRT, the bore from z0 (the KIC's stub before it). Not a fabrication drawing.", TEXT_H
+    ElseIf equip = "kiln_rotax" Then
+        LabelPH COL_X0, y + 0.032, "1. Mechanical parts after FLS ROTAX-2 as simple envelopes (kiln_rotax.SLDPRT); not a", TEXT_H
+        LabelPH COL_X0, y + 0.027, "   CFD input, not a fabrication drawing. Kiln shell (5300) phantom: see the kiln sheet.", TEXT_H
     Else
         LabelPH COL_X0, y + 0.032, "1. Inner (fluid) volume of the CFD model; not a fabrication drawing.", TEXT_H
         LabelPH COL_X0, y + 0.027, "   Shell, refractory, material, flanges, supports: Unknown (no source).", TEXT_H
@@ -2879,6 +2965,12 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.077, KLN_LAYER_1, TEXT_H * 0.85
         LabelPH COL_X0, y + 0.072, KLN_LAYER_2, TEXT_H * 0.85
         LabelPH COL_X0, y + 0.067, KLN_LAYER_3, TEXT_H * 0.85
+    ElseIf equip = "kiln_rotax" Then
+        LabelPH COL_X0, y + 0.012, "3. Axis z, z = 0 at the back end, y up; the slope is not built in, the piers reach the sloped ground.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. FLS gives no ROTAX-2 size: image ratios, literature (TAPPI 2019, cementkilns.co.uk) or", TEXT_H
+        LabelPH COL_X0, y + 0.002, "   schematic (listed, not dimensioned). Tyre span 7.3 D: past the ~7 D of two supports.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. Friction drive at the inlet station (no girth gear); thrust roller on the inlet tyre.", TEXT_H
+        LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml (kiln_rotax), plant_geometry.kiln_rotax()", TEXT_H
     ElseIf equip = "C1" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
@@ -2931,6 +3023,8 @@ Private Sub DrawFlows()
         DrawFlowsCalciner
     ElseIf equip = "kiln" Then
         DrawLabelsLining
+    ElseIf equip = "kiln_rotax" Then
+        DrawLabelsRotax
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
     ElseIf equip = "id_fan" Then
@@ -3241,6 +3335,8 @@ Private Sub DrawAxes()
         DrawAxesCalciner
     ElseIf equip = "kiln" Then
         DrawAxesLining
+    ElseIf equip = "kiln_rotax" Then
+        DrawAxesRotax
     ElseIf equip = "cooler" Then
         DrawAxesCooler
     ElseIf equip = "id_fan" Then
@@ -3322,6 +3418,212 @@ Private Sub DrawAxesLining()
     AxisM vSec, 0#, 0#, -2#, 0#, 0#, KLN_L + 2#
     AxisM vTop, -R - 0.6, 0#, KLN_L, R + 0.6, 0#, KLN_L
     AxisM vTop, 0#, -R - 0.6, KLN_L, 0#, R + 0.6, KLN_L
+End Sub
+
+
+
+'==================================================================
+' kiln_rotax: the kiln's mechanical parts after FLS ROTAX-2
+' (kiln_rotax.SLDPRT, plant_geometry.kiln_rotax()); the kiln shell is a
+' phantom outline on layer L_REF, not in the solid
+'==================================================================
+
+' The part's bodies by their count and a few names; their joint true
+' extent against the generated one, 1 cm.
+Private Sub CheckRotaxBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim lo(2) As Double, hi(2) As Double, want(5) As Double
+    Dim i As Long, k As Long, nm As Variant, names As String
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) + 1 <> CLng(RTX_N) Then Fail partPath & " has " & (UBound(bodies) + 1) & _
+        " bodies, not " & CLng(RTX_N) & " -- rebuild it with kiln_rotax.bas."
+    For k = 0 To 2: lo(k) = 1E+30: hi(k) = -1E+30: Next k
+    names = "|"
+    For i = 0 To UBound(bodies)
+        Set b = bodies(i)
+        names = names & b.Name & "|"
+        box = ExactBox(b)
+        For k = 0 To 2
+            If box(k) < lo(k) Then lo(k) = box(k)
+            If box(k + 3) > hi(k) Then hi(k) = box(k + 3)
+        Next k
+    Next i
+    For Each nm In Array("tyre_inlet", "tyre_outlet", "pier_inlet", "pier_outlet", "inlet_seal", "outlet_seal", _
+                         "roller_inlet_L", "roller_inlet_R", "htd")
+        If InStr(names, "|" & nm & "|") = 0 Then Fail partPath & " has no body " & nm & "."
+    Next nm
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    want(0) = RTX_X0: want(1) = RTX_Y0: want(2) = RTX_Z0
+    want(3) = RTX_X1: want(4) = RTX_Y1: want(5) = RTX_Z1
+    For k = 0 To 2
+        If Abs(lo(k) - want(k)) > 0.01 Then Fail partPath & ": " & nm(k) & " is " & Num(lo(k), 3) & _
+            " m, today's parts have " & Num(want(k), 3) & " -- rebuild it with kiln_rotax.bas."
+        If Abs(hi(k) - want(k + 3)) > 0.01 Then Fail partPath & ": " & nm(k + 3) & " is " & Num(hi(k), 3) & _
+            " m, today's parts have " & Num(want(k + 3), 3) & " -- rebuild it with kiln_rotax.bas."
+    Next k
+    Note "part box: x " & Num(lo(0), 3) & " .. " & Num(hi(0), 3) & ", y " & Num(lo(1), 3) & " .. " & Num(hi(1), 3) & _
+         ", z " & Num(lo(2), 3) & " .. " & Num(hi(2), 3) & " m, " & (UBound(bodies) + 1) & " bodies"
+End Sub
+
+
+' The side view (z right, y up) and the plan under it (from above: z right,
+' +x up), 1:200; section A-A across the inlet station just past the
+' rollers' hood face, seen from the hood end (x right, y up) at 1:50: the
+' tyre's and the rollers' hood faces are the first faces beyond its plane,
+' circles seen edge-on; detail B of the inlet tyre's top in the side view.
+Private Sub MakeViewsRotax()
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long, zc As Double
+
+    Set vFront = OrientedView(0, 0, 1, 0, 1, 0, RTX_SIDE_X, RTX_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+    swDraw.EditSheet
+    Set vPlan = OrientedView(0, 0, 1, 1, 0, 0, RTX_SIDE_X, RTX_PLAN_Y, "plan")
+    LogMap vPlan, "plan", scaleD
+
+    zc = RTX_RZ1 + RTX_CUT_DZ
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vFront, 0#, RTX_Y1 + 1#, zc, ax, ay
+            ToSheet vFront, 0#, RTX_Y0 - 1#, zc, qx, qy
+        Else
+            ToSheet vFront, 0#, RTX_Y0 - 1#, zc, ax, ay
+            ToSheet vFront, 0#, RTX_Y1 + 1#, zc, qx, qy
+        End If
+        Set vSec = SectionFrom(vFront, ax, ay, qx, qy, "A", RTX_SEC_X, RTX_SEC_Y)
+        If Maps(vSec, 1, 0, 0, 0, 1, 0) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "top down", "bottom up") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A is seen from the hood end (x right, y up) in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    zFarSec = zc
+    vSec.ScaleDecimal = 1# / RTX_SEC_D
+    ' a section from a vertical cutting line is aligned with its parent
+    ' (run 1: A-A sat on the side view's row): unaligned, then placed
+    vSec.RemoveAlignment
+    PlaceOutlineAt vSec, RTX_SEC_X, RTX_SEC_Y
+    swModel.ForceRebuild3 False
+    If FindEdge(vSec, "circle", 0#, RTX_R_TO, RTX_TZ1, RTX_R_TO, RTX_TZ1, nSeen, nFit) Is Nothing Then
+        ListCircles vSec
+        Fail "section A-A shows no inlet tyre hood face circle among its " & nSeen & " edges."
+    End If
+    Note "section A-A: z = " & Num(zc, 3) & ", seen from the hood end, scale set to 1:" & Fmt(RTX_SEC_D)
+    LogMap vSec, "A-A", RTX_SEC_D
+
+    swDraw.EditSheet
+    Set vDet = DetailAt(vFront, 0#, 0.5 * (RTX_R_BAND + RTX_R_TO), RTX_Z_IN, RTX_DET_R, "B")
+    LogMap vDet, "detail B", detailD
+    Note "views: side " & vFront.Name & ", plan " & vPlan.Name & ", A-A " & vSec.Name & ", detail B " & vDet.Name
+End Sub
+
+
+' The six reference dimensions, each between edges the solid has: the
+' tyres' back face circles (span) in the side view; the tyre's faces and
+' the tyre section's ends in detail B; in A-A the tyre's and a roller's
+' hood face circles (diameters, and the tyre ring's radial thickness
+' between its two circles).
+Private Sub DimensionRotax()
+    Dim R As Double
+    R = RTX_R_TO
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "tyre_span", RTX_OUT_TZ0 - RTX_TZ0, vFront, _
+        "circle", 0, R, RTX_TZ0, R, RTX_TZ0, _
+        "circle", 0, R, RTX_OUT_TZ0, R, RTX_OUT_TZ0, _
+        0, R + 2.5, 0.5 * (RTX_TZ0 + RTX_OUT_TZ0)
+    DimEdges "tyre_width", RTX_TZ1 - RTX_TZ0, vDet, _
+        "circle", 0, R, RTX_TZ0, R, RTX_TZ0, _
+        "circle", 0, R, RTX_TZ1, R, RTX_TZ1, _
+        0, R + 0.4, RTX_Z_IN
+    DimEdges "tyre_section_L", RTX_BZ1 - RTX_BZ0, vDet, _
+        "circle", 0, RTX_R_BAND, RTX_BZ0, RTX_R_BAND, RTX_BZ0, _
+        "circle", 0, RTX_R_BAND, RTX_BZ1, RTX_R_BAND, RTX_BZ1, _
+        0, RTX_R_BAND - 0.6, RTX_Z_IN
+    DimEdges "D_tyre", 2# * R, vSec, _
+        "circle", -0.7071 * R, 0.7071 * R, RTX_TZ1, R, RTX_TZ1, _
+        "", 0, 0, 0, 0, 0, _
+        -(R + 1.2), R + 1.2, zFarSec
+    DimEdges "tyre_thickness", R - RTX_R_TB, vSec, _
+        "circle", 0, RTX_R_TB, RTX_TZ1, RTX_R_TB, RTX_TZ1, _
+        "circle", 0, R, RTX_TZ1, R, RTX_TZ1, _
+        0.6, R + 0.8, zFarSec
+    DimEdges "D_roller", 2# * RTX_R_R, vSec, _
+        "circle", RTX_X_R + RTX_R_R, RTX_Y_R, RTX_RZ1, RTX_R_R, RTX_RZ1, _
+        "", 0, 0, 0, 0, 0, _
+        RTX_X_R + RTX_R_R + 1.2, RTX_Y_R + RTX_R_R + 0.6, zFarSec
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' A circle about a model point, radius r [m, model], in view v's plane.
+Private Sub CircleM3(v As SldWorks.View, ByVal x As Double, ByVal y As Double, ByVal z As Double, _
+                     ByVal r As Double, ByVal ex As Double, ByVal ey As Double, ByVal ez As Double)
+    Dim cx As Double, cy As Double, px As Double, py As Double
+    ToSheet v, x, y, z, cx, cy
+    ToSheet v, x + r * ex, y + r * ey, z + r * ez, px, py
+    CircleP cx, cy, Sqr((px - cx) ^ 2 + (py - cy) ^ 2)
+End Sub
+
+
+' Labels; the kiln shell (not in this solid) as a phantom outline: in the
+' side view and the plan its two lines and ends, in A-A its circle.
+Private Sub DrawLabelsRotax()
+    Dim R As Double, yb As Double
+    R = RTX_R_SHELL
+    UseLayer L_REF
+    AxisM vFront, 0#, R, 0#, 0#, R, RTX_L
+    AxisM vFront, 0#, -R, 0#, 0#, -R, RTX_L
+    AxisM vFront, 0#, -R, 0#, 0#, R, 0#
+    AxisM vFront, 0#, -R, RTX_L, 0#, R, RTX_L
+    AxisM vPlan, R, 0#, 0#, R, 0#, RTX_L
+    AxisM vPlan, -R, 0#, 0#, -R, 0#, RTX_L
+    AxisM vPlan, -R, 0#, 0#, R, 0#, 0#
+    AxisM vPlan, -R, 0#, RTX_L, R, 0#, RTX_L
+    CircleM3 vSec, 0#, 0#, zFarSec, R, 1#, 0#, 0#
+
+    UseLayer L_TEXT
+    yb = RTX_Y1 + 1#
+    LabelM3 vFront, 0#, R + 0.5, 6#, "Kiln shell 5300 (phantom, kiln sheet)"
+    LabelM3 vFront, 0#, yb + 1.2, -0.4, "Inlet seal"
+    ' (the tyre labels above the span's dimension line and section letter A)
+    LabelM3 vFront, 0#, yb + 3#, RTX_Z_IN - 5#, "Tyre, tangential suspension"
+    LabelM3 vFront, 0#, yb + 3#, RTX_Z_OUT - 5#, "Tyre, tangential suspension"
+    LabelM3 vFront, 0#, yb + 1.2, RTX_L - 4#, "Outlet seal"
+    ' (the pier labels under the ground, clear of A-A's cutting line)
+    LabelM3 vFront, 0#, RTX_Y0 - 2#, RTX_Z_MOTOR, "Inlet pier: rollers, drive, HTD"
+    LabelM3 vFront, 0#, RTX_Y0 - 2#, RTX_Z_OUT - 3#, "Outlet pier: rollers, nose ring fan"
+    LabelM3 vFront, 0#, RTX_Y_WALK - 0.5, RTX_Z_FAN1 - 6#, "Walkway; shell cooling fans (3) on stands"
+    LabelM3 vPlan, RTX_X1 + 2.2, 0#, RTX_Z_MOTOR, "Friction drive: 2 main motors + 2 gearboxes (no girth gear)"
+    LabelM3 vPlan, -(RTX_X1 + 1.2), 0#, RTX_Z_HTD + 1#, "Thrust roller (HTD) on the tyre's hood-side face"
+    LabelM3 vSec, 0.3, -2.2, zFarSec, "30 deg"
+    ViewTitle vFront, "SIDE VIEW - back end left, hood end right", "above", 0.004, TEXT_H
+    ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.003, TEXT_H
+End Sub
+
+
+' Centre lines: the kiln's axis in the side view and the plan; in A-A the
+' cross and the tyre centre to each roller centre (30 deg off the vertical).
+Private Sub DrawAxesRotax()
+    Dim R As Double
+    R = RTX_R_TO
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, -2#, 0#, 0#, RTX_L + 2#
+    AxisM vPlan, 0#, 0#, -2#, 0#, 0#, RTX_L + 2#
+    AxisM vSec, -R - 0.6, 0#, zFarSec, R + 0.6, 0#, zFarSec
+    AxisM vSec, 0#, -R - 0.6, zFarSec, 0#, R + 0.6, zFarSec
+    AxisM vSec, 0#, 0#, zFarSec, RTX_X_R, RTX_Y_R, zFarSec
+    AxisM vSec, 0#, 0#, zFarSec, -RTX_X_R, RTX_Y_R, zFarSec
 End Sub
 
 

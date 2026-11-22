@@ -123,7 +123,7 @@ def params(g, name="kiln"):
     P["u_coating"] = pv.unknown("kiln.coating", "Clinker coating (left out, user 22 Nov 2026)",
                                 f"{doc}: not modelled for now")
     P["u_tyre"] = pv.unknown("kiln.tyres", "Tyres, rollers, drive, seals (kiln_rotax.SLDPRT, ROTAX-2)",
-                             f"{doc}: not on this sheet")
+                             f"{doc}: on the kiln_rotax sheet")
     P["u_shape"] = pv.unknown("kiln.brick_joints", "Joints, mortar, metal plates, key bricks", f"{doc}: no source")
     P["u_ends"] = pv.unknown("kiln.end_castables", "Inlet / outlet castable, nose ring", f"{doc}: no source")
     assert set(ORDER) == set(P) and set(DIMENSIONED) <= set(P), set(ORDER) ^ set(P)

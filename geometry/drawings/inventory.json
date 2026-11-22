@@ -1651,6 +1651,337 @@
     },
     {
       "area": "Rotary kiln",
+      "tag": "KROT",
+      "name": "Kiln mechanical parts after FLS ROTAX-2",
+      "quantity": "1",
+      "connections": "-",
+      "dimensions": [
+        {
+          "key": "kiln_rotax.tyre_inlet_at",
+          "value": 0.33,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_outlet_at",
+          "value": 0.85,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_width",
+          "value": 0.9,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_thickness",
+          "value": 0.45,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_gap",
+          "value": 0.35,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_section_t",
+          "value": 0.09,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.tyre_section_L",
+          "value": 3.6,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.bracket_n",
+          "value": 16,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.bracket_w",
+          "value": 0.3,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.bracket_overhang",
+          "value": 0.5,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.roller_over_tyre",
+          "value": 0.324,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.roller_angle",
+          "value": 30.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.roller_extra_width",
+          "value": 0.2,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.roller_shaft_D",
+          "value": 0.6,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.bearing_size",
+          "value": 1.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.bearing_length",
+          "value": 0.7,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.frame_t",
+          "value": 0.6,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.pier_half_width",
+          "value": 4.5,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.pier_half_length",
+          "value": 3.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.gearbox_D",
+          "value": 1.6,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.gearbox_L",
+          "value": 1.4,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.motor_size",
+          "value": 1.2,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.motor_L",
+          "value": 2.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.drive_gap",
+          "value": 0.4,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.htd_D",
+          "value": 1.4,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.htd_t",
+          "value": 0.35,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.inlet_seal_depth",
+          "value": 0.65,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.inlet_seal_L",
+          "value": 0.9,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.outlet_seal_depth",
+          "value": 0.9,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.outlet_seal_L",
+          "value": 1.3,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.chute_D",
+          "value": 0.5,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_n",
+          "value": 3,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_D",
+          "value": 1.25,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_L",
+          "value": 1.6,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_clearance",
+          "value": 1.0,
+          "unit": "m",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_first_before_tyre",
+          "value": 15.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.fan_pitch",
+          "value": 4.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.walkway_width",
+          "value": 2.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln_rotax.walkway_depth",
+          "value": 1.2,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 12,
+        "Schematic": 27
+      },
+      "missing": [
+        "kiln/kiln.md: FLS publishes no ROTAX-2 size: image ratios, literature or schematic; simple envelopes"
+      ],
+      "cfd_solid": "kiln_rotax.SLDPRT (not a CFD input)",
+      "pid_sheets": [],
+      "drawing": "drawn: geometry/drawings/kiln_rotax/kiln_rotax.pdf"
+    },
+    {
+      "area": "Rotary kiln",
       "tag": "KIC",
       "name": "Kiln inlet chamber",
       "quantity": "1",
