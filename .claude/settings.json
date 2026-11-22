@@ -12,7 +12,6 @@
       "Read(geometry/output/**/*.STL)",
       "Read(geometry/output/**/*.dxf)",
       "Read(geometry/output/**/*.DXF)",
-      "Bash(git push*)",
       "Bash(git reset --hard*)",
       "Bash(git clean*)",
       "Bash(rm -rf *)"
@@ -23,7 +22,10 @@
       {
         "matcher": "Edit|Write",
         "hooks": [
-          { "type": "command", "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/geometry_check.py\"" }
+          {
+            "type": "command",
+            "command": "python3 \"${CLAUDE_PROJECT_DIR}/.claude/hooks/geometry_check.py\""
+          }
         ]
       }
     ]
