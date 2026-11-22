@@ -548,8 +548,16 @@ class PlantWallStackTest(unittest.TestCase):
     # 190 C (463.15 K), to the refractory-anchor limit, 670 K. The
     # other three are lagged casings that have to stay near
     # touchable (310-420 K).
+    #
+    # NO COATING since 22 Nov 2026 (user decision: "no layer, in the
+    # drawings or in the twin, for now"): the bare burning-zone lining
+    # puts its skin at ~686 K, OVER the anchor limit, which is what a
+    # bare lining does (Mosci: 415-434 C at 1400 C). That zone is held
+    # out of this band and checked against the anchor limit in
+    # test_bare_burning_shell_breaks_the_anchor_limit (an expected
+    # failure until the coating is back); the transition zone's bare
+    # alumina lining still lands inside.
     CASES = {
-        "burning": (1650.0, 463.15, 670.0),
         "transition": (1620.0, 463.15, 670.0),
         "calciner": (1600.0, 310.0, 420.0),
         "preheater": (1500.0, 310.0, 420.0),
@@ -602,52 +610,56 @@ class PlantWallStackTest(unittest.TestCase):
                 _, T_s, _ = shell_closure(T_hf, geom, 300.0)
                 self.assertTrue(lo <= T_s <= hi, f"{zone}: {T_s:.1f} K")
 
-    def test_bare_kiln_flux_is_in_the_measured_range(self):
-        """
-        Measured rotary-kiln shells lose 3-8 kW/m^2 of outer
-        surface. This is the check that the lining stack, not a
-        calibration factor, is what puts the model there.
-        """
+    KILN_HOT_FACE = {"burning": 1650.0, "transition": 1620.0}
 
-        # The burning zone's coating is sized to hold the shell at
-        # Sadighi et al. 2011's 190-220 C (plant_geometry.yaml
-        # kiln.burning_coating_t); at that skin the film carries
-        # ~3 kW/m^2, so the lower edge is 2.5 kW/m^2 there.
-        bands = {"burning": (2.5e3, 8e3), "transition": (3e3, 8e3)}
+    def _kiln_flux(self, zone):
+        _, geom = self.build(zone)
+        T_hf = self.KILN_HOT_FACE[zone]
+        R_total, T_s, info = shell_closure(T_hf, geom, 300.0)
+        self.assertFalse(info["Ra_limit_exceeded"])
+        return (T_hf - 300.0) / R_total / geom.A_outer_cell, T_s
+
+    @unittest.expectedFailure
+    def test_kiln_flux_is_in_the_measured_range(self):
+        """
+        Measured rotary-kiln shells lose 3-8 kW/m^2 of outer surface,
+        in operation, i.e. with their clinker coating. With the coating
+        left out (user decision, 22 Nov 2026) the bare lining loses
+        ~12 kW/m^2 in the burning zone and ~8.5 in the transition zone:
+        an EXPECTED FAILURE until the coating is back -- when this
+        passes again, remove the decorator.
+        """
 
         for zone in ("burning", "transition"):
-            with self.subTest(zone=zone):
-                _, geom = self.build(zone)
-                R_total, T_s, info = shell_closure(
-                    self.CASES[zone][0], geom, 300.0
-                )
-                flux = (
-                    (self.CASES[zone][0] - 300.0)
-                    / R_total
-                    / geom.A_outer_cell
-                )
-                lo, hi = bands[zone]
-                self.assertTrue(lo < flux < hi, f"{zone}: {flux:.0f}")
-                self.assertFalse(info["Ra_limit_exceeded"])
+            flux, _ = self._kiln_flux(zone)
+            self.assertTrue(3e3 < flux < 8e3, f"{zone}: {flux:.0f}")
 
-    def test_burning_shell_in_sadighi_band_and_bare_brick_check(self):
+    @unittest.expectedFailure
+    def test_bare_burning_shell_breaks_the_anchor_limit(self):
         """
-        At a 1400 C hot face on the twin's bore the coated stack
-        holds the shell in Sadighi's 190-220 C; without coating the
-        same brick and film give Mosci's 415-434 C (bare 200-250 mm
-        linings at 1400 C), which checks the brick k and the film.
+        The burning zone's skin must stay under the refractory-anchor
+        limit, 670 K. The bare lining (no coating, user decision 22 Nov
+        2026) runs at ~686 K: an EXPECTED FAILURE until the coating is
+        back -- when this passes again, remove the decorator.
+        """
+
+        _, T_s = self._kiln_flux("burning")
+        self.assertLessEqual(T_s, 670.0, f"burning skin {T_s:.1f} K")
+
+    def test_burning_shell_matches_the_bare_lining_literature(self):
+        """
+        At a 1400 C hot face on the twin's bore the burning zone's
+        stack -- bare brick and steel since the coating was left out
+        (user decision, 22 Nov 2026) -- gives Mosci's 415-434 C (bare
+        200-250 mm linings at 1400 C), which checks the brick k and the
+        film. (With the 0.20 m coating it held Sadighi's 190-220 C.)
         """
 
         stack = wall_stack(None, "burning")
+        self.assertEqual([layer.name for layer in stack.layers],
+                         ["magnesia-spinel brick", "steel shell"])
         geom = stack.geometry(2.4, 1.0, 4.8 + 2.0 * stack.thickness)
-        _, T_s, _ = shell_closure(1673.15, geom, 300.0)
-        self.assertTrue(463.15 <= T_s <= 493.15, f"{T_s - 273.15:.1f} C")
-
-        bare = WallStack(
-            "burning", stack.layers[1:], stack.emissivity, stack.orientation
-        )
-        g_bare = bare.geometry(2.4, 1.0, 4.8 + 2.0 * bare.thickness)
-        _, T_b, _ = shell_closure(1673.15, g_bare, 300.0)
+        _, T_b, _ = shell_closure(1673.15, geom, 300.0)
         self.assertTrue(
             688.15 - 15.0 <= T_b <= 707.15 + 15.0, f"{T_b - 273.15:.1f} C"
         )
@@ -702,7 +714,7 @@ class PlantWallStackTest(unittest.TestCase):
             with self.subTest(zone=zone):
                 stack, geom = self.build(zone)
                 Ra = rayleigh_number(
-                    self.CASES[zone][0] * 0 + 600.0,
+                    600.0,
                     300.0,
                     geom.L_char,
                 )
@@ -759,6 +771,62 @@ class PlantWallStackTest(unittest.TestCase):
 
         with self.assertRaises(KeyError):
             wall_stack(None, "rawmill")
+
+
+class KilnLiningGeometryTest(unittest.TestCase):
+    """The wall the twin conducts and stores heat through is the wall
+    kiln_lining.bas builds (plant_geometry.kiln()['wall']): the twin's
+    kiln zones place their stack at r_inner = D / 2 (burning.py,
+    transition.py), D being the flow bore in both zones (user decision,
+    22 Nov 2026), and the wall is one: the same stack thickness in both."""
+
+    @classmethod
+    def setUpClass(cls):
+        from geometry import plant_geometry as pg
+        cls.k = pg.kiln(pg.load())
+        cls.w = cls.k["wall"]
+        cls.stacks = {z: wall_stack(None, z) for z in ("burning", "transition")}
+
+    def _geom(self, zone):
+        # as burning.py / transition.py call it
+        s = self.stacks[zone]
+        D = self.k["D"]
+        return s.geometry(r_inner=0.5 * D, L_cell=1.0, L_char=D + 2.0 * s.thickness)
+
+    def test_flow_bore_is_the_kiln_d_in_both_zones(self):
+        for z in self.stacks:
+            self.assertAlmostEqual(2.0 * self._geom(z).r_inner, self.k["D"], delta=1e-12, msg=z)
+
+    def test_shell_diameter_per_zone(self):
+        for z in self.stacks:
+            g = self._geom(z)
+            self.assertAlmostEqual(2.0 * g.r_outer, self.w[f"D_shell_{z}"], delta=1e-12, msg=z)
+            self.assertAlmostEqual(g.L_char, self.w[f"D_shell_{z}"], delta=1e-12, msg=z)
+        # one wall over the tube (user, 22 Nov 2026): one shell diameter
+        self.assertAlmostEqual(self.w["D_shell_burning"], self.w["D_shell_transition"], delta=1e-12)
+
+    def test_heat_capacity_is_the_solid_bodies(self):
+        # rho cp x the bodies' volumes per metre, from the same annuli the
+        # solid revolves (not read back from C_cell)
+        zl = {"transition": self.k["transition_L"], "burning": self.k["burning_L"]}
+        brick = {"transition": "alumina brick", "burning": "magnesia-spinel brick"}
+        for z, s in self.stacks.items():
+            c = {layer.name: layer.volumetric_heat_capacity for layer in s.layers}
+            want = (c[brick[z]] * self.w[f"V_brick_{z}"]
+                    + c["steel shell"] * self.w[f"V_shell_{z}"]) / zl[z]
+            self.assertAlmostEqual(self._geom(z).C_cell, want, delta=1e-9 * want, msg=z)
+
+    def test_brick_ring_closes_with_iso_5417_bricks(self):
+        # ISO 5417:1986 Table 1, H = 220 mm: cold face A = 103 mm, hot face
+        # B from 88.0 (322) to 97.3 (822) mm; the ring's wedges must close the
+        # circle with A on the shell side and an equivalent B in that range
+        for z in self.stacks:
+            n = self.w[f"brick_n_{z}"]
+            self.assertEqual(n % 4, 0, msg=z)   # no joint on x = 0 / y = 0 (kiln_lining.bas)
+            self.assertAlmostEqual(self.w[f"brick_cold_chord_{z}"], 0.103, delta=0.0005, msg=z)
+            self.assertTrue(0.088 <= self.w[f"brick_hot_chord_{z}"] <= 0.0973, msg=z)
+            self.assertAlmostEqual(self.w[f"V_brick_ring_{z}"] * self.w[f"brick_rings_{z}"],
+                                   self.w[f"V_brick_{z}"], delta=self.w[f"V_brick_ring_{z}"], msg=z)
 
 
 if __name__ == "__main__":

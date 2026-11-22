@@ -535,7 +535,7 @@ kiln_closure:
 # cp_J_per_kgK]; the kiln zones (burning, transition) need rho and
 # cp, their wall mass is the stack's own. By default the kiln's
 # thicknesses come from geometry/plant_geometry.yaml (kiln.shell_t,
-# lining_t, *_coating_t). orientation is "horizontal" (rotary
+# lining_t; no coating since 22 Nov 2026). orientation is "horizontal" (rotary
 # kiln shell, cooler casing) or "vertical" (calciner riser,
 # preheater tower) and picks the Churchill & Chu form and the
 # characteristic length.
@@ -545,7 +545,6 @@ kiln_closure:
 #     orientation: horizontal
 #     shell_emissivity: 0.80
 #     layers:
-#       - [clinker coating,       coating_burning,  0.74, 2800.0, 850.0]
 #       - [magnesia-spinel brick, brick,            3.00, 2930.0, 950.0]
 #       - [steel shell,           steel_shell,     45.00, 7850.0, 480.0]
 # (a kiln thickness written as a NUMBER here bypasses the yaml's

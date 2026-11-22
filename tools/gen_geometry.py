@@ -400,6 +400,7 @@ def drawings_bas(g):
     out += _volute_sheet_consts(g)
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
+    out += _kiln_lining_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
     out += _idf_sheet_consts(g)
@@ -521,6 +522,32 @@ def _kiln_sheet_consts(g):
         der("KIL_Z0", k["z_cfd0"], "the solid's back face (the KIC stub's end)"),
     ]
     out += _table_consts("kiln", dki.params(g), dki.ORDER)
+    return out
+
+
+def _kiln_lining_sheet_consts(g):
+    """What drawings.bas needs for the kiln_lining sheet (the wall as the
+    twin models it), under a KLN_ prefix: the radii, the layer legend
+    from physics/shell.py's stacks, and the table."""
+    from tools.drawings import kiln_lining as dkl
+
+    k = pg.kiln(g)
+    w = k["wall"]
+    out = [
+        der("KLN_L", k["L"], "kiln length, all lined"),
+        der("KLN_TL", k["transition_L"], "the transition (alumina) zone from the back end"),
+        der("KLN_R_FLOW", w["r_flow"], "the flow bore: the brick's hot face, both zones"),
+        der("KLN_BRICK_L", pg.v(g["kiln"]["brick_length"]), "one brick ring along the axis (ISO 5417)"),
+        der("KLN_BRICK_N", w["brick_n_burning"], "bricks per ring (both zones)"),
+    ]
+    out += [
+        der("KLN_R_SHELL_IN", w["r_shell_in_burning"], "shell inner radius = brick cold face (one tube)"),
+        der("KLN_R_SHELL", w["r_shell_burning"], "shell outer radius (one tube)"),
+    ]
+    for i, (body, where, name, kc, rho, cp) in enumerate(dkl.layer_properties()):
+        text = (f"{body} ({where}): {name}, k {kc:g} W/(m K), rho {rho:g} kg/m3, cp {cp:g} J/(kg K)")
+        out.append(Const(f"KLN_LAYER_{i + 1}", text, "physics/shell.py DEFAULT_WALL_STACKS", kind="String"))
+    out += _table_consts("kiln_lining", dkl.params(g), dkl.ORDER)
     return out
 
 
@@ -756,6 +783,26 @@ def kiln_bas(g):
     ]
 
 
+def kiln_lining_bas(g):
+    k, w = g["kiln"], pg.kiln(g)["wall"]
+    n_t, n_b = w["brick_n_transition"], w["brick_n_burning"]
+    if n_t != n_b or w["V_brick_ring_transition"] != w["V_brick_ring_burning"]:
+        raise ValueError("kiln wall: the zones' brick rings differ; one tube cannot hold both")
+    v_ring = w["V_brick_ring_burning"]
+    return [
+        src("KILN_D", k["D"], "the flow (gas) bore: the brick's hot face, the whole tube (the twin's D)"),
+        src("KILN_L", k["L"], "back end (z = 0) to hood end: the whole tube is lined"),
+        src("KILN_SHELL_T", k["shell_t"], "steel shell plate"),
+        src("KILN_BRICK_T", k["lining_t"], "brick ring, both zones"),
+        der("V_SHELL", w["V_shell_transition"] + w["V_shell_burning"], "steel shell, one tube 0 .. L [m3]"),
+        src("KILN_BRICK_L", k["brick_length"], "brick length along the axis (ISO 5417): one ring"),
+        der("BRICK_N", n_b, "bricks per ring (both zones)"),
+        der("V_RING", v_ring, "one brick ring, all its bricks [m3]"),
+        der("V_BRICK", w["V_brick_transition"] + w["V_brick_burning"] - 2.0 * v_ring,
+            "brick tube between the two brick-by-brick end rings [m3]"),
+    ]
+
+
 def pid_bas(g):
     """The P&ID macro's records (geometry/pid/pid.yaml; tools/pid/)."""
     from tools.pid import encode, model
@@ -766,6 +813,7 @@ def pid_bas(g):
 TARGETS = {
     "cooler.bas": cooler_bas,
     "kiln.bas": kiln_bas,
+    "kiln_lining.bas": kiln_lining_bas,
     "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
     "id_fan.bas": id_fan_bas,
     "cyclone.bas": cyclone_bas,
@@ -992,9 +1040,8 @@ def _kiln_rows(g):
         row_der("Yanma bölgesi", kk["burning_L"], "m", 2),
         row_src("Sac kabuk kalınlığı", k["shell_t"], digits=3),
         row_src("Tuğla (astar) kalınlığı", k["lining_t"], digits=3),
-        row_src("Coating, yanma bölgesi", k["burning_coating_t"], digits=3,
-                note="kabuk 190–220 °C (Sadighi 2011)"),
-        row_src("Coating, geçiş bölgesi", k["transition_coating_t"], digits=3, note="kaynak yok"),
+        row_src("Tuğla soğuk yüzü A (ISO 5417)", k["brick_cold_face"], digits=3),
+        row_src("Tuğla boyu L, bir halka (ISO 5417)", k["brick_length"], digits=3),
         row_der("**Ekipman hacmi**", kk["volume"], "m³", 2),
         row_der("**Duvar alanı**", kk["wall_area"], "m²", 2),
     ]

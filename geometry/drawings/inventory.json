@@ -1572,18 +1572,18 @@
           "doc": "kiln/kiln.md"
         },
         {
-          "key": "kiln.burning_coating_t",
-          "value": 0.2,
+          "key": "kiln.brick_cold_face",
+          "value": 0.103,
           "unit": "m",
-          "source": "model",
+          "source": "literature",
           "status": "Estimated",
           "doc": "kiln/kiln.md"
         },
         {
-          "key": "kiln.transition_coating_t",
-          "value": 0.05,
+          "key": "kiln.brick_length",
+          "value": 0.198,
           "unit": "m",
-          "source": "model",
+          "source": "literature",
           "status": "Estimated",
           "doc": "kiln/kiln.md"
         }
@@ -1598,6 +1598,56 @@
         "3 KI"
       ],
       "drawing": "drawn: geometry/drawings/kiln/"
+    },
+    {
+      "area": "Rotary kiln",
+      "tag": "KWALL",
+      "name": "Kiln wall: brick and shell (as the twin)",
+      "quantity": "1",
+      "connections": "-",
+      "dimensions": [
+        {
+          "key": "kiln.shell_t",
+          "value": 0.03,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.lining_t",
+          "value": 0.22,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.brick_cold_face",
+          "value": 0.103,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.brick_length",
+          "value": 0.198,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        }
+      ],
+      "status_counts": {
+        "Estimated": 4
+      },
+      "missing": [
+        "kiln/kiln.md: tyres, wrapper plates, joints, end castables: no source; no clinker coating (user, 22 Nov 2026); 4 brick rings modelled brick by brick"
+      ],
+      "cfd_solid": "kiln_lining.SLDPRT (not a CFD input)",
+      "pid_sheets": [],
+      "drawing": "drawn: geometry/drawings/kiln_lining/"
     },
     {
       "area": "Rotary kiln",

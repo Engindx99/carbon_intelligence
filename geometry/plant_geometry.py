@@ -637,6 +637,41 @@ def kiln(g):
     # the kiln's own CFD solid starts there: stub + solid = L, no extra
     # length (the twin and the layout keep the whole L)
     z_cfd0 = v(g["kiln_inlet_chamber"]["mouth_stub_over_D"]) * D
+    t_sh, t_br = v(k["shell_t"]), v(k["lining_t"])
+    L_tr = v(k["transition_L"])
+    A_c, L_br = v(k["brick_cold_face"]), v(k["brick_length"])
+    # The wall as the twin builds it (burning.py / transition.py:
+    # physics.shell geometry(r_inner = D / 2)): D is the flow (gas) bore
+    # and the brick's hot face, the brick the innermost layer, no coating
+    # (user decisions, 22 Nov 2026); brick and steel outward of it, per
+    # zone (transition z in [0, L_tr], burning z in [L_tr, L]): one shell
+    # diameter, the zones differing only in the brick grade.
+    r_f = 0.5 * D
+
+    def ring(r0, r1, length):
+        return math.pi * (r1 * r1 - r0 * r0) * length
+
+    wall = {"r_flow": r_f}
+    for zone, length in (("transition", L_tr), ("burning", L - L_tr)):
+        r_b = r_f
+        r_si = r_b + t_br
+        r_so = r_si + t_sh
+        wall[f"r_brick_{zone}"] = r_b
+        wall[f"r_shell_in_{zone}"] = r_si
+        wall[f"r_shell_{zone}"] = r_so
+        wall[f"D_brick_{zone}"] = 2.0 * r_b
+        wall[f"D_shell_{zone}"] = 2.0 * r_so
+        wall[f"V_brick_{zone}"] = ring(r_b, r_si, length)
+        wall[f"V_shell_{zone}"] = ring(r_si, r_so, length)
+        # the brick ring's bricks (ISO 5417): as many as the cold face A
+        # fits round the shell's inside, each a wedge of 2 pi / n; its hot
+        # face is the chord there (the ring's two-shape mix, averaged)
+        n = round(2.0 * math.pi * r_si / A_c)
+        wall[f"brick_n_{zone}"] = n
+        wall[f"brick_cold_chord_{zone}"] = 2.0 * r_si * math.sin(math.pi / n)
+        wall[f"brick_hot_chord_{zone}"] = 2.0 * r_b * math.sin(math.pi / n)
+        wall[f"brick_rings_{zone}"] = math.ceil(length / L_br - 1e-9)
+        wall[f"V_brick_ring_{zone}"] = ring(r_b, r_si, L_br)
     return {
         "D": D,
         "L": L,
@@ -650,9 +685,8 @@ def kiln(g):
         "lining": {
             "steel_shell": v(k["shell_t"]),
             "brick": v(k["lining_t"]),
-            "coating_burning": v(k["burning_coating_t"]),
-            "coating_transition": v(k["transition_coating_t"]),
         },
+        "wall": wall,
         "burning_L": L - v(k["transition_L"]),
         "volume": 0.25 * math.pi * D * D * L,
         "wall_area": math.pi * D * L,

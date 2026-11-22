@@ -956,9 +956,9 @@ def shell_temperature_from_resistance(
 #   (name, thickness, k [W/(m K)])  or
 #   (name, thickness, k, rho [kg/m^3], cp [J/(kg K)]).
 # A thickness given as a STRING is a key into the kiln's lining
-# (geometry/plant_geometry.yaml kiln.shell_t, lining_t,
-# burning_coating_t, transition_coating_t, put in the config as
-# cfg["kiln"]["lining"]): the kiln's dimensions live once, there.
+# (geometry/plant_geometry.yaml kiln.shell_t, lining_t, put in the
+# config as cfg["kiln"]["lining"]): the kiln's dimensions live once,
+# there.
 #
 # KILN (burning, transition), sources (15 Nov 2026):
 #   magnesia-spinel brick  k 3.0 W/(m K) at 1000 C (4.5 at 500 C),
@@ -970,18 +970,19 @@ def shell_temperature_from_resistance(
 #       values of 1.7-2.2 W/(m K) at 1000 C for 70 % Al2O3 grades;
 #       rho 2600 kg/m^3 from the same brochure. cp 1000 J/(kg K) has
 #       NO source (an aluminosilicate brick's order of magnitude).
-#   clinker coating  k 0.74 W/(m K): Sadighi et al. 2011, Can. J.
-#       Chem. Eng., doi 10.1002/cjce.20365. rho 2800, cp 850:
-#       Alturki & Ficzere 2025 Table 1.
 #   steel shell  k 45, rho 7850, cp 480: carbon steel (Alturki &
 #       Ficzere 2025 Table 1; Sadighi 2011 uses the same k).
-# The burning coating thickness is DERIVED: it is what holds the
-# shell at Sadighi's 190-220 C operating band on this stack. Without
-# coating the same stack gives 418-434 C at a 1400-1450 C hot face,
-# and Mosci ("Lining thickness") reports 415-434 C for bare
-# 200-250 mm linings at 1400 C, which checks the brick k and the
-# external film below. Excluded: tyre wrapper plates, brick wear,
-# coating cycling, the radial transient inside the wall (the zones
+# NO CLINKER COATING (user decision, 22 Nov 2026: "no layer, in the
+# drawings or in the twin, for now"): the brick is the innermost
+# layer and its hot face is the kiln's D, the flow bore. The bare
+# stack gives 418-434 C at a 1400-1450 C hot face; Mosci ("Lining
+# thickness") reports 415-434 C for bare 200-250 mm linings at
+# 1400 C, which checks the brick k and the external film below. A
+# running kiln's coating (0.74 W/(m K), Sadighi et al. 2011, Can. J.
+# Chem. Eng., doi 10.1002/cjce.20365) held its shell at 190-220 C;
+# until it is put back the kiln shell loss is the bare lining's, a
+# known overstatement. Excluded: tyre wrapper plates, brick wear,
+# the radial transient inside the wall (the zones
 # keep one lumped wall node per cell, whose heat capacity is now
 # the stack's own, ShellGeometry.C_cell).
 #
@@ -1007,7 +1008,6 @@ DEFAULT_WALL_STACKS = {
         "orientation": "horizontal",
         "shell_emissivity": 0.80,       # oxidised carbon steel
         "layers": [
-            ("clinker coating", "coating_burning", 0.74, 2800.0, 850.0),
             ("magnesia-spinel brick", "brick", 3.00, 2930.0, 950.0),
             ("steel shell", "steel_shell", 45.0, 7850.0, 480.0),
         ],
@@ -1017,7 +1017,6 @@ DEFAULT_WALL_STACKS = {
         "orientation": "horizontal",
         "shell_emissivity": 0.80,
         "layers": [
-            ("clinker coating", "coating_transition", 0.74, 2800.0, 850.0),
             ("alumina brick", "brick", 2.00, 2600.0, 1000.0),
             ("steel shell", "steel_shell", 45.0, 7850.0, 480.0),
         ],

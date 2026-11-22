@@ -214,6 +214,24 @@ Const kiln_TAB_5                   As String  = ""           ' parameter table r
 Const kiln_TAB_6                   As String  = ""           ' parameter table rows
 Const kiln_TAB_7                   As String  = ""           ' parameter table rows
 Const kiln_TAB_8                   As String  = ""           ' parameter table rows
+Const KLN_L                        As Double  = 74#          ' kiln length, all lined [derived]
+Const KLN_TL                       As Double  = 30.83        ' the transition (alumina) zone from the back end [derived]
+Const KLN_R_FLOW                   As Double  = 2.4          ' the flow bore: the brick's hot face, both zones [derived]
+Const KLN_BRICK_L                  As Double  = 0.198        ' one brick ring along the axis (ISO 5417) [derived]
+Const KLN_BRICK_N                  As Double  = 160          ' bricks per ring (both zones) [derived]
+Const KLN_R_SHELL_IN               As Double  = 2.62         ' shell inner radius = brick cold face (one tube) [derived]
+Const KLN_R_SHELL                  As Double  = 2.65         ' shell outer radius (one tube) [derived]
+Const KLN_LAYER_1                  As String  = "brick (transition zone): alumina brick, k 2 W/(m K), rho 2600 kg/m3, cp 1000 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
+Const KLN_LAYER_2                  As String  = "brick (burning zone): magnesia-spinel brick, k 3 W/(m K), rho 2930 kg/m3, cp 950 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
+Const KLN_LAYER_3                  As String  = "steel_shell (whole kiln): steel shell, k 45 W/(m K), rho 7850 kg/m3, cp 480 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
+Const kiln_lining_TAB_1            As String  = "D_kiln~Flow bore D = brick hot face (whole tube)~4800~mm~published~Verified;D_shell~Shell outer D (one tube)~5300~mm~derived~Estimated;L_kiln~Kiln length (all lined)~74000~mm~published~Verified;transition_L~Transition zone (alumina), model split~30830~mm~model parameter~Estimated;burning_L~Burning zone (magnesia-spinel)~43170~mm~derived~Estimated;shell_t~Steel shell plate~30~mm~literature~Estimated;brick_t~Brick ring H (both zones)~220~mm~literature~Estimated;V_brick_transition~Volume, alumina brick~106.97~m3~derived~Estimated;V_brick_burning~Volume, magnesia-spinel brick~149.78~m3~derived~Estimated;V_shell~Volume, steel shell~36.75~m3~derived~Estimated;" ' parameter table rows
+Const kiln_lining_TAB_2            As String  = "brick_A~Brick cold face A (ISO 5417)~103~mm~literature~Estimated;brick_L~Brick length L, one ring (ISO 5417)~198~mm~literature~Estimated;brick_B~Brick hot face B, equivalent (ISO 522/622 mix)~94~mm~derived~Estimated;brick_n~Bricks per ring~160~-~derived~Estimated;brick_rings~Rings (each zone's last one cut)~375~-~derived~Estimated;brick_total~Bricks in all (2 end rings modelled brick by brick)~60000~-~derived~Estimated;u_coating~Clinker coating (left out, user 22 Nov 2026)~-~~no source~Unknown;u_tyre~Tyres, wrapper plates, girth gear~-~~no source~Unknown;u_shape~Joints, mortar, metal plates, key bricks~-~~no source~Unknown;u_ends~Inlet / outlet castable, nose ring~-~~no source~Unknown;" ' parameter table rows
+Const kiln_lining_TAB_3            As String  = ""           ' parameter table rows
+Const kiln_lining_TAB_4            As String  = ""           ' parameter table rows
+Const kiln_lining_TAB_5            As String  = ""           ' parameter table rows
+Const kiln_lining_TAB_6            As String  = ""           ' parameter table rows
+Const kiln_lining_TAB_7            As String  = ""           ' parameter table rows
+Const kiln_lining_TAB_8            As String  = ""           ' parameter table rows
 Const COO_L                        As Double  = 29.9         ' grate length, hot end x = 0 to the cold end [derived]
 Const COO_W                        As Double  = 4#           ' grate width [derived]
 Const COO_H                        As Double  = 3#           ' grate to roof [derived]
@@ -331,6 +349,24 @@ Const KIL_SIDE_Y  As Double = 0.4
 Const KIL_END_X   As Double = 0.2
 Const KIL_END_Y   As Double = 0.27
 
+' kiln_lining (1:200): the side view, section A-A along the axis under it,
+' the end view from the hood (1:50) and detail B of the hood end's wall
+' (1:10) under that
+Const KLN_SIDE_X  As Double = 0.31
+Const KLN_SIDE_Y  As Double = 0.5
+Const KLN_SEC_Y   As Double = 0.41
+Const KLN_END_X   As Double = 0.14
+Const KLN_END_Y   As Double = 0.2
+Const KLN_DET_X   As Double = 0.42
+Const KLN_DET_Y   As Double = 0.2
+Const KLN_DET_D   As Double = 10#
+Const KLN_DET_R   As Double = 0.6       ' detail B's circle [m, model]
+' detail D: the hood end's brick ring, from the end view, 1:5
+Const KLN_DETD_X  As Double = 0.585
+Const KLN_DETD_Y  As Double = 0.39
+Const KLN_DETD_D  As Double = 5#
+Const KLN_DETD_R  As Double = 0.22      ' its circle [m, model]
+
 ' cooler (1:100): side view, plan under it, floor view under that, the end
 ' view (1:50) at the bottom left
 Const COO_X       As Double = 0.33
@@ -403,6 +439,8 @@ Dim tKey() As String, tLabel() As String, tVal() As String, tUnit() As String
 Dim tSrc() As String, tStat() As String
 Dim nRows As Long
 
+Dim ySec As Double               ' kiln_lining: +1 when A-A shows model +x up, -1 when down
+
 Dim nDims As Long, nDimsOk As Long
 Dim skPerM As Double             ' sheet sketch units per metre of paper (SheetFurniture)
 Dim foundDist As Double          ' FindEdge: the found edge's distance to the point [m]
@@ -443,6 +481,15 @@ Sub kiln()
 End Sub
 
 
+' The kiln's wall as the twin models it (kiln_lining.bas: one brick
+' tube, one shell tube, two brick-by-brick end rings):
+' not the fluid geometry, an exception to this macro's rule (see
+' .claude/rules/geometry.md).
+Sub kiln_lining()
+    Build "kiln_lining"
+End Sub
+
+
 Sub cooler()
     Build "cooler"
 End Sub
@@ -476,6 +523,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = 50#: detX = CAL_DET_X: detY = CAL_DET_Y
     ElseIf equip = "kiln" Then
         scaleD = 200#: detailD = 50#: detX = 0.63: detY = DET_Y
+    ElseIf equip = "kiln_lining" Then
+        scaleD = 200#: detailD = KLN_DET_D: detX = KLN_DET_X: detY = KLN_DET_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "id_fan" Then
@@ -602,6 +651,9 @@ Private Sub ParseTable()
               kiln_inlet_chamber_TAB_5 & kiln_inlet_chamber_TAB_6 & kiln_inlet_chamber_TAB_7 & kiln_inlet_chamber_TAB_8
     ElseIf equip = "kiln" Then
         all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
+    ElseIf equip = "kiln_lining" Then
+        all = kiln_lining_TAB_1 & kiln_lining_TAB_2 & kiln_lining_TAB_3 & kiln_lining_TAB_4 & _
+              kiln_lining_TAB_5 & kiln_lining_TAB_6 & kiln_lining_TAB_7 & kiln_lining_TAB_8
     Else
         all = C1_twin_TAB_1 & C1_twin_TAB_2 & C1_twin_TAB_3 & C1_twin_TAB_4 & C1_twin_TAB_5 & C1_twin_TAB_6 & _
               C1_twin_TAB_7 & C1_twin_TAB_8
@@ -798,6 +850,54 @@ Private Sub CheckKilnBox(doc As SldWorks.ModelDoc2)
 End Sub
 
 
+' The kiln's wall (kiln_lining.bas): the brick tube and the shell tube by
+' their names and the two brick-by-brick end rings by their count; the layers' joint true extent
+' the shell's outer radius and the whole length, 1 cm.
+Private Sub CheckLiningBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc
+    Dim bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim lo(2) As Double, hi(2) As Double, want(5) As Double
+    Dim i As Long, k As Long, nm As Variant, names As String
+    Dim nWant As Long, nRing As Long
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    nWant = 2 + 2 * CLng(KLN_BRICK_N)
+    If UBound(bodies) + 1 <> nWant Then Fail partPath & " has " & (UBound(bodies) + 1) & _
+        " bodies, not " & nWant & " -- rebuild it with kiln_lining.bas."
+    For k = 0 To 2: lo(k) = 1E+30: hi(k) = -1E+30: Next k
+    names = "|"
+    For i = 0 To UBound(bodies)
+        Set b = bodies(i)
+        If Left(b.Name, 11) = "brick_ring_" Then
+            nRing = nRing + 1
+        Else
+            names = names & b.Name & "|"
+            box = ExactBox(b)
+            For k = 0 To 2
+                If box(k) < lo(k) Then lo(k) = box(k)
+                If box(k + 3) > hi(k) Then hi(k) = box(k + 3)
+            Next k
+        End If
+    Next i
+    If nRing <> nWant - 2 Then Fail partPath & " has " & nRing & " brick wedges, expected " & (nWant - 2) & "."
+    For Each nm In Array("brick", "steel_shell")
+        If InStr(names, "|" & nm & "|") = 0 Then Fail partPath & " has no body " & nm & " (bodies " & names & ")."
+    Next nm
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    want(0) = -KLN_R_SHELL: want(1) = -KLN_R_SHELL: want(2) = 0#
+    want(3) = KLN_R_SHELL: want(4) = KLN_R_SHELL: want(5) = KLN_L
+    For k = 0 To 2
+        If Abs(lo(k) - want(k)) > 0.01 Then Fail partPath & ": " & nm(k) & " is " & Num(lo(k), 3) & _
+            " m, today's wall has " & Num(want(k), 3) & " -- rebuild it with kiln_lining.bas."
+        If Abs(hi(k) - want(k + 3)) > 0.01 Then Fail partPath & ": " & nm(k + 3) & " is " & Num(hi(k), 3) & _
+            " m, today's wall has " & Num(want(k + 3), 3) & " -- rebuild it with kiln_lining.bas."
+    Next k
+    Note "part box: x " & Num(lo(0), 3) & " .. " & Num(hi(0), 3) & ", y " & Num(lo(1), 3) & " .. " & Num(hi(1), 3) & _
+         ", z " & Num(lo(2), 3) & " .. " & Num(hi(2), 3) & " m, bodies " & names & " + " & nRing & " brick wedges"
+End Sub
+
+
 Private Sub CheckCoolerBox(doc As SldWorks.ModelDoc2)
     Dim pd As SldWorks.PartDoc
     Dim bodies As Variant, b As SldWorks.Body2, box As Variant
@@ -948,6 +1048,9 @@ Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
     ElseIf equip = "kiln" Then
         CheckKilnBox doc
         Exit Sub
+    ElseIf equip = "kiln_lining" Then
+        CheckLiningBox doc
+        Exit Sub
     ElseIf equip = "C1_twin" Then
         CheckTwinBox doc
         Exit Sub
@@ -1075,6 +1178,8 @@ Private Sub MakeViews()
         MakeViewsCalciner
     ElseIf equip = "kiln" Then
         MakeViewsKiln
+    ElseIf equip = "kiln_lining" Then
+        MakeViewsLining
     ElseIf equip = "cooler" Then
         MakeViewsCooler
     ElseIf equip = "id_fan" Then
@@ -1221,6 +1326,65 @@ Private Sub MakeViewsKiln()
     LogMap vTop, "end", scaleD
     scaleD = 200#
     Note "views: side " & vFront.Name & ", end " & vTop.Name
+End Sub
+
+
+' The kiln's wall (1:200): the side view (z right, y up: the shell; a named
+' view that needs no turn -- a section cut from a turned view came out
+' across the axis, 22 Nov 2026), section A-A along the axis under it (the
+' plane y = 0, cut from the side view: z right, x up or down -- whichever
+' SolidWorks gives, ySec says; every body hatched), the end view from the
+' hood at 1:50 (x right, y up: the burning zone's rings as true circles;
+' the transition zone's, the same size, behind them) and detail B of the zone joint at 1:10 (the
+' brick ring joints, the brick change, the shell).
+Private Sub MakeViewsLining()
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long
+
+    Set vFront = OrientedView(0, 0, 1, 0, 1, 0, KLN_SIDE_X, KLN_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vFront, 0#, 0#, -1#, ax, ay
+            ToSheet vFront, 0#, 0#, KLN_L + 1#, qx, qy
+        Else
+            ToSheet vFront, 0#, 0#, KLN_L + 1#, ax, ay
+            ToSheet vFront, 0#, 0#, -1#, qx, qy
+        End If
+        Set vSec = SectionFrom(vFront, ax, ay, qx, qy, "A", KLN_SIDE_X, KLN_SEC_Y)
+        If Maps(vSec, 0, 0, 1, 1, 0, 0) Then ySec = 1#: Exit For
+        If Maps(vSec, 0, 0, 1, -1, 0, 0) Then ySec = -1#: Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "back to hood", "hood to back") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A shows z right in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    vSec.ScaleDecimal = 1# / scaleD
+    swModel.ForceRebuild3 False
+    Note "section A-A: model +x " & IIf(ySec > 0, "up", "down") & ", scale set to 1:" & Fmt(scaleD)
+    If FindEdge(vSec, "line", KLN_R_FLOW, 0#, 0.5 * KLN_TL, 0, 0, nSeen, nFit) Is Nothing _
+       Or foundDist > SEL_TOL Then Fail "section A-A is not cut: no brick hot face line among its " & nSeen & " edges."
+    LogMap vSec, "A-A", scaleD
+
+    swDraw.EditSheet
+    scaleD = 50#
+    Set vTop = OrientedView(1, 0, 0, 0, 1, 0, KLN_END_X, KLN_END_Y, "end")
+    LogMap vTop, "end", scaleD
+    scaleD = 200#
+
+    Set vDet = DetailAt(vSec, KLN_R_FLOW + 0.22, 0#, KLN_L - KLN_DET_R + 0.15, KLN_DET_R, "B")
+    LogMap vDet, "detail B", detailD
+
+    ' detail D: the top of the hood end's ring of bricks, the teeth (the
+    ' wedges' radial joints), at 1:5; placed by the globals, put back
+    Dim bX As Double, bY As Double, bD As Double
+    bX = detX: bY = detY: bD = detailD
+    detX = KLN_DETD_X: detY = KLN_DETD_Y: detailD = KLN_DETD_D
+    Set vDetC = DetailAt(vTop, 0#, KLN_R_FLOW + 0.5 * (KLN_R_SHELL_IN - KLN_R_FLOW), KLN_L, KLN_DETD_R, "D")
+    LogMap vDetC, "detail D", detailD
+    detX = bX: detY = bY: detailD = bD
+    Note "views: side " & vFront.Name & ", A-A " & vSec.Name & ", end " & vTop.Name & ", detail B " & vDet.Name & _
+         ", detail D " & vDetC.Name
 End Sub
 
 
@@ -1523,6 +1687,36 @@ Private Function DetailFrom(parent As SldWorks.View, ByVal x As Double, ByVal z 
 End Function
 
 
+' A detail view of `parent` round the model point (x, y, z), r [m, model]
+' across: DetailFrom with the model point given in full (y too); the
+' radius is measured along z, or along x in a view along z.
+Private Function DetailAt(parent As SldWorks.View, ByVal x As Double, ByVal y As Double, ByVal z As Double, _
+                          ByVal r As Double, ByVal label As String) As SldWorks.View
+    Dim cx As Double, cy As Double, ex As Double, ey As Double
+    Dim seg As Object
+    Dim v As SldWorks.View
+    Dim kx As Double, ky As Double
+    ToSheet parent, x, y, z, cx, cy
+    ToSheet parent, x, y, z + r, ex, ey
+    ' (an end view looks along z: then the radius is measured along x)
+    If Sqr((ex - cx) ^ 2 + (ey - cy) ^ 2) < 0.000001 Then ToSheet parent, x + r, y, z, ex, ey
+    ToViewSketch parent, cx, cy, kx, ky
+    swDraw.ActivateView parent.Name
+    swSkMgr.AddToDB = True
+    Set seg = swSkMgr.CreateCircleByRadius(kx, ky, 0#, Sqr((ex - cx) ^ 2 + (ey - cy) ^ 2) / parent.ScaleDecimal)
+    swSkMgr.AddToDB = False
+    If seg Is Nothing Then Fail "could not sketch the detail circle " & label & "."
+    Note "detail " & label & " circle: centre (" & Num(1000 * cx, 1) & ", " & Num(1000 * cy, 1) & _
+         ") mm, radius " & Num(1000 * Sqr((ex - cx) ^ 2 + (ey - cy) ^ 2), 1) & " mm on the sheet, in " & parent.Name
+    swModel.ClearSelection2 True
+    seg.Select4 False, Nothing
+    Set v = swDraw.CreateDetailViewAt4(detX, detY, 0#, swDetViewSTANDARD, 1#, detailD, label, _
+                                       swDetCircleCIRCLE, True, False, False, 5)
+    If v Is Nothing Then Fail "could not make detail " & label & "."
+    Set DetailAt = v
+End Function
+
+
 ' A rejected try is deleted; selecting a view by its name failed in
 ' run 3, so its centre on the sheet is tried as well.
 Private Sub DeleteView(v As SldWorks.View)
@@ -1646,6 +1840,8 @@ Private Sub DimensionAll()
         DimensionCalciner
     ElseIf equip = "kiln" Then
         DimensionKiln
+    ElseIf equip = "kiln_lining" Then
+        DimensionLining
     ElseIf equip = "cooler" Then
         DimensionCooler
     ElseIf equip = "id_fan" Then
@@ -1945,6 +2141,62 @@ Private Sub DimensionKiln()
         "circle", 0, 0, KIL_Z0, R, KIL_Z0, _
         "circle", 0, 0, KIL_L, R, KIL_L, _
         -R - 3.2, 0, 0.5 * (KIL_Z0 + KIL_L)
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+' The kiln wall's reference dimensions, each between edges the bodies
+' have. End view (the hood end's ring of bricks): the flow bore (the
+' brick's hot face, the twin's kiln D; picked on a brick's arc) and the
+' shell. A-A (the plane
+' y = 0; on the +x side, over the zone labels): the length between the two
+' shells' end lines, the transition zone between the alumina brick's end
+' line and its joint line, the transition shell's D between its two outer
+' lines (the same as the burning shell's since the wall is one: the check
+' that it is). Detail B (the +x wall at the joint): the layers' thicknesses, each
+' between two lines along the axis.
+Private Sub DimensionLining()
+    Dim R As Double, zb As Double, zt As Double
+    R = KLN_R_SHELL
+    ' detail B is the hood end; its dims on the brick tube, short of the
+    ' last ring (z L - brick length .. L)
+    zb = KLN_L - 0.45: zt = KLN_L - 0.55
+
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "D_shell", 2# * KLN_R_SHELL, vTop, _
+        "circle", 0, KLN_R_SHELL, KLN_L, KLN_R_SHELL, KLN_L, _
+        "", 0, 0, 0, 0, 0, _
+        R + 1#, R + 0.9, KLN_L
+    DimEdges "D_kiln", 2# * KLN_R_FLOW, vTop, _
+        "circle", -KLN_R_FLOW, 0, KLN_L, KLN_R_FLOW, KLN_L, _
+        "", 0, 0, 0, 0, 0, _
+        -(R + 1#), -(R + 0.9), KLN_L
+
+    ' (the shell tube's end lines at z = 0 and z = L)
+    DimEdges "L_kiln", KLN_L, vSec, _
+        "line", 0.5 * (KLN_R_SHELL_IN + KLN_R_SHELL), 0, 0, 0, 0, _
+        "line", 0.5 * (KLN_R_SHELL_IN + KLN_R_SHELL), 0, KLN_L, 0, 0, _
+        R + 5#, 0, 0.5 * KLN_L
+    ' (transition_L is the twin's model split, no edge on the one tube:
+    ' the table lists it, A-A marks it with a centre line and its value)
+
+    DimEdges "brick_t", KLN_R_SHELL_IN - KLN_R_FLOW, vDet, _
+        "line", KLN_R_FLOW, 0, zb, 0, 0, _
+        "line", KLN_R_SHELL_IN, 0, zb, 0, 0, _
+        0.5 * (KLN_R_FLOW + KLN_R_SHELL_IN), 0, zb + 0.12
+    DimEdges "shell_t", KLN_R_SHELL - KLN_R_SHELL_IN, vDet, _
+        "line", KLN_R_SHELL_IN, 0, zt, 0, 0, _
+        "line", KLN_R_SHELL, 0, zt, 0, 0, _
+        KLN_R_SHELL + 0.08, 0, zt + 0.05
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -2601,7 +2853,9 @@ Private Sub DrawTitle()
     Cell 0.771, 0.046, "Document status", "draft, for approval"
     LabelPH COL_X0 + 0.0015, 0.0362, "Title, supplementary title", CAP_H
     LabelPH COL_X0 + 0.0015, 0.0335, TitleText(), 0.005
-    LabelPH COL_X0 + 0.0015, 0.0255, "Inner (fluid) geometry, dimensioned - not a fabrication drawing", TEXT_H
+    LabelPH COL_X0 + 0.0015, 0.0255, IIf(equip = "kiln_lining", _
+        "Wall as the twin models it (physics/shell.py) - not a fabrication drawing", _
+        "Inner (fluid) geometry, dimensioned - not a fabrication drawing"), TEXT_H
     ' CI-<area>-<equipment>-001; the calciner is its own area, CA (16 Nov
     ' sheet review, item 9: it was numbered in the preheater's, PH)
     Cell 0.771, 0.037, "Identification number", "CI-" & AreaCode() & "-" & equip & "-001"
@@ -2609,7 +2863,11 @@ Private Sub DrawTitle()
     CellS 0.781, 0.028, "Date of issue", Format(Date, "yyyy-mm-dd")
     CellS 0.806, 0.028, "Lang.", "EN"
     CellS 0.816, 0.028, "Sheet", "1/1"
-    Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "id_fan", " (rotor 1:" & Fmt(detailD) & ")", IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"))
+    If equip = "kiln_lining" Then
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (C 1:50, B 1:" & Fmt(detailD) & ", D 1:" & Fmt(KLN_DETD_D) & ")"
+    Else
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & IIf(equip = "id_fan", " (rotor 1:" & Fmt(detailD) & ")", IIf(equip = "kiln_inlet_chamber", "", IIf(equip = "kiln" Or equip = "cooler", " (end view 1:", " (" & IIf(equip = "C1_twin", "C", "B") & " 1:") & Fmt(detailD) & ")"))
+    End If
     Cell 0.711, 0.019, "Unit", "mm"
     Cell 0.771, 0.019, "Projection", ""
     ProjectionSymbol 0.79, 0.0125
@@ -2621,7 +2879,7 @@ End Sub
 Private Function AreaCode() As String
     Select Case equip
     Case "calciner": AreaCode = "CA"
-    Case "kiln", "kiln_inlet_chamber": AreaCode = "RK"
+    Case "kiln", "kiln_inlet_chamber", "kiln_lining": AreaCode = "RK"
     Case "cooler": AreaCode = "CL"
     Case Else: AreaCode = "PH"
     End Select
@@ -2695,6 +2953,7 @@ Private Function TitleText() As String
     Case "C5": TitleText = "CYCLONE C5 (C4 x 6.50/6.30)"
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     Case "kiln": TitleText = "ROTARY KILN TUBE"
+    Case "kiln_lining": TitleText = "ROTARY KILN WALL (TWIN)"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
     Case "id_fan": TitleText = "PREHEATER ID FAN (1 PER STRING)"
@@ -2707,11 +2966,26 @@ Private Sub DrawNotes()
     y = 0.062 + 0.0045 * (nRows + 1) + 0.05
     UseLayer L_TEXT
     LabelPH COL_X0, y + 0.038, "NOTES", 0.0035
-    LabelPH COL_X0, y + 0.032, "1. Inner (fluid) volume of the CFD model; not a fabrication drawing.", TEXT_H
-    LabelPH COL_X0, y + 0.027, "   Shell, refractory, material, flanges, supports: Unknown (no source).", TEXT_H
+    If equip = "kiln_lining" Then
+        LabelPH COL_X0, y + 0.032, "1. The kiln wall as the twin models it (physics/shell.py); not a CFD input,", TEXT_H
+        LabelPH COL_X0, y + 0.027, "   not a fabrication drawing. The gas volume is the kiln sheet's solid.", TEXT_H
+    Else
+        LabelPH COL_X0, y + 0.032, "1. Inner (fluid) volume of the CFD model; not a fabrication drawing.", TEXT_H
+        LabelPH COL_X0, y + 0.027, "   Shell, refractory, material, flanges, supports: Unknown (no source).", TEXT_H
+    End If
     LabelPH COL_X0, y + 0.022, "2. 1234 = Verified (published).  1234 E = Estimated: FLS ratio,", TEXT_H
     LabelPH COL_X0, y + 0.017, "   literature, CFD decision, model parameter or derived from them.", TEXT_H
-    If equip = "C1" Then
+    If equip = "kiln_lining" Then
+        LabelPH COL_X0, y + 0.012, "3. Axis z, z = 0 at the back end; D = the flow bore = the brick's hot face, both zones.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. One brick tube, one shell tube over the whole kiln; brick grade per zone. No coating.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Bricks ISO 5417, radial wedges: the 2 end rings brick by brick (B, D); between", TEXT_H
+        LabelPH COL_X0, y - 0.003, "   them one body. Not modelled: joints, tyres, plates, end castables; slope.", TEXT_H
+        LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml, physics/shell.py, ISO 5417:1986", TEXT_H
+        LabelPH COL_X0, y + 0.083, "LAYERS (hot face outward; values of physics/shell.py)", 0.0035
+        LabelPH COL_X0, y + 0.077, KLN_LAYER_1, TEXT_H * 0.85
+        LabelPH COL_X0, y + 0.072, KLN_LAYER_2, TEXT_H * 0.85
+        LabelPH COL_X0, y + 0.067, KLN_LAYER_3, TEXT_H * 0.85
+    ElseIf equip = "C1" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet, gas enters towards +x (cyclone.bas).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. " & equip & ": 2 per string; values are for one.  All dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
@@ -2768,6 +3042,8 @@ Private Sub DrawFlows()
         DrawFlowsCalciner
     ElseIf equip = "kiln" Then
         DrawFlowsKiln
+    ElseIf equip = "kiln_lining" Then
+        DrawLabelsLining
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
     ElseIf equip = "id_fan" Then
@@ -2882,6 +3158,35 @@ Private Sub DrawFlowsKic()
     LabelPH sxE, syRow - 0.012, "END VIEW - from the kiln (the kiln stub's end disc)", TEXT_H
     LabelPH sxS, syRow - 0.012, "SIDE VIEW - meal slides down the ramp into the kiln", TEXT_H
     LabelPH sxP, syPlan - 0.012, "PLAN - throat (outlet) at the top", TEXT_H
+End Sub
+
+
+' The kiln wall's labels: the zones by A-A (the +x side), the layers by
+' detail B (burning side right of the joint, transition side left; a
+' label's position is its top left corner), the end view's arrow C on the
+' side view, the view captions.
+Private Sub DrawLabelsLining()
+    Dim zl As Double, yz As Double
+    zl = KLN_L - KLN_DET_R - 0.4
+    yz = KLN_R_SHELL + 1.6
+    UseLayer L_TEXT
+    LabelM3 vSec, yz, 0#, 2#, "TRANSITION ZONE: alumina brick"
+    LabelM3 vSec, yz, 0#, KLN_TL + 2#, "BURNING ZONE: magnesia-spinel brick"
+    LabelM3 vSec, 0.5, 0#, KLN_L + 3#, "Hood end"
+    LabelM3 vSec, 0.5, 0#, -9#, "Back end"
+    ' the zones' boundary: the twin's model split (brick grade), not a
+    ' joint -- one brick tube, one shell tube
+    UseLayer L_AXIS
+    AxisM vSec, KLN_R_SHELL + 1.2, 0#, KLN_TL, -(KLN_R_SHELL + 1.2), 0#, KLN_TL
+    UseLayer L_TEXT
+    LabelM3 vSec, KLN_R_SHELL + 0.95, 0#, KLN_TL + 0.5, "zone boundary z = " & Fmt(KLN_TL * 1000#) & " E (twin model split, no joint)"
+    LabelM3 vDet, KLN_R_SHELL + 0.05, 0#, zl, "steel shell"
+    LabelM3 vDet, 0.5 * (KLN_R_FLOW + KLN_R_SHELL_IN) + 0.012, 0#, zl, "brick (magnesia-spinel)"
+    ' ISO 128-3: the end view (1:50, not in its projected place) looks from
+    ' the hood end along -z: arrow C
+    ViewArrow vFront, 0#, KLN_R_SHELL + 1.5, KLN_L + 6#, 0#, KLN_R_SHELL + 1.5, KLN_L + 1#, "C"
+    ViewTitle vTop, "C (1:50) - hood end, the end ring", "above", 0.004, VIEW_LETTER_H
+    ViewTitle vFront, "SIDE VIEW - back end left, hood end right", "above", 0.004, TEXT_H
 End Sub
 
 
@@ -3062,6 +3367,8 @@ Private Sub DrawAxes()
         DrawAxesCalciner
     ElseIf equip = "kiln" Then
         DrawAxesKiln
+    ElseIf equip = "kiln_lining" Then
+        DrawAxesLining
     ElseIf equip = "cooler" Then
         DrawAxesCooler
     ElseIf equip = "id_fan" Then
@@ -3141,6 +3448,19 @@ Private Sub DrawAxesKiln()
     AxisM vFront, 0#, 0#, KIL_Z0 - 2#, 0#, 0#, KIL_L + 2#
     AxisM vTop, -R - 0.6, 0#, 0#, R + 0.6, 0#, 0#
     AxisM vTop, 0#, -R - 0.6, 0#, 0#, R + 0.6, 0#
+End Sub
+
+
+' The kiln wall's centre lines: the axis in the side view and in A-A, the
+' cross in the end view.
+Private Sub DrawAxesLining()
+    Dim R As Double
+    R = KLN_R_SHELL
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, -2#, 0#, 0#, KLN_L + 2#
+    AxisM vSec, 0#, 0#, -2#, 0#, 0#, KLN_L + 2#
+    AxisM vTop, -R - 0.6, 0#, KLN_L, R + 0.6, 0#, KLN_L
+    AxisM vTop, 0#, -R - 0.6, KLN_L, 0#, R + 0.6, KLN_L
 End Sub
 
 

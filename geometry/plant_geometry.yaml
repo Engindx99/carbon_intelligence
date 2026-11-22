@@ -247,9 +247,12 @@ kiln:
   transition_L:        {value: 30.83, unit: m,    source: model,        doc: kiln/kiln.md}
   # The wall stack, hot face outward (physics/shell.py has the materials).
   # NOTE: the published 4.8 m is the SHELL diameter; the twin uses it as
-  # the bore (user decision, 12 Oct 2026), so the stack is added outward.
-  # With this stack the real bore would be 4.8 - 2 (0.030 + 0.220) = 4.30 m
-  # (open item, 15 Nov 2026).
+  # the bore (user decision, 12 Oct 2026), so the stack is added outward:
+  # D is the flow bore and the brick's hot face, in both zones (user,
+  # 22 Nov 2026); one wall over the tube, the shell 5.30 m throughout
+  # (kiln_lining.bas, plant_geometry.kiln()["wall"]). With the published
+  # shell the real bore would be 4.8 - 2 (0.030 + 0.220) = 4.30 m (open
+  # item, 15 Nov 2026).
   # Steel plate: welded kilns 25-35 mm (cementkilns.co.uk, "Design features
   # of rotary kilns"); tyre wrapper plates are local and not modelled.
   shell_t:             {value: 0.030, unit: m,    source: literature,   doc: kiln/kiln.md}
@@ -258,13 +261,18 @@ kiln:
   # h = 220 mm (rotary kiln brick installation guideline). The basic
   # (burning) and alumina (transition) rings are the same thickness.
   lining_t:            {value: 0.220, unit: m,    source: literature,   doc: kiln/kiln.md}
-  # Burning zone coating: the thickness that holds the shell at 190-220 C,
-  # the operating band of Sadighi et al. 2011 (Can. J. Chem. Eng.,
-  # doi 10.1002/cjce.20365), on this stack with a 1300-1450 C hot
-  # face gives 151-252 mm; 0.20 m is the middle (205 C at 1400 C).
-  burning_coating_t:   {value: 0.200, unit: m,    source: model,        doc: kiln/kiln.md}
-  # Transition coating: no source; coating there is thin and intermittent.
-  transition_coating_t: {value: 0.050, unit: m,   source: model,        doc: kiln/kiln.md}
+  # The bricks of that ring: ISO 5417:1986 (confirmed 2022), Table 1,
+  # rotary kiln bricks of constant cold face: A = 103 mm on the shell side,
+  # L = 198 mm along the axis, for every H (160-250 mm); at H = 220 mm the
+  # hot face B runs 88.0 (322) .. 97.3 (822) mm, and a ring is closed by a
+  # mix of two shapes. The ring's count and its equivalent hot face follow
+  # from these and the radii (plant_geometry.kiln()["wall"]).
+  brick_cold_face:     {value: 0.103, unit: m,    source: literature,   doc: kiln/kiln.md}
+  brick_length:        {value: 0.198, unit: m,    source: literature,   doc: kiln/kiln.md}
+  # No clinker coating (user decision, 22 Nov 2026: no layer in the
+  # drawings or the twin for now): the brick is the innermost layer.
+  # The burning coating was 0.200 m (held the shell at Sadighi et al.
+  # 2011's 190-220 C), the transition coating had no source.
 
 # ---------------------------------------------------------------------
 # Grate cooler: PF5000 grate area, FLS reference cooler width and height
