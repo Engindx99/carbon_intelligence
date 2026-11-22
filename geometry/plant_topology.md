@@ -249,6 +249,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `CHAMBER_MARGIN` | 1 | plant_geometry.yaml |
 | `KIC_RAMP_DEG` | 50 | plant_geometry.yaml |
 | `KIC_RAMP_FOOT` | 1.5 | plant_geometry.yaml |
+| `KIC_TOP` | 5.950031 | plant_geometry.yaml |
 | `COOLER_DROP` | 1 | plant_geometry.yaml |
 | `TA_BEND_R_OVER_D` | 1.5 | çizimin kendi Const'u |
 | `ID_FAN_L` | 2.5 | çizimin kendi Const'u |
@@ -299,19 +300,19 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 <!-- BEGIN GENERATED (tools/gen_geometry.py) layout -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ne | Konum [m] |
 |---|---|
-| Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 13.400; taban rampası 50.0° |
-| Kalsinatör | z 13.400 .. 46.530; kaz boynu tepesi z 52.505, kol inişi x = ±10.781, C5 giriş kotu z 36.922 |
-| Tersiyer hava kanalı | eksen z 21.671 |
+| Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 12.550; taban rampası 50.0° |
+| Kalsinatör | z 12.550 .. 45.680; kaz boynu tepesi z 51.655, kol inişi x = ±10.781, C5 giriş kotu z 36.072 |
+| Tersiyer hava kanalı | eksen z 20.821 |
 | İç kolon (C5, C3) | x = ±16.781 |
 | Dış kolon (C4, C2) | x = ±23.584 |
 | R1 | x = ±23.584 |
 | İkiz C1 | x = ±19.330 ve ±27.838 |
-| C5 toz çıkışı / çıkış borusu tepesi | z 24.641 / 44.197 |
-| C4 toz çıkışı / çıkış borusu tepesi | z 39.172 / 58.127 |
-| C3 toz çıkışı / çıkış borusu tepesi | z 53.272 / 72.227 |
-| C2 toz çıkışı / çıkış borusu tepesi | z 67.372 / 86.327 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 90.327 / 104.467 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 108.787 |
+| C5 toz çıkışı / çıkış borusu tepesi | z 23.791 / 43.347 |
+| C4 toz çıkışı / çıkış borusu tepesi | z 38.322 / 57.277 |
+| C3 toz çıkışı / çıkış borusu tepesi | z 52.422 / 71.377 |
+| C2 toz çıkışı / çıkış borusu tepesi | z 66.522 / 85.477 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 89.477 / 103.617 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 107.937 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
 | Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |

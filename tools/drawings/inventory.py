@@ -80,7 +80,7 @@ EQUIPMENT = [
      "kiln inlet chamber <- clinker -> kiln hood / cooler", [], "kiln.SLDPRT"),
     ("Rotary kiln", "KIC", "Kiln inlet chamber", "1",
      ["kiln_inlet_chamber.", "layout.chamber_margin"], "C5 meal + kiln gas -> calciner throat",
-     ["kiln/kiln_inlet_chamber.md: no published size; shape is the user-approved model (layout square passing the velocity check, one ramp, flat roof); bypass and lining unknown; no twin volume"], "kiln_inlet_chamber.SLDPRT"),
+     ["kiln/kiln_inlet_chamber.md: no published size; shape is the user's 21 Nov sketch (throat walls down, 50 deg ramp, the kiln's lines carried in, a stub of the kiln tube as the inlet); bypass and lining unknown; no twin volume"], "kiln_inlet_chamber.SLDPRT"),
     ("Rotary kiln", "HOOD", "Kiln hood", "1",
      ["kiln_hood.", "layout.chamber_margin"], "cooler -> secondary air -> kiln; -> tertiary air duct",
      ["kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"], ""),

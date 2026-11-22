@@ -33,14 +33,14 @@ Ebat için yayınlanmış bir kural bulunamadı; kullanıcı kararı: hız ölç
 | Hız, fırın tüpünün girişinde (CFD debisi) | 12.33 m/s | türetilmiş |
 | Ölçütün izin verdiği en küçük kenar | 4.72 m | türetilmiş |
 | Başvuru sınırı (Holcim StDC 2022; tek şirketin standardı) | 23 m/s | literatür |
-| Oda yüksekliği (boğazın üstü, zeminden) | 6.800 m | türetilmiş |
+| Oda yüksekliği (boğazın üstü, zeminden) | 5.950 m | türetilmiş |
 | Boğaz çapı (kalsinatörün; duvarları x = ±r aşağı iner) | 3.130 m | türetilmiş |
 | Rampa eğimi (yataya) | 50 ° | modelleme |
 | Rampa ayağı (yatay; fırının alt çizgisi, kiln.slope ile düşer) | 1.5 m | modelleme |
 | Rampanın üstü, sol boğaz duvarında (zeminden) | 5.173 m | türetilmiş |
 | Tavan, sağ boğaz duvarında (fırının üst çizgisi; zeminden) | 5.856 m | türetilmiş |
 | Fırın borusu ucu (CFD katısı; D'ye oran) | 0.5 | modelleme |
-| CFD hacmi (kesit prizması + boğaz + fırın ucu) | 165.04 m³ | türetilmiş |
+| CFD hacmi (kesit prizması + boğaz + fırın ucu) | 158.50 m³ | türetilmiş |
 <!-- END GENERATED -->
 
 Dikkat: CFD'nin fırın gazı debisiyle (61.44 kg/s, 1323 K) fırın tüpünün kendi giriş hızı 10 m/s'yi aşıyor (tablo); twin'in debisinde (35.9 kg/s) 7.2 m/s olur. Bu, kalsinatörün CFD gaz debisi ile fırın tüpü arasındaki bilinen debi farkıdır (twin 80 kg/s, CFD 116.4 kg/s toplam giriş), yeni bir bulgu değildir.

@@ -1013,9 +1013,13 @@ def chamber_section(g):
     (the kiln axis a over it at x = a, a = kiln D / 2 + the layout
     margin), the plan 2 a across (y):
 
-    - the calciner's throat, a cylinder D_throat, from the top z = 2 a
-      down into the chamber; its walls x = +-r run down, the left one
-      to the ramp's top, the right one to the kiln's roof line;
+    - the calciner's throat, D_throat, its walls x = +-r: the left one
+      runs down to the ramp's top, the right one to the kiln's roof
+      line; the chamber's top (the calciner's throat foot, user decision
+      22 Nov 2026: the calciner sits on the roof, no throat extension)
+      is the roof's highest point under the throat, at x = -r, so the
+      throat in the chamber is only the wedge between the sloping roof
+      and that level (0 at x = -r, 2 r tan(alpha) at x = +r);
     - the roof: the kiln tube's top line carried in at kiln.slope, from
       the mouth to x = -r; the left wall x = -r from the roof down to
       the ramp's top;
@@ -1037,7 +1041,6 @@ def chamber_section(g):
     alpha = math.atan(0.01 * kl["slope"])
     ramp = math.radians(v(kic["ramp_deg"]))
     foot = v(kic["ramp_foot"])
-    height = 2.0 * a
     z_ax = a                                         # the kiln axis at x = a
     sa, ca, ta = math.sin(alpha), math.cos(alpha), math.tan(alpha)
 
@@ -1052,12 +1055,13 @@ def chamber_section(g):
     toe = (a - foot, bottom(a - foot))
     ramp_top = (-r, toe[1] + (toe[0] + r) * math.tan(ramp))
     roof_left = (-r, roof(-r))
+    height = roof_left[1]                            # the calciner's throat foot
     profile = [ramp_top, toe, lip_low, lip_up, roof_left]
     area = 0.5 * abs(sum(p[0] * q[1] - q[0] * p[1] for p, q in zip(profile, profile[1:] + profile[:1])))
     L_stub = v(kic["mouth_stub_over_D"]) * kl["D"]
     stub_end = (a + L_stub * ca, z_ax - L_stub * sa)
     v_box = area * 2.0 * a
-    v_throat = math.pi * r * r * (height - roof(0.0))   # roof linear in x: the mean height over the disc
+    v_throat = math.pi * r * r * (height - roof(0.0))   # the wedge: roof linear in x, its mean over the disc
     v_stub = math.pi * R * R * L_stub
     return {
         "a": a,

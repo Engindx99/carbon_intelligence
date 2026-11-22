@@ -129,6 +129,7 @@ Const KILN_AXIS_Z                  As Double  = 10#          ' [schematic, plant
 Const CHAMBER_MARGIN               As Double  = 1#           ' [model, kiln/kiln_inlet_chamber.md]
 Const KIC_RAMP_DEG                 As Double  = 50#          ' KIC ramp, to the horizontal [model, kiln/kiln_inlet_chamber.md]
 Const KIC_RAMP_FOOT                As Double  = 1.5          ' KIC ramp's level foot, toe to the kiln mouth [model, kiln/kiln_inlet_chamber.md]
+Const KIC_TOP                      As Double  = 5.950031     ' KIC floor level to its top = the calciner's throat foot (the roof's highest point under the throat) [derived]
 Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant_topology.md]
 ' END GENERATED
 
@@ -403,7 +404,7 @@ Private Sub Derive()
     rCalc = 0.5 * CALC_D
     rThroat = 0.5 * CALC_THROAT_D
     hCone = (rCalc - rThroat) * Tan(CALC_CONE_DEG * PI / 180#)
-    zThroat = zCh0 + 2# * aCh
+    zThroat = zCh0 + KIC_TOP                  ' the calciner sits on the chamber's roof (22 Nov 2026)
     zConeTop = zThroat + CALC_THROAT_D + hCone
     zCalcRoof = zThroat + CALC_THROAT_D + CALC_H
 
@@ -782,7 +783,7 @@ Private Sub PreChecks()
     End If
     ' its toe between the throat's left wall and the mouth, its top under the throat's foot
     If xToe <= -rThroat Or xToe > aCh Then Fail "the kiln inlet chamber's ramp foot is " & Fmt(KIC_RAMP_FOOT) & " m: its toe leaves the chamber."
-    If zRampTop >= zCh0 + 2# * aCh Then
+    If zRampTop >= zCh0 + KIC_TOP Then
         Fail "the kiln inlet chamber's ramp reaches z = " & Fmt(zRampTop) & " m, over the throat's foot. Lengthen KIC_RAMP_FOOT or flatten KIC_RAMP_DEG."
     End If
     ' The kiln's gas and material lines inside its shell
@@ -794,7 +795,7 @@ Private Sub PreChecks()
         Fail "the plant does not fit the A1 sheet at 1:" & Fmt(SHEET_SCALE) & "."
     End If
 
-    Note "kiln inlet chamber: x " & Fmt(-rThroat) & " .. " & Fmt(aCh) & " m, z " & Fmt(zLip) & " .. " & Fmt(zCh0 + 2# * aCh) & _
+    Note "kiln inlet chamber: x " & Fmt(-rThroat) & " .. " & Fmt(aCh) & " m, z " & Fmt(zLip) & " .. " & Fmt(zCh0 + KIC_TOP) & _
          "; ramp " & Fmt(KIC_RAMP_DEG) & " deg, top z " & Fmt(zRampTop) & ", toe x " & Fmt(xToe)
     Note "calciner: z " & Fmt(zThroat) & " .. " & Fmt(zCalcRoof) & "; gooseneck neck D " & Fmt(2# * rNeck) & ", crown z " & Fmt(zGnTop) & ", channel down to z " & Fmt(zSplit) & _
          ", arms turn level at x +-" & Fmt(xBend) & ", outlet faces at x +-" & Fmt(xLeg) & ", C5 inlet at z " & Fmt(zIn(5))
@@ -948,7 +949,7 @@ Private Sub DrawPlant()
     phase = "drawing the equipment"
     UseLayer L_EQUIP
     kSh = 0.5 * KILN_D / Cos(kAlpha)           ' kiln shell above / below its axis, on a vertical
-    zTopCh = zCh0 + 2# * aCh
+    zTopCh = zCh0 + KIC_TOP
     zTopHd = zHood0 + 2# * aCh
 
     ' kiln inlet chamber (user sketch, 21 Nov 2026): no roof ledges. The

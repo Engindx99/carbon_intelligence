@@ -319,6 +319,7 @@ def drawing_bas(g):
         src("CHAMBER_MARGIN", lay["chamber_margin"]),
         src("KIC_RAMP_DEG", g["kiln_inlet_chamber"]["ramp_deg"], "KIC ramp, to the horizontal"),
         src("KIC_RAMP_FOOT", g["kiln_inlet_chamber"]["ramp_foot"], "KIC ramp's level foot, toe to the kiln mouth"),
+        der("KIC_TOP", pg.chamber_section(g)["height"], "KIC floor level to its top = the calciner's throat foot (the roof's highest point under the throat)"),
         src("COOLER_DROP", lay["cooler_drop"]),
     ]
     return out
@@ -517,8 +518,8 @@ def _kiln_sheet_consts(g):
     out = [
         der("KIL_D", k["D"], "kiln inner D"),
         der("KIL_L", k["L"], "kiln length, back end to hood end"),
-    ]
         der("KIL_Z0", k["z_cfd0"], "the solid's back face (the KIC stub's end)"),
+    ]
     out += _table_consts("kiln", dki.params(g), dki.ORDER)
     return out
 
@@ -749,8 +750,8 @@ def kiln_bas(g):
     return [
         src("KILN_D", k["D"], "effective inner diameter"),
         src("KILN_L", k["L"], "back end (z = 0) to hood end"),
-        src("KILN_SLOPE", k["slope"], "%: the installed slope, not built into the solid"),
         der("KILN_Z0", pg.kiln(g)["z_cfd0"], "the solid's back face: the kiln inlet chamber's stub ends here (stub + solid = KILN_L)"),
+        src("KILN_SLOPE", k["slope"], "%: the installed slope, not built into the solid"),
         src("KILN_TRANSITION_L", k["transition_L"], "the transition zone from the back end (model split)"),
     ]
 

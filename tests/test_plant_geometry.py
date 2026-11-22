@@ -963,12 +963,16 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
         self.assertAlmostEqual(self.ch["side"], 2.0 * a)
         self.assertEqual(self.g["layout"]["chamber_margin"]["source"], "model")
 
-    def test_the_throat_tops_the_chamber_at_the_layouts_height(self):
+    def test_the_calciner_sits_on_the_roof(self):
+        # user decision, 22 Nov 2026: no throat extension; the chamber's top is
+        # the roof's highest point under the throat, the calciner's foot on it
         c, L = self.ch, pg.layout(self.g)
-        self.assertAlmostEqual(c["height"], 2.0 * L["a_chamber"])
+        self.assertAlmostEqual(c["height"], c["roof_left"][1])
         self.assertAlmostEqual(L["z_calciner_throat"] - L["z_chamber_floor"], c["height"])
         self.assertLess(c["D_throat"], c["side"])
-        self.assertLess(c["roof_left"][1], c["height"])                             # the throat stands over the roof
+        wedge = 2.0 * c["r_throat"] * math.tan(c["alpha"])                         # 0 at x = -r, this at x = +r
+        self.assertAlmostEqual(c["height"] - c["roof_at_throat"], wedge)
+        self.assertLess(wedge, 0.1)
 
     def test_the_section_is_the_users_sketch_with_the_kilns_lines_carried_in(self):
         # 21 Nov 2026 sketch: throat walls down, a 50 deg ramp, the foot and

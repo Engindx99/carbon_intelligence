@@ -32,7 +32,7 @@
     {
       "key": "kiln_inlet_chamber.height",
       "label": "Height: floor level to the throat's top",
-      "value": 6.8,
+      "value": 5.950030914802465,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -41,7 +41,7 @@
         "kiln.D",
         "layout.chamber_margin"
       ],
-      "value_mm": 6800.0,
+      "value_mm": 5950.030915,
       "short": "H"
     },
     {
@@ -182,7 +182,7 @@
     {
       "key": "kiln_inlet_chamber.volume",
       "label": "Volume (section prism + throat + stub)",
-      "value": 165.03761887348838,
+      "value": 158.4972370359215,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",

@@ -12,9 +12,11 @@ Attribute VB_Name = "kic_solid"
 '      falling at its slope) to the mouth's lower lip; the mouth's face,
 '      square to the kiln axis, to the upper lip; the roof (the kiln's top
 '      line) back to the left wall;
-'   2. the calciner's throat, a cylinder of radius r, from the top z = H
-'      down to the roof (up to next: it stands on the roof, no line
-'      contact with the left wall below it), merged;
+'   2. the calciner's throat, radius r, from its foot z = H (the roof's
+'      highest point under it, at x = -r: the calciner sits on the roof,
+'      user decision 22 Nov 2026) down to the roof (up to next): a wedge,
+'      0 at x = -r, 2 r tan(alpha) at x = +r; its top disc is the outlet,
+'      level, the calciner's own inlet face;
 '   3. the kiln tube's stub, radius R and CH_STUB_L along the kiln axis,
 '      revolved on the mouth's face (user decision, 22 Nov 2026: the foot
 '      and roof are the tube's own lines, so a circle split on the wall
@@ -52,7 +54,7 @@ Const LINE_KEY As String = "2500"
 Const CH_A                         As Double  = 3.4          ' half the plan (y), and the kiln axis over the floor level at x = a: kiln D / 2 + the layout margin [derived]
 Const KILN_D                       As Double  = 4.8          ' the kiln tube's bore: the stub and its end disc (kiln_gas_inlet) [published, kiln/kiln.md]
 Const CH_ALPHA                     As Double  = 0.029991005  ' the kiln's slope [rad]: the stub's axis falls at it towards +x [derived]
-Const CH_H                         As Double  = 6.8          ' the throat's top (throat_outlet), over the floor level [derived]
+Const CH_H                         As Double  = 5.950031     ' the throat's top (throat_outlet), over the floor level [derived]
 Const CH_R_THROAT                  As Double  = 1.565039     ' the calciner throat's radius; its walls x = +-r [derived]
 Const CH_RAMP_TOP_Z                As Double  = 5.173392     ' the ramp's top on the left wall x = -r [derived]
 Const CH_TOE_X                     As Double  = 1.9          ' the ramp's toe: the foot (the kiln's bottom line) starts [derived]
@@ -65,7 +67,7 @@ Const CH_ROOF_LEFT_Z               As Double  = 5.950031     ' the roof (the kil
 Const CH_ROOF_THROAT_Z             As Double  = 5.856129     ' the roof at the throat's right wall x = +r [derived]
 Const CH_STUB_L                    As Double  = 2.4          ' the kiln tube's stub along its axis, mouth face to kiln_gas_inlet [derived]
 Const CH_V_BOX                     As Double  = 114.706578   ' the section's prism, the plan across [m3] [derived]
-Const CH_V_THROAT                  As Double  = 6.901664     ' the throat cylinder over the roof [m3] [derived]
+Const CH_V_THROAT                  As Double  = 0.361282     ' the throat cylinder over the roof [m3] [derived]
 Const CH_V_STUB                    As Double  = 43.429377    ' the kiln tube's stub [m3] [derived]
 ' END GENERATED
 
@@ -178,7 +180,7 @@ Private Sub Expected()
         Fail "the section does not close: the ramp's top " & Fmt(CH_RAMP_TOP_Z) & " m must be under the roof at the throat " & _
              Fmt(CH_ROOF_THROAT_Z) & " m and the toe x " & Fmt(CH_TOE_X) & " between the throat's wall and the mouth."
     End If
-    If CH_ROOF_LEFT_Z >= CH_H Then Fail "the roof " & Fmt(CH_ROOF_LEFT_Z) & " m is not under the throat's top " & Fmt(CH_H) & " m."
+    If CH_ROOF_LEFT_Z > CH_H + FACE_TOL Then Fail "the roof " & Fmt(CH_ROOF_LEFT_Z) & " m is over the throat's top " & Fmt(CH_H) & " m."
 
     boxW(0) = -CH_R_THROAT
     boxW(1) = -CH_A
@@ -297,7 +299,7 @@ End Sub
 Private Sub ExtrudeThroat(pl As SldWorks.Feature)
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature, f As SldWorks.Feature
-    Dim u As Double, v As Double, k As Long, zmax As Double, got As Double, want As Double
+    Dim u As Double, v As Double, k As Long, zmax As Double, got As Double, want As Double, depth As Double
 
     want = CH_V_BOX + CH_V_THROAT
     uSign = uSignS: vSign = vSignS
@@ -312,12 +314,15 @@ Private Sub ExtrudeThroat(pl As SldWorks.Feature)
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
 
-    For k = 0 To 1
+    ' up to next (forward, reversed); else blind into the chamber, its
+    ' foot between the ramp's top and the roof (the part inside merges)
+    depth = CH_H - 0.5 * (CH_RAMP_TOP_Z + CH_ROOF_THROAT_Z)
+    For k = 0 To 3
         swModel.ClearSelection2 True
         skFeat.Select2 False, 0
         Set f = swFeat.FeatureExtrusion3( _
-            True, False, (k = 1), _
-            swEndCondUpToNext, swEndCondBlind, 0.01, 0.01, _
+            True, False, ((k Mod 2) = 1), _
+            IIf(k < 2, swEndCondUpToNext, swEndCondBlind), swEndCondBlind, depth, 0.01, _
             False, False, False, False, 0#, 0#, _
             False, False, False, False, _
             True, True, True, _
@@ -328,10 +333,10 @@ Private Sub ExtrudeThroat(pl As SldWorks.Feature)
                 zmax = MaxZ()
                 got = Volume(TheBody())
                 If Abs(zmax - CH_H) < FACE_TOL And Abs(got - want) < VOL_TOL * want Then
-                    Note "throat extruded " & IIf(k = 0, "forward", "reversed") & " to the roof: " & Fmt(got) & " m3 (expected " & Fmt(want) & ")"
+                    Note "throat extruded " & Choose(k + 1, "up to next", "up to next, reversed", "blind", "blind, reversed") & ": " & Fmt(got) & " m3 (expected " & Fmt(want) & ")"
                     Exit Sub
                 End If
-                Note "the throat's extrusion " & IIf(k = 0, "forward", "reversed") & " gave top " & Fmt(zmax) & " m, " & Fmt(got) & " m3; undone"
+                Note "the throat's extrusion " & Choose(k + 1, "up to next", "up to next, reversed", "blind", "blind, reversed") & " gave top " & Fmt(zmax) & " m, " & Fmt(got) & " m3; undone"
             Else
                 Note "the throat's extrusion left " & BodyCount() & " bodies, not one; undone"
             End If
