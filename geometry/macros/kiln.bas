@@ -9,12 +9,16 @@ Attribute VB_Name = "kiln"
 '
 ' Coordinates: the kiln axis = z, the back end (towards the kiln inlet
 ' chamber, where the meal enters) at z = 0, the hood end (the clinker
-' leaves, the hot air enters) at z = KILN_L. The tube's slope (3 %, the
+' leaves, the hot air enters) at z = KILN_L. The solid starts at
+' z = KILN_Z0: the kiln inlet chamber's CFD solid carries the tube's
+' first KILN_Z0 (its stub, user decision 22 Nov 2026), so the two
+' together are KILN_L long, no more. The tube's slope (3 %, the
 ' feed end up) belongs to how it is installed (plant_geometry.layout
 ' tilts it); it is not built into the solid, so both ends stay true
 ' circles and the drawing can measure them.
 '
-' Boundary faces: kiln_back (z = 0) and kiln_hood (z = KILN_L); the
+' Boundary faces: kiln_back (z = KILN_Z0, the chamber's kiln_gas_inlet
+' face) and kiln_hood (z = KILN_L); the
 ' wall is everything else. Their positions are coloured for Fluent.
 '
 ' SI ONLY. The SolidWorks API is always metres and radians.
@@ -35,6 +39,7 @@ Const LINE_KEY As String = "2500"
 ' change the source and run: python3 tools/gen_geometry.py
 Const KILN_D                       As Double  = 4.8          ' effective inner diameter [published, kiln/kiln.md]
 Const KILN_L                       As Double  = 74#          ' back end (z = 0) to hood end [published, kiln/kiln.md]
+Const KILN_Z0                      As Double  = 2.4          ' the solid's back face: the kiln inlet chamber's stub ends here (stub + solid = KILN_L) [derived]
 Const KILN_SLOPE                   As Double  = 3#           ' %: the installed slope, not built into the solid [published, kiln/kiln.md]
 Const KILN_TRANSITION_L            As Double  = 30.83        ' the transition zone from the back end (model split) [model, kiln/kiln.md]
 ' END GENERATED
@@ -87,7 +92,7 @@ Sub main()
 
     phase = "working out the coordinates"
     R = 0.5 * KILN_D
-    vKiln = PI * R * R * KILN_L
+    vKiln = PI * R * R * (KILN_L - KILN_Z0)
     phase = "building the solid"
     Build
     phase = "verifying the solid"
@@ -99,15 +104,20 @@ Sub main()
 
     Restore
     WriteLog KILN_NAME & " built, verified and exported"
-    MsgBox KILN_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, vbInformation, "Kiln"
+    ' no message box when OUT_ROOT\quiet.flag exists (tools/sw_run.py kiln_solid.main)
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox KILN_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, vbInformation, "Kiln"
+    End If
     Exit Sub
 
 Failed:
     why = Err.Description
     Restore
     WriteLog KILN_NAME & " ABORTED while " & phase & ": " & why
-    MsgBox KILN_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
-           "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Kiln"
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox KILN_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
+               "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Kiln"
+    End If
 End Sub
 
 
@@ -138,13 +148,14 @@ Private Sub Build()
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
 
     Set f = RevolveProfile(planeX0, Array( _
-        0#, 0#, _
-        R, 0#, _
+        0#, KILN_Z0, _
+        R, KILN_Z0, _
         R, KILN_L, _
         0#, KILN_L), False)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the kiln profile."
 
-    Note "kiln: D " & Fmt(KILN_D) & " m, L " & Fmt(KILN_L) & " m, slope " & Fmt(KILN_SLOPE) & _
+    Note "kiln: D " & Fmt(KILN_D) & " m, L " & Fmt(KILN_L) & " m (the solid from z " & Fmt(KILN_Z0) & _
+         ", the chamber's stub before it: " & Fmt(KILN_L - KILN_Z0) & " m), slope " & Fmt(KILN_SLOPE) & _
          " % (installation, not built into the solid), volume " & Fmt(vKiln) & " m3"
     Note "kiln zones (model split, not in the solid): transition " & Fmt(KILN_TRANSITION_L) & _
          " m from the back end, burning " & Fmt(KILN_L - KILN_TRANSITION_L) & " m"
@@ -197,7 +208,7 @@ Private Sub Verify()
             If sd < 0 Then b(a) = Choose(a + 1, px, py, pz) Else b(a + 3) = Choose(a + 1, px, py, pz)
         Next sd
     Next a
-    want(0) = -R: want(1) = -R: want(2) = 0#: want(3) = R: want(4) = R: want(5) = KILN_L
+    want(0) = -R: want(1) = -R: want(2) = KILN_Z0: want(3) = R: want(4) = R: want(5) = KILN_L
     For a = 0 To 5
         If Abs(b(a) - want(a)) > BOX_TOL Then Fail "the solid's " & nm(a) & " is " & Fmt(b(a)) & " m but should be " & Fmt(want(a)) & " m."
     Next a
@@ -224,7 +235,7 @@ Private Sub TagBoundaryFaces()
         If surf.IsPlane Then
             p = surf.PlaneParams
             If Abs(p(0)) < DIR_TOL And Abs(p(1)) < DIR_TOL Then
-                If Abs(p(5)) < 0.0001 Then
+                If Abs(p(5) - KILN_Z0) < 0.0001 Then
                     k = 0
                 ElseIf Abs(p(5) - KILN_L) < 0.0001 Then
                     k = 1

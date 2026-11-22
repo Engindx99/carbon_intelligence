@@ -632,9 +632,18 @@ def gooseneck(g):
 def kiln(g):
     k = g["kiln"]
     D, L = v(k["D"]), v(k["L"])
+    # the kiln inlet chamber's CFD solid carries the tube's first stub
+    # (mouth_stub_over_D D along the axis, user decision 22 Nov 2026), so
+    # the kiln's own CFD solid starts there: stub + solid = L, no extra
+    # length (the twin and the layout keep the whole L)
+    z_cfd0 = v(g["kiln_inlet_chamber"]["mouth_stub_over_D"]) * D
     return {
         "D": D,
         "L": L,
+        "z_cfd0": z_cfd0,
+        "L_cfd": L - z_cfd0,
+        "volume_cfd": 0.25 * math.pi * D * D * (L - z_cfd0),
+        "wall_area_cfd": math.pi * D * (L - z_cfd0),
         "slope": v(k["slope"]),
         "transition_L": v(k["transition_L"]),
         # the wall stack's thicknesses, hot face outward (physics.shell)

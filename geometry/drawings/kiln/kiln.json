@@ -43,6 +43,37 @@
       "short": "L_kiln"
     },
     {
+      "key": "kiln.z_cfd0",
+      "label": "Back end to the solid (in the kiln inlet chamber's solid)",
+      "value": 2.4,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D",
+        "kiln_inlet_chamber.mouth_stub_over_D"
+      ],
+      "value_mm": 2400.0,
+      "short": "z_cfd0"
+    },
+    {
+      "key": "kiln.L_cfd",
+      "label": "Solid's length (L minus the chamber's stub)",
+      "value": 71.6,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.L",
+        "kiln.D",
+        "kiln_inlet_chamber.mouth_stub_over_D"
+      ],
+      "value_mm": 71600.0,
+      "short": "L_cfd"
+    },
+    {
       "key": "kiln.slope",
       "label": "Slope (installed, not built into the solid)",
       "value": 3.0,
@@ -85,30 +116,32 @@
       "short": "burning_L"
     },
     {
-      "key": "kiln.volume",
-      "label": "Volume (tube)",
-      "value": 1339.0724526661136,
+      "key": "kiln.volume_cfd",
+      "label": "Volume (solid)",
+      "value": 1295.643075822888,
       "unit": "m3",
       "source": "derived",
-      "status": "Verified",
+      "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.D",
-        "kiln.L"
+        "kiln.L",
+        "kiln_inlet_chamber.mouth_stub_over_D"
       ],
       "short": "volume"
     },
     {
-      "key": "kiln.wall_area",
-      "label": "Wetted area (tube)",
-      "value": 1115.8937105550945,
+      "key": "kiln.wall_area_cfd",
+      "label": "Wetted area (solid)",
+      "value": 1079.70256318574,
       "unit": "m2",
       "source": "derived",
-      "status": "Verified",
+      "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.D",
-        "kiln.L"
+        "kiln.L",
+        "kiln_inlet_chamber.mouth_stub_over_D"
       ],
       "short": "wall_area"
     },
@@ -170,7 +203,7 @@
   ],
   "dimensioned": [
     "D_kiln",
-    "L_kiln"
+    "L_cfd"
   ],
   "also_the_sheet_of": []
 }

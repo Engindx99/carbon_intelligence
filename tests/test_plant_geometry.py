@@ -639,9 +639,11 @@ class TheTwinReadsTheSourceTest(unittest.TestCase):
     "no SolidWorks build log here",
 )
 class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
-    """kiln.bas builds a plain cylinder of the published D and L; its
-    log (decimal comma or point) carries the volume, the end faces and
-    the slope it does not build in, held here to plant_geometry.kiln."""
+    """kiln.bas builds a plain cylinder of the published D, from the end
+    of the kiln inlet chamber's stub to the hood end (stub + solid = the
+    published L, user 22 Nov 2026); its log (decimal comma or point)
+    carries the volume, the end faces and the slope it does not build in,
+    held here to plant_geometry.kiln."""
 
     @classmethod
     def setUpClass(cls):
@@ -658,11 +660,16 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
         self.assertIn("closed manifold solid", self.log)
 
     def test_the_tube_is_the_sources(self):
-        d, length, slope, vol = self.num(r"kiln: D # m, L # m, slope # % \(installation, not built into the solid\), volume # m3")
+        d, length, z0, l_cfd, slope, vol = self.num(
+            r"kiln: D # m, L # m \(the solid from z #, the chamber's stub before it: # m\), "
+            r"slope # % \(installation, not built into the solid\), volume # m3")
         self.assertAlmostEqual(d, self.k["D"], places=5)
         self.assertAlmostEqual(length, self.k["L"], places=5)
+        self.assertAlmostEqual(z0, self.k["z_cfd0"], places=5)
+        self.assertAlmostEqual(z0 + l_cfd, self.k["L"], places=5)          # no extra length
+        self.assertAlmostEqual(z0, pg.kiln_inlet_chamber(pg.load())["L_stub"], places=9)
         self.assertAlmostEqual(slope, self.k["slope"], places=5)
-        self.assertAlmostEqual(vol, self.k["volume"], delta=1e-6 * self.k["volume"])
+        self.assertAlmostEqual(vol, self.k["volume_cfd"], delta=1e-6 * self.k["volume_cfd"])
 
     def test_the_zones_are_the_sources(self):
         tr, burn = self.num(r"transition # m from the back end, burning # m")
@@ -671,9 +678,9 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
 
     def test_the_solid_is_the_tube(self):
         vol = self.num(r"kiln volume # m3")[0]
-        self.assertAlmostEqual(vol, self.k["volume"], delta=1e-3 * self.k["volume"])
+        self.assertAlmostEqual(vol, self.k["volume_cfd"], delta=1e-3 * self.k["volume_cfd"])
         zmin, zmax = self.num(r"extent: x [-\d.,]+ \.\. [-\d.,]+, y [-\d.,]+ \.\. [-\d.,]+, z # \.\. # m")
-        self.assertAlmostEqual(zmin, 0.0, places=2)
+        self.assertAlmostEqual(zmin, self.k["z_cfd0"], places=2)
         self.assertAlmostEqual(zmax, self.k["L"], places=2)
 
     def test_the_two_ends_are_the_boundaries(self):
@@ -681,8 +688,8 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
         for name in ("kiln_back", "kiln_hood"):
             with self.subTest(name):
                 self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], area, delta=2e-3 * area)
-        self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.k["wall_area"],
-                               delta=2e-3 * self.k["wall_area"])
+        self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.k["wall_area_cfd"],
+                               delta=2e-3 * self.k["wall_area_cfd"])
 
 
 @unittest.skipUnless(

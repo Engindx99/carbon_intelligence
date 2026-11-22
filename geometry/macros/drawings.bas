@@ -205,8 +205,9 @@ Const calciner_TAB_7               As String  = ""           ' parameter table r
 Const calciner_TAB_8               As String  = ""           ' parameter table rows
 Const KIL_D                        As Double  = 4.8          ' kiln inner D [derived]
 Const KIL_L                        As Double  = 74#          ' kiln length, back end to hood end [derived]
-Const kiln_TAB_1                   As String  = "D_kiln~Kiln inner diameter (effective)~4800~mm~published~Verified;L_kiln~Kiln length~74000~mm~published~Verified;slope~Slope (installed, not built into the solid)~3~%~published~Verified;transition_L~Transition zone from the back end (model split)~30830~mm~model parameter~Estimated;burning_L~Burning zone (model split)~43170~mm~derived~Estimated;volume~Volume (tube)~1339.07~m3~derived~Verified;wall_area~Wetted area (tube)~1115.89~m2~derived~Verified;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_tyre~Tyres / support rollers~-~~no source~Unknown;u_drive~Drive / girth gear~-~~no source~Unknown;" ' parameter table rows
-Const kiln_TAB_2                   As String  = "u_seal~Inlet and outlet seals~-~~no source~Unknown;" ' parameter table rows
+Const KIL_Z0                       As Double  = 2.4          ' the solid's back face (the KIC stub's end) [derived]
+Const kiln_TAB_1                   As String  = "D_kiln~Kiln inner diameter (effective)~4800~mm~published~Verified;L_kiln~Kiln length~74000~mm~published~Verified;z_cfd0~Back end to the solid (in the kiln inlet chamber's solid)~2400~mm~derived~Estimated;L_cfd~Solid's length (L minus the chamber's stub)~71600~mm~derived~Estimated;slope~Slope (installed, not built into the solid)~3~%~published~Verified;transition_L~Transition zone from the back end (model split)~30830~mm~model parameter~Estimated;burning_L~Burning zone (model split)~43170~mm~derived~Estimated;volume~Volume (solid)~1295.64~m3~derived~Estimated;wall_area~Wetted area (solid)~1079.70~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;" ' parameter table rows
+Const kiln_TAB_2                   As String  = "u_material~Material~-~~no source~Unknown;u_tyre~Tyres / support rollers~-~~no source~Unknown;u_drive~Drive / girth gear~-~~no source~Unknown;u_seal~Inlet and outlet seals~-~~no source~Unknown;" ' parameter table rows
 Const kiln_TAB_3                   As String  = ""           ' parameter table rows
 Const kiln_TAB_4                   As String  = ""           ' parameter table rows
 Const kiln_TAB_5                   As String  = ""           ' parameter table rows
@@ -785,7 +786,7 @@ Private Sub CheckKilnBox(doc As SldWorks.ModelDoc2)
     box = ExactBox(b)
     want(0) = -0.5 * KIL_D: want(3) = 0.5 * KIL_D
     want(1) = -0.5 * KIL_D: want(4) = 0.5 * KIL_D
-    want(2) = 0#: want(5) = KIL_L
+    want(2) = KIL_Z0: want(5) = KIL_L
     For i = 0 To 5
         If Abs(box(i) - want(i)) > 0.01 Then
             Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's kiln has " & Num(want(i), 3) & _
@@ -1918,8 +1919,9 @@ End Sub
 
 ' The kiln's two reference dimensions, each between edges the solid has:
 ' the diameter from the end face's circle (end view, a true circle), the
-' length between the two end faces seen edge-on (side view, circle to
-' circle: the dimension is along the axis). The slope and the zone split
+' solid's length between its two end faces seen edge-on (side view, circle
+' to circle: along the axis; L minus the kiln inlet chamber's stub, which
+' carries the tube's first z0). The slope and the zone split
 ' have no edge in the solid: the table only.
 Private Sub DimensionKiln()
     Dim R As Double
@@ -1939,10 +1941,10 @@ Private Sub DimensionKiln()
         "circle", 0, 0, KIL_L, R, KIL_L, _
         "", 0, 0, 0, 0, 0, _
         R + 2.2, R + 1#, 0
-    DimEdges "L_kiln", KIL_L, vFront, _
-        "circle", 0, 0, 0, R, 0, _
+    DimEdges "L_cfd", KIL_L - KIL_Z0, vFront, _
+        "circle", 0, 0, KIL_Z0, R, KIL_Z0, _
         "circle", 0, 0, KIL_L, R, KIL_L, _
-        -R - 3.2, 0, 0.5 * KIL_L
+        -R - 3.2, 0, 0.5 * (KIL_Z0 + KIL_L)
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -2729,7 +2731,7 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.002, "5. Meal enters in the solver (no inlet in the solid).  Dimensions mm; first-angle projection.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln_inlet_chamber.md", TEXT_H
     ElseIf equip = "kiln" Then
-        LabelPH COL_X0, y + 0.012, "3. Frame: axis z; z = 0 at the back end (kiln inlet chamber), hood end at z = L.", TEXT_H
+        LabelPH COL_X0, y + 0.012, "3. Frame: axis z; z = 0 at the back end, hood end at z = L; the solid from z0 (the KIC stub before it).", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. The slope (table) is installed, not built into the solid.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Transition / burning split: a model parameter, table only.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln.md", TEXT_H
@@ -2888,11 +2890,11 @@ End Sub
 Private Sub DrawFlowsKiln()
     UseLayer L_FLOW
     ArrowM3 vFront, 1#, 0#, KIL_L - 4#, 1#, 0#, KIL_L - 14#
-    ArrowM3 vFront, -1#, 0#, 4#, -1#, 0#, 14#
+    ArrowM3 vFront, -1#, 0#, KIL_Z0 + 4#, -1#, 0#, KIL_Z0 + 14#
     UseLayer L_TEXT
     LabelM3 vFront, 1.6, 0#, KIL_L - 30#, "Gas (hood to back end)"
-    LabelM3 vFront, -2.4, 0#, 17#, "Meal (back end to hood)"
-    LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, 0#, "Back end (kiln inlet chamber)"
+    LabelM3 vFront, -2.4, 0#, KIL_Z0 + 17#, "Meal (back end to hood)"
+    LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, KIL_Z0, "Back end (the kiln inlet chamber's stub before it)"
     LabelM3 vFront, 0.5 * KIL_D + 1.2, 0#, KIL_L - 14#, "Hood end"
     ' ISO 128-3: the end view (1:50, under the side view, not in its
     ' projected place) looks from the hood end along -z: arrow A
@@ -3136,7 +3138,7 @@ Private Sub DrawAxesKiln()
     Dim R As Double
     R = 0.5 * KIL_D
     UseLayer L_AXIS
-    AxisM vFront, 0#, 0#, -2#, 0#, 0#, KIL_L + 2#
+    AxisM vFront, 0#, 0#, KIL_Z0 - 2#, 0#, 0#, KIL_L + 2#
     AxisM vTop, -R - 0.6, 0#, 0#, R + 0.6, 0#, 0#
     AxisM vTop, 0#, -R - 0.6, 0#, 0#, R + 0.6, 0#
 End Sub

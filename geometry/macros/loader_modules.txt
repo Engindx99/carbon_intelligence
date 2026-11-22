@@ -6,3 +6,4 @@ cyclone cyclone_solid
 c1_twin c1_twin_solid
 plant_topology_2d topology_drawing
 kiln_inlet_chamber kic_solid
+kiln kiln_solid
