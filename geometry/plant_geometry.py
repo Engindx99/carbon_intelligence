@@ -1173,7 +1173,9 @@ def cyclone_duct_inlet(g, name):
 def cyclone_volute_extent(g, name):
     """How far a volute's scroll reaches outside the barrel, as
     cyclone.bas samples it: the Archimedean spiral r = R + t + W (1 -
-    phi / pi), phi clockwise from +y over a half turn, at 3600 steps.
+    phi / pi), phi clockwise from +y, over a half turn, then easing
+    onto the barrel as r = R + t (1 - u)^2 over 2 pi t / W (22 Nov
+    2026: tangent to it, no step), at 3600 steps.
     x_max on the far side of the duct's tangent plane, y_min where the
     scroll closes behind the barrel."""
 
@@ -1182,12 +1184,18 @@ def cyclone_volute_extent(g, name):
     r_t = 0.5 * c["D_barrel"] + v(d["volute_tongue"])
     W = c["W_inlet"]
     x_max = y_min = 0.0
+    t = v(d["volute_tongue"])
+    ph_end = math.pi + 2.0 * math.pi * t / W
     for k in range(3601):
-        ph = math.pi * k / 3600.0
-        r = r_t + W - W * ph / math.pi
+        ph = ph_end * k / 3600.0
+        if ph <= math.pi:
+            r = r_t + W - W * ph / math.pi
+        else:
+            u = (ph - math.pi) / (ph_end - math.pi)
+            r = r_t - t + t * (1.0 - u) ** 2
         x_max = max(x_max, r * math.sin(ph))
         y_min = min(y_min, r * math.cos(ph))
-    return {"x_max": x_max, "y_min": y_min, "r_start": r_t + W, "r_end": r_t}
+    return {"x_max": x_max, "y_min": y_min, "r_start": r_t + W, "r_end": r_t - t}
 
 
 def riser_inlet(g, name, D_riser=None, offset=None):

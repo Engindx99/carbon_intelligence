@@ -395,14 +395,19 @@ Const BOI_ROOF_MARGIN As Double = 1#     ' [m]
 '     whose outer wall is W_INLET further out;
 '   - from x = 0 the outer wall winds in as the Archimedean spiral
 '     r = R + t + W (1 - phi / pi), phi measured clockwise from +y,
-'     the way the gas turns, until it has closed onto r = R + t at
-'     phi = pi;
+'     the way the gas turns, to r = R + t at phi = pi; then over
+'     dphi = 2 pi t / W it eases onto the barrel, r = R + t (1 - u)^2
+'     (u = (phi - pi) / dphi: the spiral's slope at its start, the
+'     barrel's tangent at its end; 22 Nov 2026 -- it stopped at
+'     r = R + t before, a t-high step the gas met at the scroll's end;
+'     only the fluid's side is there, so no zero-angle edge);
 '   - the inner side of the scroll is an arc VOLUTE_OVERLAP inside
 '     the barrel, so the merge eats it and the scroll opens onto the
 '     barrel all the way round, with no coincident faces;
-'   - both ends close radially, which leaves the same blunt
-'     INLET_TONGUE-thick cut-water at each end that the slot inlet
-'     has, for the same reason: no zero-angle edge.
+'   - both ends close radially inside the barrel; at the duct that
+'     leaves the blunt INLET_TONGUE-thick cut-water the slot inlet
+'     has, for the same reason: no zero-angle edge (fluid on both
+'     sides of it).
 ' The duct is horizontal and flush with the roof.
 '
 ' The spiral is a spline through VOLUTE_SPLINE_PTS points of it. Its
@@ -970,16 +975,18 @@ Private Sub Derive()
         ceZ = zRoof - 0.5 * H_INLET
         zDuctTop = zRoof
 
-        ' Fluid area between r = R and the spiral over the half turn:
-        ' with r linear in phi, the integral of r^2 is closed form.
-        aScroll = 0.5 * (PI * (rScroll0 ^ 3 - rTongue ^ 3) / (3# * W_INLET) - PI * R * R)
+        ' Fluid area between r = R and the spiral over the half turn
+        ' (r linear in phi, the integral of r^2 closed form), plus the
+        ' easing onto the barrel (dphi (2 R t / 3 + t^2 / 5) / 2).
+        aScroll = 0.5 * (PI * (rScroll0 ^ 3 - rTongue ^ 3) / (3# * W_INLET) - PI * R * R) _
+                + 0.5 * (VoluteEndPhi() - PI) * (2# * R * INLET_TONGUE / 3# + INLET_TONGUE * INLET_TONGUE / 5#)
 
         ' The spiral's extremes in x and y, sampled finely enough that
         ' the step is far below BOX_TOL.
         xScrollMax = 0#: yScrollMin = 0#
         For k = 0 To 3600
-            ph = PI * k / 3600#
-            rr = rScroll0 - W_INLET * ph / PI
+            ph = VoluteEndPhi() * k / 3600#
+            rr = VoluteR(ph)
             If rr * Sin(ph) > xScrollMax Then xScrollMax = rr * Sin(ph)
             If rr * Cos(ph) < yScrollMin Then yScrollMin = rr * Cos(ph)
         Next k
@@ -1314,6 +1321,26 @@ End Sub
 ' The volute's own checks (VOLUTE_ON). The slot's checks 1, 2, 5, 6
 ' and the tongue's are about a duct that breaks into the shell; this
 ' one stays outside it.
+' Where the volute's outer wall ends on the barrel: its easing from
+' r = R + t at phi = pi over 2 pi t / W (the spiral's slope W / pi at
+' its start, 0 at its end).
+Private Function VoluteEndPhi() As Double
+    VoluteEndPhi = PI + 2# * PI * INLET_TONGUE / W_INLET
+End Function
+
+' The volute's outer wall, r at phi (clockwise from +y): the
+' Archimedean half turn, then the easing onto the barrel
+Private Function VoluteR(ByVal ph As Double) As Double
+    Dim u As Double
+    If ph <= PI Then
+        VoluteR = rScroll0 - W_INLET * ph / PI
+    Else
+        u = MinD(1#, (ph - PI) / (VoluteEndPhi() - PI))
+        VoluteR = R + INLET_TONGUE * (1# - u) * (1# - u)
+    End If
+End Function
+
+
 Private Sub VolutePreChecks()
 
     ' A riser joins the volute's duct the way it joins the slot's: the
@@ -1369,8 +1396,9 @@ Private Sub VolutePreChecks()
     Note "equipment volume (barrel + cone)  " & Fmt(vEquip) & " m3"
     Note "CFD domain volume                 " & Fmt(vFinal) & " m3"
     Note "volute: duct " & Fmt(W_INLET) & " x " & Fmt(H_INLET) & " m, " & Fmt(L_INLET_C) & _
-         " m long, inner wall y = " & Fmt(rTongue) & " m; spiral r " & Fmt(rScroll0) & " -> " & _
-         Fmt(rTongue) & " m over 180 deg, " & Fmt(aScroll) & " m2 outside the barrel"
+         " m long, inner wall y = " & Fmt(rTongue) & " m; spiral r " & Fmt(rScroll0) & " -> " & Fmt(rTongue) & _
+         " m over 180 deg, easing onto the barrel (tangent) over " & Fmt((VoluteEndPhi() - PI) * 180# / PI) & _
+         " deg, " & Fmt(aScroll) & " m2 outside the barrel"
     Note "volute floor at z = " & Fmt(zRoof - H_INLET) & " m; " & _
          Fmt(100# * MaxD(0#, H_INLET - L_VORTEX) / H_INLET) & " % of the opening below the " & _
          "finder's rim"
@@ -2073,18 +2101,24 @@ Private Function ExtrudeVolute(planeRoof As SldWorks.Feature) As SldWorks.Featur
         End If
     Next i
 
-    ' The spiral, C to E. Its two ends are set exactly rather than
-    ' through Sin / Cos, so they meet the lines on either side to the
-    ' last bit and the outline closes.
-    n = VOLUTE_SPLINE_PTS
+    ' The spiral, C to E: the half turn, then its easing onto the
+    ' barrel, ending on it (r = R, tangent) at phE. The ends are set
+    ' exactly so they meet the lines on either side to the last bit
+    ' and the outline closes.
+    Dim phE As Double, rE As Double, nE As Long
+    Const N_EASE As Long = 8
+    phE = VoluteEndPhi()
+    rE = R
+    nE = VOLUTE_SPLINE_PTS - 1
+    n = nE + N_EASE + 1
     ReDim pd(3 * n - 1)
     For k = 0 To n - 1
-        ph = PI * k / (n - 1)
-        rr = rS - W_INLET * k / (n - 1)
+        If k <= nE Then ph = PI * k / nE Else ph = PI + (phE - PI) * (k - nE) / N_EASE
+        rr = VoluteR(ph)
         If k = 0 Then
             G2S sk, 0#, rS, zRoof, u0, v0
         ElseIf k = n - 1 Then
-            G2S sk, 0#, -rT, zRoof, u0, v0
+            G2S sk, rE * Sin(phE), rE * Cos(phE), zRoof, u0, v0
         Else
             G2S sk, rr * Sin(ph), rr * Cos(ph), zRoof, u0, v0
         End If
@@ -2094,15 +2128,15 @@ Private Function ExtrudeVolute(planeRoof As SldWorks.Feature) As SldWorks.Featur
         Fail "CreateSpline2 failed on the volute's spiral."
     End If
 
-    ' E -> F, radially in at the spiral's end.
-    G2S sk, 0#, -rT, zRoof, u0, v0
-    G2S sk, 0#, -rI, zRoof, u1, v1
+    ' E -> F, radially in at the spiral's end (inside the barrel).
+    G2S sk, rE * Sin(phE), rE * Cos(phE), zRoof, u0, v0
+    G2S sk, rI * Sin(phE), rI * Cos(phE), zRoof, u1, v1
     If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
-        Fail "CreateLine failed on the volute's far tongue."
+        Fail "CreateLine failed on the volute's far end."
     End If
 
     ' F -> G, the overlap arc through (rI, 0).
-    G2S sk, 0#, -rI, zRoof, u0, v0
+    G2S sk, rI * Sin(phE), rI * Cos(phE), zRoof, u0, v0
     G2S sk, 0#, rI, zRoof, u1, v1
     G2S sk, rI, 0#, zRoof, u2, v2
     If swSkMgr.Create3PointArc(u0, v0, 0#, u1, v1, 0#, u2, v2, 0#) Is Nothing Then
