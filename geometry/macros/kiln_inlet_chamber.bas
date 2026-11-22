@@ -1,24 +1,37 @@
-Attribute VB_Name = "kiln_inlet_chamber"
+Attribute VB_Name = "kic_solid"
 '==================================================================
 ' Kiln inlet chamber CFD fluid volume  ->  STEP (AP214) + STL + SLDPRT
 '
 ' ONE closed solid: the gas volume of the chamber between the rotary
 ' kiln's mouth and the calciner's throat (geometry/kiln/kiln_inlet_chamber.md),
-' the layout's square (side 2 a, flat roof):
-'   1. the x-z profile, a triangle: the floor is ONE ramp across the whole
-'      plan, from the kiln mouth's lower lip up to the far top corner, the
-'      +x wall and the roof; extruded across the plan;
-'   2. the calciner's throat, a thin disc (STUB_T) on the roof, merged.
-' The kiln mouth is a circle split on the +x wall. No refractory, no
-' burner, no meal pipe: the meal is injected in the solver.
+' the section of the user's sketch (21 Nov 2026; plant_geometry.chamber_section,
+' as plant_topology_2d.bas draws it), the plan 2 a across:
+'   1. the x-z section, five corners, extruded across the plan: the left
+'      wall x = -r (the throat's) from the ramp's top up to the roof; the
+'      ramp at ramp_deg down to its toe; the foot (the kiln's bottom line,
+'      falling at its slope) to the mouth's lower lip; the mouth's face,
+'      square to the kiln axis, to the upper lip; the roof (the kiln's top
+'      line) back to the left wall;
+'   2. the calciner's throat, a cylinder of radius r, from the top z = H
+'      down to the roof (up to next: it stands on the roof, no line
+'      contact with the left wall below it), merged;
+'   3. the kiln tube's stub, radius R and CH_STUB_L along the kiln axis,
+'      revolved on the mouth's face (user decision, 22 Nov 2026: the foot
+'      and roof are the tube's own lines, so a circle split on the wall
+'      would touch both), merged.
+' The section's foot and roof touch the stub's circle at its bottom and
+' top: the mouth's face is two pieces meeting there at a point (as the
+' kiln's lines carried in ask), not a sliver. No refractory, no burner, no
+' meal pipe: the meal is injected in the solver.
 '
 ' Coordinates: x across from the calciner axis (x = 0), the kiln comes in
-' on the +x wall (as the layout has it); y across the plan (y = 0 on the
-' axis); z up from the chamber floor (z = 0).
+' from +x (as the layout has it), its axis CH_A over the floor level at
+' x = CH_A, falling at CH_ALPHA towards +x; y across the plan (y = 0 on
+' the axis); z up from the chamber's floor level (z = 0, no face there).
 '
-' Boundary faces (coloured for Fluent): kiln_gas_inlet = the mouth's
-' circle on the +x wall (red); throat_outlet = the throat's disc on the
-' roof (blue); wall = every other face, the ramp included (grey).
+' Boundary faces (coloured for Fluent): kiln_gas_inlet = the stub's end
+' disc (red); throat_outlet = the throat's top disc (blue); wall = every
+' other face, the ramp included (grey).
 '
 ' SI ONLY. The SolidWorks API is always metres and radians.
 '
@@ -36,16 +49,28 @@ Const LINE_KEY As String = "2500"
 ' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
 ' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
 ' change the source and run: python3 tools/gen_geometry.py
-Const CH_A                         As Double  = 3.4          ' half the square plan: kiln D / 2 + the layout margin [derived]
-Const KILN_D                       As Double  = 4.8          ' the mouth's circle on the +x wall [published, kiln/kiln.md]
-Const CH_CLEAR                     As Double  = 0.2          ' the mouth's clearance to the ramp's foot [model, kiln/kiln_inlet_chamber.md]
-Const CH_R_THROAT                  As Double  = 1.565039     ' the calciner throat's radius, the outlet disc in the roof [derived]
-Const CH_H_LIP                     As Double  = 0.8          ' the ramp's foot on the +x wall; the ramp rises to the far top corner, z = 2 CH_A [derived]
+Const CH_A                         As Double  = 3.4          ' half the plan (y), and the kiln axis over the floor level at x = a: kiln D / 2 + the layout margin [derived]
+Const KILN_D                       As Double  = 4.8          ' the kiln tube's bore: the stub and its end disc (kiln_gas_inlet) [published, kiln/kiln.md]
+Const CH_ALPHA                     As Double  = 0.029991005  ' the kiln's slope [rad]: the stub's axis falls at it towards +x [derived]
+Const CH_H                         As Double  = 6.8          ' the throat's top (throat_outlet), over the floor level [derived]
+Const CH_R_THROAT                  As Double  = 1.565039     ' the calciner throat's radius; its walls x = +-r [derived]
+Const CH_RAMP_TOP_Z                As Double  = 5.173392     ' the ramp's top on the left wall x = -r [derived]
+Const CH_TOE_X                     As Double  = 1.9          ' the ramp's toe: the foot (the kiln's bottom line) starts [derived]
+Const CH_TOE_Z                     As Double  = 1.04392      ' the ramp's toe [derived]
+Const CH_LIP_LO_X                  As Double  = 3.328032     ' the mouth's lower lip (the end face square to the kiln axis) [derived]
+Const CH_LIP_LO_Z                  As Double  = 1.001079     ' the mouth's lower lip [derived]
+Const CH_LIP_UP_X                  As Double  = 3.471968     ' the mouth's upper lip [derived]
+Const CH_LIP_UP_Z                  As Double  = 5.798921     ' the mouth's upper lip [derived]
+Const CH_ROOF_LEFT_Z               As Double  = 5.950031     ' the roof (the kiln's top line) at the left wall x = -r [derived]
+Const CH_ROOF_THROAT_Z             As Double  = 5.856129     ' the roof at the throat's right wall x = +r [derived]
+Const CH_STUB_L                    As Double  = 2.4          ' the kiln tube's stub along its axis, mouth face to kiln_gas_inlet [derived]
+Const CH_V_BOX                     As Double  = 114.706578   ' the section's prism, the plan across [m3] [derived]
+Const CH_V_THROAT                  As Double  = 6.901664     ' the throat cylinder over the roof [m3] [derived]
+Const CH_V_STUB                    As Double  = 43.429377    ' the kiln tube's stub [m3] [derived]
 ' END GENERATED
 
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
 
-Const STUB_T   As Double = 0.001   ' the throat disc's thickness [m] over the roof
 Const VOL_TOL  As Double = 0.001   ' relative, on the exact volumes
 Const AREA_TOL As Double = 0.002   ' relative, on face areas
 Const BOX_TOL  As Double = 0.01    ' absolute [m]
@@ -61,15 +86,17 @@ Dim swFeat  As SldWorks.FeatureManager
 Dim swSkMgr As SldWorks.SketchManager
 
 Dim oldVerify As Boolean, oldInputDim As Boolean, prefsTouched As Boolean
-Dim uSignX As Double, vSignX As Double      ' the plane x = 0 (the mouth's split)
-Dim uSignY As Double, vSignY As Double      ' the plane y = 0 (the profile)
-Dim uSignS As Double, vSignS As Double      ' the plane under the outlet (the throat disc)
+Dim uSignY As Double, vSignY As Double      ' the plane y = 0 (the section, the stub's profile)
+Dim uSignS As Double, vSignS As Double      ' the plane z = H (the throat's circle)
 Dim uSign As Double, vSign As Double
 Dim wRef As Double
 Dim wRefSet As Boolean
 
-Dim zRoof As Double, zTop As Double
-Dim vProfile As Double, vStub As Double
+Dim dX As Double, dZ As Double              ' the kiln axis's direction, out of the chamber (+x, falling)
+Dim nX As Double, nZ As Double              ' square to it in the x-z plane, up
+Dim axX As Double, axZ As Double            ' the axis on the mouth's face
+Dim enX As Double, enZ As Double            ' the axis on the stub's end disc
+Dim boxW(5) As Double                       ' the solid's box: x, y, z min then max
 
 Dim exportPrefsTouched As Boolean
 Dim oldStepAP As Long, oldStlUnits As Long, oldStlQuality As Long
@@ -95,6 +122,7 @@ Sub main()
     Set swApp = Application.SldWorks
     If swApp Is Nothing Then Fail "SolidWorks is not running."
 
+    Note "macro version 22 Nov 2026 (section, throat up to next, kiln stub)"
     phase = "working out the coordinates"
     Expected
     phase = "building the solid"
@@ -108,29 +136,64 @@ Sub main()
 
     Restore
     WriteLog CHAMBER_NAME & " built, verified and exported"
-    MsgBox CHAMBER_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, vbInformation, "Kiln inlet chamber"
+    ' no message box when OUT_ROOT\quiet.flag exists (a run from WSL,
+    ' tools/sw_run.py kic_solid.main): the log carries the result
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CHAMBER_NAME & " built, verified and exported." & vbLf & vbLf & buildLog, vbInformation, "Kiln inlet chamber"
+    End If
     Exit Sub
 
 Failed:
     why = Err.Description
     Restore
     WriteLog CHAMBER_NAME & " ABORTED while " & phase & ": " & why
-    MsgBox CHAMBER_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
-           "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Kiln inlet chamber"
+    If Dir(OUT_ROOT & "quiet.flag") = "" Then
+        MsgBox CHAMBER_NAME & " ABORTED -- nothing was exported." & vbLf & vbLf & _
+               "while " & phase & ":" & vbLf & why & vbLf & vbLf & buildLog, vbCritical, "Kiln inlet chamber"
+    End If
 End Sub
 
 
-' The volumes the build is held to: both exact.
+' The axis, the box and the volumes the build is held to (the volumes are
+' exact, from plant_geometry.chamber_section). The section's corners are
+' checked against the kiln's lines here, so a source that no longer
+' closes fails before anything is built.
 Private Sub Expected()
-    Dim a2 As Double
-    zRoof = 2# * CH_A
-    zTop = zRoof + STUB_T
-    vProfile = 0.5 * (2# * CH_A) * (zRoof - CH_H_LIP) * (2# * CH_A)
-    a2 = PI * CH_R_THROAT * CH_R_THROAT
-    vStub = a2 * STUB_T
-    Note "chamber: " & Fmt(2# * CH_A) & " m square, flat roof at " & Fmt(zRoof) & " m, throat D " & Fmt(2# * CH_R_THROAT) & _
-         " m in it; floor ramp across the plan from " & Fmt(CH_H_LIP) & " m (the +x wall) to the far top corner"
-    Note "profile volume " & Fmt(vProfile) & " m3, throat disc " & Fmt(vStub) & " m3 (exact)"
+    Dim R As Double, e As Double
+    R = 0.5 * KILN_D
+    dX = Cos(CH_ALPHA): dZ = -Sin(CH_ALPHA)
+    nX = Sin(CH_ALPHA): nZ = Cos(CH_ALPHA)
+    axX = CH_A: axZ = CH_A
+    enX = axX + CH_STUB_L * dX: enZ = axZ + CH_STUB_L * dZ
+
+    ' the lips are the mouth's face: R either side of the axis, square to it
+    e = Abs(CH_LIP_LO_X - (axX - R * nX)) + Abs(CH_LIP_LO_Z - (axZ - R * nZ)) + _
+        Abs(CH_LIP_UP_X - (axX + R * nX)) + Abs(CH_LIP_UP_Z - (axZ + R * nZ))
+    If e > FACE_TOL Then Fail "the mouth's lips are not R either side of the kiln axis square to it (off by " & Fmt(e) & " m)."
+    ' the foot and the roof are the kiln's bottom and top lines
+    e = Abs((CH_TOE_Z - CH_LIP_LO_Z) * dX - (CH_TOE_X - CH_LIP_LO_X) * dZ) + _
+        Abs((CH_ROOF_LEFT_Z - CH_LIP_UP_Z) * dX - (-CH_R_THROAT - CH_LIP_UP_X) * dZ)
+    If e > FACE_TOL Then Fail "the foot or the roof is not along the kiln axis (off by " & Fmt(e) & " m)."
+    If Not (CH_RAMP_TOP_Z < CH_ROOF_THROAT_Z And CH_TOE_X > -CH_R_THROAT And CH_TOE_X < CH_LIP_LO_X) Then
+        Fail "the section does not close: the ramp's top " & Fmt(CH_RAMP_TOP_Z) & " m must be under the roof at the throat " & _
+             Fmt(CH_ROOF_THROAT_Z) & " m and the toe x " & Fmt(CH_TOE_X) & " between the throat's wall and the mouth."
+    End If
+    If CH_ROOF_LEFT_Z >= CH_H Then Fail "the roof " & Fmt(CH_ROOF_LEFT_Z) & " m is not under the throat's top " & Fmt(CH_H) & " m."
+
+    boxW(0) = -CH_R_THROAT
+    boxW(1) = -CH_A
+    boxW(2) = CH_LIP_LO_Z
+    If enZ - R * nZ < boxW(2) Then boxW(2) = enZ - R * nZ
+    boxW(3) = enX + R * nX
+    boxW(4) = CH_A
+    boxW(5) = CH_H
+
+    Note "chamber: section ramp top (" & Fmt(-CH_R_THROAT) & ", " & Fmt(CH_RAMP_TOP_Z) & "), toe (" & Fmt(CH_TOE_X) & ", " & Fmt(CH_TOE_Z) & _
+         "), mouth lips (" & Fmt(CH_LIP_LO_X) & ", " & Fmt(CH_LIP_LO_Z) & ") / (" & Fmt(CH_LIP_UP_X) & ", " & Fmt(CH_LIP_UP_Z) & _
+         "), roof at the left wall " & Fmt(CH_ROOF_LEFT_Z) & " m; plan " & Fmt(2# * CH_A) & " m across"
+    Note "throat D " & Fmt(2# * CH_R_THROAT) & " m, top at " & Fmt(CH_H) & " m; kiln stub D " & Fmt(KILN_D) & " m, " & Fmt(CH_STUB_L) & _
+         " m along the axis, end disc's centre (" & Fmt(enX) & ", " & Fmt(enZ) & ")"
+    Note "volumes (exact): section prism " & Fmt(CH_V_BOX) & ", throat " & Fmt(CH_V_THROAT) & ", stub " & Fmt(CH_V_STUB) & " m3"
 End Sub
 
 
@@ -138,7 +201,7 @@ End Sub
 ' Build
 '==================================================================
 Private Sub Build()
-    Dim planeX As SldWorks.Feature, planeY As SldWorks.Feature, planeZ0 As SldWorks.Feature
+    Dim planeY As SldWorks.Feature, planeZ0 As SldWorks.Feature
     Dim planeS As SldWorks.Feature
 
     Set swModel = swApp.NewPart
@@ -161,43 +224,42 @@ Private Sub Build()
     Set planeY = FindPlaneWithNormal(0#, 1#, 0#)
     If planeY Is Nothing Then Fail "could not find the default plane whose normal is Y."
     CalibrateSketchAxes planeY, 0#, 0#, 0#, uSignY, vSignY
-    Set planeX = FindPlaneWithNormal(1#, 0#, 0#)
-    If planeX Is Nothing Then Fail "could not find the default plane whose normal is X."
-    CalibrateSketchAxes planeX, 0#, 0#, 0#, uSignX, vSignX
     Set planeZ0 = FindPlaneWithNormal(0#, 0#, 1#)
     If planeZ0 Is Nothing Then Fail "could not find the default plane whose normal is Z."
-    Set planeS = OffsetPlane(planeZ0, 0#, 0#, zRoof, uSignS, vSignS)
+    Set planeS = OffsetPlane(planeZ0, 0#, 0#, CH_H, uSignS, vSignS)
 
     ExtrudeProfile planeY
-    ExtrudeStub planeS
-    SplitMouth planeX
+    ExtrudeThroat planeS
+    RevolveStub planeY
 End Sub
 
 
-' The x-z profile (a triangle), extruded both ways from y = 0 to the plan's sides.
+' The x-z section (five corners), extruded both ways from y = 0 to the plan's sides.
 Private Sub ExtrudeProfile(pl As SldWorks.Feature)
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature, f As SldWorks.Feature
     Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
-    Dim px(2) As Double, pz(2) As Double, i As Long, j As Long
+    Dim px(4) As Double, pz(4) As Double, i As Long, j As Long
     Dim bx As Variant, got As Double
 
-    px(0) = CH_A:         pz(0) = CH_H_LIP        ' the ramp's foot on the kiln's (+x) wall, clear under the mouth
-    px(1) = -CH_A:        pz(1) = zRoof           ' the ramp's top, the far top corner
-    px(2) = CH_A:         pz(2) = zRoof
+    px(0) = -CH_R_THROAT: pz(0) = CH_RAMP_TOP_Z     ' the ramp's top on the throat's left wall
+    px(1) = CH_TOE_X:     pz(1) = CH_TOE_Z          ' the toe: the foot, the kiln's bottom line, starts
+    px(2) = CH_LIP_LO_X:  pz(2) = CH_LIP_LO_Z       ' the mouth's lower lip
+    px(3) = CH_LIP_UP_X:  pz(3) = CH_LIP_UP_Z       ' the upper lip (the face square to the kiln axis)
+    px(4) = -CH_R_THROAT: pz(4) = CH_ROOF_LEFT_Z    ' the roof, the kiln's top line, at the left wall
     uSign = uSignY: vSign = vSignY
 
     swModel.ClearSelection2 True
     pl.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the profile's sketch on the y = 0 plane."
+    If sk Is Nothing Then Fail "could not open the section's sketch on the y = 0 plane."
     wRefSet = False
-    For i = 0 To 2
-        j = (i + 1) Mod 3
+    For i = 0 To 4
+        j = (i + 1) Mod 5
         G2S sk, px(i), 0#, pz(i), u0, v0
         G2S sk, px(j), 0#, pz(j), u1, v1
-        If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then Fail "CreateLine failed on the profile."
+        If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then Fail "CreateLine failed on the section."
     Next i
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
@@ -213,36 +275,40 @@ Private Sub ExtrudeProfile(pl As SldWorks.Feature)
         True, True, True, _
         swStartSketchPlane, 0#, False)
     swModel.ClearSelection2 True
-    If f Is Nothing Then Fail "the profile could not be extruded both ways across the plan."
-    If BodyCount() <> 1 Then Fail "the profile extrusion made " & BodyCount() & " bodies, not one."
+    If f Is Nothing Then Fail "the section could not be extruded both ways across the plan."
+    If BodyCount() <> 1 Then Fail "the section's extrusion made " & BodyCount() & " bodies, not one."
     bx = TheBody().GetBodyBox
-    If Abs(bx(0) + CH_A) > BOX_TOL Or Abs(bx(3) - CH_A) > BOX_TOL Or _
+    If Abs(bx(0) + CH_R_THROAT) > BOX_TOL Or Abs(bx(3) - CH_LIP_UP_X) > BOX_TOL Or _
        Abs(bx(1) + CH_A) > BOX_TOL Or Abs(bx(4) - CH_A) > BOX_TOL Or _
-       Abs(bx(2) - CH_H_LIP) > BOX_TOL Or Abs(bx(5) - zRoof) > BOX_TOL Then
-        Fail "the profile's box is x " & Fmt(bx(0)) & " .. " & Fmt(bx(3)) & ", y " & Fmt(bx(1)) & " .. " & Fmt(bx(4)) & _
-             ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m; expected +-" & Fmt(CH_A) & " in x and y, " & Fmt(CH_H_LIP) & " .. " & Fmt(zRoof)
+       Abs(bx(2) - CH_LIP_LO_Z) > BOX_TOL Or Abs(bx(5) - CH_ROOF_LEFT_Z) > BOX_TOL Then
+        Fail "the section's box is x " & Fmt(bx(0)) & " .. " & Fmt(bx(3)) & ", y " & Fmt(bx(1)) & " .. " & Fmt(bx(4)) & _
+             ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m; expected x " & Fmt(-CH_R_THROAT) & " .. " & Fmt(CH_LIP_UP_X) & _
+             ", y +-" & Fmt(CH_A) & ", z " & Fmt(CH_LIP_LO_Z) & " .. " & Fmt(CH_ROOF_LEFT_Z)
     End If
     got = Volume(TheBody())
-    If Abs(got - vProfile) > VOL_TOL * vProfile Then Fail "the profile body is " & Fmt(got) & " m3, expected " & Fmt(vProfile) & " m3."
-    Note "profile extruded: " & Fmt(got) & " m3 (expected " & Fmt(vProfile) & ")"
+    If Abs(got - CH_V_BOX) > VOL_TOL * CH_V_BOX Then Fail "the section's prism is " & Fmt(got) & " m3, expected " & Fmt(CH_V_BOX) & " m3."
+    Note "section extruded: " & Fmt(got) & " m3 (expected " & Fmt(CH_V_BOX) & ")"
 End Sub
 
 
-' The throat's disc on the roof, STUB_T thick, merged into the body.
-Private Sub ExtrudeStub(pl As SldWorks.Feature)
+' The throat: its circle on the plane z = H, extruded down up to the next
+' face (the roof), merged. Both directions are tried; the one that leaves
+' one body, its top at H and the prism + throat volume is kept.
+Private Sub ExtrudeThroat(pl As SldWorks.Feature)
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature, f As SldWorks.Feature
-    Dim u As Double, v As Double, k As Long, zmax As Double
+    Dim u As Double, v As Double, k As Long, zmax As Double, got As Double, want As Double
 
+    want = CH_V_BOX + CH_V_THROAT
     uSign = uSignS: vSign = vSignS
     swModel.ClearSelection2 True
     pl.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the throat disc's sketch."
+    If sk Is Nothing Then Fail "could not open the throat's sketch on the plane z = " & Fmt(CH_H) & "."
     wRefSet = False
-    G2S sk, 0#, 0#, zRoof, u, v
-    If swSkMgr.CreateCircleByRadius(u, v, 0#, CH_R_THROAT) Is Nothing Then Fail "CreateCircleByRadius failed on the throat disc."
+    G2S sk, 0#, 0#, CH_H, u, v
+    If swSkMgr.CreateCircleByRadius(u, v, 0#, CH_R_THROAT) Is Nothing Then Fail "CreateCircleByRadius failed on the throat."
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
 
@@ -251,7 +317,7 @@ Private Sub ExtrudeStub(pl As SldWorks.Feature)
         skFeat.Select2 False, 0
         Set f = swFeat.FeatureExtrusion3( _
             True, False, (k = 1), _
-            swEndCondBlind, swEndCondBlind, STUB_T, 0.01, _
+            swEndCondUpToNext, swEndCondBlind, 0.01, 0.01, _
             False, False, False, False, 0#, 0#, _
             False, False, False, False, _
             True, True, True, _
@@ -260,13 +326,14 @@ Private Sub ExtrudeStub(pl As SldWorks.Feature)
         If Not f Is Nothing Then
             If BodyCount() = 1 Then
                 zmax = MaxZ()
-                If Abs(zmax - zTop) < FACE_TOL Then
-                    Note "throat disc extruded " & IIf(k = 0, "forward", "reversed") & ": top at z " & Fmt(zmax) & " m"
+                got = Volume(TheBody())
+                If Abs(zmax - CH_H) < FACE_TOL And Abs(got - want) < VOL_TOL * want Then
+                    Note "throat extruded " & IIf(k = 0, "forward", "reversed") & " to the roof: " & Fmt(got) & " m3 (expected " & Fmt(want) & ")"
                     Exit Sub
                 End If
-                Note "the throat disc extruded the wrong way (top at z " & Fmt(zmax) & "); reversing"
+                Note "the throat's extrusion " & IIf(k = 0, "forward", "reversed") & " gave top " & Fmt(zmax) & " m, " & Fmt(got) & " m3; undone"
             Else
-                Note "the throat disc left " & BodyCount() & " bodies, not one"
+                Note "the throat's extrusion left " & BodyCount() & " bodies, not one; undone"
             End If
             swModel.ClearSelection2 True
             f.Select2 False, 0
@@ -274,103 +341,80 @@ Private Sub ExtrudeStub(pl As SldWorks.Feature)
             swModel.ClearSelection2 True
         End If
     Next k
-    Fail "the throat disc could not be extruded up to z = " & Fmt(zTop) & " m in either direction."
+    Fail "the throat could not be extruded from z = " & Fmt(CH_H) & " m down to the roof in either direction."
 End Sub
 
 
-' The mouth: a circle on the +x wall, the wall split into the disc
-' (kiln_gas_inlet) and the rest. A circle sketched on the x = 0 plane,
-' projected on the wall; every way the projection can be asked for is
-' tried and the one that leaves two faces on the wall is kept.
-Private Sub SplitMouth(pl As SldWorks.Feature)
+' The kiln tube's stub: the rectangle axis-to-wall, from the mouth's face
+' to the end disc, sketched on y = 0 and revolved about the axis, merged.
+Private Sub RevolveStub(pl As SldWorks.Feature)
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature, f As SldWorks.Feature
-    Dim u As Double, v As Double
-    Dim sd As SldWorks.SelectData, ent As SldWorks.Entity
-    Dim face As SldWorks.Face2
-    Dim k As Long, dirOpt As Boolean, flipOpt As Boolean, mk As Long
+    Dim seg As SldWorks.SketchSegment, axisSeg As SldWorks.SketchSegment
+    Dim selData As SldWorks.SelectData
+    Dim px(3) As Double, pz(3) As Double, i As Long, j As Long
+    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
+    Dim R As Double, got As Double, want As Double, k As Long
 
-    uSign = uSignX: vSign = vSignX
+    R = 0.5 * KILN_D
+    want = CH_V_BOX + CH_V_THROAT + CH_V_STUB
+    px(0) = axX:          pz(0) = axZ              ' the axis on the mouth's face
+    px(1) = enX:          pz(1) = enZ              ' the axis on the end disc
+    px(2) = enX + R * nX: pz(2) = enZ + R * nZ
+    px(3) = axX + R * nX: pz(3) = axZ + R * nZ     ' = the upper lip
+    uSign = uSignY: vSign = vSignY
+
     swModel.ClearSelection2 True
     pl.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the mouth's sketch on the x = 0 plane."
+    If sk Is Nothing Then Fail "could not open the stub's sketch on the y = 0 plane."
     wRefSet = False
-    G2S sk, 0#, 0#, CH_A, u, v                      ' the kiln axis: y = 0, z = a above the floor
-    If swSkMgr.CreateCircleByRadius(u, v, 0#, 0.5 * KILN_D) Is Nothing Then Fail "CreateCircleByRadius failed on the mouth."
+    For i = 0 To 3
+        j = (i + 1) Mod 4
+        G2S sk, px(i), 0#, pz(i), u0, v0
+        G2S sk, px(j), 0#, pz(j), u1, v1
+        Set seg = swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#)
+        If seg Is Nothing Then Fail "CreateLine failed on the stub's profile."
+        If i = 0 Then Set axisSeg = seg
+    Next i
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
 
-    For k = 0 To 7
-        dirOpt = ((k And 1) <> 0): flipOpt = ((k And 2) <> 0): mk = IIf((k And 4) <> 0, 0, 1)
-        Set face = WallFace()
-        If face Is Nothing Then Fail "found no planar face on the +x wall (x = " & Fmt(CH_A) & " m) to split."
+    ' merged (forward, then reversed); else as its own body, combined
+    For k = 0 To 2
         swModel.ClearSelection2 True
-        skFeat.Select2 False, 4
-        Set sd = swModel.SelectionManager.CreateSelectData
-        sd.Mark = mk
-        Set ent = face
-        ent.Select4 True, sd
-        On Error Resume Next
-        swModel.InsertSplitLineProject dirOpt, flipOpt
-        If Err.Number <> 0 Then Note "InsertSplitLineProject (" & dirOpt & ", " & flipOpt & ", mark " & mk & ") raised: " & Err.Description
-        Err.Clear
-        On Error GoTo 0
+        Set selData = swModel.SelectionManager.CreateSelectData
+        selData.Mark = 16
+        axisSeg.Select4 False, selData
+        skFeat.Select2 True, 0
+        Set f = swFeat.FeatureRevolve2( _
+            True, True, False, False, (k = 1), False, _
+            0, 0, 2# * PI, 0#, _
+            False, False, 0.01, 0.01, _
+            0, 0#, 0#, _
+            (k < 2), True, True)
         swModel.ClearSelection2 True
-        If BodyCount() = 1 Then
-            If WallFaceCount() = 2 Then
-                Note "split the +x wall into the mouth and the rest (projection " & dirOpt & ", " & flipOpt & ", face mark " & mk & ")"
-                Exit Sub
-            End If
-        End If
-        Set f = swModel.FeatureByPositionReverse(0)
-        If Not f Is Nothing Then
-            If f.GetTypeName2 = "SplitLine" Then
-                Note "split of the +x wall gave " & WallFaceCount() & " faces, not 2 (projection " & dirOpt & ", " & flipOpt & ", face mark " & mk & "); undone"
-                f.Select2 False, 0
-                swModel.EditDelete
-                swModel.ClearSelection2 True
-            End If
+        If f Is Nothing Then
+            Note "FeatureRevolve2 (" & Choose(k + 1, "merged", "merged, reversed", "own body") & ") made nothing"
+        Else
+            Note "stub revolved (" & Choose(k + 1, "merged", "merged, reversed", "own body") & "): " & BodyCount() & " bodies"
+            Exit For
         End If
     Next k
-    Fail "could not split the +x wall into the mouth and the rest: InsertSplitLineProject changed nothing in any of its eight forms."
+    If f Is Nothing Then Fail "FeatureRevolve2 failed on the kiln tube's stub in all three forms (log)."
+    If BodyCount() = 2 Then
+        Dim bodies As Variant
+        bodies = swPart.GetBodies2(swSolidBody, True)
+        Set f = swFeat.InsertCombineFeature(15903, Nothing, bodies)     ' swBodyOperationType_e.SWBODYADD
+        If f Is Nothing Then Fail "the stub revolved as its own body but could not be combined with the chamber (InsertCombineFeature add)."
+        Note "stub combined with the chamber: " & BodyCount() & " bodies"
+    End If
+    If BodyCount() <> 1 Then Fail "the stub left " & BodyCount() & " bodies, not one."
+    got = Volume(TheBody())
+    If Abs(got - want) > VOL_TOL * want Then Fail "with the stub the chamber is " & Fmt(got) & " m3, expected " & Fmt(want) & " m3."
+    Note "kiln tube's stub revolved on the mouth's face: " & Fmt(got) & " m3 (expected " & Fmt(want) & ")"
 End Sub
-
-
-' The planar face with its normal along x lying at x = +a (the first).
-Private Function WallFace() As SldWorks.Face2
-    Dim faces As Variant, i As Long, p As Variant
-    Dim face As SldWorks.Face2, surf As SldWorks.Surface
-    faces = TheBody().GetFaces
-    For i = 0 To UBound(faces)
-        Set face = faces(i)
-        Set surf = face.GetSurface
-        If surf.IsPlane Then
-            p = surf.PlaneParams
-            If Abs(Abs(p(0)) - 1#) < DIR_TOL And Abs(p(3) - CH_A) < FACE_TOL Then
-                Set WallFace = face
-                Exit Function
-            End If
-        End If
-    Next i
-End Function
-
-
-Private Function WallFaceCount() As Long
-    Dim faces As Variant, i As Long, p As Variant, n As Long
-    Dim face As SldWorks.Face2, surf As SldWorks.Surface
-    faces = TheBody().GetFaces
-    For i = 0 To UBound(faces)
-        Set face = faces(i)
-        Set surf = face.GetSurface
-        If surf.IsPlane Then
-            p = surf.PlaneParams
-            If Abs(Abs(p(0)) - 1#) < DIR_TOL And Abs(p(3) - CH_A) < FACE_TOL Then n = n + 1
-        End If
-    Next i
-    WallFaceCount = n
-End Function
 
 
 Private Function MaxZ() As Double
@@ -439,17 +483,22 @@ Private Sub Verify()
     Note "closed manifold solid: " & (UBound(edges) + 1) & " edges, each with two faces"
 
     vGot = Volume(body)
-    vLo = (vProfile + vStub) * (1# - VOL_TOL)
-    vHi = (vProfile + vStub) * (1# + VOL_TOL)
+    vLo = (CH_V_BOX + CH_V_THROAT + CH_V_STUB) * (1# - VOL_TOL)
+    vHi = (CH_V_BOX + CH_V_THROAT + CH_V_STUB) * (1# + VOL_TOL)
     If vGot < vLo Or vGot > vHi Then Fail "the chamber is " & Fmt(vGot) & " m3, outside " & Fmt(vLo) & " .. " & Fmt(vHi) & " m3."
-    Note "chamber volume " & Fmt(vGot) & " m3 (profile " & Fmt(vProfile) & " + throat disc " & Fmt(vStub) & ")"
+    Note "chamber volume " & Fmt(vGot) & " m3 (section prism " & Fmt(CH_V_BOX) & " + throat " & Fmt(CH_V_THROAT) & _
+         " + kiln stub " & Fmt(CH_V_STUB) & ")"
 
+    ' GetBodyBox may be loose on curved faces: the stub's end is held to
+    ' BOX_TOL, every other side to the section's corners
     bx = body.GetBodyBox
-    If Abs(bx(0) + CH_A) > BOX_TOL Or Abs(bx(3) - CH_A) > BOX_TOL Or Abs(bx(1) + CH_A) > BOX_TOL Or _
-       Abs(bx(4) - CH_A) > BOX_TOL Or Abs(bx(2) - CH_H_LIP) > BOX_TOL Or Abs(bx(5) - zTop) > BOX_TOL Then
-        Fail "the solid's box is x " & Fmt(bx(0)) & " .. " & Fmt(bx(3)) & ", y " & Fmt(bx(1)) & " .. " & Fmt(bx(4)) & _
-             ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m."
-    End If
+    For i = 0 To 5
+        If Abs(bx(i) - boxW(i)) > BOX_TOL Then
+            Fail "the solid's box is x " & Fmt(bx(0)) & " .. " & Fmt(bx(3)) & ", y " & Fmt(bx(1)) & " .. " & Fmt(bx(4)) & _
+                 ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m; expected x " & Fmt(boxW(0)) & " .. " & Fmt(boxW(3)) & _
+                 ", y " & Fmt(boxW(1)) & " .. " & Fmt(boxW(4)) & ", z " & Fmt(boxW(2)) & " .. " & Fmt(boxW(5)) & "."
+        End If
+    Next i
     Note "extent: x " & Fmt(bx(0)) & " .. " & Fmt(bx(3)) & ", y " & Fmt(bx(1)) & " .. " & Fmt(bx(4)) & _
          ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m"
 End Sub
@@ -471,10 +520,13 @@ Private Sub TagBoundaryFaces()
         k = 0                                   ' 0 wall, 1 kiln mouth, 2 throat outlet
         If surf.IsPlane Then
             p = surf.PlaneParams
-            bx = face.GetBox
-            If Abs(Abs(p(0)) - 1#) < DIR_TOL And Abs(p(3) - CH_A) < FACE_TOL Then
-                If Abs(bx(4) - bx(1) - KILN_D) < BOX_TOL Then k = 1       ' the mouth's disc, not the wall round it
-            ElseIf Abs(Abs(p(2)) - 1#) < DIR_TOL And Abs(p(5) - zTop) < FACE_TOL Then
+            ' the stub's end disc: normal along the kiln axis, through the
+            ' axis's end point (the mouth's face pieces share the normal
+            ' but lie CH_STUB_L back)
+            If Abs(Abs(p(0) * dX + p(2) * dZ) - 1#) < DIR_TOL And _
+               Abs((p(3) - enX) * dX + (p(5) - enZ) * dZ) < FACE_TOL Then
+                k = 1
+            ElseIf Abs(Abs(p(2)) - 1#) < DIR_TOL And Abs(p(5) - CH_H) < FACE_TOL Then
                 k = 2
             End If
         End If

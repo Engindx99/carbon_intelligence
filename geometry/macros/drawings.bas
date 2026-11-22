@@ -227,14 +227,23 @@ Const cooler_TAB_5                 As String  = ""           ' parameter table r
 Const cooler_TAB_6                 As String  = ""           ' parameter table rows
 Const cooler_TAB_7                 As String  = ""           ' parameter table rows
 Const cooler_TAB_8                 As String  = ""           ' parameter table rows
-Const KIC_A                        As Double  = 6.8          ' plan: the square's side [derived]
-Const KIC_H                        As Double  = 6.8          ' floor level to the flat roof [derived]
-Const KIC_D_THROAT                 As Double  = 3.130077     ' the roof's throat (outlet) [derived]
-Const KIC_D_MOUTH                  As Double  = 4.8          ' the kiln's mouth on the +x wall [published, kiln/kiln.md]
-Const KIC_H_LIP                    As Double  = 0.8          ' the ramp's foot on the +x wall [derived]
-Const KIC_RAMP_DEG                 As Double  = 41.423666    ' the floor ramp's slope, foot to the far top corner [derived]
-Const kiln_inlet_chamber_TAB_1     As String  = "a_plan~Plan: side of the square (D + 2 margin)~6800~mm~derived~Estimated;H~Height: floor level to the flat roof (= the plan's side)~6800~mm~derived~Estimated;h_wall~Kiln's wall: ramp's foot to the roof (H - h_lip)~6000~mm~derived~Estimated;D_throat~Throat (outlet to the calciner) diameter~3130~mm~derived~Estimated;D_mouth~Kiln mouth diameter (the kiln's effective D)~4800~mm~published~Verified;margin~Margin round the kiln (plan = D + 2 margin)~1000~mm~model parameter~Estimated;clear~Mouth clearance to the ramp's foot~200~mm~model parameter~Estimated;h_lip~Ramp's foot on the kiln's wall, over the floor level~800~mm~derived~Estimated;" ' parameter table rows
-Const kiln_inlet_chamber_TAB_2     As String  = "ramp_deg~Floor ramp's slope (foot to the far top corner)~41.4~deg~derived~Estimated;volume~Volume (to the roof)~138.72~m3~derived~Estimated;u_ports~Burner, door and inspection ports~-~~no source~Unknown;u_bypass~Gas bypass take-off~-~~no source~Unknown;u_meal~Meal entry (injected in the solver)~-~~no source~Unknown;u_shell~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
+Const KIC_A                        As Double  = 6.8          ' plan: across (y) [derived]
+Const KIC_H                        As Double  = 6.8          ' floor level to the throat's top (outlet) [derived]
+Const KIC_D_THROAT                 As Double  = 3.130077     ' the throat (outlet); its walls x = +-r [derived]
+Const KIC_D_MOUTH                  As Double  = 4.8          ' the kiln tube's stub, its end disc the inlet [published, kiln/kiln.md]
+Const KIC_ALPHA                    As Double  = 0.029991005  ' the kiln's slope [rad] [derived]
+Const KIC_RAMP_TOP_Z               As Double  = 5.173392     ' the ramp's top on the left wall x = -r [derived]
+Const KIC_ROOF_LEFT_Z              As Double  = 5.950031     ' the roof at the left wall x = -r [derived]
+Const KIC_TOE_X                    As Double  = 1.9          ' the ramp's toe [derived]
+Const KIC_TOE_Z                    As Double  = 1.04392      ' the ramp's toe [derived]
+Const KIC_LIP_LO_X                 As Double  = 3.328032     ' the mouth's lower lip [derived]
+Const KIC_LIP_LO_Z                 As Double  = 1.001079     ' the mouth's lower lip [derived]
+Const KIC_LIP_UP_X                 As Double  = 3.471968     ' the mouth's upper lip [derived]
+Const KIC_LIP_UP_Z                 As Double  = 5.798921     ' the mouth's upper lip [derived]
+Const KIC_STUB_L                   As Double  = 2.4          ' the kiln tube's stub along its axis [derived]
+Const KIC_RAMP_DEG                 As Double  = 50#          ' the ramp, to the horizontal [model, kiln/kiln_inlet_chamber.md]
+Const kiln_inlet_chamber_TAB_1     As String  = "a_plan~Plan: across (D + 2 margin)~6800~mm~derived~Estimated;H~Height: floor level to the throat's top~6800~mm~derived~Estimated;D_throat~Throat (outlet to the calciner) diameter~3130~mm~derived~Estimated;D_mouth~Kiln mouth diameter (the kiln's effective D)~4800~mm~published~Verified;margin~Margin round the kiln (plan = D + 2 margin)~1000~mm~model parameter~Estimated;ramp_deg~Ramp's slope (to the horizontal)~50~deg~model parameter~Estimated;ramp_wall_deg~Ramp to the throat's left wall (90 - ramp)~40~deg~derived~Estimated;ramp_foot~Ramp's foot, toe to the mouth (horizontal, at the kiln's slope)~1500~mm~model parameter~Estimated;" ' parameter table rows
+Const kiln_inlet_chamber_TAB_2     As String  = "h_left~Left wall: ramp's top to the roof~777~mm~derived~Estimated;stub_over_D~Kiln tube's stub over D (CFD inlet)~0.5~-~model parameter~Estimated;L_stub~Kiln tube's stub, along its axis~2400~mm~derived~Estimated;volume~Volume (section prism + throat + stub)~165.04~m3~derived~Estimated;u_ports~Burner, door and inspection ports~-~~no source~Unknown;u_bypass~Gas bypass take-off~-~~no source~Unknown;u_meal~Meal entry (injected in the solver)~-~~no source~Unknown;u_shell~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
 Const kiln_inlet_chamber_TAB_3     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_4     As String  = ""           ' parameter table rows
 Const kiln_inlet_chamber_TAB_5     As String  = ""           ' parameter table rows
@@ -337,7 +346,6 @@ Const KIC_SIDE_Y  As Double = 0.42
 Const KIC_PLAN_Y  As Double = 0.2
 Const KIC_END_X   As Double = 0.14
 Const KIC_END_Y   As Double = 0.42
-Const KIC_STUB    As Double = 0.001     ' the throat disc over the roof (kiln_inlet_chamber.bas, STUB_T)
 
 ' ID fan (1:50, first angle): the front view from the drive side (-y: x
 ' right, z up), the plan under it, the view from +x (the inlet box's face)
@@ -825,9 +833,14 @@ Private Sub CheckKicBox(doc As SldWorks.ModelDoc2)
     If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
     Set b = bodies(0)
     box = ExactBox(b)
-    want(0) = -0.5 * KIC_A: want(3) = 0.5 * KIC_A
+    Dim exK As Double, ezK As Double, rK As Double
+    KicStubEnd exK, ezK
+    rK = 0.5 * KIC_D_MOUTH
+    want(0) = -0.5 * KIC_D_THROAT: want(3) = exK + rK * Sin(KIC_ALPHA)
     want(1) = -0.5 * KIC_A: want(4) = 0.5 * KIC_A
-    want(2) = KIC_H_LIP: want(5) = KIC_H + KIC_STUB
+    want(2) = KIC_LIP_LO_Z
+    If ezK - rK * Cos(KIC_ALPHA) < want(2) Then want(2) = ezK - rK * Cos(KIC_ALPHA)
+    want(5) = KIC_H
     For i = 0 To 5
         If Abs(box(i) - want(i)) > 0.01 Then
             Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's chamber has " & Num(want(i), 3) & _
@@ -910,6 +923,14 @@ Private Sub ShowOnlyBody(v As SldWorks.View, ByVal kind As String)
     v.Bodies = sel
     swModel.ForceRebuild3 False
     Note v.Name & ": shows the " & kind & " body only"
+End Sub
+
+
+' The kiln tube stub's end disc centre (the kiln axis CH_A over the floor
+' level at x = a, KIC_STUB_L along it, falling at KIC_ALPHA).
+Private Sub KicStubEnd(ByRef ex As Double, ByRef ez As Double)
+    ex = 0.5 * KIC_A + KIC_STUB_L * Cos(KIC_ALPHA)
+    ez = 0.5 * KIC_A - KIC_STUB_L * Sin(KIC_ALPHA)
 End Sub
 
 
@@ -1227,10 +1248,11 @@ End Sub
 
 
 ' The kiln inlet chamber (1:50), first-angle projection: the side view (x
-' right, z up: the ramp in profile), the plan under it (the roof: x right,
-' y up; hidden lines on show the mouth and the ramp), and to the LEFT of the
-' side view the view from the +x wall, the kiln's wall (y right, z up: the
-' mouth is a true circle).
+' right, z up: the section, the ramp in profile), the plan under it (x
+' right, y up; hidden lines on show the ramp), and to the LEFT of the side
+' view the view from +x (y right, z up: the kiln stub's end disc, square to
+' the kiln axis, 1.7 deg off this view: its circle drawn as an ellipse
+' within 0.05 %).
 Private Sub MakeViewsKic()
     Set vFront = OrientedView(1, 0, 0, 0, 0, 1, KIC_SIDE_X, KIC_SIDE_Y, "side")
     LogMap vFront, "side", scaleD
@@ -1828,16 +1850,22 @@ End Sub
 
 
 ' The kiln inlet chamber's reference dimensions, each between edges the solid
-' has: the plan's side (the roof edge in the side view, the +x wall's top edge
-' in the plan), the kiln's wall from the ramp's foot to the roof (a vertical
-' edge in the side view), the throat's outlet circle (plan, a true circle at
-' the disc's top), the kiln mouth's circle (view from +x, a true circle) and
-' the ramp's slope (between the ramp's edge and the roof's, side view). The
-' near side wall (y = -a or +a) is found, not assumed.
+' has: the plan across (the left wall's top edge, plan view), the throat's
+' outlet circle (plan, a true circle), the kiln stub's end circle (view from
+' +x), the stub's length (side view, its end circle to the mouth's face, both
+' edge-on: centre to centre along the axis), the left wall from the ramp's
+' top to the roof and the ramp's angle to it (side view; the section has no
+' horizontal edge, so the ramp's slope is listed and its angle to the wall,
+' 90 - ramp, dimensioned). The near side wall (y = -a or +a) is found, not
+' assumed.
 Private Sub DimensionKic()
-    Dim a As Double, ys As Double, zr As Double
+    Dim a As Double, ys As Double, r As Double, R0 As Double, zr0 As Double
+    Dim ex As Double, ez As Double, zMid As Double
     a = 0.5 * KIC_A
-    zr = KIC_H
+    r = 0.5 * KIC_D_THROAT
+    R0 = 0.5 * KIC_D_MOUTH
+    zr0 = KIC_ROOF_LEFT_Z - r * Tan(KIC_ALPHA)          ' the roof over the throat's axis
+    KicStubEnd ex, ez
 
     swDraw.EditSheet
     If swApp.GetApplySelectionFilter Then
@@ -1849,34 +1877,40 @@ Private Sub DimensionKic()
     swModel.ClearSelection2 True
 
     ys = -a
-    If FindEdge(vFront, "line", 0#, ys, zr, 0, 0, 0, 0) Is Nothing Or foundDist > SEL_TOL Then ys = a
+    If FindEdge(vFront, "line", 0#, ys, zr0, 0, 0, 0, 0) Is Nothing Or foundDist > SEL_TOL Then ys = a
     Note "side view: the near wall is at y = " & Num(ys, 3) & " m"
 
-    ' (text off the middle, where the gas-out arrow rises; 16 Nov sheet check)
-    DimEdges "a_plan", KIC_A, vFront, _
-        "line", 0, ys, zr, 0, 0, _
-        "", 0, 0, 0, 0, 0, _
-        -0.3 * a, ys, zr + 1.8
+    ' (between the two side walls' roof edges: the left wall's top edge is
+    ' split where the throat touches it, half the plan)
     DimEdges "a_plan", KIC_A, vTop, _
-        "line", a, 0, zr, 0, 0, _
-        "", 0, 0, 0, 0, 0, _
-        a + 1.8, 0, zr
-    DimEdges "h_wall", KIC_H - KIC_H_LIP, vFront, _
-        "line", a, ys, 0.5 * (KIC_H + KIC_H_LIP), 0, 0, _
-        "", 0, 0, 0, 0, 0, _
-        a + 1.8, ys, KIC_H_LIP + 1#                 ' text low on the line: the kiln-gas arrow crosses it higher up (16 Nov sheet check)
-    DimEdges "ramp_deg", KIC_RAMP_DEG, vFront, _
-        "line", 0, ys, 0.5 * (zr + KIC_H_LIP), 0, 0, _
-        "line", 0, ys, zr, 0, 0, _
-        -1#, ys, zr - 0.9
+        "line", 0, -a, zr0, 0, 0, _
+        "line", 0, a, zr0, 0, 0, _
+        -r - 1.8, 0, zr0
     DimEdges "D_throat", KIC_D_THROAT, vTop, _
-        "circle", 0, 0, zr + KIC_STUB, 0.5 * KIC_D_THROAT, zr + KIC_STUB, _
+        "circle", 0, 0, KIC_H, r, KIC_H, _
         "", 0, 0, 0, 0, 0, _
-        0.5 * KIC_D_THROAT + 1.2, 0.5 * KIC_D_THROAT + 0.8, zr + KIC_STUB
+        r + 1.2, r + 0.8, KIC_H
+    ' (picked at the end circle's bottom: the stub's junction with the mouth's
+    ' face, two arcs of the same radius 0.07 m behind it, is nearer its centre)
     DimEdges "D_mouth", KIC_D_MOUTH, vSide, _
-        "circle", a, 0, 0.5 * KIC_A, 0.5 * KIC_D_MOUTH, 0.5 * KIC_A, _
+        "circle", ex - R0 * Sin(KIC_ALPHA), 0, ez - R0 * Cos(KIC_ALPHA), R0, ez, _
         "", 0, 0, 0, 0, 0, _
-        0.5 * KIC_D_MOUTH + 1.4, 0.5 * KIC_D_MOUTH + 0.6, 0.5 * KIC_A
+        ex, R0 + 1.4, ez + R0 + 0.6
+    ' (the end circle edge-on to the mouth face's edge on the near side wall,
+    ' parallel: the junction's arcs lie on that face and are not drawn)
+    DimEdges "L_stub", KIC_STUB_L, vFront, _
+        "circle", ex, 0, ez, R0, ez, _
+        "line", 0.5 * (KIC_LIP_LO_X + KIC_LIP_UP_X), ys, 0.5 * (KIC_LIP_LO_Z + KIC_LIP_UP_Z), 0, 0, _
+        0.5 * (a + ex), 0, a + R0 + 1.2
+    zMid = 0.5 * (KIC_RAMP_TOP_Z + KIC_ROOF_LEFT_Z)
+    DimEdges "h_left", KIC_ROOF_LEFT_Z - KIC_RAMP_TOP_Z, vFront, _
+        "line", -r, ys, zMid, 0, 0, _
+        "", 0, 0, 0, 0, 0, _
+        -r - 1.2, ys, zMid
+    DimEdges "ramp_wall_deg", 90# - KIC_RAMP_DEG, vFront, _
+        "line", 0.5 * (KIC_TOE_X - r), ys, 0.5 * (KIC_TOE_Z + KIC_RAMP_TOP_Z), 0, 0, _
+        "line", -r, ys, zMid, 0, 0, _
+        -r + 0.35, ys, KIC_RAMP_TOP_Z - 1.4             ' under the ramp, right of the wall's line: the 40 deg side
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -2214,7 +2248,7 @@ Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.Vi
     nDims = nDims + 1
     st = StatusOf(key)
     If st <> "Verified" And st <> "Estimated" Then Fail key & " is " & st & ": it may not be dimensioned."
-    isAngle = (key = "inlet_slope" Or key = "ramp_deg")
+    isAngle = (key = "inlet_slope" Or key = "ramp_deg" Or key = "ramp_wall_deg")
 
     swModel.ClearSelection2 True
     If Not PickEdge(v, k1, x1, y1, z1, p11, p12, False, key & " edge 1") Then Exit Sub
@@ -2251,6 +2285,17 @@ Private Sub DimEdges(ByVal key As String, ByVal want As Double, v As SldWorks.Vi
     If isAngle And Abs(want - CLng(want)) > 0.000000001 Then dd.SetPrecision3 1, -1, -1, -1
 
     got = dd.GetDimension2(0).SystemValue
+    ' a circle seen a little off its axis (KIC's kiln stub, 1.7 deg) is
+    ' dimensioned radially: shown as its diameter instead
+    If Not isAngle And Abs(2# * got - want) < DIM_TOL Then
+        On Error Resume Next
+        dd.Diametric = True
+        If Err.Number <> 0 Then Note key & ": radial dimension, Diametric not settable (" & Err.Description & ")"
+        Err.Clear
+        On Error GoTo 0
+        got = dd.GetDimension2(0).SystemValue
+        If Abs(2# * got - want) < DIM_TOL Then got = 2# * got: Note key & ": a radial dimension shown as its diameter"
+    End If
     If isAngle Then
         got = got * 180# / PI
         If got > 90# Then got = 180# - got
@@ -2679,8 +2724,8 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.002, "5. Rotor views: the rotating zone alone, 1:20. One fan per string.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/fan/id_fan.md", TEXT_H
     ElseIf equip = "kiln_inlet_chamber" Then
-        LabelPH COL_X0, y + 0.012, "3. Frame: x from the calciner axis, the kiln's mouth on the +x wall; z up from the floor level.", TEXT_H
-        LabelPH COL_X0, y + 0.007, "4. Flat roof at z = H with the calciner's throat; floor: one ramp, the kiln's wall to the far corner.", TEXT_H
+        LabelPH COL_X0, y + 0.012, "3. Frame: x from the calciner axis, the kiln in from +x; z up from the floor level (no face there).", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. Throat walls run down; foot and roof = the kiln's lines (3 %); inlet = the kiln stub's end disc.", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Meal enters in the solver (no inlet in the solid).  Dimensions mm; first-angle projection.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln_inlet_chamber.md", TEXT_H
     ElseIf equip = "kiln" Then
@@ -2810,29 +2855,31 @@ Private Sub DrawFlowsIdFan()
 End Sub
 
 
-' The chamber's flows: the kiln gas in through the +x wall's mouth (side and
-' end views) and up out of the throat; the meal slides down the ramp and out
-' through the mouth into the kiln (the meal itself enters in the solver).
+' The chamber's flows: the kiln gas in through the kiln stub's end disc
+' (side view) and up out of the throat; the meal slides down the ramp and
+' out along the foot into the kiln (the meal itself enters in the solver).
 Private Sub DrawFlowsKic()
-    Dim a As Double, zc As Double
-    a = 0.5 * KIC_A: zc = 0.5 * KIC_A
+    Dim a As Double, r As Double, ex As Double, ez As Double, zLo As Double, t0 As Double
+    a = 0.5 * KIC_A: r = 0.5 * KIC_D_THROAT
+    KicStubEnd ex, ez
+    zLo = KIC_LIP_LO_Z
     UseLayer L_FLOW
-    ArrowM3 vFront, a + 3.2, 0#, zc + 0.6, a + 0.4, 0#, zc + 0.6
-    ArrowM3 vFront, 0#, 0#, KIC_H + KIC_STUB + 0.3, 0#, 0#, KIC_H + KIC_STUB + 2.2
-    ArrowM3 vFront, 1.2, 0#, KIC_H_LIP + 1.6, a - 0.2, 0#, KIC_H_LIP + 0.15
+    ArrowM3 vFront, ex + 2.6, 0#, ez + 0.6 - 2.6 * Tan(KIC_ALPHA), ex + 0.3, 0#, ez + 0.6 - 0.3 * Tan(KIC_ALPHA)
+    ArrowM3 vFront, 0#, 0#, KIC_H + 0.3, 0#, 0#, KIC_H + 2.2
+    t0 = Tan(KIC_RAMP_DEG * PI / 180#)
+    ArrowM3 vFront, -r + 0.7, 0#, KIC_RAMP_TOP_Z - 0.7 * t0 + 0.45, KIC_TOE_X + 0.6, 0#, KIC_TOE_Z + 0.3
     UseLayer L_TEXT
-    ' (right of h_wall's dimension line at a + 1.8, not across it; 16 Nov sheet check)
-    LabelM3 vFront, a + 2.3, 0#, zc + 1.2, "Kiln gas in (from the kiln)"
-    LabelM3 vFront, 0.5, 0#, KIC_H + KIC_STUB + 2.6, "Gas out (to the calciner throat)"
+    LabelM3 vFront, ex + 0.4, 0#, ez + 1.3, "Kiln gas in (from the kiln)"
+    LabelM3 vFront, 0.5, 0#, KIC_H + 2.6, "Gas out (to the calciner throat)"
     ' View captions: each one's left edge under the view's left edge; the
     ' side and end views (one row) share one baseline.
     Dim sxS As Double, sxE As Double, sxP As Double, syRow As Double, syPlan As Double, t As Double
-    ToSheet vFront, -a, 0#, KIC_H_LIP, sxS, syRow
-    ToSheet vSide, -a, 0#, KIC_H_LIP, sxE, t
-    ToSheet vTop, -a, -a, KIC_H, sxP, syPlan
-    LabelPH sxE, syRow - 0.012, "END VIEW - from the kiln (mouth in the +x wall)", TEXT_H
+    ToSheet vFront, -r, 0#, zLo, sxS, syRow
+    ToSheet vSide, -a, 0#, zLo, sxE, t
+    ToSheet vTop, -r, -a, KIC_H, sxP, syPlan
+    LabelPH sxE, syRow - 0.012, "END VIEW - from the kiln (the kiln stub's end disc)", TEXT_H
     LabelPH sxS, syRow - 0.012, "SIDE VIEW - meal slides down the ramp into the kiln", TEXT_H
-    LabelPH sxP, syPlan - 0.012, "PLAN - throat (outlet) in the roof", TEXT_H
+    LabelPH sxP, syPlan - 0.012, "PLAN - throat (outlet) at the top", TEXT_H
 End Sub
 
 
@@ -3066,19 +3113,21 @@ Private Sub DrawAxesIdFan()
 End Sub
 
 
-' The chamber's centre lines: the throat's axis in the side view and the
-' cross in the plan, the kiln's axis in the side view and the mouth's cross in
-' the view from +x.
+' The chamber's centre lines: the throat's axis and the kiln's (falling at
+' its slope) in the side view, the throat's cross and the kiln axis in the
+' plan, the stub's end disc's cross in the view from +x.
 Private Sub DrawAxesKic()
-    Dim a As Double, zc As Double
-    a = 0.5 * KIC_A: zc = 0.5 * KIC_A
+    Dim a As Double, r As Double, R0 As Double, ex As Double, ez As Double, x0 As Double, x1 As Double
+    a = 0.5 * KIC_A: r = 0.5 * KIC_D_THROAT: R0 = 0.5 * KIC_D_MOUTH
+    KicStubEnd ex, ez
+    x0 = -r - 0.6: x1 = ex + 1#
     UseLayer L_AXIS
-    AxisM vFront, 0#, 0#, KIC_H_LIP - 0.6, 0#, 0#, KIC_H + KIC_STUB + 0.6
-    AxisM vFront, -a - 0.6, 0#, zc, a + 1#, 0#, zc
-    AxisM vTop, -a - 0.6, 0#, KIC_H, a + 0.6, 0#, KIC_H
-    AxisM vTop, 0#, -a - 0.6, KIC_H, 0#, a + 0.6, KIC_H
-    AxisM vSide, a, -0.5 * KIC_D_MOUTH - 0.6, zc, a, 0.5 * KIC_D_MOUTH + 0.6, zc
-    AxisM vSide, a, 0#, zc - 0.5 * KIC_D_MOUTH - 0.6, a, 0#, zc + 0.5 * KIC_D_MOUTH + 0.6
+    AxisM vFront, 0#, 0#, KIC_RAMP_TOP_Z - 0.6, 0#, 0#, KIC_H + 0.6
+    AxisM vFront, x0, 0#, a - (x0 - a) * Tan(KIC_ALPHA), x1, 0#, a - (x1 - a) * Tan(KIC_ALPHA)
+    AxisM vTop, x0, 0#, KIC_H, x1, 0#, KIC_H
+    AxisM vTop, 0#, -r - 0.6, KIC_H, 0#, r + 0.6, KIC_H
+    AxisM vSide, ex, -R0 - 0.6, ez, ex, R0 + 0.6, ez
+    AxisM vSide, ex, 0#, ez - R0 - 0.6, ex, 0#, ez + R0 + 0.6
 End Sub
 
 

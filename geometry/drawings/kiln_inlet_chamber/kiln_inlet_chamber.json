@@ -16,7 +16,7 @@
   "params": [
     {
       "key": "kiln_inlet_chamber.side",
-      "label": "Plan: side of the square (D + 2 margin)",
+      "label": "Plan: across (D + 2 margin)",
       "value": 6.8,
       "unit": "m",
       "source": "derived",
@@ -31,7 +31,7 @@
     },
     {
       "key": "kiln_inlet_chamber.height",
-      "label": "Height: floor level to the flat roof (= the plan's side)",
+      "label": "Height: floor level to the throat's top",
       "value": 6.8,
       "unit": "m",
       "source": "derived",
@@ -43,22 +43,6 @@
       ],
       "value_mm": 6800.0,
       "short": "H"
-    },
-    {
-      "key": "kiln_inlet_chamber.h_wall",
-      "label": "Kiln's wall: ramp's foot to the roof (H - h_lip)",
-      "value": 6.0,
-      "unit": "m",
-      "source": "derived",
-      "status": "Estimated",
-      "doc": "kiln/kiln.md",
-      "inputs": [
-        "kiln.D",
-        "layout.chamber_margin",
-        "kiln_inlet_chamber.mouth_clearance"
-      ],
-      "value_mm": 6000.0,
-      "short": "h_wall"
     },
     {
       "key": "kiln_inlet_chamber.D_throat",
@@ -106,62 +90,114 @@
       "short": "margin"
     },
     {
-      "key": "kiln_inlet_chamber.mouth_clearance",
-      "label": "Mouth clearance to the ramp's foot",
-      "value": 0.2,
+      "key": "kiln_inlet_chamber.ramp_deg",
+      "label": "Ramp's slope (to the horizontal)",
+      "value": 50.0,
+      "unit": "deg",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_inlet_chamber.md",
+      "inputs": [
+        "kiln_inlet_chamber.ramp_deg"
+      ],
+      "short": "ramp_deg"
+    },
+    {
+      "key": "kiln_inlet_chamber.ramp_wall",
+      "label": "Ramp to the throat's left wall (90 - ramp)",
+      "value": 40.0,
+      "unit": "deg",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_inlet_chamber.md",
+      "inputs": [
+        "kiln_inlet_chamber.ramp_deg"
+      ],
+      "short": "ramp_wall_deg"
+    },
+    {
+      "key": "kiln_inlet_chamber.ramp_foot",
+      "label": "Ramp's foot, toe to the mouth (horizontal, at the kiln's slope)",
+      "value": 1.5,
       "unit": "m",
       "source": "model",
       "status": "Estimated",
       "doc": "kiln/kiln_inlet_chamber.md",
       "inputs": [
-        "kiln_inlet_chamber.mouth_clearance"
+        "kiln_inlet_chamber.ramp_foot"
       ],
-      "value_mm": 200.0,
-      "short": "clear"
+      "value_mm": 1500.0,
+      "short": "ramp_foot"
     },
     {
-      "key": "kiln_inlet_chamber.h_lip",
-      "label": "Ramp's foot on the kiln's wall, over the floor level",
-      "value": 0.8,
+      "key": "kiln_inlet_chamber.h_left",
+      "label": "Left wall: ramp's top to the roof",
+      "value": 0.7766384840727536,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.D",
+        "kiln.slope",
         "layout.chamber_margin",
-        "kiln_inlet_chamber.mouth_clearance"
+        "kiln_inlet_chamber.ramp_deg",
+        "kiln_inlet_chamber.ramp_foot",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D"
       ],
-      "value_mm": 800.0,
-      "short": "h_lip"
+      "value_mm": 776.638484,
+      "short": "h_left"
     },
     {
-      "key": "kiln_inlet_chamber.ramp_slope",
-      "label": "Floor ramp's slope (foot to the far top corner)",
-      "value": 41.423665625002656,
-      "unit": "deg",
+      "key": "kiln_inlet_chamber.mouth_stub_over_D",
+      "label": "Kiln tube's stub over D (CFD inlet)",
+      "value": 0.5,
+      "unit": "-",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_inlet_chamber.md",
+      "inputs": [
+        "kiln_inlet_chamber.mouth_stub_over_D"
+      ],
+      "short": "stub_over_D"
+    },
+    {
+      "key": "kiln_inlet_chamber.L_stub",
+      "label": "Kiln tube's stub, along its axis",
+      "value": 2.4,
+      "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.D",
-        "layout.chamber_margin",
-        "kiln_inlet_chamber.mouth_clearance"
+        "kiln_inlet_chamber.mouth_stub_over_D"
       ],
-      "short": "ramp_deg"
+      "value_mm": 2400.0,
+      "short": "L_stub"
     },
     {
       "key": "kiln_inlet_chamber.volume",
-      "label": "Volume (to the roof)",
-      "value": 138.72,
+      "label": "Volume (section prism + throat + stub)",
+      "value": 165.03761887348838,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.D",
+        "kiln.slope",
         "layout.chamber_margin",
-        "kiln_inlet_chamber.mouth_clearance"
+        "kiln_inlet_chamber.ramp_deg",
+        "kiln_inlet_chamber.ramp_foot",
+        "calciner.throat_gas_flow",
+        "calciner.throat_gas_T",
+        "calciner.throat_velocity",
+        "calciner.throat_length_over_D",
+        "kiln_inlet_chamber.mouth_stub_over_D"
       ],
       "short": "volume"
     },
@@ -223,10 +259,11 @@
   ],
   "dimensioned": [
     "a_plan",
-    "h_wall",
     "D_throat",
     "D_mouth",
-    "ramp_deg"
+    "L_stub",
+    "h_left",
+    "ramp_wall_deg"
   ],
   "also_the_sheet_of": []
 }

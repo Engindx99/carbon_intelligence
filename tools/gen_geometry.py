@@ -561,12 +561,21 @@ def _kic_sheet_consts(g):
 
     ch = pg.kiln_inlet_chamber(g)
     out = [
-        der("KIC_A", ch["side"], "plan: the square's side"),
-        der("KIC_H", ch["height"], "floor level to the flat roof"),
-        der("KIC_D_THROAT", ch["D_throat"], "the roof's throat (outlet)"),
-        src("KIC_D_MOUTH", g["kiln"]["D"], "the kiln's mouth on the +x wall"),
-        der("KIC_H_LIP", ch["h_lip"], "the ramp's foot on the +x wall"),
-        der("KIC_RAMP_DEG", ch["ramp_slope"], "the floor ramp's slope, foot to the far top corner"),
+        der("KIC_A", ch["side"], "plan: across (y)"),
+        der("KIC_H", ch["height"], "floor level to the throat's top (outlet)"),
+        der("KIC_D_THROAT", ch["D_throat"], "the throat (outlet); its walls x = +-r"),
+        src("KIC_D_MOUTH", g["kiln"]["D"], "the kiln tube's stub, its end disc the inlet"),
+        der("KIC_ALPHA", ch["alpha"], "the kiln's slope [rad]", digits=9),
+        der("KIC_RAMP_TOP_Z", ch["ramp_top"][1], "the ramp's top on the left wall x = -r"),
+        der("KIC_ROOF_LEFT_Z", ch["roof_left"][1], "the roof at the left wall x = -r"),
+        der("KIC_TOE_X", ch["toe"][0], "the ramp's toe"),
+        der("KIC_TOE_Z", ch["toe"][1], "the ramp's toe"),
+        der("KIC_LIP_LO_X", ch["lip_low"][0], "the mouth's lower lip"),
+        der("KIC_LIP_LO_Z", ch["lip_low"][1], "the mouth's lower lip"),
+        der("KIC_LIP_UP_X", ch["lip_up"][0], "the mouth's upper lip"),
+        der("KIC_LIP_UP_Z", ch["lip_up"][1], "the mouth's upper lip"),
+        der("KIC_STUB_L", ch["L_stub"], "the kiln tube's stub along its axis"),
+        src("KIC_RAMP_DEG", g["kiln_inlet_chamber"]["ramp_deg"], "the ramp, to the horizontal"),
     ]
     out += _table_consts("kiln_inlet_chamber", dkc.params(g), dkc.ORDER)
     return out
@@ -675,13 +684,26 @@ def cooler_bas(g):
 
 
 def kiln_inlet_chamber_bas(g):
-    c, ch, kl = g["kiln_inlet_chamber"], pg.kiln_inlet_chamber(g), g["kiln"]
+    s, kl = pg.chamber_section(g), g["kiln"]
     return [
-        der("CH_A", pg.layout(g)["a_chamber"], "half the square plan: kiln D / 2 + the layout margin"),
-        src("KILN_D", kl["D"], "the mouth's circle on the +x wall"),
-        src("CH_CLEAR", c["mouth_clearance"], "the mouth's clearance to the ramp's foot"),
-        der("CH_R_THROAT", 0.5 * ch["D_throat"], "the calciner throat's radius, the outlet disc in the roof"),
-        der("CH_H_LIP", ch["h_lip"], "the ramp's foot on the +x wall; the ramp rises to the far top corner, z = 2 CH_A"),
+        der("CH_A", s["a"], "half the plan (y), and the kiln axis over the floor level at x = a: kiln D / 2 + the layout margin"),
+        src("KILN_D", kl["D"], "the kiln tube's bore: the stub and its end disc (kiln_gas_inlet)"),
+        der("CH_ALPHA", s["alpha"], "the kiln's slope [rad]: the stub's axis falls at it towards +x", digits=9),
+        der("CH_H", s["height"], "the throat's top (throat_outlet), over the floor level"),
+        der("CH_R_THROAT", s["r_throat"], "the calciner throat's radius; its walls x = +-r"),
+        der("CH_RAMP_TOP_Z", s["ramp_top"][1], "the ramp's top on the left wall x = -r"),
+        der("CH_TOE_X", s["toe"][0], "the ramp's toe: the foot (the kiln's bottom line) starts"),
+        der("CH_TOE_Z", s["toe"][1], "the ramp's toe"),
+        der("CH_LIP_LO_X", s["lip_low"][0], "the mouth's lower lip (the end face square to the kiln axis)"),
+        der("CH_LIP_LO_Z", s["lip_low"][1], "the mouth's lower lip"),
+        der("CH_LIP_UP_X", s["lip_up"][0], "the mouth's upper lip"),
+        der("CH_LIP_UP_Z", s["lip_up"][1], "the mouth's upper lip"),
+        der("CH_ROOF_LEFT_Z", s["roof_left"][1], "the roof (the kiln's top line) at the left wall x = -r"),
+        der("CH_ROOF_THROAT_Z", s["roof_at_throat"], "the roof at the throat's right wall x = +r"),
+        der("CH_STUB_L", s["L_stub"], "the kiln tube's stub along its axis, mouth face to kiln_gas_inlet"),
+        der("CH_V_BOX", s["V_box"], "the section's prism, the plan across [m3]"),
+        der("CH_V_THROAT", s["V_throat"], "the throat cylinder over the roof [m3]"),
+        der("CH_V_STUB", s["V_stub"], "the kiln tube's stub [m3]"),
     ]
 
 
@@ -1103,17 +1125,19 @@ def _kiln_chamber_rows(g):
     return [
         row_src("Fırın girişi gaz hızı üst sınırı", c["gas_velocity_max"]),
         row_der("Fırın gazı hacimsel debisi (1323 K)", ch["q"], "m³/s", 1),
-        row_der("Oda kesiti (kare, kenar 2a)", ch["side"], "m", 2),
-        row_der("Hız, oda kesitinde", ch["u_chamber"], "m/s", 2),
+        row_der("Oda planı (boğazın sol duvarından ağza × 2a)", ch["plan_area"], "m²", 2),
+        row_der("Hız, oda planında", ch["u_chamber"], "m/s", 2),
         row_der("Hız, fırın tüpünün girişinde (CFD debisi)", ch["u_kiln"], "m/s", 2),
         row_der("Ölçütün izin verdiği en küçük kenar", ch["side_min"], "m", 2),
         row_src("Başvuru sınırı (Holcim StDC 2022; tek şirketin standardı)", c["gas_velocity_ref_holcim"]),
-        row_src("Fırın ağzı payı (ağzın dairesi rampa ayağına ve tavana değmesin)", c["mouth_clearance"]),
-        row_der("Oda yüksekliği (düz tavan; boğaz tavanda)", ch["height"], "m", 3),
-        row_der("Boğaz çapı (kalsinatörün)", ch["D_throat"], "m", 3),
-        row_der("Taban rampası: ayağı, +x duvarında (zeminden)", ch["h_lip"], "m", 3),
-        row_der("Taban rampası: yatay uzunluk (tüm plan, dudaktan karşı üst köşeye)", ch["ramp_run"], "m", 3),
-        row_der("Taban rampası eğimi (yataya; geometriden)", ch["ramp_slope"], "°", 1),
+        row_der("Oda yüksekliği (boğazın üstü, zeminden)", ch["height"], "m", 3),
+        row_der("Boğaz çapı (kalsinatörün; duvarları x = ±r aşağı iner)", ch["D_throat"], "m", 3),
+        row_src("Rampa eğimi (yataya)", c["ramp_deg"]),
+        row_src("Rampa ayağı (yatay; fırının alt çizgisi, kiln.slope ile düşer)", c["ramp_foot"]),
+        row_der("Rampanın üstü, sol boğaz duvarında (zeminden)", ch["ramp_top"][1], "m", 3),
+        row_der("Tavan, sağ boğaz duvarında (fırının üst çizgisi; zeminden)", ch["roof_at_throat"], "m", 3),
+        row_src("Fırın borusu ucu (CFD katısı; D'ye oran)", c["mouth_stub_over_D"]),
+        row_der("CFD hacmi (kesit prizması + boğaz + fırın ucu)", ch["volume"], "m³", 2),
     ]
 
 

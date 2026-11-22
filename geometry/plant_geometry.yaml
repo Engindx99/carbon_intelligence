@@ -346,7 +346,13 @@ kiln_hood:
   air_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
 kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
-  mouth_clearance:     {value: 0.2,    unit: m,      source: model,       doc: kiln/kiln_inlet_chamber.md}   # the kiln mouth's circle stands this far clear of the roof's start and the ramp's lip (no tangent split line); no source
+  # The CFD solid's kiln mouth (user decision, 22 Nov 2026): a short
+  # stub of the kiln tube, mouth_stub_over_D kiln diameters along its
+  # axis, the kiln gas inlet its end disc. The chamber's foot and roof
+  # are the tube's bottom and top lines, so a circle split on the wall
+  # would touch both (the 0.2 m mouth_clearance that avoided it is gone
+  # with the 21 Nov section). No source: model.
+  mouth_stub_over_D:   {value: 0.5,    unit: "-",    source: model,       doc: kiln/kiln_inlet_chamber.md}
   gas_velocity_ref_holcim: {value: 23.0, unit: m/s,  source: literature,  doc: kiln/kiln_inlet_chamber.md}   # Holcim StDC 2022, one company's standard: reported, not the check
   # User sketch, 21 Nov 2026 (topology drawing): no roof ledges; the
   # throat's walls run down, the right one to the kiln's roof line, the

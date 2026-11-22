@@ -1615,9 +1615,9 @@
           "doc": "kiln/kiln_inlet_chamber.md"
         },
         {
-          "key": "kiln_inlet_chamber.mouth_clearance",
-          "value": 0.2,
-          "unit": "m",
+          "key": "kiln_inlet_chamber.mouth_stub_over_D",
+          "value": 0.5,
+          "unit": "-",
           "source": "model",
           "status": "Estimated",
           "doc": "kiln/kiln_inlet_chamber.md"

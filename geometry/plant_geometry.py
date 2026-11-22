@@ -998,28 +998,84 @@ def kiln_hood(g):
     }
 
 
-def chamber_roof(g):
-    """The chamber is the layout square (side 2 a, flat roof, the calciner's
-    throat in it). Its floor is one ramp across the whole plan, from the
-    kiln mouth's lower lip (a clearance under the mouth, so the mouth's
-    circle does not touch the ramp's foot) up to the far top corner, so the
-    meal slides into the kiln and no meal lies in a pit; the ramp's slope
-    follows from that, it is not an input."""
+def chamber_section(g):
+    """The chamber's x-z section (user sketch, 21 Nov 2026), x from the
+    calciner axis (the kiln on +x), z up from the chamber's floor level
+    (the kiln axis a over it at x = a, a = kiln D / 2 + the layout
+    margin), the plan 2 a across (y):
+
+    - the calciner's throat, a cylinder D_throat, from the top z = 2 a
+      down into the chamber; its walls x = +-r run down, the left one
+      to the ramp's top, the right one to the kiln's roof line;
+    - the roof: the kiln tube's top line carried in at kiln.slope, from
+      the mouth to x = -r; the left wall x = -r from the roof down to
+      the ramp's top;
+    - the floor: the ramp, ramp_deg from the throat's left wall to a
+      foot ramp_foot long, the foot the kiln's bottom line carried in;
+    - the mouth: the kiln's end face, square to its axis at x = a (its
+      lips a R sin(alpha) either side of x = a), and on it the kiln
+      tube's stub (mouth_stub_over_D D long; the kiln gas inlet is its
+      end disc).
+    The topology drawing (plant_topology_2d.bas) draws the mouth plumb
+    at x = a; the R sin(alpha) = 0.07 m between the two is invisible
+    at its scale."""
 
     kl, cal = kiln(g), calciner(g)
+    kic = g["kiln_inlet_chamber"]
     a = 0.5 * kl["D"] + v(g["layout"]["chamber_margin"])
-    clear = v(g["kiln_inlet_chamber"]["mouth_clearance"])
-    h_lip = a - 0.5 * kl["D"] - clear
+    R = 0.5 * kl["D"]
+    r = 0.5 * cal["D_throat"]
+    alpha = math.atan(0.01 * kl["slope"])
+    ramp = math.radians(v(kic["ramp_deg"]))
+    foot = v(kic["ramp_foot"])
     height = 2.0 * a
-    run = 2.0 * a
+    z_ax = a                                         # the kiln axis at x = a
+    sa, ca, ta = math.sin(alpha), math.cos(alpha), math.tan(alpha)
+
+    def roof(x):                                     # the kiln's top line
+        return z_ax + R / ca + (a - x) * ta
+
+    def bottom(x):                                   # the kiln's bottom line
+        return z_ax - R / ca + (a - x) * ta
+
+    lip_low = (a - R * sa, z_ax - R * ca)
+    lip_up = (a + R * sa, z_ax + R * ca)
+    toe = (a - foot, bottom(a - foot))
+    ramp_top = (-r, toe[1] + (toe[0] + r) * math.tan(ramp))
+    roof_left = (-r, roof(-r))
+    profile = [ramp_top, toe, lip_low, lip_up, roof_left]
+    area = 0.5 * abs(sum(p[0] * q[1] - q[0] * p[1] for p, q in zip(profile, profile[1:] + profile[:1])))
+    L_stub = v(kic["mouth_stub_over_D"]) * kl["D"]
+    stub_end = (a + L_stub * ca, z_ax - L_stub * sa)
+    v_box = area * 2.0 * a
+    v_throat = math.pi * r * r * (height - roof(0.0))   # roof linear in x: the mean height over the disc
+    v_stub = math.pi * R * R * L_stub
     return {
+        "a": a,
+        "side": 2.0 * a,
         "height": height,
         "D_throat": cal["D_throat"],
-        "clear": clear,
-        "h_lip": h_lip,
-        "ramp_run": run,
-        "ramp_rise": height - h_lip,
-        "ramp_slope": math.degrees(math.atan((height - h_lip) / run)),
+        "r_throat": r,
+        "R_mouth": R,
+        "alpha": alpha,
+        "z_axis": z_ax,
+        "ramp_deg": math.degrees(ramp),
+        "ramp_foot": foot,
+        "lip_low": lip_low,
+        "lip_up": lip_up,
+        "toe": toe,
+        "ramp_top": ramp_top,
+        "roof_left": roof_left,
+        "roof_at_throat": roof(r),
+        "profile": profile,
+        "profile_area": area,
+        "L_stub": L_stub,
+        "stub_end": stub_end,
+        "V_box": v_box,
+        "V_throat": v_throat,
+        "V_stub": v_stub,
+        "volume": v_box + v_throat + v_stub,
+        "plan_area": (a + r) * 2.0 * a,          # the chamber's plan, throat wall to mouth
     }
 
 
@@ -1034,13 +1090,13 @@ def kiln_inlet_chamber(g):
     side = 2.0 * layout(g)["a_chamber"]
     q = kg["flow"] / kg["rho"]
     vmax = v(g["kiln_inlet_chamber"]["gas_velocity_max"])
-    roof = chamber_roof(g)
+    sec = chamber_section(g)
     return {
-        **roof,
+        **sec,
         "q": q,
         "side": side,
         "u_kiln": q / (0.25 * math.pi * kl["D"] ** 2),
-        "u_chamber": q / (side * side),
+        "u_chamber": q / sec["plan_area"],
         "side_min": math.sqrt(q / vmax),
         "u_max": vmax,
     }
@@ -1522,7 +1578,8 @@ def layout(g):
 
     a_ch = 0.5 * kl["D"] + v(L["chamber_margin"])
     z_ch0 = v(L["kiln_axis_z"]) - a_ch
-    z0 = z_ch0 + chamber_roof(g)["height"]        # the calciner's throat foot on the chamber's tapered roof
+    sec = chamber_section(g)
+    z0 = z_ch0 + sec["height"]                    # the calciner's throat foot, the top of the chamber's throat
     z_cone_top = z0 + cal["z_cone_top"]
     z_roof_cal = z0 + cal["z_roof"]
     z_gn_top = z0 + gn["crown"]                   # the arch's top
@@ -1584,16 +1641,9 @@ def layout(g):
     co = cooler(g)
     z_cooler = z_kiln_end - 0.5 * kl["D"] - v(L["cooler_drop"]) - co["casing_height"]
     z_hood = z_kiln_end - a_ch
-    # The chamber's section (user sketch, 21 Nov 2026): the throat's walls
-    # run down, the ramp from the left one falls at ramp_deg to a foot
-    # ramp_foot long at the kiln mouth's lower lip; the foot falls at the
-    # kiln's slope towards the kiln (the kiln shell's line carried in)
-    kic = g["kiln_inlet_chamber"]
-    ramp = math.radians(v(kic["ramp_deg"]))
-    z_lip = v(L["kiln_axis_z"]) - 0.5 * kl["D"] / math.cos(alpha)
-    x_toe = a_ch - v(kic["ramp_foot"])
-    z_toe = z_lip + v(kic["ramp_foot"]) * math.tan(alpha)
-    z_ramp_top = z_toe + (x_toe + 0.5 * cal["D_throat"]) * math.tan(ramp)
+    # The chamber's section (user sketch, 21 Nov 2026): chamber_section
+    x_toe, z_toe = sec["toe"][0], z_ch0 + sec["toe"][1]
+    z_ramp_top = z_ch0 + sec["ramp_top"][1]
 
     return {
         "a_chamber": a_ch,
@@ -1622,7 +1672,7 @@ def layout(g):
         "z_r1_split": z_dust[1] + br["z_floor"] - y_rise,
         "z_tower": z_dust[1] + c[1]["height"] + c[1]["outlet_rise"] + c[1]["outlet_bend_R"] + 0.5 * c[1]["D_vortex"],
         "x_gooseneck_leg": gn["x_leg"],
-        "chamber_ramp_deg": math.degrees(ramp),
+        "chamber_ramp_deg": sec["ramp_deg"],
         "chamber_ramp_toe": (x_toe, z_toe),
         "z_chamber_ramp_top": z_ramp_top,
         "kiln_end": (x_kiln_end, z_kiln_end),

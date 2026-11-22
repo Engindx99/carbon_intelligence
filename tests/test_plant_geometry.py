@@ -956,23 +956,38 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
         self.assertAlmostEqual(self.ch["side"], 2.0 * a)
         self.assertEqual(self.g["layout"]["chamber_margin"]["source"], "model")
 
-    def test_the_chamber_is_the_layouts_square_with_a_flat_roof(self):
+    def test_the_throat_tops_the_chamber_at_the_layouts_height(self):
         c, L = self.ch, pg.layout(self.g)
         self.assertAlmostEqual(c["height"], 2.0 * L["a_chamber"])
-        self.assertAlmostEqual(L["z_calciner_throat"] - L["z_chamber_floor"], c["height"])   # the throat in the roof
+        self.assertAlmostEqual(L["z_calciner_throat"] - L["z_chamber_floor"], c["height"])
         self.assertLess(c["D_throat"], c["side"])
+        self.assertLess(c["roof_left"][1], c["height"])                             # the throat stands over the roof
 
-    def test_the_floor_is_one_ramp_across_the_plan_no_pit(self):
+    def test_the_section_is_the_users_sketch_with_the_kilns_lines_carried_in(self):
+        # 21 Nov 2026 sketch: throat walls down, a 50 deg ramp, the foot and
+        # the roof the kiln tube's bottom and top lines (kiln.slope)
         c, L = self.ch, pg.layout(self.g)
-        kl = pg.kiln(self.g)
-        clear = self.g["kiln_inlet_chamber"]["mouth_clearance"]["value"]
-        self.assertEqual(self.g["kiln_inlet_chamber"]["mouth_clearance"]["source"], "model")
-        self.assertAlmostEqual(c["ramp_run"], 2.0 * L["a_chamber"])                 # the whole plan: nothing flat behind it
-        self.assertAlmostEqual(c["h_lip"], L["a_chamber"] - 0.5 * kl["D"] - clear)  # clear of the mouth's bottom
-        self.assertGreater(c["h_lip"], 0.0)
-        self.assertAlmostEqual(c["ramp_rise"], c["height"] - c["h_lip"])            # up to the far top corner
-        self.assertAlmostEqual(math.tan(math.radians(c["ramp_slope"])), c["ramp_rise"] / c["ramp_run"])
-        self.assertGreaterEqual(c["ramp_slope"], 39.0)                              # raw meal's angle of repose is 40-45 deg
+        R, r, al = c["R_mouth"], c["r_throat"], c["alpha"]
+        self.assertAlmostEqual(c["ramp_top"][0], -r)                                 # the ramp starts at the throat's left wall
+        self.assertAlmostEqual(math.degrees(math.atan2(c["ramp_top"][1] - c["toe"][1], c["toe"][0] - c["ramp_top"][0])),
+                               c["ramp_deg"])
+        self.assertGreaterEqual(c["ramp_deg"], 45.0)                                 # over meal's 40-45 deg angle of repose
+        for p, q in ((c["toe"], c["lip_low"]), (c["lip_up"], c["roof_left"])):       # along the kiln axis
+            self.assertAlmostEqual((q[1] - p[1]) / (q[0] - p[0]), -math.tan(al))
+        # the mouth's face: R either side of the axis, square to it
+        self.assertAlmostEqual(math.dist(c["lip_low"], c["lip_up"]), 2.0 * R)
+        self.assertAlmostEqual(c["lip_up"][0] - c["lip_low"][0], 2.0 * R * math.sin(al))
+        self.assertLess(c["ramp_top"][1], c["roof_at_throat"])                       # the throat reaches the roof everywhere
+        # the topology draws the same toe and ramp top
+        self.assertAlmostEqual(L["chamber_ramp_toe"][1] - L["z_chamber_floor"], c["toe"][1])
+        self.assertAlmostEqual(L["z_chamber_ramp_top"] - L["z_chamber_floor"], c["ramp_top"][1])
+
+    def test_the_cfd_inlet_is_the_kiln_tubes_stub_and_the_volume_adds_up(self):
+        c = self.ch
+        self.assertEqual(self.g["kiln_inlet_chamber"]["mouth_stub_over_D"]["source"], "model")
+        self.assertAlmostEqual(c["L_stub"], 0.5 * 2.0 * c["R_mouth"])
+        self.assertAlmostEqual(c["volume"], c["V_box"] + c["V_throat"] + c["V_stub"])
+        self.assertAlmostEqual(c["V_box"], c["profile_area"] * c["side"])
         # reported next to the check, never replacing it
         self.assertEqual(self.g["kiln_inlet_chamber"]["gas_velocity_ref_holcim"]["source"], "literature")
 
