@@ -2065,9 +2065,10 @@ def kiln_flame_boundaries(g):
         "bed": {"kind": "wall", "m": None, "T": None, "gas": None, "particles": None,
                 "note": "clinker bed surface (kiln_bed()); its temperature from the twin's burning zone, set in the CFD"},
         "coal_in": {"kind": "mass_flow_inlet", "m": ch["m_transport"], "T": T0, "gas": "air",
-                    "particles": {"m": fuel, "T": T0, "size": None,
-                                  "size_note": "no source: the coal's fineness (R90) is not in the yaml"},
-                    "note": "conveying air (not in the twin) + the coal"},
+                    "particles": {"m": fuel, "T": T0, "size": {
+                        "dist": "rosin_rammler", "d_mean": v(b["fuel_rr_mean"]), "n": v(b["fuel_rr_n"]),
+                        "d_min": v(b["fuel_d_min"]), "d_max": v(b["fuel_d_max"])}},
+                    "note": "conveying air (not in the twin) + the petcoke"},
         "axial_in": {"kind": "mass_flow_inlet", "m": ch["m_axial"], "T": T0, "gas": "air", "particles": None,
                      "note": "the twin's primary air, axial share"},
         "swirl_in": {"kind": "mass_flow_inlet", "m": ch["m_swirl"], "T": T0, "gas": "air", "particles": None,

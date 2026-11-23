@@ -445,19 +445,19 @@ $SKPOLY
   9
 $TDCREATE
  40
-2461368.727324815
+2461368.736357084
   9
 $TDUCREATE
  40
-2461368.602324815
+2461368.611357084
   9
 $TDUPDATE
  40
-2461368.727327477
+2461368.73635985
   9
 $TDUUPDATE
  40
-2461368.602327477
+2461368.61135985
   9
 $TDINDWG
  40
@@ -885,7 +885,7 @@ $PSTYLEMODE
   9
 $FINGERPRINTGUID
   2
-{d9e526a0-9790-4a6d-ad13-533821abcb3e}
+{69129c97-de98-4ac0-bc1c-c5e1d581531d}
   9
 $VERSIONGUID
   2
@@ -15741,7 +15741,7 @@ AcDbMText
  72
      1
   1
-gas out at the burning zone's start; coal, axial, swirl in; clinker bed surface (wall).
+gas out at the burning zone's start; petcoke, axial, swirl in; clinker bed surface (wall).
   7
 SLDTEXTSTYLE0
  73
@@ -25409,9 +25409,9 @@ engin
  40
 0.0
  41
-2461368.602324815
+2461368.611357084
  42
-2461368.602327477
+2461368.61135985
   1
 
  90

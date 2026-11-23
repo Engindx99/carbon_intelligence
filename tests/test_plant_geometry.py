@@ -1469,3 +1469,18 @@ class TheClinkerBedIsTheContinuitysTest(unittest.TestCase):
         L_bz = self.k["burning_L"]
         self.assertAlmostEqual(faces["bed"][3], 2.0 * self.b["c"] * L_bz)
         self.assertAlmostEqual(faces["kiln_gas_out"][3] + self.b["A_bed"], math.pi * 0.25 * self.k["D"] ** 2)
+
+
+class TheFuelFinenessIsSourcedTest(unittest.TestCase):
+    """The coal inlet carries a literature Rosin-Rammler distribution (the
+    twin burns petcoke: Alcaide-Moreno et al., ECOS 2023, Table 5)."""
+
+    def test_the_distribution(self):
+        g = pg.load()
+        size = pg.kiln_flame_boundaries(g)["bc"]["coal_in"]["particles"]["size"]
+        self.assertEqual(size["dist"], "rosin_rammler")
+        self.assertTrue(size["d_min"] < size["d_mean"] < size["d_max"])
+        self.assertGreater(size["n"], 0.0)
+        for k in ("fuel_rr_mean", "fuel_rr_n", "fuel_d_min", "fuel_d_max"):
+            with self.subTest(k):
+                self.assertEqual(g["kiln_burner"][k]["source"], "literature")

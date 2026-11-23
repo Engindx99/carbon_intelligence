@@ -16,10 +16,10 @@ Bu tesisin yakıcısı için yayınlanmış bir ölçü yok. Yakıcı **prosese 
 | Birincil hava sıcaklığı | 293.15 K | modelleme |
 | Eksenel hava basıncı | 28500 Pa | literatür |
 | Girdap hava basıncı | 16500 Pa | literatür |
-| Kömür / taşıma havası yüklemesi | 1.67 | literatür |
+| Petrokok / taşıma havası yüklemesi (literatür: kömür) | 1.67 | literatür |
 | Alev momentumu, alt sınır | 7 N/MW | literatür |
 | Alev momentumu, üst sınır | 11 N/MW | literatür |
-| Kömür hızı, karşılaştırma | 33 m/s | literatür |
+| Petrokok borusu hızı, karşılaştırma (literatür: kömür) | 33 m/s | literatür |
 | Eksenel yarık sayısı | 20 | FLS oranıyla türetilmiş |
 | Yarık alanı / D_uç² | 0.000947 | FLS oranıyla türetilmiş |
 | Yarık boy / en | 3.17 | FLS oranıyla türetilmiş |
@@ -28,12 +28,12 @@ Bu tesisin yakıcısı için yayınlanmış bir ölçü yok. Yakıcı **prosese 
 | Girdap deliği sayısı | 40 | FLS oranıyla türetilmiş |
 | Delik ağzı alanı / D_uç² | 0.000259 | FLS oranıyla türetilmiş |
 | Delik halkası r / D_uç | 0.2898 | FLS oranıyla türetilmiş |
-| Katı yakıt borusu D / D_uç | 0.3335 | FLS oranıyla türetilmiş |
-| Katı yakıt borusu kaçıklığı (yukarı) / D_uç | 0.0536 | FLS oranıyla türetilmiş |
+| Petrokok borusu D / D_uç | 0.3335 | FLS oranıyla türetilmiş |
+| Petrokok borusu kaçıklığı (yukarı) / D_uç | 0.0536 | FLS oranıyla türetilmiş |
 | Girdap deliği eksen açısı | 30 ° | modelleme |
 | Ön plaka kalınlığı | 0.06 m | modelleme |
 | Plenum boyu | 0.5 m | modelleme |
-| Kömür borusu boyu / D | 5 | modelleme |
+| Petrokok borusu boyu / D | 5 | modelleme |
 | Plenum açıklığı | 0.004 m | modelleme |
 | Kanallar arası en ince duvar | 0.003 m | modelleme |
 | Isıl güç | 67.04 MW | türetilmiş |
@@ -55,18 +55,18 @@ Bu tesisin yakıcısı için yayınlanmış bir ölçü yok. Yakıcı **prosese 
 | Girdap akış alanı (deliğe dik) | 0.00354 m² | türetilmiş |
 | Girdap deliği kenarı (deliğe dik) | 9.4 mm | türetilmiş |
 | Delik halkası yarıçapı | 182.0 mm | türetilmiş |
-| Kömür borusu iç çapı | 209.5 mm | türetilmiş |
-| Kömür borusu kaçıklığı (yukarı) | 33.7 mm | türetilmiş |
-| Kömür borusu hızı | 30.2 m/s | türetilmiş |
+| Petrokok borusu iç çapı | 209.5 mm | türetilmiş |
+| Petrokok borusu kaçıklığı (yukarı) | 33.7 mm | türetilmiş |
+| Petrokok borusu hızı | 30.2 m/s | türetilmiş |
 | Eksenel plenum r | 203.4 … 229.7 mm | türetilmiş |
 | Girdap plenumu r | 173.3 … 196.3 mm | türetilmiş |
-| Hacim: kömür / eksenel / girdap | 0.0361 / 0.0183 / 0.0136 m³ | türetilmiş |
+| Hacim: petrokok / eksenel / girdap | 0.0361 / 0.0183 / 0.0136 m³ | türetilmiş |
 | Gövde: uç halkası boyu / D_uç | 1.11 | FLS oranıyla türetilmiş |
 | Gövde: refrakter boyu / D_uç | 10.42 | FLS oranıyla türetilmiş |
 | Gövde: refrakter çapı / D_uç | 0.97 | FLS oranıyla türetilmiş |
 | Gövde: arka kafa boyu / D_uç | 2 | FLS oranıyla türetilmiş |
 | Gövde: arka kafa çapı / D_uç | 0.89 | FLS oranıyla türetilmiş |
-| Gövde: kömür girişi boyu / D_uç | 2.19 | FLS oranıyla türetilmiş |
+| Gövde: petrokok girişi boyu / D_uç | 2.19 | FLS oranıyla türetilmiş |
 | Gövde: kiriş boyu / D_uç | 6 | şematik |
 | Gövde: çelik brülör borusu et kalınlığı | 0.01 m | modelleme |
 | Brülör toplam boyu | 9.57 m | türetilmiş |

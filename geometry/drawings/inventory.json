@@ -2277,6 +2277,38 @@
           "doc": "kiln/kiln_burner.md"
         },
         {
+          "key": "kiln_burner.fuel_rr_mean",
+          "value": 3.4193e-05,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_flame.md"
+        },
+        {
+          "key": "kiln_burner.fuel_rr_n",
+          "value": 0.944,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_flame.md"
+        },
+        {
+          "key": "kiln_burner.fuel_d_min",
+          "value": 7.24e-07,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_flame.md"
+        },
+        {
+          "key": "kiln_burner.fuel_d_max",
+          "value": 0.000138038,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_flame.md"
+        },
+        {
           "key": "kiln_burner.momentum_min_per_MW",
           "value": 7.0,
           "unit": "N/MW",
@@ -2894,7 +2926,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 63,
+        "Estimated": 67,
         "Schematic": 19
       },
       "missing": [

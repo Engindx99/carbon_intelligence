@@ -279,9 +279,9 @@ Const BRN_R_S                      As Double  = 0.21596      ' slot ring radius 
 Const BRN_R_H                      As Double  = 0.182039     ' hole ring radius [derived]
 Const BRN_SLOT_L                   As Double  = 0.034417     ' slot long side [derived]
 Const BRN_SLOT_W                   As Double  = 0.010857     ' slot short side [derived]
-Const kiln_burner_TAB_1            As String  = "thermal_MW~Thermal input (twin kiln fuel x LHV)~67.0381~MW~derived~Estimated;m_pa~Primary air, axial + swirl (twin share)~2.63993~kg/s~derived~Estimated;m_axial~Axial air (split by the open areas)~1.93834~kg/s~derived~Estimated;m_swirl~Swirl air~0.701592~kg/s~derived~Estimated;m_transport~Coal conveying air (fuel / loading)~1.25446~kg/s~derived~Estimated;axial_pressure~Axial air pressure (JETFLEX manual)~28500~Pa~literature~Estimated;swirl_pressure~Swirl air pressure (JETFLEX manual)~16500~Pa~literature~Estimated;u_axial~Axial jet (isentropic)~200.676~m/s~derived~Estimated;u_swirl~Swirl jet (isentropic)~157.643~m/s~derived~Estimated;" ' parameter table rows
-Const kiln_burner_TAB_2            As String  = "momentum_per_MW~Momentum sum m u (FLS 7-11)~7.45216~N/MW~derived~Estimated;D_tip~Tip outer D (scale: slots pass the axial air)~628~mm~derived~Estimated;D_coal~Solid fuel pipe bore~209~mm~derived~Estimated;y_coal~Solid fuel pipe above the tip axis~34~mm~derived~Estimated;u_coal~Coal pipe velocity (check: 33 m/s lit.)~30.2255~m/s~derived~Estimated;L_coal~Coal pipe in the solid (5 D)~1047~mm~derived~Estimated;n_axial~Axial air slots (brochure)~20~-~FLS ratio~Estimated;slot_l~Axial slot, long side~34~mm~derived~Estimated;slot_w~Axial slot, short side~11~mm~derived~Estimated;slot_tilt~Slot's long side off the tangent~13~deg~FLS ratio~Estimated;r_slots~Slot ring radius~216~mm~derived~Estimated;" ' parameter table rows
-Const kiln_burner_TAB_3            As String  = "n_swirl~Swirl air holes (brochure)~40~-~FLS ratio~Estimated;hole_a~Swirl hole side (normal to it)~9~mm~derived~Estimated;swirl_angle~Swirl holes off the axis~30~deg~model parameter~Estimated;r_holes~Swirl hole ring radius (tip plane)~182~mm~derived~Estimated;D_swirl_in~Swirl plenum inner D~347~mm~derived~Estimated;D_swirl_out~Swirl plenum outer D~393~mm~derived~Estimated;D_axial_in~Axial plenum inner D~407~mm~derived~Estimated;D_axial_out~Axial plenum outer D~459~mm~derived~Estimated;plenum_L~Plenums (the solid's air inlets)~500~mm~model parameter~Estimated;plate_t~Front plate the openings run through~60~mm~model parameter~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_1            As String  = "thermal_MW~Thermal input (twin kiln fuel x LHV)~67.0381~MW~derived~Estimated;m_pa~Primary air, axial + swirl (twin share)~2.63993~kg/s~derived~Estimated;m_axial~Axial air (split by the open areas)~1.93834~kg/s~derived~Estimated;m_swirl~Swirl air~0.701592~kg/s~derived~Estimated;m_transport~Petcoke conveying air (fuel / loading)~1.25446~kg/s~derived~Estimated;axial_pressure~Axial air pressure (JETFLEX manual)~28500~Pa~literature~Estimated;swirl_pressure~Swirl air pressure (JETFLEX manual)~16500~Pa~literature~Estimated;u_axial~Axial jet (isentropic)~200.676~m/s~derived~Estimated;u_swirl~Swirl jet (isentropic)~157.643~m/s~derived~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_2            As String  = "momentum_per_MW~Momentum sum m u (FLS 7-11)~7.45216~N/MW~derived~Estimated;D_tip~Tip outer D (scale: slots pass the axial air)~628~mm~derived~Estimated;D_coal~Petcoke pipe bore~209~mm~derived~Estimated;y_coal~Petcoke pipe above the tip axis~34~mm~derived~Estimated;u_coal~Petcoke pipe velocity (check: 33 m/s lit., coal)~30.2255~m/s~derived~Estimated;L_coal~Petcoke pipe in the solid (5 D)~1047~mm~derived~Estimated;n_axial~Axial air slots (brochure)~20~-~FLS ratio~Estimated;slot_l~Axial slot, long side~34~mm~derived~Estimated;slot_w~Axial slot, short side~11~mm~derived~Estimated;slot_tilt~Slot's long side off the tangent~13~deg~FLS ratio~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_3            As String  = "r_slots~Slot ring radius~216~mm~derived~Estimated;n_swirl~Swirl air holes (brochure)~40~-~FLS ratio~Estimated;hole_a~Swirl hole side (normal to it)~9~mm~derived~Estimated;swirl_angle~Swirl holes off the axis~30~deg~model parameter~Estimated;r_holes~Swirl hole ring radius (tip plane)~182~mm~derived~Estimated;D_swirl_in~Swirl plenum inner D~347~mm~derived~Estimated;D_swirl_out~Swirl plenum outer D~393~mm~derived~Estimated;D_axial_in~Axial plenum inner D~407~mm~derived~Estimated;D_axial_out~Axial plenum outer D~459~mm~derived~Estimated;plenum_L~Plenums (the solid's air inlets)~500~mm~model parameter~Estimated;plate_t~Front plate the openings run through~60~mm~model parameter~Estimated;" ' parameter table rows
 Const kiln_burner_TAB_4            As String  = "u_lance~Fuel lance, igniter, flame scanner (closed here)~-~~no source~Unknown;u_nozzle_angle~Axial nozzles' fixed angle, swirl sense~-~~no source~Unknown;u_insertion~Burner position in the kiln (depth, offset)~-~~no source~Unknown;" ' parameter table rows
 Const kiln_burner_TAB_5            As String  = ""           ' parameter table rows
 Const kiln_burner_TAB_6            As String  = ""           ' parameter table rows
@@ -318,8 +318,8 @@ Const KBD_Z_PART                   As Double  = -7.638364    ' head partition, z
 Const KBD_Z_SEC                    As Double  = -7.468762    ' section B-B: through the head's front compartment at air inlet 1, z [derived]
 Const KBD_R_CORE                   As Double  = 0.173341     ' core tube's outer radius (= swirl plenum's inner) [derived]
 Const kiln_burner_body_TAB_1       As String  = "D_tip~Tip outer D (kiln_burner sheet)~628~mm~derived~Estimated;tip_ring_L~Castable tip ring, long~697~mm~derived~Estimated;castable_L~Castable, tip to its back end~6545~mm~derived~Estimated;D_castable~Castable OD behind the tip ring~609~mm~derived~Estimated;D_pipe~Steel burner pipe OD (bore = axial plenum)~479~mm~derived~Estimated;pipe_t~Steel burner pipe wall~10~mm~model parameter~Estimated;flange_D~Mounting flange OD~697~mm~derived~Estimated;head_L~Air connection head, long~1256~mm~derived~Estimated;D_head~Air connection head OD~559~mm~derived~Estimated;bellows_L~Expansion joint, long~176~mm~derived~Estimated;" ' parameter table rows
-Const kiln_burner_body_TAB_2       As String  = "coal_L~Solid fuel inlet pipe, long (to its flange's back centre)~1376~mm~derived~Estimated;D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (the elbow)~239~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange (back centre) to tip~9567~mm~derived~Estimated;D_core~Core tube OD (= swirl plenum's inner D)~347~mm~derived~Estimated;D_swirl_tube~Swirl tube ID (= swirl plenum's outer D)~393~mm~derived~Estimated;" ' parameter table rows
-Const kiln_burner_body_TAB_3       As String  = "D_fuel_pipe~Common fuel pipe ID (= the CFD coal pipe)~209~mm~derived~Estimated;partition_at~Head partition, back from its front face~879~mm~derived~Estimated;inlet_roles~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
+Const kiln_burner_body_TAB_2       As String  = "coal_L~Petcoke inlet pipe, long (to its flange's back centre)~1376~mm~derived~Estimated;D_coal_inlet~Petcoke inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (the elbow)~239~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, petcoke inlet flange (back centre) to tip~9567~mm~derived~Estimated;D_core~Core tube OD (= swirl plenum's inner D)~347~mm~derived~Estimated;D_swirl_tube~Swirl tube ID (= swirl plenum's outer D)~393~mm~derived~Estimated;" ' parameter table rows
+Const kiln_burner_body_TAB_3       As String  = "D_fuel_pipe~Common fuel pipe ID (= the CFD petcoke pipe)~209~mm~derived~Estimated;partition_at~Head partition, back from its front face~879~mm~derived~Estimated;inlet_roles~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
 Const kiln_burner_body_TAB_4       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_5       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_6       As String  = ""           ' parameter table rows
@@ -3201,21 +3201,21 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, the burner back along -z; y up. Not placed in the kiln.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. Lengths: ratios of the tip D on the Fuller JETFLEX 2.0 brochure's side view (no capacity", TEXT_H
         LabelPH COL_X0, y + 0.002, "   stated), scaled by the tip D of the kiln_burner sheet. Beam length: schematic.", TEXT_H
-        LabelPH COL_X0, y - 0.003, "5. Inside: core + swirl tubes meet the channels' plenums, the fuel pipe their coal pipe (B-B).", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. Inside: core + swirl tubes meet the channels' plenums, the fuel pipe their petcoke pipe (B-B).", TEXT_H
         LabelPH COL_X0, y - 0.008, "   Head partition: inlet 1 axial air, inlet 2 swirl air -- assumed (the brochure shows neither).", TEXT_H
         LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_burner body_), plant_geometry.kiln_burner_body()", TEXT_H
     ElseIf equip = "kiln_flame" Then
         LabelPH COL_X0, y + 0.012, "3. Kiln frame: z along the kiln axis, z = 0 at the back end, y up; the hood stands on the", TEXT_H
         LabelPH COL_X0, y + 0.007, "   plant's level, turned by the kiln's 3 % (1.72 deg); the kiln's slope is not built in.", TEXT_H
         LabelPH COL_X0, y + 0.002, "4. Boundaries: segment 1 secondary air in, segment 2 tertiary supply in, roof mouth out, kiln", TEXT_H
-        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; coal, axial, swirl in; clinker bed surface (wall).", TEXT_H
+        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; petcoke, axial, swirl in; clinker bed surface (wall).", TEXT_H
         LabelPH COL_X0, y - 0.008, "5. Hood W, H rest on schematic values (seal depth, cooler drop): listed, not dimensioned.", TEXT_H
         LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_hood), plant_geometry.kiln_flame()", TEXT_H
     ElseIf equip = "kiln_burner" Then
         LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, flow towards +z (into the kiln); y up.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. FLS gives no size: the tip is the Fuller JETFLEX 2.0 brochure's (image ratios), scaled", TEXT_H
         LabelPH COL_X0, y + 0.002, "   so the slots pass the twin's axial air at the manual's 285 mbar (Pedersen 2017: 210).", TEXT_H
-        LabelPH COL_X0, y - 0.003, "5. Inlets: the plenums' and the coal pipe's back faces; outlets: the openings at z = 0.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. Inlets: the plenums' and the petcoke pipe's back faces; outlets: the openings at z = 0.", TEXT_H
         LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml (kiln_burner), plant_geometry.kiln_burner()", TEXT_H
     ElseIf equip = "kiln_rotax" Then
         LabelPH COL_X0, y + 0.012, "3. Axis z, z = 0 at the back end, y up; the slope is not built in, the piers reach the sloped ground.", TEXT_H
@@ -4021,10 +4021,10 @@ End Sub
 
 Private Sub DrawLabelsBurner()
     UseLayer L_TEXT
-    LabelM3 vFront, -0.085, BRN_Y_C + 0.055, 0#, "Coal + conveying air"
+    LabelM3 vFront, -0.085, BRN_Y_C + 0.055, 0#, "Petcoke + conveying air"
     LabelM3 vFront, 0.1, BRN_AX_R1 + 0.045, 0#, "Axial air: 20 slots"
     LabelM3 vFront, 0.1, BRN_AX_R1 + 0.02, 0#, "Swirl air: 40 holes, 30 deg"
-    LabelM3 vSec, 0#, BRN_Y_C + 0.01, -BRN_L_C - 0.16, "Coal in"
+    LabelM3 vSec, 0#, BRN_Y_C + 0.01, -BRN_L_C - 0.16, "Petcoke in"
     LabelM3 vSec, 0#, BRN_AX_R1 - 0.02, -BRN_T - BRN_LP - 0.2, "Axial air in"
     LabelM3 vSec, 0#, -BRN_SW_R1 + 0.02, -BRN_T - BRN_LP - 0.2, "Swirl air in"
     LabelM3 vSec, 0#, -0.02, 0.08, "To the kiln"
@@ -4182,7 +4182,7 @@ Private Sub DrawLabelsBurnerBody()
     LabelM3 vFront, 0#, KBD_Y_BEAM + 0.75, KBD_Z_HEAD - 1.2, "Carriage beam (schematic length)"
     LabelM3 vFront, 0#, KBD_R_TIP + 0.6, -1.6, "Tip: channels on the kiln_burner sheet"
     LabelM3 vPlan, KBD_X_EL - 0.45, 0#, KBD_Z_IN1 + 0.6, "Air inlet 1 (elbow): axial air, air inlet 2: swirl air (assumed)"
-    LabelM3 vPlan, 0.45, 0#, KBD_Z_COAL - 0.2, "Coal + conveying air in"
+    LabelM3 vPlan, 0.45, 0#, KBD_Z_COAL - 0.2, "Petcoke + conveying air in"
     LabelM3 vPlan, 0.6, 0#, KBD_Z_HEAD + 0.1, "Expansion joint"
     ViewTitle vFront, "SIDE VIEW - tip right", "above", 0.02, TEXT_H
     ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H

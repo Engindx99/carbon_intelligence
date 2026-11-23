@@ -88,7 +88,7 @@
     },
     {
       "key": "kiln_burner.m_transport",
-      "label": "Coal conveying air (fuel / loading)",
+      "label": "Petcoke conveying air (fuel / loading)",
       "value": 1.2544550898203592,
       "unit": "kg/s",
       "source": "derived",
@@ -203,7 +203,7 @@
     },
     {
       "key": "kiln_burner.D_coal",
-      "label": "Solid fuel pipe bore",
+      "label": "Petcoke pipe bore",
       "value": 0.20948966501050217,
       "unit": "m",
       "source": "derived",
@@ -227,7 +227,7 @@
     },
     {
       "key": "kiln_burner.y_coal",
-      "label": "Solid fuel pipe above the tip axis",
+      "label": "Petcoke pipe above the tip axis",
       "value": 0.0336691035818978,
       "unit": "m",
       "source": "derived",
@@ -251,7 +251,7 @@
     },
     {
       "key": "kiln_burner.u_coal",
-      "label": "Coal pipe velocity (check: 33 m/s lit.)",
+      "label": "Petcoke pipe velocity (check: 33 m/s lit., coal)",
       "value": 30.225533162417907,
       "unit": "m/s",
       "source": "derived",
@@ -276,7 +276,7 @@
     },
     {
       "key": "kiln_burner.L_coal",
-      "label": "Coal pipe in the solid (5 D)",
+      "label": "Petcoke pipe in the solid (5 D)",
       "value": 1.0474483250525108,
       "unit": "m",
       "source": "derived",

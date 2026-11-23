@@ -209,7 +209,7 @@
     },
     {
       "key": "kiln_burner_body.coal_L",
-      "label": "Solid fuel inlet pipe, long (to its flange's back centre)",
+      "label": "Petcoke inlet pipe, long (to its flange's back centre)",
       "value": 1.3756592694842578,
       "unit": "m",
       "source": "derived",
@@ -229,7 +229,7 @@
     },
     {
       "key": "kiln_burner_body.D_coal_inlet",
-      "label": "Solid fuel inlet pipe OD",
+      "label": "Petcoke inlet pipe OD",
       "value": 0.23241731950190644,
       "unit": "m",
       "source": "derived",
@@ -329,7 +329,7 @@
     },
     {
       "key": "kiln_burner_body.L_total",
-      "label": "Burner, coal inlet flange (back centre) to tip",
+      "label": "Burner, petcoke inlet flange (back centre) to tip",
       "value": 9.566799394632529,
       "unit": "m",
       "source": "derived",
@@ -395,7 +395,7 @@
     },
     {
       "key": "kiln_burner_body.D_fuel_pipe",
-      "label": "Common fuel pipe ID (= the CFD coal pipe)",
+      "label": "Common fuel pipe ID (= the CFD petcoke pipe)",
       "value": 0.20948966501050217,
       "unit": "m",
       "source": "derived",

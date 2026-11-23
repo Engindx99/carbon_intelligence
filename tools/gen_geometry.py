@@ -1490,10 +1490,10 @@ def _kiln_burner_rows(g):
         row_src("Birincil hava sıcaklığı", b["primary_air_T"]),
         row_src("Eksenel hava basıncı", b["axial_pressure"]),
         row_src("Girdap hava basıncı", b["swirl_pressure"]),
-        row_src("Kömür / taşıma havası yüklemesi", b["transport_loading"]),
+        row_src("Petrokok / taşıma havası yüklemesi (literatür: kömür)", b["transport_loading"]),
         row_src("Alev momentumu, alt sınır", b["momentum_min_per_MW"]),
         row_src("Alev momentumu, üst sınır", b["momentum_max_per_MW"]),
-        row_src("Kömür hızı, karşılaştırma", b["coal_velocity_ref"]),
+        row_src("Petrokok borusu hızı, karşılaştırma (literatür: kömür)", b["coal_velocity_ref"]),
         row_src("Eksenel yarık sayısı", b["n_axial"]),
         row_src("Yarık alanı / D_uç²", b["axial_slot_area_over_D2"]),
         row_src("Yarık boy / en", b["axial_slot_aspect"]),
@@ -1502,12 +1502,12 @@ def _kiln_burner_rows(g):
         row_src("Girdap deliği sayısı", b["n_swirl"]),
         row_src("Delik ağzı alanı / D_uç²", b["swirl_hole_area_over_D2"]),
         row_src("Delik halkası r / D_uç", b["swirl_ring_r_over_D"]),
-        row_src("Katı yakıt borusu D / D_uç", b["coal_pipe_D_over_D"]),
-        row_src("Katı yakıt borusu kaçıklığı (yukarı) / D_uç", b["coal_pipe_offset_over_D"]),
+        row_src("Petrokok borusu D / D_uç", b["coal_pipe_D_over_D"]),
+        row_src("Petrokok borusu kaçıklığı (yukarı) / D_uç", b["coal_pipe_offset_over_D"]),
         row_src("Girdap deliği eksen açısı", b["swirl_angle"]),
         row_src("Ön plaka kalınlığı", b["plate_t"]),
         row_src("Plenum boyu", b["plenum_L"]),
-        row_src("Kömür borusu boyu / D", b["coal_pipe_L_over_D"]),
+        row_src("Petrokok borusu boyu / D", b["coal_pipe_L_over_D"]),
         row_src("Plenum açıklığı", b["plenum_clearance"]),
         row_src("Kanallar arası en ince duvar", b["wall_min"]),
         row_der("Isıl güç", bu["thermal_MW"], "MW", 2),
@@ -1529,18 +1529,18 @@ def _kiln_burner_rows(g):
         row_der("Girdap akış alanı (deliğe dik)", bu["A_swirl"], "m²", 5),
         row_der("Girdap deliği kenarı (deliğe dik)", bu["hole_a"] * 1e3, "mm", 1),
         row_der("Delik halkası yarıçapı", bu["r_holes"] * 1e3, "mm", 1),
-        row_der("Kömür borusu iç çapı", bu["D_coal"] * 1e3, "mm", 1),
-        row_der("Kömür borusu kaçıklığı (yukarı)", bu["y_coal"] * 1e3, "mm", 1),
-        row_der("Kömür borusu hızı", bu["u_coal"], "m/s", 1),
+        row_der("Petrokok borusu iç çapı", bu["D_coal"] * 1e3, "mm", 1),
+        row_der("Petrokok borusu kaçıklığı (yukarı)", bu["y_coal"] * 1e3, "mm", 1),
+        row_der("Petrokok borusu hızı", bu["u_coal"], "m/s", 1),
         ("Eksenel plenum r", f"{bu['axial_plenum'][0] * 1e3:.1f} … {bu['axial_plenum'][1] * 1e3:.1f} mm", "türetilmiş"),
         ("Girdap plenumu r", f"{bu['swirl_plenum'][0] * 1e3:.1f} … {bu['swirl_plenum'][1] * 1e3:.1f} mm", "türetilmiş"),
-        ("Hacim: kömür / eksenel / girdap", f"{gr['coal']['V']:.4f} / {gr['axial']['V']:.4f} / {gr['swirl']['V']:.4f} m³", "türetilmiş"),
+        ("Hacim: petrokok / eksenel / girdap", f"{gr['coal']['V']:.4f} / {gr['axial']['V']:.4f} / {gr['swirl']['V']:.4f} m³", "türetilmiş"),
         row_src("Gövde: uç halkası boyu / D_uç", b["body_tip_ring_L"]),
         row_src("Gövde: refrakter boyu / D_uç", b["body_castable_L"]),
         row_src("Gövde: refrakter çapı / D_uç", b["body_castable_D"]),
         row_src("Gövde: arka kafa boyu / D_uç", b["body_head_L"]),
         row_src("Gövde: arka kafa çapı / D_uç", b["body_head_D"]),
-        row_src("Gövde: kömür girişi boyu / D_uç", b["body_coal_L"]),
+        row_src("Gövde: petrokok girişi boyu / D_uç", b["body_coal_L"]),
         row_src("Gövde: kiriş boyu / D_uç", b["body_beam_L"]),
         row_src("Gövde: çelik brülör borusu et kalınlığı", b["body_pipe_t"]),
         row_der("Brülör toplam boyu", bd["L_total"], "m", 2),
@@ -1564,8 +1564,8 @@ def _kiln_hood_rows(g):
         row_der("CFD: segment 1 girişi (ikincil + kaçak)", bc["secondary_air_in"]["m"], "kg/s", 3),
         row_der("CFD: segment 1 girişi, karışım sıcaklığı", bc["secondary_air_in"]["T"], "K", 1),
         row_der("CFD: segment 2 girişi (tersiyer besleme)", bc["tertiary_supply_in"]["m"], "kg/s", 3),
-        row_der("CFD: kömür taşıma havası (twin'de yok)", bc["coal_in"]["m"], "kg/s", 3),
-        row_der("CFD: kömür", bc["coal_in"]["particles"]["m"], "kg/s", 3),
+        row_der("CFD: petrokok taşıma havası (twin'de yok)", bc["coal_in"]["m"], "kg/s", 3),
+        row_der("CFD: petrokok", bc["coal_in"]["particles"]["m"], "kg/s", 3),
         row_der("CFD: fırın gazı çıkışı (kütle dengesi)", fb["balance"]["kiln_gas_out"], "kg/s", 3),
         row_src("Hız ölçütü, alt", h["air_velocity_min"]),
         row_src("Hız ölçütü, üst", h["air_velocity_max"]),
@@ -1581,6 +1581,43 @@ def _kiln_hood_rows(g):
         row_der("Hız (ikincil havanın sıcaklığında)", hd["u_hot"], "m/s", 2),
         row_der("Ölçütün izin verdiği en küçük kesit", hd["area_min"], "m²", 2),
     ]
+
+
+def _kiln_flame_rows(g):
+    """kiln/kiln_flame.md: the flame volume's extent, its bed and every
+    boundary's value (kiln_flame(), kiln_bed(), kiln_flame_boundaries())."""
+    f, fb, b = pg.kiln_flame(g), pg.kiln_flame_boundaries(g), g["kiln_burner"]
+    bd = f["bed"]
+    faces = {x[0]: x for x in f["faces"]}
+    kinds = {"mass_flow_inlet": "kütle debisi girişi", "mass_flow_outlet": "kütle debisi çıkışı",
+             "pressure_outlet": "basınç çıkışı", "wall": "duvar"}
+    rows = [
+        row_der("Fırın deliğinin başı (kiln_gas_out), z", f["z_cut"], "m", 2),
+        row_der("Brülör ucundan gaz çıkışına", f["L_tip_to_cut"], "m", 2),
+        row_der("Alev boyu tahmini (Sarkar 2009, D ile ölçekli)", f["L_flame_est"], "m", 2),
+        row_der("Tersiyer çıkışı, tavandan", f["L_ta"], "m", 2),
+        row_der("Yatak doluluğu (süreklilik)", 100.0 * bd["fill"], "%", 2),
+        row_der("Yatak yüzeyi genişliği", 2.0 * bd["c"], "m", 2),
+        row_der("Yatakta geçiş süresi (yanma bölgesi)", bd["tau_bz"] / 60.0, "dk", 2),
+    ]
+    for name, x in faces.items():
+        bc = fb["bc"][name]
+        val = kinds[bc["kind"]]
+        if bc["m"] is not None:
+            val += f", {bc['m']:.3f} kg/s"
+        if bc["T"] is not None:
+            val += f", {bc['T']:.1f} K"
+        rows.append((f"`{name}` ({x[3]:.3f} m²)", val, bc["note"].replace("|", "/")))
+    rows += [
+        row_der("Petrokok debisi", fb["bc"]["coal_in"]["particles"]["m"], "kg/s", 3),
+        row_src("Tane dağılımı: Rosin-Rammler ortalama çap", b["fuel_rr_mean"], scale=1e6, unit="µm", digits=3),
+        row_src("Tane dağılımı: n", b["fuel_rr_n"], digits=3),
+        row_src("Tane dağılımı: en küçük çap", b["fuel_d_min"], scale=1e6, unit="µm", digits=3),
+        row_src("Tane dağılımı: en büyük çap", b["fuel_d_max"], scale=1e6, unit="µm", digits=3),
+        row_der("Girişler toplamı (hava + yakıt)", fb["balance"]["in"], "kg/s", 3),
+        row_der("Fırın gazı çıkışı (kütle dengesi)", fb["balance"]["kiln_gas_out"], "kg/s", 3),
+    ]
+    return rows
 
 
 def _kiln_chamber_rows(g):
@@ -1821,6 +1858,7 @@ DOCS = {
     "kiln/kiln_burner.md": _kiln_burner_rows,
     **{f"preheater/meal_pipe_C{s_}.md": (lambda g, s_=s_: _meal_pipe_rows(g, s_)) for s_ in range(1, 6)},
     "kiln/kiln_hood.md": _kiln_hood_rows,
+    "kiln/kiln_flame.md": _kiln_flame_rows,
     "kiln/kiln_inlet_chamber.md": _kiln_chamber_rows,
     "fan/id_fan.md": _id_fan_rows,
     "cooler/cooler.md": _cooler_rows,

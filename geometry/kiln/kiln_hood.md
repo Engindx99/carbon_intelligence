@@ -18,8 +18,8 @@ Başlık için yayınlanmış bir ölçü ya da ölçü kuralı bulunamadı (16 
 | CFD: segment 1 girişi (ikincil + kaçak) | 23.759 kg/s | türetilmiş |
 | CFD: segment 1 girişi, karışım sıcaklığı | 1052.0 K | türetilmiş |
 | CFD: segment 2 girişi (tersiyer besleme) | 54.925 kg/s | türetilmiş |
-| CFD: kömür taşıma havası (twin'de yok) | 1.254 kg/s | türetilmiş |
-| CFD: kömür | 2.095 kg/s | türetilmiş |
+| CFD: petrokok taşıma havası (twin'de yok) | 1.254 kg/s | türetilmiş |
+| CFD: petrokok | 2.095 kg/s | türetilmiş |
 | CFD: fırın gazı çıkışı (kütle dengesi) | 29.749 kg/s | türetilmiş |
 | Hız ölçütü, alt | 4 m/s | literatür |
 | Hız ölçütü, üst | 10 m/s | literatür |

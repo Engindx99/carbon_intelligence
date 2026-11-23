@@ -46,7 +46,7 @@ def params(g, name="kiln_burner"):
 
     fuel, lhv = y("fuel_flow", "Kiln fuel"), y("fuel_LHV", "LHV")
     air, share = y("kiln_air_flow", "Kiln air"), y("primary_air_fraction", "Primary air share")
-    T0, load = y("primary_air_T", "Primary air T"), y("transport_loading", "Coal loading")
+    T0, load = y("primary_air_T", "Primary air T"), y("transport_loading", "Petcoke loading")
     ratios = [y(k, k) for k in ("n_axial", "axial_slot_area_over_D2", "n_swirl", "swirl_hole_area_over_D2")]
 
     P["thermal_MW"] = pv.derived("kiln_burner.thermal_MW", "Thermal input (twin kiln fuel x LHV)",
@@ -61,7 +61,7 @@ def params(g, name="kiln_burner"):
     P["m_axial"] = pv.derived("kiln_burner.m_axial", "Axial air (split by the open areas)",
                               r["m_axial"], "kg/s", split)
     P["m_swirl"] = pv.derived("kiln_burner.m_swirl", "Swirl air", r["m_swirl"], "kg/s", split)
-    P["m_transport"] = pv.derived("kiln_burner.m_transport", "Coal conveying air (fuel / loading)",
+    P["m_transport"] = pv.derived("kiln_burner.m_transport", "Petcoke conveying air (fuel / loading)",
                                   r["m_transport"], "kg/s", [fuel, load])
     P["u_axial"] = pv.derived("kiln_burner.u_axial", "Axial jet (isentropic)", r["u_axial"], "m/s",
                               [P["axial_pressure"], T0])
@@ -74,13 +74,13 @@ def params(g, name="kiln_burner"):
     scale = [P["D_tip"]]
     P["n_axial"] = yp("n_axial", "Axial air slots (brochure)")
     P["n_swirl"] = yp("n_swirl", "Swirl air holes (brochure)")
-    dc = y("coal_pipe_D_over_D", "Coal pipe D / tip D")
-    P["D_coal"] = pv.derived("kiln_burner.D_coal", "Solid fuel pipe bore", r["D_coal"], "m", scale + [dc])
-    P["y_coal"] = pv.derived("kiln_burner.y_coal", "Solid fuel pipe above the tip axis", r["y_coal"], "m",
+    dc = y("coal_pipe_D_over_D", "Petcoke pipe D / tip D")
+    P["D_coal"] = pv.derived("kiln_burner.D_coal", "Petcoke pipe bore", r["D_coal"], "m", scale + [dc])
+    P["y_coal"] = pv.derived("kiln_burner.y_coal", "Petcoke pipe above the tip axis", r["y_coal"], "m",
                              scale + [y("coal_pipe_offset_over_D", "offset")])
-    P["u_coal"] = pv.derived("kiln_burner.u_coal", "Coal pipe velocity (check: 33 m/s lit.)",
+    P["u_coal"] = pv.derived("kiln_burner.u_coal", "Petcoke pipe velocity (check: 33 m/s lit., coal)",
                              r["u_coal"], "m/s", [P["m_transport"], P["D_coal"]])
-    P["L_coal"] = pv.derived("kiln_burner.L_coal", "Coal pipe in the solid (5 D)", r["L_coal"], "m",
+    P["L_coal"] = pv.derived("kiln_burner.L_coal", "Petcoke pipe in the solid (5 D)", r["L_coal"], "m",
                              [P["D_coal"], y("coal_pipe_L_over_D", "L / D")])
     slot = scale + [y("axial_slot_aspect", "aspect"), P["n_axial"]]
     P["slot_l"] = pv.derived("kiln_burner.slot_l", "Axial slot, long side", r["slot_l"], "m", slot)

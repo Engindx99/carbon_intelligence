@@ -454,6 +454,14 @@ kiln_burner:
   kiln_air_flow:       {value: 26.3993, unit: kg/s,  source: model,       doc: kiln/kiln_burner.md}
   primary_air_fraction: {value: 0.10,   unit: "-",   source: model,       doc: kiln/kiln_burner.md}
   primary_air_T:       {value: 293.15,  unit: K,     source: model,       doc: kiln/kiln_burner.md}
+  # The fuel's fineness for the flame CFD (the twin burns petcoke only:
+  # physics.fuel_heat_release). Rosin-Rammler fit of an industrial kiln's
+  # petcoke, measured: Alcaide-Moreno, Castan-Lascorz & Tavares, ECOS 2023
+  # (doi 10.52202/069564-0041) Table 5: mean 34.193 um, n 0.944, 0.724-138.038 um.
+  fuel_rr_mean:        {value: 34.193e-6, unit: m,   source: literature,  doc: kiln/kiln_flame.md}
+  fuel_rr_n:           {value: 0.944,   unit: "-",   source: literature,  doc: kiln/kiln_flame.md}
+  fuel_d_min:          {value: 0.724e-6, unit: m,    source: literature,  doc: kiln/kiln_flame.md}
+  fuel_d_max:          {value: 138.038e-6, unit: m,  source: literature,  doc: kiln/kiln_flame.md}
   # FLSmidth's JETFLEX flame momentum range, primary air (flsmidth.com
   # JETFLEX page): the derived momentum must sit in it (22 Nov 2026: the
   # momentum follows from the channel pressures, no longer an input).
