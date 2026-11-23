@@ -8,7 +8,7 @@ schematic = layout only; absent = Unknown.
 |---|---|---|---|---|---|---|---|---|
 | Raw meal | FEED | Raw meal feed chute into the C1 riser | 2 | 0 / 4 / 0 | - | to draw | 1 PH | preheater/riser_R1.md: feed system upstream of the chute is not modelled |
 | Raw meal | MP | Meal pipes C1-C5 (with flap valves) | per cyclone | 0 / 2 / 0 | - | to draw | 1 PH | preheater/meal_pipe_C1.md .. C5.md: diameter (scaled by mass flux) and slope are model values; length, route, flap position unknown; no CFD solid |
-| Preheater | C1 | Cyclone C1 (stage 1, top) | 2 per string | 2 / 19 / 0 | C1.SLDPRT | drawn: geometry/drawings/C1/C1.pdf | 1 PH | - |
+| Preheater | C1 | Cyclone C1 (stage 1, top) | 2 per string | 2 / 20 / 0 | C1.SLDPRT | drawn: geometry/drawings/C1/C1.pdf | 1 PH | - |
 | Preheater | C2 | Cyclone C2 | 1 per string | 3 / 14 / 0 | C4.SLDPRT (same geometry) | drawn: geometry/drawings/C4/C4.pdf | 1 PH | - |
 | Preheater | C3 | Cyclone C3 | 1 per string | 3 / 14 / 0 | C4.SLDPRT (same geometry) | drawn: geometry/drawings/C4/C4.pdf | 1 PH | - |
 | Preheater | C4 | Cyclone C4 | 1 per string | 2 / 18 / 0 | C4.SLDPRT | drawn: geometry/drawings/C4/C4.pdf | 1 PH | - |

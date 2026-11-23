@@ -93,6 +93,7 @@ CASE_KEYS = (  # source key -> SelectCyclone variable
     ("outlet_rise_over_Dx", "OUTLET_EXT_OVER_VORTEX_D"),
     ("outlet_bend_R_over_Dx", "ELBOW_R_OVER_VORTEX_D"),
     ("outlet_run_over_Dx", "OUTLET_DOWN_OVER_VORTEX_D"),
+    ("outlet_side", "OUTLET_SIDE"),
     ("inlet_duct_length", "L_INLET_CASE"),
     ("inlet_riser", "RISER_IN_ON"),
     ("boi_radius", "BOI_RADIUS"),
@@ -862,9 +863,13 @@ def c1_twin_bas(g):
         der("C1_Y_FAR", -pg.cyclone_volute_extent(g, "C1")["y_min"] if c1["volute"] else 0.5 * c1["D_barrel"],
             "the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end"),
         der("C1_TOP", o["z_bend"] + o["bend_R"] + 0.5 * o["D"], "the outlet bend's crown"),
-        der("C1_X_MAX", o["leg_x"] + 0.5 * o["D"], "the C1_riser solid's far side, its outlet leg (C1 frame x)"),
-        der("C1_X_MIN", tip, "the C1_riser solid's near side, its feed chute (C1 frame x)"),
+        der("C1_X_MAX", o["leg_x"] + 0.5 * o["D"] if o["side"] > 0 else
+            max(0.5 * c1["D_barrel"], pg.cyclone_volute_extent(g, "C1")["x_max"] if c1["volute"] else 0.0),
+            "the C1_riser solid's far side (C1 frame x): its outlet leg, or (outlet_side -1) the barrel / scroll"),
+        der("C1_X_MIN", min(tip, -(o["leg_x"] + 0.5 * o["D"])) if o["side"] < 0 else tip,
+            "the C1_riser solid's near side (C1 frame x): its feed chute, or the outlet leg past it"),
         der("OUT_Z_END", o["z_end"], "the outlet legs' end faces"),
+        der("OUT_Y", o["side"] * o["leg_x"], "the outlet legs' axes, twin y (C1 frame x; outlet_side)"),
     ]
 
 
@@ -1053,6 +1058,30 @@ def cooler_body_bas(g):
     return out
 
 
+MLP_CHUNKS = 12
+
+
+def meal_pipes_bas(g):
+    """meal_pipes.bas: the tower's meal pipes (plant_geometry.meal_pipe_bodies(),
+    from meal_routes()) as cooler_body_bas, joined from MLP_1 .. MLP_12."""
+    recs = ["|".join([b["name"], b["kind"]] + [_fixed(q) for q in list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])]) + ";"
+            for b in pg.meal_pipe_bodies(g)]
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > MLP_CHUNKS:
+        raise ValueError(f"meal_pipes: {len(chunks)} chunks, the macro joins {MLP_CHUNKS}")
+    chunks += [""] * (MLP_CHUNKS - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    out += [Const(f"MLP_{i + 1}", c, "plant_geometry.meal_pipe_bodies() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    return out
+
+
 def plant_assembly_bas(g):
     """plant_assembly.bas: the tower's parts and where each goes
     (plant_geometry.tower_placement()): name|file|R (9, rows)|o (3);
@@ -1236,6 +1265,7 @@ TARGETS = {
     "kiln_wall.bas": kiln_wall_bas,
     "kiln_rotax.bas": kiln_rotax_bas,
     "cooler_body.bas": cooler_body_bas,
+    "meal_pipes.bas": meal_pipes_bas,
     "plant_assembly.bas": plant_assembly_bas,
     "kiln_burner.bas": kiln_burner_bas,
     "kiln_burner_body.bas": kiln_burner_body_bas,

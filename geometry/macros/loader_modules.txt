@@ -14,4 +14,5 @@ kiln_burner_body kiln_burner_body_solid
 kiln_flame kiln_flame_solid
 cooler cooler_solid
 cooler_body cooler_body_solid
+meal_pipes meal_pipes_solid
 plant_assembly plant_assembly

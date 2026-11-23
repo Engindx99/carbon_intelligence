@@ -86,7 +86,8 @@ CYCLONE_FLAGS = (
 )
 # only where they apply: a bend's R and leg (outlet_turn 90 / 180), a
 # riser under the inlet (C2-C5, user decision 17 Nov 2026)
-CYCLONE_OPTIONAL = {"outlet_bend_R_over_Dx": 0.0, "outlet_run_over_Dx": 0.0, "inlet_riser": False}
+CYCLONE_OPTIONAL = {"outlet_bend_R_over_Dx": 0.0, "outlet_run_over_Dx": 0.0, "inlet_riser": False,
+                    "outlet_side": 1.0}
 
 
 def cyclone_scale(g, name):
@@ -117,6 +118,8 @@ def cyclone(g, name):
     c = {key: k * v(base[key]) for key in CYCLONE_DIMS}
     c.update({key: v(base[key]) for key in CYCLONE_FLAGS})
     c.update({key: v(base[key]) if key in base else dflt for key, dflt in CYCLONE_OPTIONAL.items()})
+    if c["outlet_side"] not in (1.0, -1.0) or (c["outlet_side"] < 0.0 and c["outlet_turn"] != 180.0):
+        raise ValueError(f"{name}: outlet_side is +1 or -1, and -1 only on a 180 deg bend")
     if c["outlet_turn"] != 0.0 and "outlet_bend_R_over_Dx" not in base:
         raise ValueError(f"{name}: outlet_turn {c['outlet_turn']} needs outlet_bend_R_over_Dx and outlet_run_over_Dx")
     # the level inlet duct: per cyclone where given (C4's, scaled for C5), else the domain's
@@ -2228,15 +2231,55 @@ def cooler_placement(g):
     return {"R": (Hd, X, U), "o": o, "to_kiln": to_kiln, "box": box}
 
 
+def tower_layout(g):
+    """The tower in plan, string 1 (+x; string 2 its mirror in x = 0), in
+    the plant frame (the calciner's, z up; the kiln and the gooseneck's
+    arms towards -y). User, 24 Nov 2026: the C4 and C5 meal pipes have to
+    fall at the meal slope, so the tower stands beside the calciner, not
+    out past the gooseneck's arms (it had them 26 and 20 m off at ~27 and
+    ~30 deg).
+
+    C5 turned so its level inlet duct runs out of the arm along +x with
+    the barrel on the calciner's side of it (the mirrored solid, its duct
+    on its -y side): its axis yd behind the arm's axis. C4 one column
+    offset behind C5 (+y), C3 over C5 and C2 over C4 as before; the C1
+    twin turned half round, its two C1 either side of C3's riser. x is
+    the furthest in of: C5 and C4 `tower_calciner_gap` clear of the
+    calciner (bore to bore); C5's duct then runs from the arm's face
+    (x_leg) to its barrel."""
+    lay, gn, cal = layout(g), gooseneck(g), calciner(g)
+    c5, c4 = cyclone(g, "C5"), cyclone(g, "C4")
+    duct5 = cyclone_duct_inlet(g, "C5")
+    yd = 0.5 * (duct5["y_inner"] + duct5["y_outer"])
+    y_arm = -gn["y_off"]
+    y5 = y_arm + yd
+    y4 = y5 + lay["column_offset"]
+    gap = v(g["layout"]["tower_calciner_gap"])
+    R = cal["R"]
+    x5 = 0.0
+    for r_c, y in ((0.5 * c5["D_barrel"], y5), (0.5 * c4["D_barrel"], y4)):
+        d = R + r_c + gap
+        if d > abs(y):
+            x5 = max(x5, math.sqrt(d * d - y * y))
+    L_in = x5 - gn["x_leg"]
+    if L_in < 0.5:
+        raise ValueError(f"tower_layout: C5's duct from the arm's face would be {L_in:.2f} m")
+    if 2.0 * x5 - c5["D_barrel"] < gap:
+        raise ValueError("tower_layout: the two strings' C5 stand closer than the gap")
+    cols = {5: (x5, y5), 4: (x5, y4), 3: (x5, y5), 2: (x5, y4)}
+    return {"cols": cols, "x": x5, "y_arm": y_arm, "yd": yd, "c5_duct_L": L_in,
+            "clear_c5": math.hypot(x5, y5) - R - 0.5 * c5["D_barrel"],
+            "clear_c4": math.hypot(x5, y4) - R - 0.5 * c4["D_barrel"]}
+
+
 def c5_plant_inlet_L(g):
     """C5 as the plant has it (C5_plant.SLDPRT, cyclone.bas c5_plant; user
     23 Nov 2026: the gooseneck arm and C5 must meet): no riser under its
     duct, the level inlet duct run back from the barrel's tangent plane
-    to the gooseneck arm's outlet face (layout(): C5's axis x_inner, the
+    to the gooseneck arm's outlet face (tower_layout(): C5's axis x, the
     arm's face x_leg). The arm is round (D_leg), the duct rectangular
     (W x H_inlet): the face is where they meet, no transition piece."""
-    lay, gn = layout(g), gooseneck(g)
-    return lay["col"][5] - gn["x_leg"]
+    return tower_layout(g)["c5_duct_L"]
 
 
 def tower_placement(g):
@@ -2244,25 +2287,26 @@ def tower_placement(g):
     one assembly, step by step; option A: the CFD solids as they are):
     each part's axes (rows, in the plant frame) and origin. The plant
     frame is the calciner's (calciner.bas): z up from the ground, the
-    two strings at +-x (layout()'s x is one string's), the gooseneck
-    and the kiln towards -y: the kiln inlet chamber turned so its kiln
-    (its +x) runs to -y, across the strings' line. Each cyclone turned about its axis so its CFD riser
-    stands on the axis of the cyclone below (the columns at layout()'s
-    x, one y for both strings); C5 so its level inlet duct is on the
-    gooseneck arm's axis. String 2 is string 1's mirror in x = 0, built
-    from mirrored solids (<part>_m.SLDPRT). C2 = C3 = C4 (one solid,
-    C4.SLDPRT).
+    two strings at +-x, the gooseneck and the kiln towards -y: the kiln
+    inlet chamber turned so its kiln (its +x) runs to -y, across the
+    strings' line. The columns where tower_layout() has them (24 Nov
+    2026: beside the calciner); each cyclone turned about its axis so its
+    CFD riser stands on the axis of the cyclone below; C5 (the mirrored
+    solid, turned half round) so its level inlet duct is on the gooseneck
+    arm's axis. String 2 is string 1's mirror in x = 0, built from the
+    mirrored solids (a file and its mirror swap). C2 = C3 = C4 (one
+    solid, C4.SLDPRT).
 
     Returns {"parts": [{name, file, R, o}], "joints": [...], ...}; the
     joints are what meets and how (face to face, an overlap of two CFD
-    domains along one riser, or the gap where the domain is not the
-    plant's: C5's riser inlet under the gooseneck arm, cyclone_C5.md)."""
+    domains along one riser)."""
     lay, gn, kl = layout(g), gooseneck(g), kiln(g)
+    tl = tower_layout(g)
     c = {n: cyclone(g, f"C{n}") for n in (2, 3, 4, 5)}
     ri = {n: cfd_riser_inlet(g, f"C{n}") for n in (4, 5)}
     tw = c1_twin(g)
     z0 = lay["z_calciner_throat"]
-    y_arm = -gn["y_off"]
+    y_arm = tl["y_arm"]
     z_arm = z0 + gn["z_end"]
     duct5 = cyclone_duct_inlet(g, "C5")
 
@@ -2273,65 +2317,61 @@ def tower_placement(g):
     def apply(R, p):
         return tuple(sum(p[i] * R[i][k] for i in range(3)) for k in range(3))
 
+    def mx(v):
+        return (-v[0], v[1], v[2])
+
+    def swap(f):        # a solid and its mirror
+        return f.replace("_m.SLDPRT", ".SLDPRT") if f.endswith("_m.SLDPRT") else f.replace(".SLDPRT", "_m.SLDPRT")
+
     parts = [
         {"name": "kiln_inlet_chamber", "file": "kiln_inlet_chamber.SLDPRT",
          "R": ((0.0, -1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)), "o": (0.0, 0.0, lay["z_chamber_floor"])},
         {"name": "calciner", "file": "calciner.SLDPRT", "R": rz(0.0), "o": (0.0, 0.0, z0)},
     ]
     joints = []
-    for k, sg in ((1, 1.0),):
-        th0 = 0.0
-        # C5: its level inlet duct (along its +x, its middle at y = duct5's) on the arm's axis
-        R5 = rz(th0)
-        yd = 0.5 * (duct5["y_inner"] + duct5["y_outer"])
-        y_col = y_arm - apply(R5, (0.0, yd, 0.0))[1]
-        axis = {5: (sg * lay["col"][5], y_col)}
-        # C5 as the plant has it (C5_plant: no riser, its duct run to the arm's face)
-        parts.append({"name": f"C5_{k}", "file": "C5_plant.SLDPRT", "R": R5, "o": axis[5] + (lay["z_dust"][5],)})
-        fc = duct5["face_centre"]
-        face = apply(R5, (-c5_plant_inlet_L(g), fc[1], fc[2]))
-        x_face = axis[5][0] + face[0]
-        joints.append({"what": f"gooseneck arm {k} -> C5_{k} inlet duct", "kind": "face",
-                       "L": abs(x_face - sg * gn["x_leg"]),
-                       "z": (z_arm, lay["z_dust"][5] + face[2]),
-                       "note": "round arm (D_leg) on the rectangular duct (W x H_inlet), no transition"})
-        below = 5
-        for n in (4, 3, 2):
-            X = sg * lay["col"][n]
-            d = math.copysign(1.0, axis[below][0] - X)          # the riser: towards the cyclone below
-            r = ri[4]
-            th = math.atan2(0.0, d) - math.atan2(r["y"], r["x"])
-            R = rz(th)
-            axis[n] = (X, y_col)
-            parts.append({"name": f"C{n}_{k}", "file": "C4.SLDPRT", "R": R, "o": axis[n] + (lay["z_dust"][n],)})
-            rp = apply(R, (r["x"], r["y"], 0.0))
-            top_below = lay["z_dust"][below] + c[below]["height"] + c[below]["outlet_rise"]
-            foot = lay["z_dust"][n] + c[n]["height"] - r["drop"] - r["stub"]
-            joints.append({"what": f"C{below}_{k} outlet pipe -> C{n}_{k} riser", "kind": "overlap",
-                           "L": top_below - foot, "riser_at": (X + rp[0], y_col + rp[1]), "axis_below": axis[below],
-                           "D": (c[below]["D_vortex"], r["D"])})
-            below = n
-        # the C1 twin: R1 on C2's axis (its frame: R1 at (0, y_branch))
-        Rt = rz(th0)
-        r1 = apply(Rt, (0.0, tw["y_branch"], 0.0))
-        o = (axis[2][0] - r1[0], y_col - r1[1], lay["z_dust"][1])
-        parts.append({"name": f"C1_twin_{k}", "file": "C1_twin.SLDPRT", "R": Rt, "o": o})
-        # R1's floor (the twin's gas inlet) on C2's outlet face: L the gap (0: face to face)
-        joints.append({"what": f"C2_{k} outlet pipe -> R1_{k}", "kind": "face",
-                       "L": lay["z_r1_foot"] - (lay["z_dust"][2] + c[2]["height"] + c[2]["outlet_rise"])})
+    k = 1
+    axis = {n: tl["cols"][n] for n in (5, 4, 3, 2)}
+    # C5: the mirrored solid (a point p of C5_plant is (-p_x, p_y, p_z) in it),
+    # turned half round: its duct along +x on its -y side
+    R5 = rz(math.pi)
+    parts.append({"name": f"C5_{k}", "file": "C5_plant_m.SLDPRT", "R": R5, "o": axis[5] + (lay["z_dust"][5],)})
+    fc = duct5["face_centre"]
+    face = apply(R5, mx((-c5_plant_inlet_L(g), fc[1], fc[2])))
+    joints.append({"what": f"gooseneck arm {k} -> C5_{k} inlet duct", "kind": "face",
+                   "L": math.hypot(axis[5][0] + face[0] - gn["x_leg"], axis[5][1] + face[1] - y_arm),
+                   "z": (z_arm, lay["z_dust"][5] + face[2]),
+                   "note": "round arm (D_leg) on the rectangular duct (W x H_inlet), no transition"})
+    below = 5
+    for n in (4, 3, 2):
+        d = (axis[below][0] - axis[n][0], axis[below][1] - axis[n][1])     # the riser: towards the cyclone below
+        r = ri[4]
+        R = rz(math.atan2(d[1], d[0]) - math.atan2(r["y"], r["x"]))
+        parts.append({"name": f"C{n}_{k}", "file": "C4.SLDPRT", "R": R, "o": axis[n] + (lay["z_dust"][n],)})
+        rp = apply(R, (r["x"], r["y"], 0.0))
+        top_below = lay["z_dust"][below] + c[below]["height"] + c[below]["outlet_rise"]
+        foot = lay["z_dust"][n] + c[n]["height"] - r["drop"] - r["stub"]
+        joints.append({"what": f"C{below}_{k} outlet pipe -> C{n}_{k} riser", "kind": "overlap",
+                       "L": top_below - foot, "riser_at": (axis[n][0] + rp[0], axis[n][1] + rp[1]),
+                       "axis_below": axis[below], "D": (c[below]["D_vortex"], r["D"])})
+        below = n
+    # the C1 twin, turned half round (its C1 either side of C3's riser): R1 on C2's axis
+    Rt = rz(math.pi)
+    r1 = apply(Rt, (0.0, tw["y_branch"], 0.0))
+    o = (axis[2][0] - r1[0], axis[2][1] - r1[1], lay["z_dust"][1])
+    parts.append({"name": f"C1_twin_{k}", "file": "C1_twin.SLDPRT", "R": Rt, "o": o})
+    # R1's floor (the twin's gas inlet) on C2's outlet face: L the gap (0: face to face)
+    joints.append({"what": f"C2_{k} outlet pipe -> R1_{k}", "kind": "face",
+                   "L": lay["z_r1_foot"] - (lay["z_dust"][2] + c[2]["height"] + c[2]["outlet_rise"])})
     # string 2: string 1's mirror in the plane x = 0 (user, 24 Nov 2026: the
-    # strings mirrored, as plants have them). Its parts are the mirrored
-    # solids (<part>_m.SLDPRT: x -> -x in the part's frame, plant_assembly.bas
-    # mirror_parts), so a part point p' = (-p_x, p_y, p_z); the plant point
+    # strings mirrored, as plants have them). Its parts are the mirrors of
+    # string 1's solids (plant_assembly.bas mirror_parts: x -> -x in the
+    # part's frame), so a part point p' = (-p_x, p_y, p_z); the plant point
     # is M (o + p R) with M: x -> -x, so the rows become (-M R0, M R1, M R2)
     # (a proper rotation again) and the origin M o. Its cyclones turn the
     # other way.
-    def mx(v):
-        return (-v[0], v[1], v[2])
-
     for q in [q for q in parts if q["name"].endswith("_1")]:
         R = q["R"]
-        parts.append({"name": q["name"][:-2] + "_2", "file": q["file"].replace(".SLDPRT", "_m.SLDPRT"),
+        parts.append({"name": q["name"][:-2] + "_2", "file": swap(q["file"]),
                       "R": (tuple(-x for x in mx(R[0])), mx(R[1]), mx(R[2])), "o": mx(q["o"])})
     for j in [j for j in joints if j["what"].count("_1")]:
         m = dict(j)
@@ -2353,6 +2393,9 @@ def tower_placement(g):
     Rk = ((1.0, 0.0, 0.0), (0.0, -sa, ca), (0.0, -ca, -sa))
     ok = (0.0, -sec["a"], lay["z_chamber_floor"] + sec["z_axis"])
     parts.append({"name": "kiln_outlet", "file": "kiln_outlet_assembly.SLDASM", "R": Rk, "o": ok})
+    # the meal pipes (meal_pipes.SLDPRT, built in the plant frame; meal_routes())
+    parts.append({"name": "meal_pipes", "file": "meal_pipes.SLDPRT",
+                  "R": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)), "o": (0.0, 0.0, 0.0)})
     # the chamber's stub end (kiln_gas_inlet) is kiln.SLDPRT's back face (kiln_back, z_cfd0)
     se = sec["stub_end"]
     p_ch = (0.0, -se[0], lay["z_chamber_floor"] + se[1])
@@ -2360,6 +2403,158 @@ def tower_placement(g):
     joints.append({"what": "kiln_inlet_chamber kiln_gas_inlet -> kiln kiln_back", "kind": "face",
                    "L": math.dist(p_ch, p_kl)})
     return {"parts": parts, "joints": joints, "y_arm": y_arm, "z_arm": z_arm}
+
+
+def meal_routes(g):
+    """The meal pipes in the tower (user, 24 Nov 2026), string 1 then its
+    mirror, in the plant frame: each a polyline from a dust outlet (or
+    C1's) to where its meal goes, D from meal_pipes(). The rules of
+    plant_topology_2d (14 Oct 2026), laid in 3D on tower_layout():
+      C1 (both of the twin) -> R2, C3's CFD outlet pipe, one from each side
+         (+-x, across R2's bend towards C2);
+      C2 -> R3 (C4's outlet pipe), C3 -> R4 (C5's): each stands over that
+         pipe; it leaves at once (drop_over_riser) at the meal slope away
+         from the riser's bend, clears the riser's inclined roof, drops
+         side_L beside the pipe, and runs in at the slope to its wall
+         entry_up over the roof below;
+      C4 -> the calciner's meal pipe on its side (its end face), straight
+         after c4_drop;
+      C5 -> the calciner's throat (user, 24 Nov 2026: "boğaz"), its wall
+         at mid height on C5's side, straight after c5_drop.
+    Each run's slope from the horizontal; the straight runs have to be
+    min_slope or steeper. Points end r past the target (into it)."""
+    mr, lay, tl = g["meal_route"], layout(g), tower_layout(g)
+    mp = meal_pipes(g)
+    tp = tower_placement(g)
+    cal_in = calciner_inlets(g)["meal"]
+    sec = chamber_section(g)
+    slope = math.radians(v(g["cyclone_domain"]["meal_slope"]))
+    ts = math.tan(slope)
+    cols = tl["cols"]
+    c = {n: cyclone(g, f"C{n}") for n in range(1, 6)}
+    tw = c1_twin(g)
+    twin = next(q for q in tp["parts"] if q["name"] == "C1_twin_1")
+
+    def unit(a, b):
+        d = (b[0] - a[0], b[1] - a[1])
+        n = math.hypot(*d)
+        return (d[0] / n, d[1] / n)
+
+    def into_riser(name, p0, drop, below, away):
+        """p0 the dust outlet; below: the cyclone whose outlet pipe takes
+        the meal; away: the horizontal unit vector the pipe comes in from"""
+        A, rp = cols[below], 0.5 * c[below]["D_vortex"]
+        r = 0.5 * mp[int(name[1])]["D"]
+        side = (A[0] + away[0] * (rp + v(mr["side_L"])), A[1] + away[1] * (rp + v(mr["side_L"])))
+        p1 = (p0[0], p0[1], p0[2] - drop)
+        h = math.hypot(side[0] - p1[0], side[1] - p1[1])
+        p2 = (side[0], side[1], p1[2] - h * ts)
+        z_in = lay["z_roof"][below] + v(mr["entry_up"])
+        p3 = (side[0], side[1], z_in + v(mr["side_L"]) * ts)
+        if p3[2] >= p2[2]:
+            raise ValueError(f"meal_routes {name}: no room to drop beside the riser ({p2[2]:.2f} <= {p3[2]:.2f})")
+        p4 = (A[0] + away[0] * (rp - r), A[1] + away[1] * (rp - r), z_in - r * ts)
+        return [p0, p1, p2, p3, p4]
+
+    pipes = []
+    # C1: the twin's two C1 (its frame turned as tower_placement turned it)
+    d_c1 = 0.5 * tw["spacing"]
+    for sx in (-1.0, 1.0):
+        q = tuple(twin["o"][k] + sx * d_c1 * twin["R"][0][k] for k in range(3))
+        away = (math.copysign(1.0, q[0] - cols[3][0]), 0.0)
+        pipes.append({"name": "C1_out" if away[0] > 0 else "C1_in", "stage": 1, "to": "R2 (C3 outlet pipe)",
+                      "pts": into_riser("C1", q, v(mr["drop"]), 3, away)})
+    # C2 -> R3 over C4, C3 -> R4 over C5: away from the bend (towards the cyclone above it)
+    for n, below, bend_to in ((2, 4, 3), (3, 5, 4)):
+        p0 = cols[n] + (lay["z_dust"][n],)
+        u = unit(cols[below], cols[bend_to])
+        pts = into_riser(f"C{n}", p0, v(mr["drop_over_riser"]), below, (-u[0], -u[1]))
+        # over the riser R(n+1) under it: its inclined roof rises towards
+        # the bend at riser_duct_slope_deg from its top on the axis
+        # (drop_top under C(n+1)'s roof), lowest at the riser's back edge;
+        # the pipe's underside (r / cos slope below its axis) clear of it
+        rs = lay["riser"][n + 1]
+        top = lay["z_roof"][n + 1] - rs["drop_top"]
+        tr = math.tan(math.radians(v(g["cyclone_domain"]["riser_duct_slope_deg"])))
+        rp, rm = 0.5 * rs["D"], 0.5 * mp[n]["D"]
+        clear = min(pts[1][2] - h * ts - rm / math.cos(slope) - (top - h * tr) for h in (0.0, rp))
+        if clear <= 0.0:
+            raise ValueError(f"meal_routes C{n}: the pipe cuts the riser's roof under it ({clear:.2f} m)")
+        pipes.append({"name": f"C{n}", "stage": n, "to": f"R{n + 1} (C{below} outlet pipe)",
+                      "pts": pts, "riser_clearance": clear})
+    # C4 -> the calciner's meal pipe on this side (+x), past its end face by r
+    p0 = cols[4] + (lay["z_dust"][4],)
+    p1 = (p0[0], p0[1], p0[2] - v(mr["c4_drop"]))
+    z0 = lay["z_calciner_throat"]
+    e = (cal_in["end"][0], 0.0, z0 + cal_in["end"][1])
+    r4 = 0.5 * mp[4]["D"]
+    d = [e[k] - p1[k] for k in range(3)]
+    n_ = math.sqrt(sum(x * x for x in d))
+    pipes.append({"name": "C4", "stage": 4, "to": "calciner meal pipe",
+                  "pts": [p0, p1, tuple(e[k] + r4 * d[k] / n_ for k in range(3))]})
+    # C5 -> the calciner's throat: its wall at mid height, towards C5
+    cal = calciner(g)
+    p0 = cols[5] + (lay["z_dust"][5],)
+    p1 = (p0[0], p0[1], p0[2] - v(mr["c5_drop"]))
+    u = unit((0.0, 0.0), cols[5])
+    t = (cal["r_throat"] * u[0], cal["r_throat"] * u[1], z0 + 0.5 * cal["z_throat_top"])
+    r5 = 0.5 * mp[5]["D"]
+    d = [t[k] - p1[k] for k in range(3)]
+    n_ = math.sqrt(sum(x * x for x in d))
+    pipes.append({"name": "C5", "stage": 5, "to": "calciner throat",
+                  "pts": [p0, p1, tuple(t[k] + r5 * d[k] / n_ for k in range(3))]})
+
+    lo = v(mr["min_slope"])
+    for q in pipes:
+        q["D"] = mp[q["stage"]]["D"]
+        q["string"] = 1
+        sl = []
+        for a_, b_ in zip(q["pts"], q["pts"][1:]):
+            h = math.hypot(b_[0] - a_[0], b_[1] - a_[1])
+            sl.append(math.degrees(math.atan2(a_[2] - b_[2], h)))
+        q["slopes"] = sl
+        if min(sl) < lo - 1e-9:
+            raise ValueError(f"meal_routes {q['name']}: a run at {min(sl):.1f} deg, under {lo:g}")
+    out = list(pipes)
+    for q in pipes:
+        m = dict(q)
+        m["string"] = 2
+        m["pts"] = [(-p[0], p[1], p[2]) for p in q["pts"]]
+        out.append(m)
+    return out
+
+
+def meal_pipe_bodies(g):
+    """meal_pipes.bas's bodies: each run of meal_routes() a cylinder (the
+    pipe's bore, D), lengthened at a bend by r tan(turn / 2) so the two
+    runs close the bend's outside; kinds and fields as cooler_body()."""
+    bodies = []
+    ORANGE = (0.93, 0.55, 0.13)
+    for q in meal_routes(g):
+        r = 0.5 * q["D"]
+        pts = q["pts"]
+        dirs = []
+        for a, b in zip(pts, pts[1:]):
+            d = [b[k] - a[k] for k in range(3)]
+            n = math.sqrt(sum(x * x for x in d))
+            dirs.append((tuple(x / n for x in d), n))
+        for i, (u, n) in enumerate(dirs):
+            e0 = e1 = 0.0
+            if i > 0:
+                cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(dirs[i - 1][0], u))))
+                e0 = r * math.tan(0.5 * math.acos(cosT))
+            if i < len(dirs) - 1:
+                cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(u, dirs[i + 1][0]))))
+                e1 = r * math.tan(0.5 * math.acos(cosT))
+            base = tuple(pts[i][k] - e0 * u[k] for k in range(3))
+            L = n + e0 + e1
+            end = tuple(base[k] + L * u[k] for k in range(3))
+            half = tuple(r * math.sqrt(max(0.0, 1.0 - x * x)) for x in u)
+            lo = tuple(min(p, e) - h for p, e, h in zip(base, end, half))
+            hi = tuple(max(p, e) + h for p, e, h in zip(base, end, half))
+            bodies.append({"name": f"meal_{q['name']}_{q['string']}_{i + 1}", "kind": "cyl",
+                           "p": base + u + (r, L), "V": math.pi * r * r * L, "box": lo + hi, "rgb": ORANGE})
+    return bodies
 
 
 def cooler_fans(g):
@@ -3057,7 +3252,9 @@ def cyclone_outlet(g, name):
     rises outlet_rise from the roof, then ends there (0 deg), or bends
     through outlet_turn about an axis outlet_bend_R out along +x and
     drops (180 deg, down to outlet_run below the bend start) or runs on
-    along +x (90 deg)."""
+    along +x (90 deg). outlet_side -1 (C1 since 24 Nov 2026): the 180
+    deg bend goes along -x, back over the inlet duct; leg_x stays the
+    distance, "side" the sign."""
 
     c = cyclone(g, name)
     z_roof = c["height"]
@@ -3068,8 +3265,9 @@ def cyclone_outlet(g, name):
         "z_roof": z_roof,
         "z_bend": z_bend,
         "bend_R": r_bend,
-        "bend_centre": (r_bend, z_bend),
+        "bend_centre": (c["outlet_side"] * r_bend, z_bend),
         "turn_deg": c["outlet_turn"],
+        "side": c["outlet_side"],
     }
     if c["outlet_turn"] == 0.0:
         # straight up (C2-C5 since 17 Nov 2026): the CFD domain ends in

@@ -197,12 +197,12 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `GN_D_SRC` | 3.5 | plant_geometry.yaml |
 | `GN_SLOPE_DEG` | 45 | plant_geometry.yaml |
 | `GN_PIECE_OVER_D` | 1 | plant_geometry.yaml |
-| `GN_LEVEL_OVER_D` | 1 | plant_geometry.yaml |
-| `GN_CHANNEL_OVER_D` | 1.5 | plant_geometry.yaml |
+| `GN_LEVEL_OVER_D` | 0.5 | plant_geometry.yaml |
+| `GN_CHANNEL_OVER_D` | 0.85 | plant_geometry.yaml |
 | `GN_ARM_DEG` | 60 | plant_geometry.yaml |
-| `GN_ARM_RUN_OVER_D` | 2 | plant_geometry.yaml |
+| `GN_ARM_RUN_OVER_D` | 0.5 | plant_geometry.yaml |
 | `GN_ROOT_FWD` | 0.184956 | plant_geometry.yaml |
-| `GN_OUT_AT_H` | 0.679740905621 | plant_geometry.yaml |
+| `GN_OUT_AT_H` | 0.788074238954 | plant_geometry.yaml |
 | `CALC_TA_Z` | 8.270908 | plant_geometry.yaml |
 | `CALC_FEED_Z` | 11.385494 | plant_geometry.yaml |
 | `TA_D` | 2.4393 | plant_geometry.yaml |
@@ -238,7 +238,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `RISER_RUN` | 2.95988 | plant_geometry.yaml |
 | `RISER_RUN4` | 2.95988 | plant_geometry.yaml |
 | `RISER_Y` | 4.656 | plant_geometry.yaml |
-| `C5_OVER_TA` | 1.75 | plant_geometry.yaml |
+| `C5_OVER_TA` | 5 | plant_geometry.yaml |
 | `GN_TO_C5_GAP` | 1 | plant_geometry.yaml |
 | `C1_TWIN_GAP` | 1 | plant_geometry.yaml |
 | `C1_TWIN_S` | 8.507386 | plant_geometry.yaml |
@@ -304,18 +304,18 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Ne | Konum [m] |
 |---|---|
 | Fırın giriş odası | x = −3.400 .. 3.400, z 6.600 .. 12.550; taban rampası 50.0° |
-| Kalsinatör | z 12.550 .. 45.680; kaz boynu tepesi z 51.655, kol inişi x = ±10.781, C5 giriş kotu z 36.072 |
+| Kalsinatör | z 12.550 .. 45.680; kaz boynu tepesi z 51.655, kol inişi x = ±5.475, C5 giriş kotu z 39.322 |
 | Tersiyer hava kanalı | eksen z 20.821 |
-| İç kolon (C5, C3) | x = ±16.781 |
-| Dış kolon (C4, C2) | x = ±23.584 |
-| R1 | x = ±23.584 |
-| İkiz C1 | x = ±19.330 ve ±27.838 |
-| C5 toz çıkışı / çıkış borusu tepesi | z 23.791 / 43.347 |
-| C4 toz çıkışı / çıkış borusu tepesi | z 38.322 / 57.277 |
-| C3 toz çıkışı / çıkış borusu tepesi | z 52.422 / 71.377 |
-| C2 toz çıkışı / çıkış borusu tepesi | z 66.522 / 85.477 |
-| C1 toz çıkışı / çıkış borusu tepesi | z 89.477 / 103.617 |
-| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 107.937 |
+| İç kolon (C5, C3) | x = ±11.475 |
+| Dış kolon (C4, C2) | x = ±18.278 |
+| R1 | x = ±18.278 |
+| İkiz C1 | x = ±14.024 ve ±22.531 |
+| C5 toz çıkışı / çıkış borusu tepesi | z 27.041 / 46.597 |
+| C4 toz çıkışı / çıkış borusu tepesi | z 41.572 / 60.527 |
+| C3 toz çıkışı / çıkış borusu tepesi | z 55.672 / 74.627 |
+| C2 toz çıkışı / çıkış borusu tepesi | z 69.772 / 88.727 |
+| C1 toz çıkışı / çıkış borusu tepesi | z 92.727 / 106.867 |
+| Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 111.187 |
 | Fırın | (3.400, 10.000) → (63.373, 8.201) |
 | Soğutucu | x 63.373 .. 93.273, z 1.801 .. 4.801 |
 | Fırın başlığı | x 63.373 .. 69.353, z 4.801 .. 12.001 |

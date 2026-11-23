@@ -83,17 +83,17 @@ class TheDerivedValuesAreTodaysTest(unittest.TestCase):
         gn = pg.gooseneck(self.g)
         self.near(gn["D_neck"], 4.950, 0.001)
         self.near(gn["piece"], 4.950, 0.001)
-        self.near(gn["level"], 4.950, 0.001)
-        self.near(gn["y_off"], 12.135, 0.001)
+        self.near(gn["level"], 2.475, 0.001)        # 0.5 D since 24 Nov 2026 (the tower by the calciner)
+        self.near(gn["y_off"], 9.660, 0.001)
         self.near(gn["crown"], 39.105, 0.001)
-        self.near(gn["channel"], 7.425, 0.001)
-        self.near(gn["z_split"], 25.706, 0.001)
-        self.near(gn["z_end"], 23.522, 0.001)
-        self.near(gn["arm_piece"], 4.366, 0.001)
-        self.near(gn["x_bend"], 3.781, 0.001)
-        self.near(gn["x_leg"], 10.781, 0.001)
-        self.near(gn["volume"], 631.93, 0.01)
-        self.near(gn["wall_area"], 596.32, 0.01)
+        self.near(gn["channel"], 4.207, 0.001)       # 0.85 D since 24 Nov 2026 (C5 3.25 m higher)
+        self.near(gn["z_split"], 28.923, 0.001)
+        self.near(gn["z_end"], 26.772, 0.001)
+        self.near(gn["arm_piece"], 4.301, 0.001)
+        self.near(gn["x_bend"], 3.725, 0.001)
+        self.near(gn["x_leg"], 5.475, 0.001)         # arm run 0.5 D_leg since 24 Nov 2026
+        self.near(gn["volume"], 420.12, 0.01)
+        self.near(gn["wall_area"], 390.91, 0.01)
 
     def test_the_gooseneck_pieces(self):
         """User decision, 15 Nov 2026: three straight pieces (45 deg up,
@@ -467,9 +467,9 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
             with self.subTest(added=tag.strip()):
                 self.assertAlmostEqual(expected, dv, delta=1e-5 * max(1.0, dv))
                 # what a pipe adds is the difference of two ~1600 m3 volumes, good to ~1e-6 of
-                # themselves (calciner.bas' ADD_NOISE floor, 5e-6 of the body): the fuel pipe
+                # themselves (calciner.bas' ADD_NOISE floor, 1.5e-5 of the body since 24 Nov 2026): the fuel pipe
                 # read 1.5, 2.9 and 8 % off on three builds
-                self.assertAlmostEqual(got, dv, delta=1e-2 * dv + 5e-6 * steps["1 "] * 1.6)
+                self.assertAlmostEqual(got, dv, delta=1e-2 * dv + 1.5e-5 * steps["1 "] * 1.6)
 
     def test_the_dispersion_plates(self):
         """Stages 8a / 8b: each plate body to the closed form (0.1 %), the
@@ -1766,8 +1766,9 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
 
     def test_twelve_parts_two_strings(self):
         names = [p["name"] for p in self.t["parts"]]
-        self.assertEqual(len(names), 13)
+        self.assertEqual(len(names), 14)
         self.assertIn("kiln_outlet", names)
+        self.assertIn("meal_pipes", names)
         for k in (1, 2):
             for n in ("C5", "C4", "C3", "C2", "C1_twin"):
                 self.assertIn(f"{n}_{k}", names)
@@ -1799,7 +1800,9 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
         parts = {p["name"]: p for p in self.t["parts"]}
         for n in ("C5", "C4", "C3", "C2", "C1_twin"):
             a, b = parts[f"{n}_1"], parts[f"{n}_2"]
-            self.assertEqual(b["file"], a["file"].replace(".SLDPRT", "_m.SLDPRT"))
+            # a solid and its mirror (C5: string 1 the mirrored solid, 24 Nov 2026)
+            self.assertEqual({a["file"], b["file"]}, {a["file"].replace("_m.SLDPRT", ".SLDPRT"),
+                                                      a["file"].replace("_m.SLDPRT", ".SLDPRT").replace(".SLDPRT", "_m.SLDPRT")})
             self.assertEqual(b["o"], (-a["o"][0], a["o"][1], a["o"][2]))
             # a mirrored part's point (-x, y, z) lands on the mirror of the original's
             for p in ((1.0, 2.0, 3.0), (-4.0, 0.5, 7.0)):
@@ -1829,7 +1832,7 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
             self.skipTest("no plant_assembly log")
         text = log.read_text(encoding="latin-1")
         self.assertIn("plant_assembly built, verified and saved", text)
-        self.assertEqual(text.count("placed "), 13)
+        self.assertEqual(text.count("placed "), len(self.t["parts"]))
 
     def test_the_kiln_comes_out_of_the_chambers_mouth(self):
         j = next(j for j in self.t["joints"] if j["what"].startswith("kiln_inlet_chamber"))
@@ -1841,3 +1844,106 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
         self.assertAlmostEqual(-end[1], lay["kiln_end"][0], places=6)
         self.assertAlmostEqual(end[0], 0.0, places=9)
         self.assertAlmostEqual(end[2], lay["kiln_end"][1], places=6)
+
+
+class TheMealPipesFallInTheTowerTest(unittest.TestCase):
+    """meal_routes() (user, 24 Nov 2026: "farin borularını bağlayalım";
+    "kuleyi yaklaştır": the tower beside the calciner so C4's and C5's
+    pipes fall at the meal slope)."""
+
+    def setUp(self):
+        self.g = pg.load()
+        self.r = pg.meal_routes(self.g)
+        self.tl = pg.tower_layout(self.g)
+
+    def test_every_run_falls_steep_enough(self):
+        lo = pg.v(self.g["meal_route"]["min_slope"])
+        for q in self.r:
+            for a, b in zip(q["pts"], q["pts"][1:]):
+                self.assertLess(b[2], a[2], q["name"])                  # downhill all the way
+            self.assertGreaterEqual(min(q["slopes"]), lo - 1e-9, q["name"])
+        # C4 and C5: were ~27 and ~30 deg with the tower past the gooseneck's arms
+        s = {q["name"]: q["slopes"][-1] for q in self.r if q["string"] == 1}
+        self.assertGreater(s["C4"], 60.0)
+        self.assertGreater(s["C5"], 55.0)
+
+    def test_six_pipes_a_string_mirrored(self):
+        one = [q for q in self.r if q["string"] == 1]
+        two = [q for q in self.r if q["string"] == 2]
+        self.assertEqual(sorted(q["name"] for q in one), ["C1_in", "C1_out", "C2", "C3", "C4", "C5"])
+        for a, b in zip(one, two):
+            for p, m in zip(a["pts"], b["pts"]):
+                self.assertEqual(m, (-p[0], p[1], p[2]))
+
+    def test_each_pipe_starts_at_its_dust_outlet(self):
+        lay = pg.layout(self.g)
+        for q in self.r:
+            if q["string"] == 1:
+                self.assertAlmostEqual(q["pts"][0][2], lay["z_dust"][q["stage"]], places=9, msg=q["name"])
+                if q["stage"] > 1:
+                    self.assertEqual(q["pts"][0][:2], self.tl["cols"][q["stage"]])
+
+    def test_riser_pipes_enter_over_the_roof_below(self):
+        lay = pg.layout(self.g)
+        mr = self.g["meal_route"]
+        into = {"C1_in": 3, "C1_out": 3, "C2": 4, "C3": 5}
+        for q in self.r:
+            if q["string"] == 1 and q["name"] in into:
+                b = into[q["name"]]
+                r = 0.5 * q["D"]
+                z_wall = q["pts"][-1][2] + r * math.tan(math.radians(60.0))
+                self.assertAlmostEqual(z_wall, lay["z_roof"][b] + pg.v(mr["entry_up"]), places=9, msg=q["name"])
+                A = self.tl["cols"][b]
+                rp = 0.5 * pg.cyclone(self.g, f"C{b}")["D_vortex"]
+                self.assertAlmostEqual(math.dist(q["pts"][-1][:2], A), rp - r, places=6, msg=q["name"])
+            if q["name"] in ("C2", "C3"):
+                self.assertGreater(q["riser_clearance"], 0.2, q["name"])
+
+    def test_c4_and_c5_end_in_their_targets(self):
+        lay, sec = pg.layout(self.g), pg.chamber_section(self.g)
+        meal = pg.calciner_inlets(self.g)["meal"]
+        one = {q["name"]: q for q in self.r if q["string"] == 1}
+        e = (meal["end"][0], 0.0, lay["z_calciner_throat"] + meal["end"][1])
+        self.assertAlmostEqual(math.dist(one["C4"]["pts"][-1], e), 0.5 * one["C4"]["D"], places=9)
+        # C5 into the calciner's throat (user, 24 Nov 2026), its wall at mid height
+        cal = pg.calciner(self.g)
+        p = one["C5"]["pts"][-1]
+        z0 = lay["z_calciner_throat"]
+        self.assertLess(math.hypot(p[0], p[1]), cal["r_throat"])
+        self.assertGreater(p[2], z0)
+        self.assertLess(p[2], z0 + cal["z_throat_top"])
+
+    def test_the_straight_runs_clear_the_calciner_and_c5(self):
+        """the C4 and C5 runs, sampled, against the calciner's cylinder and
+        cone and C5's barrel and cone (radii by height; the walls' lining
+        not modelled, so the bores 0.3 m apart at least)"""
+        lay, cal, c5 = pg.layout(self.g), pg.calciner(self.g), pg.cyclone(self.g, "C5")
+        z0 = lay["z_calciner_throat"]
+        R, r_t = cal["R"], 0.5 * pg.chamber_section(self.g)["D_throat"]
+        z_ct = z0 + cal["z_cone_top"]
+
+        def r_cal(z):
+            if z < z0:
+                return None
+            return R if z >= z_ct else r_t + (R - r_t) * (z - z0) / (z_ct - z0)
+
+        A5 = self.tl["cols"][5]
+        z5 = lay["z_dust"][5]
+        one = {q["name"]: q for q in self.r if q["string"] == 1}
+        for nm in ("C4", "C5"):
+            q = one[nm]
+            a, b = q["pts"][1], q["pts"][2]
+            r = 0.5 * q["D"]
+            n = math.dist(a, b)
+            for i in range(1, 100):
+                t = i / 100.0
+                p = tuple(a[k] + t * (b[k] - a[k]) for k in range(3))
+                # the joint: C4 the last 2 m (the calciner's meal pipe), C5 the
+                # last 4 m (it comes down along the cone into the throat under it)
+                if (1.0 - t) * n < (2.0 if nm == "C4" else 4.0):
+                    break
+                rc = r_cal(p[2])
+                if rc is not None:
+                    self.assertGreater(math.hypot(p[0], p[1]) - r - rc, 0.3, f"{nm} at {p}")
+                if nm == "C4" and z5 <= p[2] <= z5 + c5["height"]:
+                    self.assertGreater(math.dist(p[:2], A5) - r - 0.5 * c5["D_barrel"], 0.3, f"{nm} at {p}")

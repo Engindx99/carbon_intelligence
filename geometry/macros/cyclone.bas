@@ -82,6 +82,7 @@ Const C1_OUTLET_TURN_DEG           As Double  = 180#         ' [cfd_decision, pr
 Const C1_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
 Const C1_ELBOW_R_OVER_VORTEX_D     As Double  = 1.5          ' [model, preheater/cyclone_C1.md]
 Const C1_OUTLET_DOWN_OVER_VORTEX_D As Double  = 1.25         ' [model, preheater/cyclone_C1.md]
+Const C1_OUTLET_SIDE               As Double  = -1#          ' [model, preheater/cyclone_C1.md]
 Const C1_L_INLET_CASE              As Double  = 3#           ' not given: the default
 Const C1_RISER_IN_ON               As Boolean = False        ' not given: the default
 Const C1_BOI_RADIUS                As Double  = 0.72         ' [model, preheater/cyclone_C1.md]
@@ -100,6 +101,7 @@ Const C4_OUTLET_TURN_DEG           As Double  = 0#           ' [cfd_decision, pr
 Const C4_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_ELBOW_R_OVER_VORTEX_D     As Double  = 0#           ' not given: the default
 Const C4_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' not given: the default
+Const C4_OUTLET_SIDE               As Double  = 1#           ' not given: the default
 Const C4_L_INLET_CASE              As Double  = 2#           ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_RISER_IN_ON               As Boolean = True         ' [cfd_decision, preheater/cyclone_C4.md]
 Const C4_BOI_RADIUS                As Double  = 1#           ' [model, preheater/cyclone_C4.md]
@@ -118,11 +120,12 @@ Const C5_OUTLET_TURN_DEG           As Double  = 0#           ' as C4
 Const C5_OUTLET_EXT_OVER_VORTEX_D  As Double  = 1.7          ' as C4
 Const C5_ELBOW_R_OVER_VORTEX_D     As Double  = 0#           ' as C4
 Const C5_OUTLET_DOWN_OVER_VORTEX_D As Double  = 0#           ' as C4
+Const C5_OUTLET_SIDE               As Double  = 1#           ' as C4
 Const C5_L_INLET_CASE              As Double  = 2.063492     ' C4 x 1.031746 [derived]
 Const C5_RISER_IN_ON               As Boolean = True         ' as C4
 Const C5_BOI_RADIUS                As Double  = 1.03         ' [model, preheater/cyclone_C5.md]
 Const C5_RISER_IN_OFFSET           As Double  = 7.018812     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
-Const C5_PLANT_L_INLET             As Double  = 6#           ' C5_plant (c5_plant): the level duct run to the gooseneck arm's face [derived]
+Const C5_PLANT_L_INLET             As Double  = 2.820416     ' C5_plant (c5_plant): the level duct run to the gooseneck arm's face [derived]
 ' END GENERATED
 
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
@@ -206,6 +209,7 @@ Dim ELBOW_R_OVER_VORTEX_D As Double    ' bend centreline radius, x vortex D
 ' C1: = OUTLET_EXT_OVER_VORTEX_D. Per cyclone, set in SelectCyclone;
 ' with the 90 deg elbow it is the length of the horizontal run.
 Dim OUTLET_DOWN_OVER_VORTEX_D As Double   ' straight drop or run, x vortex D
+Dim OUTLET_SIDE As Double                 ' +1: the bend along +x (the inlet gas); -1: back over the duct (180 deg only)
 ' Vortex finder wall thickness [m]. What this carves out of the
 ' fluid is a slot 2.16 m deep and this wide, running the finder's
 ' whole 7.6 m circumference, and its lower rim is an annular face of
@@ -760,6 +764,7 @@ Private Sub SelectCyclone()
         OUTLET_EXT_OVER_VORTEX_D = C1_OUTLET_EXT_OVER_VORTEX_D
         ELBOW_R_OVER_VORTEX_D = C1_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C1_OUTLET_DOWN_OVER_VORTEX_D
+        OUTLET_SIDE = C1_OUTLET_SIDE
         RISER_ON = Not gasOnly
         BOI_RADIUS = C1_BOI_RADIUS
         L_INLET_C = C1_L_INLET_CASE
@@ -839,6 +844,7 @@ Private Sub SelectCyclone()
         OUTLET_EXT_OVER_VORTEX_D = C4_OUTLET_EXT_OVER_VORTEX_D
         ELBOW_R_OVER_VORTEX_D = C4_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C4_OUTLET_DOWN_OVER_VORTEX_D
+        OUTLET_SIDE = C4_OUTLET_SIDE
         RISER_ON = False
 
         ' The gas comes in as it does in the plant (user decision, 17 Nov
@@ -887,6 +893,7 @@ Private Sub SelectCyclone()
         OUTLET_EXT_OVER_VORTEX_D = C5_OUTLET_EXT_OVER_VORTEX_D
         ELBOW_R_OVER_VORTEX_D = C5_ELBOW_R_OVER_VORTEX_D
         OUTLET_DOWN_OVER_VORTEX_D = C5_OUTLET_DOWN_OVER_VORTEX_D
+        OUTLET_SIDE = C5_OUTLET_SIDE
         RISER_ON = False
         ' C4's riser inlet x 1.0317, as every other length (the plant
         ' feeds C5 from the gooseneck; the domain stays C4's similar)
@@ -1024,6 +1031,9 @@ Private Sub Derive()
         yHi2 = R
     End If
     If OUTLET_TURN_DEG = 0# Then xBoxMax = MaxD(xHi2, rVortex)
+    ' outlet_side -1 (C1, 24 Nov 2026): the bend and its drop go back over
+    ' the inlet duct (-x); +x is then the barrel's or the scroll's
+    If OUTLET_SIDE < 0# Then xBoxMax = MaxD(xHi2, R)
 
     ' The riser inlet (RISER_IN_ON): its axis under the duct's middle,
     ' RISER_IN_OFFSET from the barrel axis, straight up into a flat-faced
@@ -1116,7 +1126,7 @@ Private Sub Derive()
     xFeedEnd = xRiser + lFeed * fx
     zFeedEnd = zFeedStart + lFeed * fz
     ' the end face's corner furthest out, the lower one
-    xBoxMin = xFeedEnd - 0.5 * FEED_H * wx
+    xBoxMin = MinD(xFeedEnd - 0.5 * FEED_H * wx, XOutMin())
     yBoxMax = MaxD(R, yHi2)                 ' the volute's duct reaches past the barrel
     If yMid + rRiser > yBoxMax Then yBoxMax = yMid + rRiser
 
@@ -1164,7 +1174,7 @@ Private Sub Derive()
         vStage7 = vStage6 + vRiStub
         vStage8 = vStage7 + vRiMid
         vFinal = vStage8
-        xBoxMin = xRi - rRi
+        xBoxMin = MinD(xRi - rRi, XOutMin())
         yBoxMax = MaxD(MaxD(R, yHi2), yMid + rRi)
         outName = CYCLONE_NAME
     Else
@@ -1471,7 +1481,7 @@ Private Sub OutletNote()
              Fmt(xGasOut) & " m"
     Else
         Note "outlet: rise to z = " & Fmt(zOutletTop) & " m, bend R " & Fmt(rBend) & _
-             " m over 180 deg, drop at x = " & Fmt(xLeg) & " m to the outlet face at z = " & Fmt(zGasOut) & " m"
+             " m over 180 deg, drop at x = " & Fmt(OUTLET_SIDE * xLeg) & " m to the outlet face at z = " & Fmt(zGasOut) & " m"
     End If
 End Sub
 
@@ -1502,6 +1512,8 @@ Private Sub OutletPreChecks()
         Fail "OUTLET_EXT_OVER_VORTEX_D is " & Fmt(OUTLET_EXT_OVER_VORTEX_D) & ". The bend has to " & _
              "start above the roof, not on it."
     End If
+    If OUTLET_SIDE <> 1# And OUTLET_SIDE <> -1# Then Fail "OUTLET_SIDE is " & Fmt(OUTLET_SIDE) & ", not +1 or -1."
+    If OUTLET_SIDE < 0# And OUTLET_TURN_DEG <> 180# Then Fail "OUTLET_SIDE -1 is built for the 180 deg bend only."
     If OUTLET_TURN_DEG = 180# Then
     If xLeg - rVortex <= R Then
         Fail "the outlet drop's inner wall at x = " & Fmt(xLeg - rVortex) & " m is not clear of " & _
@@ -1513,9 +1525,24 @@ Private Sub OutletPreChecks()
         Fail "the outlet drop comes down to z = " & Fmt(zGasOut) & " m, at or below the dust " & _
              "outlet."
     End If
-    If VOLUTE_ON And xLeg - rVortex <= xScrollMax Then
+    If OUTLET_SIDE > 0# And VOLUTE_ON And xLeg - rVortex <= xScrollMax Then
         Fail "the outlet drop's inner wall at x = " & Fmt(xLeg - rVortex) & " m comes down onto " & _
              "the volute, which reaches x = " & Fmt(xScrollMax) & " m."
+    End If
+    ' back over the inlet duct (OUTLET_SIDE -1): the drop clear of the
+    ' duct in x, and of the riser and its feed chute (under the duct's
+    ' middle) in y
+    If OUTLET_SIDE < 0# Then
+        If xLeg - rVortex <= L_INLET_C Then
+            Fail "the outlet drop's inner wall at x = -" & Fmt(xLeg - rVortex) & " m comes down onto " & _
+                 "the inlet duct, which reaches x = -" & Fmt(L_INLET_C) & " m."
+        End If
+        If RISER_ON Then
+            If yMid - MaxD(rRiser, 0.5 * FEED_W) <= rVortex Then
+                Fail "the outlet drop (y within " & Fmt(rVortex) & " m) meets the riser or its feed chute " & _
+                     "(from y = " & Fmt(yMid - MaxD(rRiser, 0.5 * FEED_W)) & " m)."
+            End If
+        End If
     End If
     Else
     ' The 90 deg elbow and its run stay above the rise's top, so
@@ -1751,7 +1778,7 @@ Private Sub Build()
     ' It goes over to +x and ends back in the plane z = zOutletTop,
     ' so it takes the box to the far wall of the drop; in -x the inlet
     ' face is still the extreme.
-    xMin5 = xLo2
+    xMin5 = MinD(xLo2, XOutMin())
     If OUTLET_TURN_DEG = 90# Then
         ' The 90 deg elbow ends at x = rBend, facing +x; the run
         ' takes the box on to the outlet face.
@@ -1783,17 +1810,17 @@ Private Sub Build()
         '--- 7. round riser bend, ending on the transition's round end
         Set f = RevolveRiserBend(planeRiser)
         CheckBodies "7  + riser bend", 2, vStage7, _
-                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
+                    MinD(xRiser - rRiser, XOutMin()), yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 8. round riser down to its gas inlet -------------------
         Set f = ExtrudeRiser(planeRiser)
         CheckBodies "8  + riser", 2, vStage8, _
-                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
+                    MinD(xRiser - rRiser, XOutMin()), yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 9. loft from the round end to the duct's rectangle ------
         Set f = LoftTransition()
         CheckBodies "9  + transition", 1, vStage9, _
-                    xRiser - rRiser, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
+                    MinD(xRiser - rRiser, XOutMin()), yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
         '--- 10. meal feed chute out through the riser wall ----------
         Set f = ExtrudeFeedChute(planeFeed)
@@ -2325,8 +2352,8 @@ Private Function RevolveElbow(planeBend As SldWorks.Feature, ByVal ang As Double
     If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
         Fail "CreateCircleByRadius failed on the outlet gooseneck section."
     End If
-    G2S sk, rBend, -1#, zOutletTop, u0, v0
-    G2S sk, rBend, 1#, zOutletTop, u1, v1
+    G2S sk, OUTLET_SIDE * rBend, -1#, zOutletTop, u0, v0
+    G2S sk, OUTLET_SIDE * rBend, 1#, zOutletTop, u1, v1
     If swSkMgr.CreateCenterLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
         Fail "CreateCenterLine failed on the outlet gooseneck axis."
     End If
@@ -2410,7 +2437,7 @@ Private Function ExtrudeLeg(planeBend As SldWorks.Feature) As SldWorks.Feature
     If sk Is Nothing Then Fail "could not open the outlet drop sketch."
     wRefSet = False
 
-    G2S sk, xLeg, 0#, zOutletTop, u0, v0
+    G2S sk, OUTLET_SIDE * xLeg, 0#, zOutletTop, u0, v0
     If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rVortex) Is Nothing Then
         Fail "CreateCircleByRadius failed on the outlet drop section."
     End If
@@ -3655,7 +3682,8 @@ Private Sub TagBoundaryFaces()
                 If Abs(pz) < 0.0001 Then
                     Paint face, 0.85, 0.55, 0.15          ' dust_outlet
                     nDust = nDust + 1: aDust = aDust + face.GetArea
-                ElseIf OUTLET_TURN_DEG = 180# And Abs(pz - zGasOut) < 0.0001 And FaceXMin(face) > R Then
+                ElseIf OUTLET_TURN_DEG = 180# And Abs(pz - zGasOut) < 0.0001 And _
+                       ((OUTLET_SIDE > 0# And FaceXMin(face) > R) Or (OUTLET_SIDE < 0# And FaceXMax(face) < -R)) Then
                     Paint face, 0.2, 0.45, 0.85           ' gas_outlet, the drop's end
                     nGas = nGas + 1: aGas = aGas + face.GetArea
                 ElseIf OUTLET_TURN_DEG = 0# And Abs(pz - zOutletTop) < 0.0001 Then
@@ -3750,6 +3778,24 @@ Private Function FaceXMin(face As SldWorks.Face2) As Double
     Dim b As Variant
     b = face.GetBox
     FaceXMin = b(0)
+End Function
+
+
+Private Function FaceXMax(face As SldWorks.Face2) As Double
+    Dim b As Variant
+    b = face.GetBox
+    FaceXMax = b(3)
+End Function
+
+
+' The outlet bend's -x extreme with OUTLET_SIDE -1 (its drop's outer
+' wall), else none (a large number, so MinD leaves the box alone).
+Private Function XOutMin() As Double
+    If OUTLET_SIDE < 0# Then
+        XOutMin = -(xLeg + rVortex)
+    Else
+        XOutMin = 1E+30
+    End If
 End Function
 
 

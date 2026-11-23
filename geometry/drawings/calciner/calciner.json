@@ -159,7 +159,7 @@
     {
       "key": "gooseneck.level",
       "label": "Neck's level piece: length",
-      "value": 4.949747468305833,
+      "value": 2.4748737341529163,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -169,13 +169,13 @@
         "gooseneck.neck_piece_over_D_neck",
         "gooseneck.neck_level_over_D_neck"
       ],
-      "value_mm": 4949.747468,
+      "value_mm": 2474.873734,
       "short": "neck_level"
     },
     {
       "key": "gooseneck.channel",
       "label": "Vertical channel below the neck: length",
-      "value": 7.424621202458749,
+      "value": 4.2072853480599575,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -185,7 +185,7 @@
         "gooseneck.neck_piece_over_D_neck",
         "gooseneck.channel_over_D_neck"
       ],
-      "value_mm": 7424.621202,
+      "value_mm": 4207.285348,
       "short": "channel"
     },
     {
@@ -218,7 +218,7 @@
     {
       "key": "gooseneck.arm_run",
       "label": "Arms' level run to the outlet face: length",
-      "value": 7.0,
+      "value": 1.75,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -227,13 +227,13 @@
         "gooseneck.D_leg",
         "gooseneck.arm_run_over_D_leg"
       ],
-      "value_mm": 7000.0,
+      "value_mm": 1750.0,
       "short": "arm_run"
     },
     {
       "key": "gooseneck.y_off",
       "label": "Channel and arms in front of the vessel axis",
-      "value": 12.1347030415631,
+      "value": 9.659829307410183,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -245,16 +245,16 @@
         "gooseneck.neck_level_over_D_neck",
         "calciner.D"
       ],
-      "value_mm": 12134.703042,
+      "value_mm": 9659.829307,
       "short": "y_off"
     },
     {
       "key": "gooseneck.x_leg",
       "label": "Barrel axis to an arm's outlet face",
-      "value": 10.781329541925963,
+      "value": 5.474753582158839,
       "unit": "m",
       "source": "derived",
-      "status": "Schematic",
+      "status": "Estimated",
       "doc": "preheater/gooseneck.md",
       "inputs": [
         "gooseneck.D_leg",
@@ -273,16 +273,16 @@
         "layout.c5_over_tertiary_air",
         "calciner.H"
       ],
-      "value_mm": 10781.329542,
+      "value_mm": 5474.753582,
       "short": "x_leg"
     },
     {
       "key": "gooseneck.z_end",
       "label": "Throat foot to the arms' level runs' axis (C5's inlet axis)",
-      "value": 23.522304348160695,
+      "value": 26.772304348160695,
       "unit": "m",
       "source": "derived",
-      "status": "Schematic",
+      "status": "Estimated",
       "doc": "calciner/calciner.md",
       "inputs": [
         "calciner.throat_gas_flow",
@@ -295,16 +295,16 @@
         "calciner.tertiary_air_cone_clearance",
         "layout.c5_over_tertiary_air"
       ],
-      "value_mm": 23522.304348,
+      "value_mm": 26772.304348,
       "short": "leg_end_z"
     },
     {
       "key": "gooseneck.width",
       "label": "Overall width over the arms' outlet faces",
-      "value": 21.562659083851926,
+      "value": 10.949507164317678,
       "unit": "m",
       "source": "derived",
-      "status": "Schematic",
+      "status": "Estimated",
       "doc": "preheater/gooseneck.md",
       "inputs": [
         "gooseneck.D_leg",
@@ -323,7 +323,7 @@
         "layout.c5_over_tertiary_air",
         "calciner.H"
       ],
-      "value_mm": 21562.659084,
+      "value_mm": 10949.507164,
       "short": "width"
     },
     {

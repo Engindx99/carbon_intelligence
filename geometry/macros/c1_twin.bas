@@ -45,9 +45,10 @@ Const R1_STUB_L                    As Double  = 2.137614     ' R1 straight under
 Const C1_R                         As Double  = 2.16         ' barrel radius [derived]
 Const C1_Y_FAR                     As Double  = 2.226723     ' the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end [derived]
 Const C1_TOP                       As Double  = 18.46        ' the outlet bend's crown [derived]
-Const C1_X_MAX                     As Double  = 7.56         ' the C1_riser solid's far side, its outlet leg (C1 frame x) [derived]
-Const C1_X_MIN                     As Double  = -8.600887    ' the C1_riser solid's near side, its feed chute (C1 frame x) [derived]
+Const C1_X_MAX                     As Double  = 2.654055     ' the C1_riser solid's far side (C1 frame x): its outlet leg, or (outlet_side -1) the barrel / scroll [derived]
+Const C1_X_MIN                     As Double  = -8.600887    ' the C1_riser solid's near side (C1 frame x): its feed chute, or the outlet leg past it [derived]
 Const OUT_Z_END                    As Double  = 11.44        ' the outlet legs' end faces [derived]
+Const OUT_Y                        As Double  = -6.48        ' the outlet legs' axes, twin y (C1 frame x; outlet_side) [derived]
 ' END GENERATED
 
 Const LINE_KEY As String = "2500"
@@ -152,7 +153,7 @@ Private Sub ReadSource()
          ", z " & Fmt(bx(2)) & " .. " & Fmt(bx(5)) & " m"
     ' the solid is the source's: its extent along the duct (x) and its height
     CheckNear "source x min (feed chute)", bx(0), C1_X_MIN
-    CheckNear "source x max (outlet leg)", bx(3), C1_X_MAX
+    CheckNear "source x max", bx(3), C1_X_MAX
     CheckNear "source z min (dust outlet)", bx(2), 0#
     CheckNear "source z max (outlet bend crown)", bx(5), C1_TOP
     vSrc = Volume(srcBody)
@@ -490,8 +491,8 @@ Private Sub Verify()
     ' the scroll's end, 67 mm past the barrel on C1), the outlet legs its back, the feed chutes its front, R1's stub its floor
     CheckNear "x max (C1 A's far side)", g(3), 0.5 * TWIN_S + C1_Y_FAR
     CheckNear "x min (C1 B's far side)", g(0), -(0.5 * TWIN_S + C1_Y_FAR)
-    CheckNear "y max (the outlet legs)", g(4), C1_X_MAX
-    CheckNear "y min (the feed chutes)", g(1), C1_X_MIN
+    CheckNear "y max", g(4), C1_X_MAX
+    CheckNear "y min", g(1), C1_X_MIN
     CheckNear "z min (R1's stub)", g(2), Z_SPLIT - R1_STUB_L
     CheckNear "z max (the outlet bends)", g(5), C1_TOP
     r1 = 0.5 * R1_D: r2 = 0.5 * BRANCH_D: h = Z_BRANCH - Z_SPLIT
@@ -533,7 +534,7 @@ Private Function OutletEnd(ByVal sg As Double) As SldWorks.Face2
         If sf.IsPlane Then
             bx = fc.GetBox
             If Abs(bx(2) - OUT_Z_END) < FACE_TOL And Abs(bx(5) - OUT_Z_END) < FACE_TOL And _
-               sg * (bx(0) + bx(3)) > 0# And 0.5 * (bx(1) + bx(4)) > C1_R Then
+               sg * (bx(0) + bx(3)) > 0# And Abs(0.5 * (bx(1) + bx(4)) - OUT_Y) < 0.05 Then
                 Set OutletEnd = fc
                 Exit Function
             End If

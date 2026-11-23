@@ -217,6 +217,14 @@
           "doc": "preheater/cyclone_C1.md"
         },
         {
+          "key": "cyclones.C1.outlet_side",
+          "value": -1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "preheater/cyclone_C1.md"
+        },
+        {
           "key": "cyclones.C1.boi_radius",
           "value": 0.72,
           "unit": "m",
@@ -267,7 +275,7 @@
       ],
       "status_counts": {
         "Verified": 2,
-        "Estimated": 19
+        "Estimated": 20
       },
       "missing": [],
       "cfd_solid": "C1.SLDPRT",
@@ -1185,7 +1193,7 @@
         },
         {
           "key": "gooseneck.neck_level_over_D_neck",
-          "value": 1.0,
+          "value": 0.5,
           "unit": "-",
           "source": "model",
           "status": "Estimated",
@@ -1193,7 +1201,7 @@
         },
         {
           "key": "gooseneck.channel_over_D_neck",
-          "value": 1.5,
+          "value": 0.85,
           "unit": "-",
           "source": "model",
           "status": "Estimated",
@@ -1209,7 +1217,7 @@
         },
         {
           "key": "gooseneck.arm_run_over_D_leg",
-          "value": 2.0,
+          "value": 0.5,
           "unit": "-",
           "source": "model",
           "status": "Estimated",

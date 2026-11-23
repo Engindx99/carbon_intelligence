@@ -14,27 +14,27 @@ Kolun çapı yayınlanmıştır: bir 2500 t/d hattının boynu. Tesiste **her ko
 | Ortak boyun çapı (kol × √2) | 4.950 m | türetilmiş |
 | Boyunun eğik parçaları (2 adet): boy | 4.950 m | 1 × boyun çapı; modelleme |
 | Boyunun eğimi (yataya) | 45.0 ° | modelleme (kullanıcı kararı) |
-| Boyunun yatay parçası: boy | 4.950 m | 1 × boyun çapı; modelleme |
-| Düşey kanal: boy | 7.425 m | 1.5 × boyun çapı; modelleme (kullanıcı kararı) |
-| Kanalın ekseni, gövde ekseninin önünde (−y) | 12.135 m | türetilmiş |
+| Boyunun yatay parçası: boy | 2.475 m | 0.5 × boyun çapı; modelleme |
+| Düşey kanal: boy | 4.207 m | 0.85 × boyun çapı; modelleme (kullanıcı kararı) |
+| Kanalın ekseni, gövde ekseninin önünde (−y) | 9.660 m | türetilmiş |
 | Kemerin tepesi (boru dış kenarı) | 39.105 m | türetilmiş |
 | Kanalın başladığı kot (üçüncü parçanın alt ucu) | 33.130 m | türetilmiş |
-| Kolların ayrıldığı kot (kanalın alt ucu) | 25.705 m | türetilmiş |
+| Kolların ayrıldığı kot (kanalın alt ucu) | 28.923 m | türetilmiş |
 | Kolun boyuna açısı (düşeyden) | 60.0 ° | modelleme (kullanıcı kararı) |
-| Kolun eğik parçası: boy (yatay kolun eksenine kadar) | 4.366 m | C5 giriş ekseninden türetilir |
-| Kolun yataya döndüğü nokta, x | 3.781 m | türetilmiş |
-| Kolun yatay kısmı: boy | 7.000 m | 2 × kol çapı; modelleme (kullanıcı çizimi) |
-| Kol çıkış yüzü (dikey düzlem), x | 10.781 m | türetilmiş |
+| Kolun eğik parçası: boy (yatay kolun eksenine kadar) | 4.301 m | C5 giriş ekseninden türetilir |
+| Kolun yataya döndüğü nokta, x | 3.725 m | türetilmiş |
+| Kolun yatay kısmı: boy | 1.750 m | 0.5 × kol çapı; modelleme (kullanıcı çizimi) |
+| Kol çıkış yüzü (dikey düzlem), x | 5.475 m | türetilmiş |
 | Boru kökünün (çatıyı deldiği nokta) gövde ekseninin önüne kayması | 0.185 m | kapak gövdenin içinde kalsın diye türetilir (5 cm pay) |
 | Birinci parçanın gövde içindeki hacmi | 47.546 m³ | türetilmiş |
 | Kanal ile bir kolun ortak hacmi | 5.669 m³ | türetilmiş |
 | İki kolun ortak hacmi | 4.122 m³ | türetilmiş |
-| CFD: kolların yatay kısmının ekseni (C5 giriş ekseni), z | 23.522 m | türetilmiş |
-| CFD: hacim | 631.93 m³ | türetilmiş |
-| CFD: duvar alanı | 596.32 m² | türetilmiş |
+| CFD: kolların yatay kısmının ekseni (C5 giriş ekseni), z | 26.772 m | türetilmiş |
+| CFD: hacim | 420.12 m³ | türetilmiş |
+| CFD: duvar alanı | 390.91 m² | türetilmiş |
 | Tesis: yatay kolun CFD çıkışından C5 namlusuna uzantısı | 2.750 m | türetilmiş |
-| **Tesis: hacim (iki kol)** | 684.84 m³ | türetilmiş |
-| **Tesis: duvar alanı (iki kol)** | 656.79 m² | türetilmiş |
+| **Tesis: hacim (iki kol)** | 473.03 m³ | türetilmiş |
+| **Tesis: duvar alanı (iki kol)** | 451.39 m² | türetilmiş |
 <!-- END GENERATED -->
 
 **Tesis ve CFD** (kullanıcı kararı, 14 Ekim 2026). Tesiste kollar C5 girişlerine kadar iner: iniş, 45°'lik bir parça ve C5 gövdesine yatay bir bacak (çizim, [plant_topology.md](../plant_topology.md)). Twin bu hacmi kullanır. Kalsinatör CFD'si kolları yatay kolların uç yüzünde, C5'in giriş ekseninde keser; "CFD" satırları o domenindir.

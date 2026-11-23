@@ -52,6 +52,11 @@ cyclones:
     outlet_rise_over_Dx: {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
     outlet_bend_R_over_Dx: {value: 1.5, unit: "-", source: model,       doc: preheater/cyclone_C1.md}
     outlet_run_over_Dx:  {value: 1.25, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
+    # which way the outlet bend goes, along the inlet gas (+1, +x of the
+    # cyclone frame) or back over the inlet duct (-1). -1 since 24 Nov 2026
+    # (user): the twin stands turned half round over C3's riser and its
+    # outlets face back, away from the kiln, over R1's side.
+    outlet_side:         {value: -1.0, unit: "-", source: model,        doc: preheater/cyclone_C1.md}
     # the mesh sizing cylinder inside the vortex finder's bore, ~2/3 of
     # its radius (0.8 at D_x 2.40; 21 Nov 2026 with D_x = D / 2)
     boi_radius:        {value: 0.72, unit: m,     source: model,        doc: preheater/cyclone_C1.md}
@@ -221,11 +226,17 @@ gooseneck:
   # vessel.
   neck_slope:              {value: 45.0, unit: deg, source: model, doc: preheater/gooseneck.md}
   neck_piece_over_D_neck:  {value: 1.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
-  neck_level_over_D_neck:  {value: 1.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  # 0.5 since 24 Nov 2026 (was 1.0): the tower stands beside the calciner
+  # so the C4 and C5 meal pipes fall at >= the meal slope (user: "kuleyi
+  # yaklaştır"); the macro's floor is 2 tan(slope / 2) = 0.41 (the mitres).
+  neck_level_over_D_neck:  {value: 0.5,  unit: "-", source: model, doc: preheater/gooseneck.md}
   # Below the third piece the neck goes on as one vertical channel of its
   # own diameter, its length in neck diameters (model choice, user
   # decision 15 Nov 2026: one straight channel first, the Y below it).
-  channel_over_D_neck:     {value: 1.5,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  # 0.85 since 24 Nov 2026 (was 1.5): C5 stands 3.25 m higher (layout.
+  # c5_over_tertiary_air) and the arms' level runs with it, the arms' fall
+  # kept (~2.2 m).
+  channel_over_D_neck:     {value: 0.85, unit: "-", source: model, doc: preheater/gooseneck.md}
   # The Y: from the channel's lower end each arm leaves in the plane across
   # the channel (x-z), at arm_angle from the vertical (user decision, 15 Nov
   # 2026), runs one straight piece down, and turns (mitre) to a level run
@@ -234,7 +245,9 @@ gooseneck:
   # The arm's inclined piece runs down to the level run's axis (C5's
   # inlet axis), so its length follows; the level run then goes on, in leg
   # diameters, to the outlet face (user's sketch, 15 Nov 2026).
-  arm_run_over_D_leg:      {value: 2.0,  unit: "-", source: model, doc: preheater/gooseneck.md}
+  # 0.5 since 24 Nov 2026 (was 2.0): C5 beside the calciner, its inlet duct
+  # (C5_plant) runs from this face to the barrel (plant_geometry.tower_layout).
+  arm_run_over_D_leg:      {value: 0.5,  unit: "-", source: model, doc: preheater/gooseneck.md}
 
 # ---------------------------------------------------------------------
 # Rotary kiln, PF5000
@@ -833,6 +846,31 @@ meal_pipe:
   feed_per_string:     {value: 44.85,   unit: kg/s,  source: model,       doc: preheater/meal_pipe_C4.md}
   c5_meal_per_string:  {value: 30.3084, unit: kg/s,  source: model,       doc: preheater/meal_pipe_C5.md}
 
+# The meal pipes' routes in the tower (plant_geometry.meal_routes; user,
+# 24 Nov 2026: "farin borularını bağlayalım"). Each cyclone's meal falls
+# to the riser two stages down (C1 -> R2, C2 -> R3, C3 -> R4: the CFD
+# outlet pipe of C3 / C4 / C5), C4's into the calciner's meal pipe, C5's
+# into the calciner's throat (its foot, at mid height, on C5's side; user,
+# 24 Nov 2026; it was the chamber's roof) -- the rules plant_topology_2d drew
+# (14 Oct 2026). A pipe drops straight from the dust outlet, runs at the
+# meal slope (cyclone_domain.meal_slope) out to side_L beside the riser
+# opposite its bend (C1: either side of it), drops, and runs in at the
+# slope to the riser's wall entry_up over the roof below. C4 and C5 run
+# straight from their drop to the target. No source gives any of these.
+meal_route:
+  drop:                {value: 1.5,  unit: m,     source: schematic,    doc: plant_topology.md}   # C1
+  # C2, C3 stand 0.5 m (layout.dust_over_roof) over the riser's top below
+  # them: their pipe leaves at once (the riser's inclined roof under it)
+  drop_over_riser:     {value: 0.3,  unit: m,     source: model,        doc: plant_topology.md}
+  side_L:              {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  entry_up:            {value: 1.5,  unit: m,     source: schematic,    doc: plant_topology.md}
+  c4_drop:             {value: 1.5,  unit: m,     source: model,        doc: plant_topology.md}
+  c5_drop:             {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  # the least slope of a straight run (C4, C5): raw meal's angle of
+  # repose (kiln.repose_angle, 40 deg) and a margin; the
+  # pipes the slope rule lays run at meal_slope (60 deg)
+  min_slope:           {value: 55.0, unit: deg,   source: model,        doc: plant_topology.md}
+
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it
 # only lays the plant out (geometry/plant_topology.md). Elevations of
@@ -842,8 +880,17 @@ meal_pipe:
 layout:
   kiln_axis_z:         {value: 10.0, unit: m,     source: schematic,    doc: plant_topology.md}
   chamber_margin:      {value: 1.0,  unit: m,     source: model,        doc: kiln/kiln_inlet_chamber.md}
-  c5_over_tertiary_air: {value: 1.75, unit: m,    source: schematic,    doc: plant_topology.md}
+  # 5.0 since 24 Nov 2026 (was 1.75; user): C5's meal pipe falls into the
+  # calciner's throat at >= meal_route.min_slope (~56 deg), which needs C5
+  # (and the tower over it) this much higher.
+  c5_over_tertiary_air: {value: 5.0,  unit: m,    source: model,        doc: plant_topology.md}
   gooseneck_to_c5_gap: {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  # The tower in plan (plant_geometry.tower_layout; user, 24 Nov 2026: the
+  # C4 and C5 meal pipes have to fall at the meal slope, so the tower
+  # stands beside the calciner): the clear distance, bore to bore, from
+  # C5 and C4 to the calciner -- two lined walls (~0.35 m each) and access.
+  # No source.
+  tower_calciner_gap:  {value: 2.0,  unit: m,     source: model,        doc: plant_topology.md}
   # C1's dust outlets over the top of C2's outlet pipe. Since R1 rises
   # straight on C2's axis (17 Nov 2026) the twin stand over C2, and both
   # C1 meal pipes run back to R2's upright at the inner column (60 deg,

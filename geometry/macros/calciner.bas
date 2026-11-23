@@ -57,13 +57,13 @@ Const X_CO2                        As Double  = 0.13         ' [literature, calc
 Const U_THROAT                     As Double  = 29#          ' m/s [literature, calciner/calciner.md]
 Const THROAT_LEN_OVER_D            As Double  = 1#           ' [model, calciner/calciner.md]
 Const D_GOOSENECK_SRC              As Double  = 3.5          ' each leg [published, preheater/gooseneck.md]
-Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.679740905621 ' the arms' level runs' axis, x H_VESSEL (C5's inlet axis, plant_geometry.py) [derived]
+Const GN_OUTLET_AT_VESSEL_H        As Double  = 0.788074238954 ' the arms' level runs' axis, x H_VESSEL (C5's inlet axis, plant_geometry.py) [derived]
 Const GN_SLOPE_DEG                 As Double  = 45#          ' the neck's two inclined pieces, to the horizontal [model, preheater/gooseneck.md]
 Const GN_PIECE_OVER_D              As Double  = 1#           ' the neck's inclined pieces, x neck D [model, preheater/gooseneck.md]
-Const GN_LEVEL_OVER_D              As Double  = 1#           ' the neck's level piece, x neck D [model, preheater/gooseneck.md]
-Const GN_CHANNEL_OVER_D            As Double  = 1.5          ' the vertical channel below the neck, x neck D [model, preheater/gooseneck.md]
+Const GN_LEVEL_OVER_D              As Double  = 0.5          ' the neck's level piece, x neck D [model, preheater/gooseneck.md]
+Const GN_CHANNEL_OVER_D            As Double  = 0.85         ' the vertical channel below the neck, x neck D [model, preheater/gooseneck.md]
 Const GN_ARM_DEG                   As Double  = 60#          ' each arm's angle to the vertical [model, preheater/gooseneck.md]
-Const GN_ARM_RUN_OVER_D            As Double  = 2#           ' each arm's level run, x leg D [model, preheater/gooseneck.md]
+Const GN_ARM_RUN_OVER_D            As Double  = 0.5          ' each arm's level run, x leg D [model, preheater/gooseneck.md]
 Const GN_ROOT_FWD                  As Double  = 0.184956     ' where the neck's first piece pierces the roof, in front of the axis, m (cap kept inside the vessel) [derived]
 Const GN_INSIDE_VESSEL             As Double  = 47.546441    ' the neck's first piece inside the vessel, m3 (grid, plant_geometry.py) [derived]
 Const GN_OVERLAP_NECK_ARM          As Double  = 5.669359     ' channel x one arm, m3 [derived]
@@ -227,9 +227,11 @@ Const VOL_TOL  As Double = 0.001   ' relative, on every closed-form stage volume
 Const FEED_VOL_TOL As Double = 0.01
 ' What a pipe adds is the difference of two ~1640 m3 volumes, each good to about
 ' 1e-6 of itself (SolidWorks' mass properties): the fuel pipe, 0.063 m3, read
-' 1.5 and 2.9 % off on two builds of the same pipe. So the check has this much
-' of the body's volume as a floor; CheckStageVol still holds the whole to VOL_TOL.
-Const ADD_NOISE As Double = 0.000005
+' 1.5 and 2.9 % off on two builds of the same pipe; with the shorter gooseneck
+' (24 Nov 2026, ~1536 m3) the +y one read 0.0773 (23 %, 0.0145 m3 = 0.9e-5 of the
+' body). So the check has this much of the body's volume as a floor; the end face's
+' area still checks the pipe, CheckStageVol the whole to VOL_TOL.
+Const ADD_NOISE As Double = 0.000015
 Const AREA_TOL As Double = 0.002   ' relative, on face areas
 Const BOX_TOL  As Double = 0.005   ' absolute [m]; GetBodyBox may overstate curved faces
 Const DIR_TOL  As Double = 0.000001
