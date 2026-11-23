@@ -122,6 +122,7 @@ Const C5_L_INLET_CASE              As Double  = 2.063492     ' C4 x 1.031746 [de
 Const C5_RISER_IN_ON               As Boolean = True         ' as C4
 Const C5_BOI_RADIUS                As Double  = 1.03         ' [model, preheater/cyclone_C5.md]
 Const C5_RISER_IN_OFFSET           As Double  = 7.018812     ' riser inlet axis from the barrel axis (the columns' offset) [derived]
+Const C5_PLANT_L_INLET             As Double  = 6#           ' C5_plant (c5_plant): the level duct run to the gooseneck arm's face [derived]
 ' END GENERATED
 
 ' Per-cyclone values, assigned in SelectCyclone. Catalogue
@@ -544,6 +545,7 @@ Dim zFeedStart As Double, lFeed As Double   ' chute start on the riser axis, its
 Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the chute's end face, the meal_feed
 Dim zRiserBendTop As Double                 ' highest point of the riser bend
 Dim outName As String                       ' file name the solid is written under
+Dim plantInlet As Boolean                   ' c5_plant: C5 as the plant has it (no riser, the duct to the gooseneck arm)
 Dim rRi As Double, xRi As Double, runRi As Double   ' riser inlet: radius, axis x (y = yMid), axis to duct face
 Dim zRiTop As Double, zRiBot As Double      ' riser inlet: the seam's foot (inclined floor at its axis), its gas inlet face
 Dim zRiHigh As Double                       ' riser inlet: its top on its axis (the inclined roof)
@@ -627,6 +629,18 @@ Sub c5()
     CYCLONE_NAME = ""
 End Sub
 
+' C5 as the plant has it, for the plant assembly (plant_assembly.bas; user,
+' 23 Nov 2026: the gooseneck arm and C5 must meet): no riser under the
+' duct, the level duct run back to the gooseneck arm's outlet face
+' (C5_PLANT_L_INLET), written as C5_plant.*. Not the CFD domain (C5).
+Sub c5_plant()
+    CYCLONE_NAME = "C5"
+    plantInlet = True
+    main
+    plantInlet = False
+    CYCLONE_NAME = ""
+End Sub
+
 
 Sub main()
 
@@ -692,7 +706,7 @@ Private Sub WriteLog(ByVal outcome As String)
     If Dir(OUT_ROOT, vbDirectory) = "" Then MkDir OUT_ROOT
     If Dir(OUT_ROOT & LINE_KEY, vbDirectory) = "" Then MkDir OUT_ROOT & LINE_KEY
     fn = FreeFile
-    Open OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & "_cyclone_build.log" For Output As #fn
+    Open OUT_ROOT & LINE_KEY & "\" & CYCLONE_NAME & IIf(plantInlet, "_plant", "") & "_cyclone_build.log" For Output As #fn
     Print #fn, outcome & vbLf & buildLog;
     Close #fn
 End Sub
@@ -900,6 +914,11 @@ Private Sub Derive()
     Dim k As Long, ph As Double, rr As Double, legLen As Double
 
     SelectCyclone
+    ' c5_plant: C5 as the plant has it -- no riser, the duct to the gooseneck arm
+    If plantInlet Then
+        RISER_IN_ON = False
+        L_INLET_C = C5_PLANT_L_INLET
+    End If
 
     R = 0.5 * D_BARREL
     rDust = 0.5 * D_DUST
@@ -1151,6 +1170,7 @@ Private Sub Derive()
     Else
         vFinal = vStage6
         outName = CYCLONE_NAME
+        If plantInlet Then outName = CYCLONE_NAME & "_plant"
     End If
 
 End Sub

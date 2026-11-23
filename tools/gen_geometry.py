@@ -164,6 +164,7 @@ def cyclone_bas(g):
         out += cyclone_case(g, name)
         off = pg.cfd_riser_inlet(g, name)["offset"] if pg.cyclone(g, name)["inlet_riser"] else 0.0
         out.append(der(f"{name}_RISER_IN_OFFSET", off, "riser inlet axis from the barrel axis (the columns' offset)"))
+    out.append(der("C5_PLANT_L_INLET", pg.c5_plant_inlet_L(g), "C5_plant (c5_plant): the level duct run to the gooseneck arm's face"))
     return out
 
 
@@ -484,9 +485,9 @@ def _calciner_sheet_consts(g):
         der("CAL_TOP", gn["crown"], "the neck's crown, z"),
         der("CAL_Y_FRONT", gn["y_front"], "the channel's far side, forward of the axis"),
         der("CAL_TA_D", ta["D"], "tertiary air duct D"),
-        der("CAL_TA_Y", ta["y"], "its axis, y"),
+        der("CAL_TA_X", ta["x"], "its axis, x (along y, on the -x side)"),
         der("CAL_TA_Z", ta["z"], "its axis, z"),
-        der("CAL_TA_X", ta["x_end"], "its face, x"),
+        der("CAL_TA_Y", ta["y_end"], "its face, y"),
         der("CAL_FEED_D", meal["D"], "meal pipe D"),
         der("CAL_FEED_X", meal["end"][0], "meal pipe end face centre, x"),
         der("CAL_FEED_Z", meal["end"][1], "meal pipe end face centre, z"),
@@ -1942,8 +1943,8 @@ def _calciner_cfd(g):
         ("5a / 5b + farin boruları ±x", f"Ø{meal['D']:g}, {meal['slope']:g}°, eksenleri duvarı z {f(meal['z_wall'])}'da keser; "
          f"deliğin alt kenarı z {f(meal['hole_bottom'])}, uç yüzleri (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
          f"{steps[4]:.3f} / {steps[5]:.3f} (+{meal['volume']:.4f} her biri)"),
-        ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, eksen y {f(ta['y'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
-         f"yüzü x {f(ta['x_end'])}", f"{steps[6]:.3f} (+{ta['volume']:.3f})"),
+        ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, ekseni y boyunca, x {f(ta['x'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
+         f"yüzü y {f(ta['y_end'])} (−y'den, fırına paralel)", f"{steps[6]:.3f} (+{ta['volume']:.3f})"),
         ("7a / 7b + yakıt boruları ±y", f"Ø{fuel['D']:g}, {fuel['slope']:g}°, eksenleri duvarı z {f(fuel['z_wall'])}'da keser; "
          f"uç yüzleri (0, ±{f(fuel['end'][0])}, {f(fuel['end'][1])})",
          f"{steps[7]:.3f} / {steps[8]:.3f} (+{fuel['volume']:.4f} her biri)"),

@@ -249,16 +249,19 @@ def calciner_pipe(R, r, slope_deg, z_wall, depth):
 def calciner_inlets(g):
     """The calciner's side inlets, z from the throat's foot as
     calciner(): the tertiary air duct, tangential at the bottom of the
-    cylinder, coming in along +x on the -y side, a stub of it to its
-    face past the vessel's tangent plane; the two meal pipes (+-x) and
-    the two fuel pipes (+-y) just above it."""
+    cylinder, its axis along y on the -x side, coming in from -y (from
+    the hood, parallel to the kiln, which runs to -y; user 24 Nov 2026 --
+    it was along x on the -y side), a stub of it to its face past the
+    vessel's tangent plane y = -R; the swirl as before (clockwise from
+    above); the two meal pipes (+-x, from the strings) and the two fuel
+    pipes (+-y) just above it, unchanged."""
     c, cal = g["calciner"], calciner(g)
     R = cal["R"]
     r = 0.5 * v(c["D_tertiary_air"])
-    y_c = -(R - v(c["tertiary_air_wall_relief"]) - r)
+    x_c = -(R - v(c["tertiary_air_wall_relief"]) - r)    # the axis, x (tangential)
     z_c = cal["z_cone_top"] + v(c["tertiary_air_cone_clearance"]) + r
-    x_end = R + v(c["tertiary_air_stub_length"])
-    v_ta = math.pi * r * r * x_end - chord_integral(r, R, y_c)
+    y_end = -(R + v(c["tertiary_air_stub_length"]))     # the face, y
+    v_ta = math.pi * r * r * (-y_end) - chord_integral(r, R, x_c)
 
     rf = 0.5 * v(c["D_feed"])
     slope = v(g["cyclone_domain"]["meal_slope"])
@@ -268,7 +271,8 @@ def calciner_inlets(g):
     depth = v(c["feed_depth"])
     return {
         "tertiary_air": {
-            "D": 2.0 * r, "y": y_c, "z": z_c, "x_end": x_end,
+            "D": 2.0 * r, "x": x_c, "z": z_c, "y_end": y_end, "offset": -x_c,
+            "centre": (x_c, y_end, z_c), "direction": (0.0, 1.0, 0.0),
             "top": z_c + r, "volume": v_ta, "end_area": math.pi * r * r,
         },
         "meal": calciner_pipe(R, rf, slope, z_wall, depth),
@@ -2224,19 +2228,30 @@ def cooler_placement(g):
     return {"R": (Hd, X, U), "o": o, "to_kiln": to_kiln, "box": box}
 
 
+def c5_plant_inlet_L(g):
+    """C5 as the plant has it (C5_plant.SLDPRT, cyclone.bas c5_plant; user
+    23 Nov 2026: the gooseneck arm and C5 must meet): no riser under its
+    duct, the level inlet duct run back from the barrel's tangent plane
+    to the gooseneck arm's outlet face (layout(): C5's axis x_inner, the
+    arm's face x_leg). The arm is round (D_leg), the duct rectangular
+    (W x H_inlet): the face is where they meet, no transition piece."""
+    lay, gn = layout(g), gooseneck(g)
+    return lay["col"][5] - gn["x_leg"]
+
+
 def tower_placement(g):
     """The tower assembly (user, 23 Nov 2026: the whole pyroprocess in
     one assembly, step by step; option A: the CFD solids as they are):
     each part's axes (rows, in the plant frame) and origin. The plant
     frame is the calciner's (calciner.bas): z up from the ground, the
-    two strings at +-x (layout()'s x is one string's), the gooseneck and
-    the kiln towards -y. The kiln inlet chamber turned so its kiln (its
-    +x) runs to -y. Each cyclone turned about its axis so its CFD riser
+    two strings at +-x (layout()'s x is one string's), the gooseneck
+    and the kiln towards -y: the kiln inlet chamber turned so its kiln
+    (its +x) runs to -y, across the strings' line. Each cyclone turned about its axis so its CFD riser
     stands on the axis of the cyclone below (the columns at layout()'s
-    x, one y per string); C5 so its level inlet duct is on the
-    gooseneck arm's axis. String 2 is string 1 turned 180 deg about z
-    (a mirrored part cannot be placed by a transform), so its column
-    stands at a different y. C2 = C3 = C4 (one solid, C4.SLDPRT).
+    x, one y for both strings); C5 so its level inlet duct is on the
+    gooseneck arm's axis. String 2 is string 1's mirror in x = 0, built
+    from mirrored solids (<part>_m.SLDPRT). C2 = C3 = C4 (one solid,
+    C4.SLDPRT).
 
     Returns {"parts": [{name, file, R, o}], "joints": [...], ...}; the
     joints are what meets and how (face to face, an overlap of two CFD
@@ -2264,20 +2279,22 @@ def tower_placement(g):
         {"name": "calciner", "file": "calciner.SLDPRT", "R": rz(0.0), "o": (0.0, 0.0, z0)},
     ]
     joints = []
-    for k, sg in ((1, 1.0), (2, -1.0)):
-        th0 = 0.0 if sg > 0 else math.pi
+    for k, sg in ((1, 1.0),):
+        th0 = 0.0
         # C5: its level inlet duct (along its +x, its middle at y = duct5's) on the arm's axis
         R5 = rz(th0)
         yd = 0.5 * (duct5["y_inner"] + duct5["y_outer"])
         y_col = y_arm - apply(R5, (0.0, yd, 0.0))[1]
         axis = {5: (sg * lay["col"][5], y_col)}
-        parts.append({"name": f"C5_{k}", "file": "C5.SLDPRT", "R": R5, "o": axis[5] + (lay["z_dust"][5],)})
-        face = apply(R5, duct5["face_centre"])
+        # C5 as the plant has it (C5_plant: no riser, its duct run to the arm's face)
+        parts.append({"name": f"C5_{k}", "file": "C5_plant.SLDPRT", "R": R5, "o": axis[5] + (lay["z_dust"][5],)})
+        fc = duct5["face_centre"]
+        face = apply(R5, (-c5_plant_inlet_L(g), fc[1], fc[2]))
         x_face = axis[5][0] + face[0]
-        joints.append({"what": f"gooseneck arm {k} -> C5_{k} inlet duct", "kind": "gap",
+        joints.append({"what": f"gooseneck arm {k} -> C5_{k} inlet duct", "kind": "face",
                        "L": abs(x_face - sg * gn["x_leg"]),
                        "z": (z_arm, lay["z_dust"][5] + face[2]),
-                       "note": "C5's CFD inlet is a riser from below (cyclone_C5.md), not the arm"})
+                       "note": "round arm (D_leg) on the rectangular duct (W x H_inlet), no transition"})
         below = 5
         for n in (4, 3, 2):
             X = sg * lay["col"][n]
@@ -2302,6 +2319,46 @@ def tower_placement(g):
         # R1's floor (the twin's gas inlet) on C2's outlet face: L the gap (0: face to face)
         joints.append({"what": f"C2_{k} outlet pipe -> R1_{k}", "kind": "face",
                        "L": lay["z_r1_foot"] - (lay["z_dust"][2] + c[2]["height"] + c[2]["outlet_rise"])})
+    # string 2: string 1's mirror in the plane x = 0 (user, 24 Nov 2026: the
+    # strings mirrored, as plants have them). Its parts are the mirrored
+    # solids (<part>_m.SLDPRT: x -> -x in the part's frame, plant_assembly.bas
+    # mirror_parts), so a part point p' = (-p_x, p_y, p_z); the plant point
+    # is M (o + p R) with M: x -> -x, so the rows become (-M R0, M R1, M R2)
+    # (a proper rotation again) and the origin M o. Its cyclones turn the
+    # other way.
+    def mx(v):
+        return (-v[0], v[1], v[2])
+
+    for q in [q for q in parts if q["name"].endswith("_1")]:
+        R = q["R"]
+        parts.append({"name": q["name"][:-2] + "_2", "file": q["file"].replace(".SLDPRT", "_m.SLDPRT"),
+                      "R": (tuple(-x for x in mx(R[0])), mx(R[1]), mx(R[2])), "o": mx(q["o"])})
+    for j in [j for j in joints if j["what"].count("_1")]:
+        m = dict(j)
+        m["what"] = j["what"].replace("_1", "_2").replace("arm 1", "arm 2")
+        for key in ("riser_at", "axis_below"):
+            if key in m:
+                m[key] = (-m[key][0], m[key][1])
+        joints.append(m)
+
+    # the kiln's end (kiln_outlet_assembly, the kiln frame: z the axis from
+    # the back end to the hood, y up across it, x across) out of the
+    # chamber's mouth: its back end at the mouth's centre (a, z_axis), its
+    # axis falling at the slope towards -y, across the strings' line (user,
+    # 24 Nov 2026: the tower stays; the tertiary air duct runs parallel to
+    # the kiln into the calciner)
+    sec = chamber_section(g)
+    al = sec["alpha"]
+    sa, ca = math.sin(al), math.cos(al)
+    Rk = ((1.0, 0.0, 0.0), (0.0, -sa, ca), (0.0, -ca, -sa))
+    ok = (0.0, -sec["a"], lay["z_chamber_floor"] + sec["z_axis"])
+    parts.append({"name": "kiln_outlet", "file": "kiln_outlet_assembly.SLDASM", "R": Rk, "o": ok})
+    # the chamber's stub end (kiln_gas_inlet) is kiln.SLDPRT's back face (kiln_back, z_cfd0)
+    se = sec["stub_end"]
+    p_ch = (0.0, -se[0], lay["z_chamber_floor"] + se[1])
+    p_kl = tuple(ok[i] + kl["z_cfd0"] * Rk[2][i] for i in range(3))
+    joints.append({"what": "kiln_inlet_chamber kiln_gas_inlet -> kiln kiln_back", "kind": "face",
+                   "L": math.dist(p_ch, p_kl)})
     return {"parts": parts, "joints": joints, "y_arm": y_arm, "z_arm": z_arm}
 
 

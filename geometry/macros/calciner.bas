@@ -279,8 +279,8 @@ Dim yBoxMin As Double                       ' the channel's front wall (the fore
 Dim vRun As Double                          ' the volume the build should have reached so far
 Dim vArmRun As Double, vArmPiece As Double
 Dim rTA As Double                           ' tertiary air duct radius
-Dim yTA As Double, zTA As Double            ' its axis, parallel to x, through (., yTA, zTA)
-Dim xTAEnd As Double                        ' its face, the tertiary_air_inlet, at x = this
+Dim xTA As Double, zTA As Double            ' its axis, parallel to y, through (xTA, ., zTA)
+Dim yTAEnd As Double                        ' its face, the tertiary_air_inlet, at y = this (< 0)
 ' The meal (+-x) and fuel (+-y) pipes. Each in its own vertical plane
 ' through the vessel axis, along a horizontal "radial" rho out from the
 ' axis: it starts at rho0, one pipe diameter inside the wall, rises
@@ -486,10 +486,10 @@ Private Sub Derive()
     ' sqrt(R^2 - y^2), so what the merge keeps is the stub less the
     ' vessel's half chord integrated over the disc.
     rTA = 0.5 * D_TA
-    yTA = -(R - TA_WALL_RELIEF - rTA)
+    xTA = -(R - TA_WALL_RELIEF - rTA)
     zTA = zConeTop + TA_CONE_CLEARANCE + rTA
-    xTAEnd = R + TA_STUB_LEN
-    vTA = PI * rTA * rTA * xTAEnd - ChordIntegral(rTA, yTA)
+    yTAEnd = -(R + TA_STUB_LEN)
+    vTA = PI * rTA * rTA * (-yTAEnd) - ChordIntegral(rTA, xTA)
 
     ' Meal pipes, their holes FEED_ABOVE_TA over the duct's top: the
     ' hole reaches rFeed / cos below the axis on the pipe's mid-plane,
@@ -681,8 +681,8 @@ Private Sub PreChecks()
     End If
     ' The duct is on the -y side, from x = 0 out; the meal pipes are at
     ' y = 0, the fuel pipes at x = 0. Clear of it in y and z.
-    If yTA + rTA >= -rFeed Then
-        Fail "the tertiary air duct reaches y = " & Fmt(yTA + rTA) & " m, into the +x meal pipe."
+    If xTA + rTA >= -rFuel Then
+        Fail "the tertiary air duct reaches x = " & Fmt(xTA + rTA) & " m, into the -y fuel pipe."
     End If
     If zGnOut <= zConeTop Then
         Fail "the gooseneck's level runs are at z = " & Fmt(zGnOut) & " m, below the top of " & _
@@ -729,8 +729,8 @@ Private Sub PreChecks()
          " deg, piece " & Fmt(armLa) & " m, level runs " & Fmt(armRun) & " m from x = +-" & Fmt(xBend) & _
          " m to the outlet faces at x = +-" & Fmt(xGnLeg) & " m, z = " & Fmt(zGnOut) & " m (channel x arm " & Fmt(GN_OVERLAP_NECK_ARM) & _
          " m3, arms " & Fmt(GN_OVERLAP_ARMS) & " m3, all " & Fmt(GN_OVERLAP_ALL) & " m3 shared)"
-    Note "tertiary air: duct D " & Fmt(D_TA) & " m, tangential, axis at y = " & Fmt(yTA) & _
-         " m, z = " & Fmt(zTA) & " m, face at x = " & Fmt(xTAEnd) & " m, " & Fmt(vTA) & _
+    Note "tertiary air: duct D " & Fmt(D_TA) & " m, tangential, axis at x = " & Fmt(xTA) & _
+         " m, z = " & Fmt(zTA) & " m, face at y = " & Fmt(yTAEnd) & " m, " & Fmt(vTA) & _
          " m3 outside the vessel"
     Note "meal feed: 2 pipes D " & Fmt(D_FEED) & " m at " & Fmt(FEED_SLOPE_DEG) & _
          " deg, axes meet the wall at z = " & Fmt(zFeed) & " m, end faces centred (+-" & _
@@ -904,7 +904,7 @@ Private Sub Build()
     CheckStageVol "5b + meal feed, -x", vStage5b
 
     '--- 6. the tertiary air duct, tangential, coming in along +x -----
-    AddTertiaryAir planeX0, "6  + tertiary air"
+    AddTertiaryAir planeY0, "6  + tertiary air"
     CheckStageVol "6  + tertiary air", vStage6
 
     '--- 7. the two fuel pipes, at +y and -y ---------------------------
@@ -1624,12 +1624,13 @@ Private Function FaceCentre(face As SldWorks.Face2, ByVal ax As Long) As Double
 End Function
 
 
-' The tertiary air duct: a circle of radius rTA about (0, yTA, zTA) on
-' the x = 0 plane, extruded blind out to x = xTAEnd. Which way a blind
+' The tertiary air duct: a circle of radius rTA about (xTA, 0, zTA) on
+' the y = 0 plane, extruded blind out to y = yTAEnd (< 0; the duct comes
+' in from -y, parallel to the kiln: user 24 Nov 2026). Which way a blind
 ' extrusion goes is not ours to choose, and the vessel is symmetric in
-' x, so the volume cannot tell the two apart: the face at +xTAEnd
-' says which way it went, and the other way is tried.
-Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
+' y, so the volume cannot tell the two apart: the face at yTAEnd says
+' which way it went, and the other way is tried.
+Private Sub AddTertiaryAir(planeY0 As SldWorks.Feature, ByVal stage As String)
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
@@ -1638,16 +1639,16 @@ Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
     Dim before As Double, added As Double
     Dim k As Long
 
-    uSign = uSignX: vSign = vSignX
+    uSign = uSignY: vSign = vSignY
     before = BodiesVolume()
 
     swModel.ClearSelection2 True
-    planeX0.Select2 False, 0
+    planeY0.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
     If sk Is Nothing Then Fail "could not open the sketch for stage " & stage & "."
     wRefSet = False
-    G2S sk, 0#, yTA, zTA, u0, v0
+    G2S sk, xTA, 0#, zTA, u0, v0
     If swSkMgr.CreateCircleByRadius(u0, v0, 0#, rTA) Is Nothing Then
         Fail "CreateCircleByRadius failed at stage " & stage & "."
     End If
@@ -1660,7 +1661,7 @@ Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
         Set f = swFeat.FeatureExtrusion3( _
             True, False, (k = 1), _
             swEndCondBlind, swEndCondBlind, _
-            xTAEnd, 0.01, _
+            -yTAEnd, 0.01, _
             False, False, False, False, _
             0#, 0#, _
             False, False, False, False, _
@@ -1670,7 +1671,7 @@ Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
 
         If Not f Is Nothing Then
             added = BodiesVolume() - before
-            If BodyCount() = 1 And Abs(added - vTA) <= FEED_VOL_TOL * vTA And HasPlaneFace(0, xTAEnd) Then
+            If BodyCount() = 1 And Abs(added - vTA) <= FEED_VOL_TOL * vTA And HasPlaneFace(1, yTAEnd) Then
                 Note "stage " & stage & ": added " & Fmt(added) & " m3 (expected " & Fmt(vTA) & ")"
                 Exit Sub
             End If
@@ -1684,7 +1685,7 @@ Private Sub AddTertiaryAir(planeX0 As SldWorks.Feature, ByVal stage As String)
         End If
     Next k
 
-    Fail "stage " & stage & " could not be extruded out to x = " & Fmt(xTAEnd) & " m adding " & _
+    Fail "stage " & stage & " could not be extruded out to y = " & Fmt(yTAEnd) & " m adding " & _
          Fmt(vTA) & " m3 in either direction."
 
 End Sub
@@ -2115,7 +2116,7 @@ Private Sub Verify()
 
     If Not HasPlaneFace(2, 0#) Then Fail "no kiln gas inlet face at z = 0."
     If Not HasPlaneFace(2, zRoof) Then Fail "no roof face at z = " & Fmt(zRoof) & " m."
-    If Not HasPlaneFace(0, xTAEnd) Then Fail "no tertiary air inlet face at x = " & Fmt(xTAEnd) & " m."
+    If Not HasPlaneFace(1, yTAEnd) Then Fail "no tertiary air inlet face at y = " & Fmt(yTAEnd) & " m."
 
     Note "closed manifold solid: " & (UBound(edges) + 1) & " edges, each with two faces"
     CheckExtremes body
@@ -2140,7 +2141,8 @@ Private Sub CheckExtremes(body As SldWorks.Body2)
         Next sd
     Next a
     want(0) = -xBoxMax: want(1) = yBoxMin: want(2) = 0#
-    want(3) = xBoxMax: If xTAEnd > xBoxMax Then want(3) = xTAEnd      ' the tertiary air duct's face may reach further
+    want(3) = xBoxMax
+    If yTAEnd < want(1) Then want(1) = yTAEnd                        ' the tertiary air duct's face may reach further
     want(4) = yFuelMax: want(5) = zGnApex
     For a = 0 To 5
         If Abs(b(a) - want(a)) > 0.01 Then
@@ -2192,7 +2194,7 @@ Private Sub TagBoundaryFaces()
                 If Abs(p(5)) < 0.0001 Then
                     k = 0
                 End If
-            ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xTAEnd) < 0.0001 Then
+            ElseIf Abs(e0) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(4) - yTAEnd) < 0.0001 Then
                 k = 3
             ElseIf Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And Abs(p(3) - xGnLeg) < 0.0001 Then
                 k = 1

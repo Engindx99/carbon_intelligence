@@ -171,9 +171,9 @@ Const CAL_Y_OFF                    As Double  = 12.134703    ' the channel and t
 Const CAL_TOP                      As Double  = 39.104951    ' the neck's crown, z [derived]
 Const CAL_Y_FRONT                  As Double  = 14.609577    ' the channel's far side, forward of the axis [derived]
 Const CAL_TA_D                     As Double  = 2.4393       ' tertiary air duct D [derived]
-Const CAL_TA_Y                     As Double  = -2.10055     ' its axis, y [derived]
+Const CAL_TA_X                     As Double  = -2.10055     ' its axis, x (along y, on the -x side) [derived]
 Const CAL_TA_Z                     As Double  = 8.270908     ' its axis, z [derived]
-Const CAL_TA_X                     As Double  = 6.3702       ' its face, x [derived]
+Const CAL_TA_Y                     As Double  = -6.3702      ' its face, y [derived]
 Const CAL_FEED_D                   As Double  = 0.8485       ' meal pipe D [derived]
 Const CAL_FEED_X                   As Double  = 3.8702       ' meal pipe end face centre, x [derived]
 Const CAL_FEED_Z                   As Double  = 12.251519    ' meal pipe end face centre, z [derived]
@@ -197,7 +197,7 @@ Const CAL_DP_EXIT                  As Double  = 10#          ' the exit angle ab
 Const CAL_DP_SLOPE                 As Double  = 60#          ' the meal pipe's slope, where the plate starts, deg [derived]
 Const calciner_TAB_1               As String  = "D_throat~Throat (kiln gas inlet) diameter~3130~mm~derived~Estimated;L_throat~Throat length~3130~mm~derived~Estimated;H_cone~Cone height~3871~mm~derived~Estimated;D_vessel~Vessel inner diameter D~6740~mm~FLS ratio~Estimated;H_cylinder~Cylinder height~26129~mm~derived~Estimated;H_vessel~Vessel height (cone + cylinder)~30000~mm~published~Verified;D_neck~Gooseneck neck diameter (both arms' area)~4950~mm~derived~Estimated;neck_slope~Neck slope~45~deg~model parameter~Estimated;neck_piece~Neck's inclined pieces (2): length~4950~mm~derived~Estimated;neck_level~Neck's level piece: length~4950~mm~derived~Estimated;channel~Vertical channel below the neck: length~7425~mm~derived~Estimated;" ' parameter table rows
 Const calciner_TAB_2               As String  = "D_leg~Gooseneck arm bore~3500~mm~published~Verified;arm_angle~Arm angle to the vertical~60~deg~model parameter~Estimated;arm_run~Arms' level run to the outlet face: length~7000~mm~derived~Estimated;y_off~Channel and arms in front of the vessel axis~12135~mm~derived~Estimated;x_leg~Barrel axis to an arm's outlet face~10781~mm~derived~Schematic;leg_end_z~Throat foot to the arms' level runs' axis (C5's inlet axis)~23522~mm~derived~Schematic;width~Overall width over the arms' outlet faces~21563~mm~derived~Schematic;top~Throat foot to the neck's crown~39105~mm~derived~Estimated;D_TA~Tertiary air duct diameter~2439~mm~FLS ratio~Estimated;" ' parameter table rows
-Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential)~-2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;dp_exit~Dispersion plate exit angle (above horizontal)~10~deg~model parameter~Estimated;dp_radius~Dispersion plate meal face radius~408~mm~derived~Estimated;" ' parameter table rows
+Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential, x)~2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face (y)~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;dp_exit~Dispersion plate exit angle (above horizontal)~10~deg~model parameter~Estimated;dp_radius~Dispersion plate meal face radius~408~mm~derived~Estimated;" ' parameter table rows
 Const calciner_TAB_4               As String  = "dp_prot~Dispersion plate edge past the wall~424~mm~derived~Estimated;dp_width~Dispersion plate width~849~mm~derived~Estimated;dp_thick~Dispersion plate thickness~50~mm~model parameter~Estimated;volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
 Const calciner_TAB_5               As String  = ""           ' parameter table rows
 Const calciner_TAB_6               As String  = ""           ' parameter table rows
@@ -2486,14 +2486,16 @@ Private Sub DimensionCalciner()
     ' plan: the tertiary air duct and the meal pipe
     ' (text 3.1 m long at 1:200, centred on its point: wholly under the duct
     ' and its air arrow, clear of section A-A's arrow; 16 Nov sheet check)
+    ' (the duct comes in from -y along y on the -x side, parallel to the
+    ' kiln: user 24 Nov 2026; its face edge-on in plan, along x)
     DimEdges "D_TA", CAL_TA_D, vTop, _
         "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
         "", 0, 0, 0, 0, 0, _
-        CAL_TA_X + 0.8, CAL_TA_Y - 3#, CAL_TA_Z
-    DimEdges "ta_x", CAL_TA_X, vTop, _
-        "circle", 0, R, zr, R, zr, _
+        CAL_TA_X - 3.5, CAL_TA_Y - 0.8, CAL_TA_Z
+    DimEdges "ta_x", -CAL_TA_Y, vTop, _
+        "circle", R, 0, zr, R, zr, _
         "circle", CAL_TA_X, CAL_TA_Y, CAL_TA_Z + rta, rta, CAL_TA_Z, _
-        0.5 * CAL_TA_X, CAL_BOX_Y + 1.6, zr, "h"
+        R + 2#, 0.5 * CAL_TA_Y, zr, "v"
     ' the meal pipe's end face is edge-on from the front (its normal lies
     ' in the x-z plane): a straight edge of the pipe's diameter. (In plan it
     ' is a tilted ellipse, which SolidWorks dimensioned as a radius.)
@@ -3273,7 +3275,7 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.002, "5. Meal enters in the solver (no inlet in the solid).  Dimensions mm; first-angle projection.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/kiln/kiln_inlet_chamber.md", TEXT_H
     ElseIf equip = "calciner" Then
-        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the throat's foot (kiln gas inlet); tertiary air along -x, tangential.", TEXT_H
+        LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the throat's foot (kiln gas inlet); tertiary air along +y from -y (parallel to the kiln), tangential.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. One calciner for both strings; the arms end in vertical faces at z = " & Num(CAL_Z_END, 2) & " (CFD outlets, to C5).", TEXT_H
         LabelPH COL_X0, y + 0.002, "5. Meal pipes +-x at 60 deg, fuel pipes +-y at 30 deg.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/calciner/calciner.md", TEXT_H
@@ -3344,7 +3346,7 @@ End Sub
 
 
 ' The calciner's flows: the kiln gas up the throat, the gas out of the
-' two legs, the meal in along each pipe (A-A), the tertiary air along -x
+' two legs, the meal in along each pipe (A-A), the tertiary air along +y
 ' (plan) and the fuel along its pipe (left view).
 ' The cooler's flows (side view): the air up through each floor segment, out
 ' of the hood's two openings and the vent duct, and the clinker along the grate
@@ -3486,7 +3488,7 @@ Private Sub DrawFlowsCalciner()
     Next i
     ' down the channel (front view)
     ArrowM3 vFront, 0#, -CAL_Y_OFF, CAL_Z_ROOF - 0.5, 0#, -CAL_Y_OFF, CAL_Z_SPLIT + 1.2
-    ArrowM3 vTop, CAL_TA_X + 3#, CAL_TA_Y, CAL_TA_Z, CAL_TA_X + 0.3, CAL_TA_Y, CAL_TA_Z
+    ArrowM3 vTop, CAL_TA_X, CAL_TA_Y - 3#, CAL_TA_Z, CAL_TA_X, CAL_TA_Y - 0.3, CAL_TA_Z
     ArrowM3 vLeft, 0#, CAL_FUEL_Y + 1.9 * k, CAL_FUEL_Z + 1.9 * 0.5, 0#, CAL_FUEL_Y + 0.4 * k, CAL_FUEL_Z + 0.4 * 0.5
     UseLayer L_TEXT
     LabelM3 vSec, 0.5, 0#, -2.4, "Kiln gas in"
@@ -3501,7 +3503,7 @@ Private Sub DrawFlowsCalciner()
     ' the duct face's extension line (the 6370 dimension): now over the
     ' arrow, right of that line, between section A-A's line and the 2439
     ' dimension's extension line)
-    LabelM3 vTop, CAL_TA_X + 0.2, CAL_TA_Y + 2#, CAL_TA_Z, "Tertiary air in"
+    LabelM3 vTop, CAL_TA_X - 5.2, CAL_TA_Y - 2.2, CAL_TA_Z, "Tertiary air in"
     ' detail C: the meal down the pipe floor onto the plate, and off its edge
     ' at the exit angle into the vessel
     UseLayer L_FLOW

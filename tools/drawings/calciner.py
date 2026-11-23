@@ -108,11 +108,11 @@ def params(g, name="calciner"):
     clear = pv.primary(g, "calciner.tertiary_air_cone_clearance", "Duct over the cone's top")
     stub = pv.primary(g, "calciner.tertiary_air_stub_length", "Duct stub past the tangent plane")
     P["D_TA"] = ta_d
-    P["ta_y"] = pv.derived("calciner.ta_y", "Tertiary air duct axis off the vessel axis (tangential)",
-                           ta["y"], "m", [P["D_vessel"], ta_d, relief])
+    P["ta_y"] = pv.derived("calciner.ta_offset", "Tertiary air duct axis off the vessel axis (tangential, x)",
+                           ta["offset"], "m", [P["D_vessel"], ta_d, relief])
     P["ta_z"] = pv.derived("calciner.ta_z", "Tertiary air duct axis height", ta["z"], "m",
                            [P["L_throat"], P["H_cone"], ta_d, clear])
-    P["ta_x"] = pv.derived("calciner.ta_x", "Vessel axis to the duct's face", ta["x_end"], "m",
+    P["ta_x"] = pv.derived("calciner.ta_face", "Vessel axis to the duct's face (y)", -ta["y_end"], "m",
                            [P["D_vessel"], stub])
 
     d_feed = pv.primary(g, "calciner.D_feed", "Meal pipe diameter (two)", key="calciner.D_feed")

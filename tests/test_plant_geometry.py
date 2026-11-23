@@ -386,8 +386,8 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
         cal, gn = pg.calciner(self.g), pg.gooseneck(self.g)
         ins = pg.calciner_inlets(self.g)
         ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
-        y_ta, z_ta, x_ta, v_ta = self.num(r"tertiary air: duct D # m, tangential, axis at y = # m, z = # m, "
-                                          r"face at x = # m, # m3")[1:]
+        x_ta, z_ta, y_ta, v_ta = self.num(r"tertiary air: duct D # m, tangential, axis at x = # m, z = # m, "
+                                          r"face at y = # m, # m3")[1:]
         for got, want, what in (
             (self.num(r"throat D # m")[0], cal["D_throat"], "throat D"),
             (self.num(r"cone # deg, # m tall")[1], cal["h_cone"], "cone height"),
@@ -422,9 +422,9 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
             (self.num(r"gooseneck channel: vertical, D # m, # m long, from z = # m to z = # m")[1], gn["channel"], "channel length"),
             (self.num(r"gooseneck channel: vertical, D # m, # m long, from z = # m to z = # m")[2], gn["z_n3"], "channel top z"),
             (self.num(r"gooseneck channel: vertical, D # m, # m long, from z = # m to z = # m")[3], gn["z_split"], "channel bottom z"),
-            (y_ta, ta["y"], "tertiary air y"),
+            (x_ta, ta["x"], "tertiary air x"),
             (z_ta, ta["z"], "tertiary air z"),
-            (x_ta, ta["x_end"], "tertiary air face x"),
+            (y_ta, ta["y_end"], "tertiary air face y"),
             (v_ta, ta["volume"], "tertiary air volume"),
             (self.num(r"meal feed: 2 pipes D # m at # deg, axes meet the wall at z = # m")[2],
              meal["z_wall"], "meal at the wall"),
@@ -1766,7 +1766,8 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
 
     def test_twelve_parts_two_strings(self):
         names = [p["name"] for p in self.t["parts"]]
-        self.assertEqual(len(names), 12)
+        self.assertEqual(len(names), 13)
+        self.assertIn("kiln_outlet", names)
         for k in (1, 2):
             for n in ("C5", "C4", "C3", "C2", "C1_twin"):
                 self.assertIn(f"{n}_{k}", names)
@@ -1792,7 +1793,28 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
             if j["what"].startswith("gooseneck"):
                 # the arm's axis r_leg under C5's roof, the duct's H_inlet / 2: 4 mm apart (D_leg 3.50 vs H 3.508)
                 self.assertAlmostEqual(j["z"][0], j["z"][1], delta=0.01)
-                self.assertGreater(j["L"], 0.0)                           # the known gap (cyclone_C5.md)
+                self.assertAlmostEqual(j["L"], 0.0, places=9)              # C5_plant's duct on the arm's face
+
+    def test_string_2_is_string_1s_mirror(self):
+        parts = {p["name"]: p for p in self.t["parts"]}
+        for n in ("C5", "C4", "C3", "C2", "C1_twin"):
+            a, b = parts[f"{n}_1"], parts[f"{n}_2"]
+            self.assertEqual(b["file"], a["file"].replace(".SLDPRT", "_m.SLDPRT"))
+            self.assertEqual(b["o"], (-a["o"][0], a["o"][1], a["o"][2]))
+            # a mirrored part's point (-x, y, z) lands on the mirror of the original's
+            for p in ((1.0, 2.0, 3.0), (-4.0, 0.5, 7.0)):
+                pa = tuple(a["o"][k] + sum(p[i] * a["R"][i][k] for i in range(3)) for k in range(3))
+                q = (-p[0], p[1], p[2])
+                pb = tuple(b["o"][k] + sum(q[i] * b["R"][i][k] for i in range(3)) for k in range(3))
+                for u, v in zip(pb, (-pa[0], pa[1], pa[2])):
+                    self.assertAlmostEqual(u, v, places=9)
+
+    def test_the_mirrored_solids_are_built(self):
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "plant_assembly_build.log"
+        for n in ("C4", "C5_plant", "C1_twin"):
+            if not (REPO_ROOT / "geometry" / "output" / "2500" / f"{n}_m.SLDPRT").is_file():
+                self.skipTest("mirrored solids not built")
+        self.assertTrue(log.is_file())
 
     def test_the_rotations_are_proper(self):
         for p in self.t["parts"]:
@@ -1807,4 +1829,15 @@ class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
             self.skipTest("no plant_assembly log")
         text = log.read_text(encoding="latin-1")
         self.assertIn("plant_assembly built, verified and saved", text)
-        self.assertEqual(text.count("placed "), 12)
+        self.assertEqual(text.count("placed "), 13)
+
+    def test_the_kiln_comes_out_of_the_chambers_mouth(self):
+        j = next(j for j in self.t["joints"] if j["what"].startswith("kiln_inlet_chamber"))
+        self.assertAlmostEqual(j["L"], 0.0, places=6)
+        # the kiln's hood end where layout() has it (its x is the plant's -y here)
+        lay, kl = pg.layout(self.g), pg.kiln(self.g)
+        k = next(p for p in self.t["parts"] if p["name"] == "kiln_outlet")
+        end = tuple(k["o"][i] + kl["L"] * k["R"][2][i] for i in range(3))
+        self.assertAlmostEqual(-end[1], lay["kiln_end"][0], places=6)
+        self.assertAlmostEqual(end[0], 0.0, places=9)
+        self.assertAlmostEqual(end[2], lay["kiln_end"][1], places=6)

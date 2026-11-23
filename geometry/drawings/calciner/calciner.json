@@ -362,9 +362,9 @@
       "short": "D_TA"
     },
     {
-      "key": "calciner.ta_y",
-      "label": "Tertiary air duct axis off the vessel axis (tangential)",
-      "value": -2.10055,
+      "key": "calciner.ta_offset",
+      "label": "Tertiary air duct axis off the vessel axis (tangential, x)",
+      "value": 2.10055,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -374,7 +374,7 @@
         "calciner.D_tertiary_air",
         "calciner.tertiary_air_wall_relief"
       ],
-      "value_mm": -2100.55,
+      "value_mm": 2100.55,
       "short": "ta_y"
     },
     {
@@ -399,8 +399,8 @@
       "short": "ta_z"
     },
     {
-      "key": "calciner.ta_x",
-      "label": "Vessel axis to the duct's face",
+      "key": "calciner.ta_face",
+      "label": "Vessel axis to the duct's face (y)",
       "value": 6.3702000000000005,
       "unit": "m",
       "source": "derived",
