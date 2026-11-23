@@ -495,30 +495,89 @@ kiln_burner:
   body_head_D:         {value: 0.89,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_bellows_L:      {value: 0.28,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # expansion joint
   body_bellows_D:      {value: 0.95,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
-  body_coal_L:         {value: 2.19,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # solid fuel inlet pipe (drawn straight)
+  body_coal_L:         {value: 2.19,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # solid fuel inlet pipe, to its flange's back face centre
   body_coal_D:         {value: 0.37,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_coal_flange_D:  {value: 0.50,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
-  # the two air inlets on the head's side (+x), from its front face; which
-  # is axial and which swirl air is not shown
-  body_inlet1_at:      {value: 0.90,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
-  body_inlet1_D:       {value: 0.50,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # the coal inlet's slight bend up near its flange (the alternative-fuel
+  # close-ups the user gave, 23 Nov 2026: the tilted piece 7-12 deg over
+  # its edges in one, ~16 deg in the side view): its tilt, where the bend
+  # starts in front of the flange's back face (side view, 1 D = 124 px)
+  body_coal_tilt_deg:  {value: 12.0,    unit: deg,   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_coal_kink_at:   {value: 1.0,     unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # The tip's other tubes (brochure p. 5, the fixed nozzle tip seen from
+  # the kiln; 1 D = 777 px): the fuel lance's OD and its axis under the
+  # burner's (C), the flame scanner's and the igniter's OD and axis, either
+  # side (B at -x, E at +x).
+  body_lance_D:        {value: 0.088,   unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_lance_y:        {value: -0.188,  unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_scanner_D:      {value: 0.039,   unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_scanner_x:      {value: 0.092,   unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_scanner_y:      {value: -0.152,  unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # how far they run on behind the expansion joint's back wall (p. 3 side
+  # view: the injection pipe with its fittings out of the joint's back;
+  # 1 D = 100 px from the head's 2.0 D; p. 4: the joint guides them)
+  body_lance_tail:     {value: 0.8,     unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # Air inlet 1, the elbow (the brochure's alternative-fuel side view and
+  # the cover close-up the user gave, 23 Nov 2026; scale: the head's D =
+  # 0.89 D): a neck straight out of the head's -x side at right angles to
+  # it, one smooth 90 deg long radius bend up (R = 1.5 x the pipe's OD,
+  # ASME B16.9 LR: the air passes easily), its flange straight on the
+  # bend's end, facing up (user: at right angles, one bend, exactly as the
+  # close-up). Its OD; along the axis from the head's front face where it
+  # leaves; its neck's height over the axis (level with it); its neck's
+  # length off the head's surface to the bend (read by eye, the close-up).
+  # Inlet 2 a flanged stub on the same side further back. Which is axial,
+  # which swirl air: not shown.
+  body_inlet1_D:       {value: 0.38,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_elbow_up_at:    {value: 1.13,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_elbow_y:        {value: 0.0,     unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_elbow_neck_L:   {value: 0.30,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
   body_inlet2_at:      {value: 1.72,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_inlet2_D:       {value: 0.36,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   # the carriage beam over the head: its underside over the axis, its
-  # height; two hangers down to the head (from the head's front face)
+  # height; the rear hanger down to the head (from the head's front face)
   body_beam_y:         {value: 1.04,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_beam_H:         {value: 0.47,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
-  body_hanger1_at:     {value: 0.0,     unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
-  body_hanger1_L:      {value: 0.44,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_hanger2_at:     {value: 1.47,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   body_hanger2_L:      {value: 0.66,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
   # Not in the side view (schematic): the beam runs out of the picture,
-  # its width and the hangers' across, the inlets' reach off the head's
-  # side. No source (model): the steel burner pipe's wall (inside the
-  # castable, its bore the axial plenum's outer D).
+  # its width and the hangers' across, inlet 2's reach off the head's side.
+  # From the cover's close-up (perspective, read by eye: schematic): the
+  # beam as two channels back to back (plate thickness, the gap between
+  # the webs), a diagonal plate joining each one's flanges across its
+  # open side, an end plate and two pins at
+  # its front; the front support plate in front of the castable's flange
+  # (a ring round the pipe, a neck up to the beam, down to a foot plate
+  # under the pipe); the head's two bolting flanges; the coal pipe's
+  # cooling air nozzle (at right angles to it, out to -x as the air
+  # elbow's neck, tilted up; user, 23 Nov 2026).
+  # No source (model): the steel burner pipe's wall (inside the castable,
+  # its bore the axial plenum's outer D).
   body_beam_L:         {value: 6.0,     unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
   body_beam_W:         {value: 0.40,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
-  body_inlet_reach:    {value: 0.80,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_beam_tail_L:    {value: 0.5,     unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}   # the plates over the channels' open sides at the beam's back end, long
+  body_inlet_reach:    {value: 0.30,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_plate_t:        {value: 0.04,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_web_gap:        {value: 0.04,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  # the beam's diagonal plates: lean, width (across the lean), middle back
+  # from the beam's front end (the brochure side close-up the user gave,
+  # 23 Nov 2026; scale 1 D = 215 px from the head's L and the beam's H)
+  body_brace_deg:      {value: 36.0,    unit: deg,   source: derived_from_reference,   doc: kiln/kiln_burner.md}
+  body_brace_W:        {value: 0.30,    unit: "-",   source: derived_from_reference,   doc: kiln/kiln_burner.md}   # the diagonal plate's width
+  body_brace_at:       {value: 1.5,     unit: "-",   source: derived_from_reference,   doc: kiln/kiln_burner.md}   # its middle, back from the beam's front end
+  body_pin_D:          {value: 0.12,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_pin_L:          {value: 0.12,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_support_D:      {value: 1.20,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_support_W:      {value: 0.50,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_foot_y:         {value: 0.75,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_foot_W:         {value: 0.70,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_foot_L:         {value: 0.40,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_head_flange_D:  {value: 1.00,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_bend_R_over_OD: {value: 1.5,     unit: "-",   source: literature,  doc: kiln/kiln_burner.md}   # ASME B16.9 long radius elbow
+  body_nozzle_D:       {value: 0.10,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_nozzle_L:       {value: 0.35,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_nozzle_at:      {value: 0.18,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}   # its axis in front of the coal flange
+  body_nozzle_deg:     {value: 30.0,    unit: deg,   source: schematic,   doc: kiln/kiln_burner.md}   # its tilt up from level (out to -x)
   body_pipe_t:         {value: 0.010,   unit: m,     source: model,       doc: kiln/kiln_burner.md}
 
 # ---------------------------------------------------------------------

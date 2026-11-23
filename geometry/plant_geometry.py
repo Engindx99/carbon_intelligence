@@ -1376,17 +1376,31 @@ def kiln_burner(g):
 
 def kiln_burner_body(g):
     """The whole JETFLEX 2.0 burner as simple envelopes (user, 22 Nov 2026:
-    a solid and a sheet of all of it; not a CFD input; kiln_burner_body.bas
-    builds it). Frame as kiln_burner(): the tip plane z = 0, the burner
-    back along -z, y up, x to the right seen from the kiln. Every length a
-    ratio of the tip's outer D (brochure side view) times kiln_burner()'s
-    D_tip; the steel burner pipe's bore is the channels' axial plenum (the
-    channel solid fits inside it: kiln_burner_assembly).
+    a solid and a sheet of all of it; 23 Nov: the back end as the brochure
+    cover's close-up; not a CFD input; kiln_burner_body.bas builds it).
+    Frame as kiln_burner(): the tip plane z = 0, the burner back along -z,
+    y up, x to the right seen from the kiln. Every length a ratio of the
+    tip's outer D (brochure side view; the cover's details schematic)
+    times kiln_burner()'s D_tip; the steel burner pipe's bore is the
+    channels' axial plenum (the channel solid fits inside it).
 
-    "bodies": [{name, kind, p, V, box, rgb}], kinds as kiln_rotax():
+    "bodies": [{name, group, kind, p, V, box, rgb}]; the macro joins a
+    group's bodies into one body named after the group. Kinds:
       ring  p = (r0, r1, z0, z1)
       box   p = (x0, x1, y0, y1, z0, z1)
       cyl   p = (bx, by, bz, ax, ay, az, r, length)
+      fbox  p = (cx, cy, cz, e1(3), e2(3), e3(3), a, b, c)  a box a x b x c
+            along e1, e2, e3 centred on (cx, cy, cz)
+      tube  p = cyl's + (r_in,)  a pipe, open at both ends
+      tor   p = (C(3), u(3), w(3), R, r, r_in, angle)  a smooth pipe bend:
+            the bore's centreline round C at R from C + R u, heading w
+    A body named cut_* reaches past the rest of its group until the voids
+    trim it (the group's extent leaves it out). A body named void_* is cut
+    from its group once the group's other parts are joined: the bores through walls, so the pipes, the head and the
+    expansion joint are open inside for the flow (user, 23 Nov 2026).
+    "groups": {group: {box, V}} V the joined volume where the parts do not
+    overlap and nothing is cut, None otherwise (the box: the parts' joint
+    one, the cuts left out).
     """
     b = g["kiln_burner"]
     ch = kiln_burner(g)
@@ -1409,54 +1423,274 @@ def kiln_burner_body(g):
     z_coal = z_bel - q("coal_L")
     r_head = 0.5 * q("head_D")
     y_c = ch["y_coal"]
+    t = q("plate_t")
 
-    STEEL, CAST, PIPE = (0.45, 0.46, 0.48), (0.72, 0.66, 0.56), (0.1, 0.16, 0.72)
+    pt = v(b["body_pipe_t"])                  # the pipes' and the head's walls
+    eps = 0.01                                # a cut's overshoot past the face it opens
+    STEEL, CAST, PIPE = (0.45, 0.46, 0.48), (0.72, 0.66, 0.56), (0.55, 0.56, 0.58)
     bodies = []
+    overlapping = set()
+    hollow = set()
 
-    def ring(name, r0, r1, z0, z1, rgb):
-        bodies.append({"name": name, "kind": "ring", "p": (r0, r1, z0, z1),
-                       "V": math.pi * (r1 * r1 - r0 * r0) * (z1 - z0),
-                       "box": (-r1, -r1, z0, r1, r1, z1), "rgb": rgb})
+    def add(name, group, kind, p, V, pts, rgb):
+        xs, ys, zs = zip(*pts)
+        bodies.append({"name": name, "group": group or name, "kind": kind, "p": tuple(p), "V": V,
+                       "box": (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)), "rgb": rgb})
 
-    def box(name, x0, x1, y0, y1, z0, z1, rgb):
-        bodies.append({"name": name, "kind": "box", "p": (x0, x1, y0, y1, z0, z1),
-                       "V": (x1 - x0) * (y1 - y0) * (z1 - z0),
-                       "box": (x0, y0, z0, x1, y1, z1), "rgb": rgb})
+    def ring(name, r0, r1, z0, z1, rgb, group=None):
+        add(name, group, "ring", (r0, r1, z0, z1), math.pi * (r1 * r1 - r0 * r0) * (z1 - z0),
+            [(-r1, -r1, z0), (r1, r1, z1)], rgb)
 
-    def cyl_z(name, y, r, z0, z1, rgb):
-        bodies.append({"name": name, "kind": "cyl", "p": (0.0, y, z0, 0.0, 0.0, 1.0, r, z1 - z0),
-                       "V": math.pi * r * r * (z1 - z0),
-                       "box": (-r, y - r, z0, r, y + r, z1), "rgb": rgb})
+    def box(name, x0, x1, y0, y1, z0, z1, rgb, group=None):
+        add(name, group, "box", (x0, x1, y0, y1, z0, z1), (x1 - x0) * (y1 - y0) * (z1 - z0),
+            [(x0, y0, z0), (x1, y1, z1)], rgb)
 
-    def cyl_x(name, z, r, x0, x1, rgb):
-        bodies.append({"name": name, "kind": "cyl", "p": (x0, 0.0, z, 1.0, 0.0, 0.0, r, x1 - x0),
-                       "V": math.pi * r * r * (x1 - x0),
-                       "box": (x0, -r, z - r, x1, r, z + r), "rgb": rgb})
+    def cyl(name, base, axis, r, L, rgb, group=None):
+        n = math.sqrt(sum(a * a for a in axis))
+        ax = tuple(a / n for a in axis)
+        # the extent of a cylinder: its ends' discs, r sqrt(1 - a_i^2) across each axis
+        ext = [r * math.sqrt(max(0.0, 1.0 - a * a)) for a in ax]
+        top = tuple(base[i] + L * ax[i] for i in range(3))
+        pts = [tuple(c[i] + s * ext[i] for i in range(3)) for c in (base, top) for s in (-1, 1)]
+        add(name, group, "cyl", tuple(base) + ax + (r, L), math.pi * r * r * L, pts, rgb)
 
+    def fbox(name, c, e1, e2, e3, a, bb, cc, rgb, group=None):
+        pts = [tuple(c[i] + s1 * 0.5 * a * e1[i] + s2 * 0.5 * bb * e2[i] + s3 * 0.5 * cc * e3[i] for i in range(3))
+               for s1 in (-1, 1) for s2 in (-1, 1) for s3 in (-1, 1)]
+        add(name, group, "fbox", tuple(c) + tuple(e1) + tuple(e2) + tuple(e3) + (a, bb, cc), a * bb * cc, pts, rgb)
+
+    def tube(name, base, axis, r, L, r_in, rgb, group=None):
+        """A pipe: cylinder r, bore r_in (open at both ends)."""
+        n = math.sqrt(sum(a * a for a in axis))
+        ax = tuple(a / n for a in axis)
+        ext = [r * math.sqrt(max(0.0, 1.0 - a * a)) for a in ax]
+        top = tuple(base[i] + L * ax[i] for i in range(3))
+        pts = [tuple(c[i] + s * ext[i] for i in range(3)) for c in (base, top) for s in (-1, 1)]
+        add(name, group, "tube", tuple(base) + ax + (r, L, r_in), math.pi * (r * r - r_in * r_in) * L, pts, rgb)
+
+    def void(name, base, axis, r, L, group):
+        """Cut out of its group once the group's parts are joined (the
+        bores through walls: the inside open for the flow)."""
+        cyl("void_" + name, base, axis, r, L, (0.0, 0.0, 0.0), group)
+        hollow.add(group)
+
+    def bend(name, group, P, d0, d1, R, r, r_in, rgb, th=0.5 * math.pi):
+        """A smooth pipe bend (a torus' part, bore r_in) through th from P
+        heading d0, turning towards d1 (unit, normal: at 90 deg it heads
+        d1), centreline radius R; returns its end point. tor p = (C, u, w,
+        R, r, r_in, angle): the bend's centre C, u from C to its start, w
+        its heading there."""
+        C = tuple(P[i] + R * d1[i] for i in range(3))
+        u = tuple(-x for x in d1)
+        w = d0
+        y = (w[1] * u[2] - w[2] * u[1], w[2] * u[0] - w[0] * u[2], w[0] * u[1] - w[1] * u[0])   # w x u
+        lo, hi = [1e30] * 3, [-1e30] * 3
+        for k in range(2001):
+            tt = th * k / 2000
+            for i in range(3):
+                gi = math.cos(tt) * u[i] + math.sin(tt) * d0[i]
+                s = r * math.sqrt(gi * gi + y[i] * y[i])
+                lo[i] = min(lo[i], C[i] + R * gi - s)
+                hi[i] = max(hi[i], C[i] + R * gi + s)
+        add(name, group, "tor", tuple(C) + u + tuple(d0) + (R, r, r_in, th),
+            math.pi * (r * r - r_in * r_in) * R * th, [tuple(lo), tuple(hi)], rgb)
+        return tuple(C[i] + R * (math.cos(th) * u[i] + math.sin(th) * d0[i]) for i in range(3))
+
+    # the castable, the steel pipe, the castable's flange
     ring("tip_ring", r_p, R_tip, z_ring, 0.0, CAST)
     ring("castable", r_p, R_c, z_cast, z_ring, CAST)
     ring("burner_pipe", r_in, r_p, z_pipe, 0.0, STEEL)
-    cyl_z("flange", 0.0, 0.5 * q("flange_D"), z_fl, z_pipe, STEEL)
-    cyl_z("head", 0.0, r_head, z_head, z_fl, STEEL)
-    cyl_z("bellows", 0.0, 0.5 * q("bellows_D"), z_bel, z_head, STEEL)
-    t_cf = q("flange_L")
-    cyl_z("coal_inlet", y_c, 0.5 * q("coal_D"), z_coal + t_cf, z_bel, PIPE)
-    cyl_z("coal_inlet_flange", y_c, 0.5 * q("coal_flange_D"), z_coal, z_coal + t_cf, PIPE)
-    for k in (1, 2):
-        cyl_x(f"air_inlet_{k}", z_fl - q(f"inlet{k}_at"), 0.5 * q(f"inlet{k}_D"), r_head, r_head + q("inlet_reach"), PIPE)
-    y_b, h_b, w_b = q("beam_y"), q("beam_H"), 0.5 * q("beam_W")
-    box("beam", -w_b, w_b, y_b, y_b + h_b, z_pipe - q("beam_L"), z_pipe, STEEL)
-    for k in (1, 2):
-        z1 = z_fl - q(f"hanger{k}_at")
-        box(f"hanger_{k}", -w_b, w_b, r_head, y_b, z1 - q(f"hanger{k}_L"), z1, STEEL)
+    # (its bore the steel pipe's: the head opens into the pipe)
+    tube("flange", (0.0, 0.0, z_fl), (0.0, 0.0, 1.0), 0.5 * q("flange_D"), z_pipe - z_fl, r_in, STEEL)
 
-    lo = [min(x["box"][i] for x in bodies) for i in range(3)]
-    hi = [max(x["box"][i] for x in bodies) for i in range(3, 6)]
+    # the tip's other tubes (brochure p. 5, fixed nozzles; seen from the
+    # kiln): the fuel lance under the solid fuel channel, the flame scanner
+    # (-x) and the igniter (+x) either side; from the tip plane back
+    # through the steel pipe, the head and the expansion joint, out through
+    # its back wall (p. 4: "the expansion joint for guiding fuel injection
+    # pipes"), ending lance_tail behind it (p. 3 side view); on the front
+    # plate's solid part (clear of the channels: no CFD effect, no flow in
+    # the twin), clear of the coal inlet behind the joint; pipes, open
+    tips = (("fuel_lance", 0.0, q("lance_y"), 0.5 * q("lance_D")),
+            ("flame_scanner", -q("scanner_x"), q("scanner_y"), 0.5 * q("scanner_D")),
+            ("igniter", q("scanner_x"), q("scanner_y"), 0.5 * q("scanner_D")))
+    for name, x_t, y_t, r_t in tips:
+        if math.hypot(x_t, y_t - y_c) < 0.5 * ch["D_coal"] + r_t or math.hypot(x_t, y_t) + r_t > ch["swirl_plenum"][0]:
+            raise ValueError(f"kiln_burner_body: the {name} cuts a channel")
+        if math.hypot(x_t, y_t - y_c) < 0.5 * q("coal_D") + r_t:
+            raise ValueError(f"kiln_burner_body: the {name} runs into the coal inlet behind the expansion joint")
+        z_t0 = z_bel - q("lance_tail")
+        tube(name, (x_t, y_t, z_t0), (0.0, 0.0, 1.0), r_t, -z_t0, r_t - min(pt, 0.3 * r_t), PIPE)
+
+    # front support plate: a ring round the bare pipe in front of the
+    # flange, a neck up to the beam, down to a foot plate under the pipe
+    y_b, h_b, w_b = q("beam_y"), q("beam_H"), 0.5 * q("beam_W")
+    R_s, w_s = 0.5 * q("support_D"), 0.5 * q("support_W")
+    zs0, zs1 = z_pipe, z_pipe + t
+    ring("support_ring", r_p, R_s, zs0, zs1, STEEL, "support")
+    box("support_neck", -w_s, w_s, 0.8 * R_s, y_b, zs0, zs1, STEEL, "support")
+    y_f = -q("foot_y")
+    box("support_leg", -w_s, w_s, y_f, -0.8 * R_s, zs0, zs1, STEEL, "support")
+    w_f = 0.5 * q("foot_W")
+    box("support_foot", -w_f, w_f, y_f - t, y_f, zs0, zs0 + q("foot_L"), STEEL, "support")
+
+    # the air connection head and its bolting flanges
+    r_hf = 0.5 * q("head_flange_D")
+    ring("head_flange_front", r_head, r_hf, z_fl - t, z_fl, STEEL)
+    ring("head_flange_rear", r_head, r_hf, z_head, z_head + t, STEEL)
+    # the expansion joint: a shell open into the head, its back wall
+    # through to the coal inlet
+    t_cf = q("flange_L")
+    r_ci = 0.5 * q("coal_D")
+    r_bel = 0.5 * q("bellows_D")
+    tube("bellows", (0.0, 0.0, z_bel), (0.0, 0.0, 1.0), r_bel, z_head - z_bel, r_bel - pt, STEEL)
+    cyl("bellows_back", (0.0, 0.0, z_bel), (0.0, 0.0, 1.0), r_bel - 0.5 * pt, pt, STEEL, "bellows")
+    for name, x_t, y_t, r_t in tips:       # the tip tubes' holes through its back wall (2 mm clear)
+        void(f"bellows_{name}", (x_t, y_t, z_bel - eps), (0.0, 0.0, 1.0), r_t + 0.002, pt + 2 * eps, "bellows")
+    void("bellows_back", (0.0, y_c, z_bel - eps), (0.0, 0.0, 1.0), r_ci - pt, pt + 2 * eps, "bellows")
+
+    # the coal inlet (the brochure's side view and its alternative-fuel
+    # close-up): straight back from the expansion joint, a smooth long
+    # radius bend up through coal_tilt_deg coal_kink_at in front of its
+    # flange, straight on to the flange, square to it; its cooling air
+    # nozzle on the tilted piece; pipes, open. The burner's back end
+    # (z_coal, L_total) is the flange's back face at its centre (its lower
+    # edge reaches r_cf sin(tilt) further back).
+    th_c = math.radians(v(b["body_coal_tilt_deg"]))
+    R_k = v(b["body_bend_R_over_OD"]) * 2.0 * r_ci
+    r_cf = 0.5 * q("coal_flange_D")
+    dc = (0.0, math.sin(th_c), -math.cos(th_c))           # the tilted piece's heading (back, up)
+    nc = (0.0, math.cos(th_c), math.sin(th_c))            # square to it, up
+    z_E = z_coal                                          # the flange's back face, at its centre
+    z_B = z_E + q("coal_kink_at")                         # where the bend starts
+    if not z_B < z_bel:
+        raise ValueError("kiln_burner_body: the coal pipe's bend lies in the expansion joint")
+    tube("coal_inlet", (0.0, y_c, z_B), (0.0, 0.0, 1.0), r_ci, z_bel - z_B, r_ci - pt, PIPE, "coal")
+    Pk = bend("coal_bend", "coal", (0.0, y_c, z_B), (0.0, 0.0, -1.0), (0.0, 1.0, 0.0), R_k, r_ci, r_ci - pt, PIPE,
+              th_c)
+    L2 = (Pk[2] - z_E) / math.cos(th_c)                   # the tilted piece, its flange included
+    if L2 <= t_cf + q("nozzle_at") + q("nozzle_D"):
+        raise ValueError("kiln_burner_body: the coal pipe's tilted piece is too short for its nozzle")
+    E = tuple(Pk[i] + L2 * dc[i] for i in range(3))
+    tube("coal_tail", Pk, dc, r_ci, L2 - t_cf, r_ci - pt, PIPE, "coal")
+    F0 = tuple(E[i] - t_cf * dc[i] for i in range(3))
+    tube("coal_inlet_flange", F0, dc, r_cf, t_cf, r_ci - pt, PIPE, "coal")
+    # the nozzle: square to the tilted piece, out to -x like the air
+    # elbow's neck, tilted up by nozzle_deg (user)
+    r_n = 0.5 * q("nozzle_D")
+    a_n = math.radians(v(b["body_nozzle_deg"]))
+    A = tuple(F0[i] - q("nozzle_at") * dc[i] for i in range(3))   # its axis on the pipe's
+    na = tuple(-math.cos(a_n) * (1.0 if i == 0 else 0.0) + math.sin(a_n) * nc[i] for i in range(3))
+    nb = tuple(A[i] + 0.5 * r_ci * na[i] for i in range(3))
+    tube("coal_nozzle", nb, na, r_n, q("nozzle_L") + 0.5 * r_ci, r_n - pt, PIPE, "coal")
+    void("coal_nozzle", nb, na, r_n - pt, r_ci, "coal")      # out through the coal pipe's wall (0.5 r_ci)
+    # the tilted piece's bore again (through the flange), clearing the
+    # nozzle's stub inside it
+    void("coal_bore", Pk, dc, r_ci - pt, L2 + eps, "coal")
+
+    # air inlet 1, the elbow: a short neck straight out of the head's -x
+    # side (at right angles to it), one smooth 90 deg bend up to a flange
+    # (user, 23 Nov 2026: out of the main body at right angles, one bend).
+    # On the -x side (the brochure's side view: tip right, the elbow in
+    # front -- a view from -x). Welded to the head: one body with it.
+    r_e = 0.5 * q("inlet1_D")
+    R_b = v(b["body_bend_R_over_OD"]) * 2.0 * r_e     # a long radius elbow: the air passes easily
+    r_ei = r_e - pt
+    y_e = q("elbow_y")
+    if abs(y_e) + r_e >= r_head:
+        raise ValueError("kiln_burner_body: the elbow is wider than the head")
+    z_up = z_fl - q("elbow_up_at")
+    x0 = -0.5 * r_head                         # the neck's inner end, inside the head
+    x_b = -(r_head + q("elbow_neck_L"))        # the bend's start: the neck's length off the head
+    tube("elbow_leg", (x0, y_e, z_up), (-1.0, 0.0, 0.0), r_e, x0 - x_b, r_ei, PIPE, "head")
+    P2 = bend("elbow_bend", "head", (x_b, y_e, z_up), (-1.0, 0.0, 0.0), (0.0, 1.0, 0.0), R_b, r_e, r_ei, PIPE)
+    x_leg = P2[0]
+    y_fl = P2[1]                               # the flange straight on the bend's end
+    y_top = y_fl + t
+    tube("elbow_flange", (x_leg, y_fl, z_up), (0.0, 1.0, 0.0), 1.35 * r_e, t, r_ei, PIPE, "head")
+
+    # the head after the elbow in its group (the elbow joined first, then
+    # onto it); its shell open at both ends (the flange's bore in front,
+    # the expansion joint behind)
+    cyl("head", (0.0, 0.0, z_head), (0.0, 0.0, 1.0), r_head, z_fl - z_head, STEEL, "head")
+    void("head", (0.0, 0.0, z_head - eps), (0.0, 0.0, 1.0), r_head - pt, z_fl - z_head + 2 * eps, "head")
+    # the neck's bore through the head's wall
+    void("elbow_leg", (x0, y_e, z_up), (-1.0, 0.0, 0.0), r_ei, x0 - x_b - 0.5 * t, "head")
+
+    # air inlet 2: a flanged stub further back, open into the head
+    r2, z2 = 0.5 * q("inlet2_D"), z_fl - q("inlet2_at")
+    reach = q("inlet_reach")
+    x0 = -0.5 * r_head                         # its inner end, inside the head
+    tube("air_inlet_2", (x0, 0.0, z2), (-1.0, 0.0, 0.0), r2, r_head + reach + x0, r2 - pt, PIPE, "head")
+    void("air_inlet_2", (x0, 0.0, z2), (-1.0, 0.0, 0.0), r2 - pt, r_head + reach + x0 - 0.5 * t, "head")
+    tube("air_inlet_2_flange", (-r_head - reach, 0.0, z2), (-1.0, 0.0, 0.0), 1.3 * r2, t, r2 - pt, PIPE, "head")
+
+    # the carriage beam: two channels back to back (webs inside, open
+    # outward), a diagonal stiffener in each, an end plate and pins at the front
+    zb0, zb1 = z_pipe - q("beam_L"), z_pipe
+    g2 = 0.5 * q("web_gap")
+    # (the end plate first: both channels touch it, so the group joins)
+    box("beam_end", -w_b, w_b, y_b, y_b + h_b, zb1, zb1 + t, STEEL, "beam")
+    for sgn, side in ((1, "R"), (-1, "L")):
+        xw0, xw1 = sorted((sgn * g2, sgn * (g2 + t)))
+        xf0, xf1 = sorted((sgn * g2, sgn * w_b))
+        box(f"beam_web_{side}", xw0, xw1, y_b, y_b + h_b, zb0, zb1, STEEL, "beam")
+        box(f"beam_top_{side}", xf0, xf1, y_b + h_b - t, y_b + h_b, zb0, zb1, STEEL, "beam")
+        box(f"beam_bot_{side}", xf0, xf1, y_b, y_b + t, zb0, zb1, STEEL, "beam")
+        # the diagonal plate joining the two flanges across the channel's
+        # open side (welded to their edges), leaning at brace_deg, its ends
+        # cut level with the flanges' outer faces: a plate long enough to
+        # reach past them (cut_: its own extent is not the beam's), the
+        # overshoot cut off by the two boxes over and under the beam
+        al = math.radians(v(b["body_brace_deg"]))
+        w_p = q("brace_W")
+        L_br = (h_b + w_p * math.cos(al)) / math.sin(al) + 2 * t
+        e1 = (0.0, math.sin(al), math.cos(al))
+        e2 = (0.0, -math.cos(al), math.sin(al))
+        xp0, xp1 = sorted((sgn * (w_b - t), sgn * w_b))
+        zc = zb1 - q("brace_at")                   # its middle, back from the beam's front end
+        fbox(f"cut_beam_brace_{side}", (0.5 * (xp0 + xp1), y_b + 0.5 * h_b, zc), e1, e2, (1.0, 0.0, 0.0),
+             L_br, w_p, t, STEEL, "beam")
+        zr = 0.5 * L_br
+        for k, (y0, y1) in enumerate(((y_b + h_b, y_b + h_b + L_br), (y_b - L_br, y_b))):
+            box(f"void_beam_brace_{side}{k}", xp0 - eps, xp1 + eps, y0, y1, zc - zr - eps, zc + zr + eps,
+                (0.0, 0.0, 0.0), "beam")
+    # at the beam's back end a rectangular plate over each channel's open
+    # side, welded to its flanges' edges (user, 23 Nov 2026)
+    for sgn, side in ((1, "R"), (-1, "L")):
+        xp0, xp1 = sorted((sgn * (w_b - t), sgn * w_b))
+        box(f"beam_tail_plate_{side}", xp0, xp1, y_b, y_b + h_b, zb0, zb0 + q("beam_tail_L"), STEEL, "beam")
+    r_pin, L_pin = 0.5 * q("pin_D"), q("pin_L")
+    for sgn, side in ((1, "R"), (-1, "L")):
+        # from the web out through the channel's open side
+        cyl(f"beam_pin_{side}", (sgn * (g2 + t), y_b + 0.5 * h_b, zb1 - 0.3 * h_b), (sgn, 0.0, 0.0), r_pin,
+            w_b - g2 - t + L_pin, STEEL, "beam")
+    overlapping.update(("support", "beam"))      # the neck over the ring; the webs under the flanges
+    z1 = z_fl - q("hanger2_at")
+    box("hanger", -w_b, w_b, r_head, y_b, z1 - q("hanger2_L"), z1, STEEL)
+
+    groups = {}
+    for x in bodies:
+        groups.setdefault(x["group"], []).append(x)
+    G = {}
+    hollow.add("beam")
+
+    def counts(x):       # the cuts lie inside or overshoot a face; a cut_ part is cut back inside the rest
+        return not x["name"].startswith(("void_", "cut_"))
+    solid = [x for x in bodies if counts(x)]
+    for name, xs in groups.items():
+        bx = [x["box"] for x in xs if counts(x)]
+        G[name] = {"box": tuple(min(q_[i] for q_ in bx) for i in range(3)) + tuple(max(q_[i] for q_ in bx) for i in range(3, 6)),
+                   "V": None if name in overlapping | hollow else sum(x["V"] for x in xs), "n": len(xs)}
+    lo = [min(x["box"][i] for x in solid) for i in range(3)]
+    hi = [max(x["box"][i] for x in solid) for i in range(3, 6)]
     return {
         "D_tip": D, "r_pipe_in": r_in, "r_pipe": r_p, "R_castable": R_c,
         "L_total": -z_coal, "z_ring": z_ring, "z_castable": z_cast, "z_pipe": z_pipe,
         "z_flange": z_fl, "z_head": z_head, "z_bellows": z_bel, "z_coal": z_coal,
-        "r_head": r_head, "bodies": bodies, "box": tuple(lo + hi),
+        "r_head": r_head, "r_head_flange": r_hf, "x_elbow": x_leg, "z_elbow_up": z_up, "y_elbow_top": y_top,
+        "z_inlet2": z2, "y_coal_flange": E[1], "x_inlet2": -(r_head + reach + t),
+        "bodies": bodies, "groups": G, "box": tuple(lo + hi),
     }
 
 # ======================================================================

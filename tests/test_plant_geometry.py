@@ -1043,16 +1043,20 @@ class TheWholeBurnerIsTheBrochuresSideViewTest(unittest.TestCase):
     "no SolidWorks build log here",
 )
 class TheWholeBurnerSolidIsTheSourcesTest(unittest.TestCase):
-    """kiln_burner_body.bas logs each body's volume: held to the source."""
+    """kiln_burner_body.bas logs each body (a group of parts joined): its
+    volume where the parts do not overlap, held to the source."""
 
     def test_each_body(self):
         log = (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_burner_body_build.log").read_text(encoding="latin-1")
         self.assertTrue(log.startswith("kiln_burner_body built"), log.splitlines()[0])
-        for q in pg.kiln_burner_body(pg.load())["bodies"]:
-            with self.subTest(q["name"]):
-                m = re.search(rf"body {q['name']} \(\w+\): (-?[\d.,]+) m3", log)
+        groups = pg.kiln_burner_body(pg.load())["groups"]
+        for name, q in groups.items():
+            with self.subTest(name):
+                m = re.search(rf"body {name} \((\d+) parts\): (-?[\d.,]+) m3", log)
                 self.assertIsNotNone(m)
-                self.assertAlmostEqual(float(m.group(1).replace(",", ".")), q["V"], delta=2e-6)
+                self.assertEqual(int(m.group(1)), q["n"])
+                if q["V"] is not None:
+                    self.assertAlmostEqual(float(m.group(2).replace(",", ".")), q["V"], delta=2e-6)
 
 
 class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):

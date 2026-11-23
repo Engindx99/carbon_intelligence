@@ -2428,8 +2428,64 @@
           "doc": "kiln/kiln_burner.md"
         },
         {
-          "key": "kiln_burner.body_inlet1_at",
-          "value": 0.9,
+          "key": "kiln_burner.body_coal_tilt_deg",
+          "value": 12.0,
+          "unit": "deg",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_coal_kink_at",
+          "value": 1.0,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_lance_D",
+          "value": 0.088,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_lance_y",
+          "value": -0.188,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_scanner_D",
+          "value": 0.039,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_scanner_x",
+          "value": 0.092,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_scanner_y",
+          "value": -0.152,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_lance_tail",
+          "value": 0.8,
           "unit": "-",
           "source": "derived_from_reference",
           "status": "Estimated",
@@ -2437,10 +2493,34 @@
         },
         {
           "key": "kiln_burner.body_inlet1_D",
-          "value": 0.5,
+          "value": 0.38,
           "unit": "-",
           "source": "derived_from_reference",
           "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_elbow_up_at",
+          "value": 1.13,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_elbow_y",
+          "value": 0.0,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_elbow_neck_L",
+          "value": 0.3,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
           "doc": "kiln/kiln_burner.md"
         },
         {
@@ -2470,22 +2550,6 @@
         {
           "key": "kiln_burner.body_beam_H",
           "value": 0.47,
-          "unit": "-",
-          "source": "derived_from_reference",
-          "status": "Estimated",
-          "doc": "kiln/kiln_burner.md"
-        },
-        {
-          "key": "kiln_burner.body_hanger1_at",
-          "value": 0.0,
-          "unit": "-",
-          "source": "derived_from_reference",
-          "status": "Estimated",
-          "doc": "kiln/kiln_burner.md"
-        },
-        {
-          "key": "kiln_burner.body_hanger1_L",
-          "value": 0.44,
           "unit": "-",
           "source": "derived_from_reference",
           "status": "Estimated",
@@ -2524,9 +2588,161 @@
           "doc": "kiln/kiln_burner.md"
         },
         {
-          "key": "kiln_burner.body_inlet_reach",
-          "value": 0.8,
+          "key": "kiln_burner.body_beam_tail_L",
+          "value": 0.5,
           "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_inlet_reach",
+          "value": 0.3,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_plate_t",
+          "value": 0.04,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_web_gap",
+          "value": 0.04,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_brace_deg",
+          "value": 36.0,
+          "unit": "deg",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_brace_W",
+          "value": 0.3,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_brace_at",
+          "value": 1.5,
+          "unit": "-",
+          "source": "derived_from_reference",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_pin_D",
+          "value": 0.12,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_pin_L",
+          "value": 0.12,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_support_D",
+          "value": 1.2,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_support_W",
+          "value": 0.5,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_foot_y",
+          "value": 0.75,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_foot_W",
+          "value": 0.7,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_foot_L",
+          "value": 0.4,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_head_flange_D",
+          "value": 1.0,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_bend_R_over_OD",
+          "value": 1.5,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_nozzle_D",
+          "value": 0.1,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_nozzle_L",
+          "value": 0.35,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_nozzle_at",
+          "value": 0.18,
+          "unit": "-",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_nozzle_deg",
+          "value": 30.0,
+          "unit": "deg",
           "source": "schematic",
           "status": "Schematic",
           "doc": "kiln/kiln_burner.md"
@@ -2541,8 +2757,8 @@
         }
       ],
       "status_counts": {
-        "Estimated": 51,
-        "Schematic": 3
+        "Estimated": 62,
+        "Schematic": 19
       },
       "missing": [
         "kiln/kiln_burner.md: no published size; JETFLEX 2.0 tip from the brochure (image ratios) scaled so the slots pass the twin's axial air at the manual's pressure; conveying air not in the twin; fuel lance, nozzle angle, swirl sense, position in the kiln unknown"

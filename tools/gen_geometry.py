@@ -625,10 +625,10 @@ def _kiln_burner_body_sheet_consts(g):
     by = {b["name"]: b for b in r["bodies"]}
     bx = r["box"]
     out = [
-        der("KBD_N", len(r["bodies"]), "bodies in kiln_burner_body.SLDPRT"),
-        der("KBD_X0", bx[0], "the part's x min"), der("KBD_Y0", bx[1], "the part's y min"),
+        der("KBD_N", len(r["groups"]), "bodies in kiln_burner_body.SLDPRT"),
+        der("KBD_X0", bx[0], "the part's x min (the air inlets)"), der("KBD_Y0", bx[1], "the part's y min"),
         der("KBD_Z0", bx[2], "the part's z min (the beam's back end)"),
-        der("KBD_X1", bx[3], "the part's x max (the air inlets)"), der("KBD_Y1", bx[4], "the part's y max (the beam's top)"),
+        der("KBD_X1", bx[3], "the part's x max"), der("KBD_Y1", bx[4], "the part's y max (the beam's top)"),
         der("KBD_Z1", bx[5], "the part's z max (the tip)"),
         der("KBD_R_TIP", 0.5 * r["D_tip"], "tip ring's outer radius"),
         der("KBD_R_C", r["R_castable"], "castable's outer radius"),
@@ -640,13 +640,16 @@ def _kiln_burner_body_sheet_consts(g):
         der("KBD_R_FL", by["flange"]["p"][6], "flange's radius"),
         der("KBD_R_BEL", by["bellows"]["p"][6], "expansion joint's radius"),
         der("KBD_Z_BEL", r["z_bellows"], "expansion joint's back face"),
-        der("KBD_Z_COAL", r["z_coal"], "coal inlet flange's back face (the burner's back end)"),
+        der("KBD_Z_COAL", r["z_coal"], "coal inlet flange's back face centre (the burner's back end)"),
         der("KBD_R_COALF", by["coal_inlet_flange"]["p"][6], "coal inlet flange's radius"),
-        der("KBD_Y_C", r["bodies"][6]["p"][1], "coal inlet's axis over the burner's"),
-        der("KBD_Y_BEAM", by["beam"]["p"][2], "beam's underside"),
-        der("KBD_Z_IN1", by["air_inlet_1"]["p"][2], "air inlet 1, z"),
-        der("KBD_Z_IN2", by["air_inlet_2"]["p"][2], "air inlet 2, z"),
-        der("KBD_X_IN", by["air_inlet_1"]["p"][0] + by["air_inlet_1"]["p"][7], "air inlets' outer end, x"),
+        der("KBD_Y_C", by["coal_inlet"]["p"][1], "coal inlet's axis over the burner's"),
+        der("KBD_Y_COALE", r["y_coal_flange"], "coal inlet flange's back face centre (the pipe tilted up), y"),
+        der("KBD_Y_BEAM", by["beam_web_R"]["p"][2], "beam's underside"),
+        der("KBD_Z_IN1", r["z_elbow_up"], "air inlet 1 (the elbow) rises here, z"),
+        der("KBD_Z_IN2", r["z_inlet2"], "air inlet 2, z"),
+        der("KBD_X_IN", r["x_inlet2"], "air inlet 2's outer end, x"),
+        der("KBD_X_EL", r["x_elbow"], "the elbow's leg, x"),
+        der("KBD_R_HF", r["r_head_flange"], "head flanges' radius"),
     ]
     out += _table_consts("kiln_burner_body", dkd.params(g), dkd.ORDER)
     return out
@@ -939,18 +942,19 @@ def kiln_rotax_bas(g):
     return out
 
 
-KBB_CHUNKS = 6
+KBB_CHUNKS = 16
 
 
 def kiln_burner_body_bas(g):
     """kiln_burner_body.bas: the whole burner's envelope bodies
-    (plant_geometry.kiln_burner_body()) as kiln_rotax_bas writes them,
-    joined by the macro from KBB_1 .. KBB_6."""
+    (plant_geometry.kiln_burner_body()) as name|group|kind|params|V|box|rgb,
+    joined by the macro from KBB_1 .. KBB_16; KBB_GROUPS lists each group
+    (the part's bodies) as name|V|n, V -1 where its parts overlap."""
     r = pg.kiln_burner_body(g)
     recs = []
     for b in r["bodies"]:
         nums = list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])
-        recs.append("|".join([b["name"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
+        recs.append("|".join([b["name"], b["group"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
     chunks, cur = [], ""
     for rec in recs:
         if len(cur) + len(rec) > 900:
@@ -961,10 +965,15 @@ def kiln_burner_body_bas(g):
     if len(chunks) > KBB_CHUNKS:
         raise ValueError(f"kiln_burner_body: {len(chunks)} chunks, the macro joins {KBB_CHUNKS}")
     chunks += [""] * (KBB_CHUNKS - len(chunks))
-    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    grp = "".join(f"{n}|{_fixed(q['V']) if q['V'] is not None else '-1'}|{q['n']};" for n, q in r["groups"].items())
+    if len(grp) > 1000:
+        raise ValueError("kiln_burner_body: the group list is too long for one VBA string")
+    out = [der("N_BODIES", len(recs), "bodies before joining"), der("N_GROUPS", len(r["groups"]), "bodies in the part")]
     out += [Const(f"KBB_{i + 1}", c, "plant_geometry.kiln_burner_body() bodies", kind="String")
             for i, c in enumerate(chunks)]
+    out.append(Const("KBB_GROUPS", grp, "the part's bodies: name|V (-1: parts overlap)|parts", kind="String"))
     return out
+
 
 KBR_CHUNKS = 24
 

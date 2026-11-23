@@ -56,13 +56,13 @@ def params(g, name="kiln_burner_body"):
     ratio("head_L", "Air connection head, long", r["z_flange"] - r["z_head"], "head_L")
     ratio("D_head", "Air connection head OD", 2 * r["r_head"], "head_D")
     ratio("bellows_L", "Expansion joint, long", r["z_head"] - r["z_bellows"], "bellows_L")
-    ratio("coal_L", "Solid fuel inlet pipe, long (drawn straight)", r["z_bellows"] - r["z_coal"], "coal_L")
+    ratio("coal_L", "Solid fuel inlet pipe, long (to its flange's back centre)", r["z_bellows"] - r["z_coal"], "coal_L")
     ratio("D_coal_inlet", "Solid fuel inlet pipe OD", 2 * by["coal_inlet"]["p"][6], "coal_D")
-    ratio("inlet1_D", "Air inlet 1 OD (head side)", 2 * by["air_inlet_1"]["p"][6], "inlet1_D")
+    ratio("inlet1_D", "Air inlet 1 OD (the elbow)", 2 * by["elbow_leg"]["p"][6], "inlet1_D")
     ratio("inlet2_D", "Air inlet 2 OD (head side)", 2 * by["air_inlet_2"]["p"][6], "inlet2_D")
-    ratio("beam_H", "Carriage beam, high", by["beam"]["p"][3] - by["beam"]["p"][2], "beam_H")
-    ratio("beam_L", "Carriage beam, long (out of the picture)", by["beam"]["p"][5] - by["beam"]["p"][4], "beam_L")
-    ratio("L_total", "Burner, coal inlet flange to tip", r["L_total"],
+    ratio("beam_H", "Carriage beam, high", by["beam_web_R"]["p"][3] - by["beam_web_R"]["p"][2], "beam_H")
+    ratio("beam_L", "Carriage beam, long (out of the picture)", by["beam_web_R"]["p"][5] - by["beam_web_R"]["p"][4], "beam_L")
+    ratio("L_total", "Burner, coal inlet flange (back centre) to tip", r["L_total"],
           "tip_ring_L", "castable_L", "collar_L", "flange_L", "head_L", "bellows_L", "coal_L")
     doc = P["pipe_t"].doc
     P["u_inside"] = pv.unknown("kiln_burner_body.inside", "Channels inside the pipe behind the tip's 1 m",

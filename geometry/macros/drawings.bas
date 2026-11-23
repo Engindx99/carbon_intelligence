@@ -287,11 +287,11 @@ Const kiln_burner_TAB_5            As String  = ""           ' parameter table r
 Const kiln_burner_TAB_6            As String  = ""           ' parameter table rows
 Const kiln_burner_TAB_7            As String  = ""           ' parameter table rows
 Const kiln_burner_TAB_8            As String  = ""           ' parameter table rows
-Const KBD_N                        As Double  = 13           ' bodies in kiln_burner_body.SLDPRT [derived]
-Const KBD_X0                       As Double  = -0.348626    ' the part's x min [derived]
-Const KBD_Y0                       As Double  = -0.348626    ' the part's y min [derived]
+Const KBD_N                        As Double  = 15           ' bodies in kiln_burner_body.SLDPRT [derived]
+Const KBD_X0                       As Double  = -0.987145    ' the part's x min (the air inlets) [derived]
+Const KBD_Y0                       As Double  = -0.496242    ' the part's y min [derived]
 Const KBD_Z0                       As Double  = -10.465061   ' the part's z min (the beam's back end) [derived]
-Const KBD_X1                       As Double  = 0.782053     ' the part's x max (the air inlets) [derived]
+Const KBD_X1                       As Double  = 0.376893     ' the part's x max [derived]
 Const KBD_Y1                       As Double  = 0.948514     ' the part's y max (the beam's top) [derived]
 Const KBD_Z1                       As Double  = 0#           ' the part's z max (the tip) [derived]
 Const KBD_R_TIP                    As Double  = 0.314077     ' tip ring's outer radius [derived]
@@ -304,15 +304,18 @@ Const KBD_R_HEAD                   As Double  = 0.279529     ' head's radius [de
 Const KBD_R_FL                     As Double  = 0.348626     ' flange's radius [derived]
 Const KBD_R_BEL                    As Double  = 0.298374     ' expansion joint's radius [derived]
 Const KBD_Z_BEL                    As Double  = -8.19114     ' expansion joint's back face [derived]
-Const KBD_Z_COAL                   As Double  = -9.566799    ' coal inlet flange's back face (the burner's back end) [derived]
+Const KBD_Z_COAL                   As Double  = -9.566799    ' coal inlet flange's back face centre (the burner's back end) [derived]
 Const KBD_R_COALF                  As Double  = 0.157039     ' coal inlet flange's radius [derived]
 Const KBD_Y_C                      As Double  = 0.033669     ' coal inlet's axis over the burner's [derived]
+Const KBD_Y_COALE                  As Double  = 0.159399     ' coal inlet flange's back face centre (the pipe tilted up), y [derived]
 Const KBD_Y_BEAM                   As Double  = 0.653281     ' beam's underside [derived]
-Const KBD_Z_IN1                    As Double  = -7.324286    ' air inlet 1, z [derived]
+Const KBD_Z_IN1                    As Double  = -7.468762    ' air inlet 1 (the elbow) rises here, z [derived]
 Const KBD_Z_IN2                    As Double  = -7.839373    ' air inlet 2, z [derived]
-Const KBD_X_IN                     As Double  = 0.782053     ' air inlets' outer end, x [derived]
-Const kiln_burner_body_TAB_1       As String  = "D_tip~Tip outer D (kiln_burner sheet)~628~mm~derived~Estimated;tip_ring_L~Castable tip ring, long~697~mm~derived~Estimated;castable_L~Castable, tip to its back end~6545~mm~derived~Estimated;D_castable~Castable OD behind the tip ring~609~mm~derived~Estimated;D_pipe~Steel burner pipe OD (bore = axial plenum)~479~mm~derived~Estimated;pipe_t~Steel burner pipe wall~10~mm~model parameter~Estimated;flange_D~Mounting flange OD~697~mm~derived~Estimated;head_L~Air connection head, long~1256~mm~derived~Estimated;D_head~Air connection head OD~559~mm~derived~Estimated;bellows_L~Expansion joint, long~176~mm~derived~Estimated;coal_L~Solid fuel inlet pipe, long (drawn straight)~1376~mm~derived~Estimated;" ' parameter table rows
-Const kiln_burner_body_TAB_2       As String  = "D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (head side)~314~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange to tip~9567~mm~derived~Estimated;u_inside~Channels inside the pipe behind the tip's 1 m~-~~no source~Unknown;u_inlets~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
+Const KBD_X_IN                     As Double  = -0.493102    ' air inlet 2's outer end, x [derived]
+Const KBD_X_EL                     As Double  = -0.826024    ' the elbow's leg, x [derived]
+Const KBD_R_HF                     As Double  = 0.314077     ' head flanges' radius [derived]
+Const kiln_burner_body_TAB_1       As String  = "D_tip~Tip outer D (kiln_burner sheet)~628~mm~derived~Estimated;tip_ring_L~Castable tip ring, long~697~mm~derived~Estimated;castable_L~Castable, tip to its back end~6545~mm~derived~Estimated;D_castable~Castable OD behind the tip ring~609~mm~derived~Estimated;D_pipe~Steel burner pipe OD (bore = axial plenum)~479~mm~derived~Estimated;pipe_t~Steel burner pipe wall~10~mm~model parameter~Estimated;flange_D~Mounting flange OD~697~mm~derived~Estimated;head_L~Air connection head, long~1256~mm~derived~Estimated;D_head~Air connection head OD~559~mm~derived~Estimated;bellows_L~Expansion joint, long~176~mm~derived~Estimated;" ' parameter table rows
+Const kiln_burner_body_TAB_2       As String  = "coal_L~Solid fuel inlet pipe, long (to its flange's back centre)~1376~mm~derived~Estimated;D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (the elbow)~239~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange (back centre) to tip~9567~mm~derived~Estimated;u_inside~Channels inside the pipe behind the tip's 1 m~-~~no source~Unknown;u_inlets~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
 Const kiln_burner_body_TAB_3       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_4       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_5       As String  = ""           ' parameter table rows
@@ -3999,10 +4002,10 @@ Private Sub DimensionBurnerBody()
     swModel.GraphicsRedraw2
     swModel.ClearSelection2 True
 
-    DimEdges "L_total", -KBD_Z_COAL, vFront, _
-        "circle", 0, -KBD_R_TIP, 0, KBD_R_TIP, 0, _
-        "circle", 0, KBD_Y_C - KBD_R_COALF, KBD_Z_COAL, KBD_R_COALF, KBD_Z_COAL, _
-        0, -KBD_R_TIP - 0.75, 0.5 * KBD_Z_COAL
+    DimEdges "L_total", -KBD_Z_COAL, vPlan, _
+        "circle", -KBD_R_TIP, 0, 0, KBD_R_TIP, 0, _
+        "circle", -KBD_R_COALF, KBD_Y_COALE, KBD_Z_COAL, KBD_R_COALF, KBD_Z_COAL, _
+        -KBD_R_TIP - 0.6, 0, 0.5 * KBD_Z_COAL, "h"
     DimEdges "castable_L", -KBD_Z_CAST, vFront, _
         "circle", 0, -KBD_R_TIP, 0, KBD_R_TIP, 0, _
         "circle", 0, -KBD_R_C, KBD_Z_CAST, KBD_R_C, KBD_Z_CAST, _
@@ -4011,11 +4014,11 @@ Private Sub DimensionBurnerBody()
         "circle", 0, KBD_R_TIP, 0, KBD_R_TIP, 0, _
         "circle", 0, KBD_R_TIP, KBD_Z_RING, KBD_R_TIP, KBD_Z_RING, _
         0, KBD_R_TIP + 0.3, 0.5 * KBD_Z_RING
-    ' (the head's own end circles lie on the flange's and the joint's faces
-    ' and are not drawn: the flange's back circle and the joint's front one)
+    ' (the head's own end circles lie under its bolting flanges: the
+    ' castable flange's back circle and the head's rear flange's back one)
     DimEdges "head_L", KBD_Z_FL - KBD_Z_HEAD, vFront, _
         "circle", 0, -KBD_R_FL, KBD_Z_FL, KBD_R_FL, KBD_Z_FL, _
-        "circle", 0, -KBD_R_BEL, KBD_Z_HEAD, KBD_R_BEL, KBD_Z_HEAD, _
+        "circle", 0, -KBD_R_HF, KBD_Z_HEAD, KBD_R_HF, KBD_Z_HEAD, _
         0, -KBD_R_TIP - 0.4, 0.5 * (KBD_Z_FL + KBD_Z_HEAD)
     DimEdges "D_castable", 2# * KBD_R_C, vFront, _
         "circle", 0, KBD_R_C, KBD_Z_CAST, KBD_R_C, KBD_Z_CAST, _
@@ -4035,9 +4038,9 @@ Private Sub DrawLabelsBurnerBody()
     LabelM3 vFront, 0#, KBD_R_TIP + 0.75, -3.2, "Castable over the steel burner pipe"
     LabelM3 vFront, 0#, KBD_Y_BEAM + 0.75, KBD_Z_HEAD - 1.2, "Carriage beam (schematic length)"
     LabelM3 vFront, 0#, KBD_R_TIP + 0.6, -1.6, "Tip: channels on the kiln_burner sheet"
-    LabelM3 vPlan, KBD_X_IN + 0.1, 0#, KBD_Z_IN1 + 0.4, "Air inlets 1, 2 (axial / swirl: not shown)"
-    LabelM3 vPlan, -0.75, 0#, KBD_Z_COAL - 0.2, "Coal + conveying air in"
-    LabelM3 vPlan, -0.75, 0#, KBD_Z_HEAD + 0.1, "Expansion joint"
+    LabelM3 vPlan, KBD_X_EL - 0.45, 0#, KBD_Z_IN1 + 0.6, "Air inlet 1 (elbow), air inlet 2 (axial / swirl: not shown)"
+    LabelM3 vPlan, 0.45, 0#, KBD_Z_COAL - 0.2, "Coal + conveying air in"
+    LabelM3 vPlan, 0.6, 0#, KBD_Z_HEAD + 0.1, "Expansion joint"
     ViewTitle vFront, "SIDE VIEW - tip right", "above", 0.02, TEXT_H
     ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H
     ViewTitle vSide, "BACK END VIEW (1:" & Fmt(BDL_END_D) & ")", "above", 0.004, TEXT_H
@@ -4048,7 +4051,7 @@ Private Sub DrawAxesBurnerBody()
     UseLayer L_AXIS
     AxisM vFront, 0#, 0#, KBD_Z_COAL - 0.2, 0#, 0#, 0.2
     AxisM vPlan, 0#, 0#, KBD_Z_COAL - 0.2, 0#, 0#, 0.2
-    AxisM vSide, -KBD_R_TIP - 0.08, 0#, KBD_Z_COAL, KBD_X_IN + 0.08, 0#, KBD_Z_COAL
+    AxisM vSide, KBD_X_IN - 0.08, 0#, KBD_Z_COAL, KBD_R_TIP + 0.08, 0#, KBD_Z_COAL
     AxisM vSide, 0#, -KBD_R_TIP - 0.08, KBD_Z_COAL, 0#, KBD_Y_BEAM, KBD_Z_COAL
 End Sub
 

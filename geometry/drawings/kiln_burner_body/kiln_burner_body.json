@@ -209,7 +209,7 @@
     },
     {
       "key": "kiln_burner_body.coal_L",
-      "label": "Solid fuel inlet pipe, long (drawn straight)",
+      "label": "Solid fuel inlet pipe, long (to its flange's back centre)",
       "value": 1.3756592694842578,
       "unit": "m",
       "source": "derived",
@@ -249,8 +249,8 @@
     },
     {
       "key": "kiln_burner_body.inlet1_D",
-      "label": "Air inlet 1 OD (head side)",
-      "value": 0.31407745878636006,
+      "label": "Air inlet 1 OD (the elbow)",
+      "value": 0.23869886867763365,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -264,7 +264,7 @@
         "kiln_burner.primary_air_fraction",
         "kiln_burner.body_inlet1_D"
       ],
-      "value_mm": 314.077459,
+      "value_mm": 238.698869,
       "short": "inlet1_D"
     },
     {
@@ -329,7 +329,7 @@
     },
     {
       "key": "kiln_burner_body.L_total",
-      "label": "Burner, coal inlet flange to tip",
+      "label": "Burner, coal inlet flange (back centre) to tip",
       "value": 9.566799394632529,
       "unit": "m",
       "source": "derived",
