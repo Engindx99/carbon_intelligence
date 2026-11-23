@@ -401,6 +401,8 @@ def drawings_bas(g):
     out += _calciner_sheet_consts(g)
     out += _kiln_sheet_consts(g)
     out += _kiln_rotax_sheet_consts(g)
+    out += _kiln_burner_sheet_consts(g)
+    out += _kiln_burner_body_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
     out += _idf_sheet_consts(g)
@@ -582,6 +584,71 @@ def _kiln_rotax_sheet_consts(g):
         der("RTX_Z_NOSE", by["nose_ring_fan"]["p"][2], "nose ring fan, z"),
     ]
     out += _table_consts("kiln_rotax", drx.params(g), drx.ORDER)
+    return out
+
+
+def _kiln_burner_sheet_consts(g):
+    """What drawings.bas needs for the kiln_burner sheet (the burner's
+    channels, kiln_burner.SLDPRT), under a BRN_ prefix: each channel's
+    volume (the part check), the radii and planes the views and the
+    dimensions use, and the table."""
+    from tools.drawings import kiln_burner as dkb
+
+    r = pg.kiln_burner(g)
+    gr = r["groups"]
+    (sw0, sw1), (ax0, ax1) = r["swirl_plenum"], r["axial_plenum"]
+    out = [
+        der("BRN_V_COAL", gr["coal"]["V"], "coal channel volume [m3]", digits=9),
+        der("BRN_V_AXIAL", gr["axial"]["V"], "axial channel volume [m3]", digits=9),
+        der("BRN_V_SWIRL", gr["swirl"]["V"], "swirl channel volume [m3]", digits=9),
+        der("BRN_R_C", 0.5 * r["D_coal"], "coal pipe radius"),
+        der("BRN_Y_C", r["y_coal"], "coal pipe axis above the tip axis"),
+        der("BRN_L_C", r["L_coal"], "coal pipe length (its inlet at z = -L)"),
+        der("BRN_SW_R0", sw0, "swirl plenum inner radius"), der("BRN_SW_R1", sw1, "swirl plenum outer radius"),
+        der("BRN_AX_R0", ax0, "axial plenum inner radius"), der("BRN_AX_R1", ax1, "axial plenum outer radius"),
+        der("BRN_T", r["plate_t"], "front plate: the openings run z -T .. 0"),
+        der("BRN_LP", r["plenum_L"], "plenums: z -T-LP .. -T"),
+        der("BRN_R_S", r["r_slots"], "slot ring radius (one slot on top, x = 0)"),
+        der("BRN_R_H", r["r_holes"], "hole ring radius"),
+        der("BRN_SLOT_L", r["slot_l"], "slot long side"), der("BRN_SLOT_W", r["slot_w"], "slot short side"),
+    ]
+    out += _table_consts("kiln_burner", dkb.params(g), dkb.ORDER)
+    return out
+
+
+def _kiln_burner_body_sheet_consts(g):
+    """What drawings.bas needs for the kiln_burner_body sheet (the whole
+    burner, kiln_burner_body.SLDPRT), under a KBD_ prefix, and its table."""
+    from tools.drawings import kiln_burner_body as dkd
+
+    r = pg.kiln_burner_body(g)
+    by = {b["name"]: b for b in r["bodies"]}
+    bx = r["box"]
+    out = [
+        der("KBD_N", len(r["bodies"]), "bodies in kiln_burner_body.SLDPRT"),
+        der("KBD_X0", bx[0], "the part's x min"), der("KBD_Y0", bx[1], "the part's y min"),
+        der("KBD_Z0", bx[2], "the part's z min (the beam's back end)"),
+        der("KBD_X1", bx[3], "the part's x max (the air inlets)"), der("KBD_Y1", bx[4], "the part's y max (the beam's top)"),
+        der("KBD_Z1", bx[5], "the part's z max (the tip)"),
+        der("KBD_R_TIP", 0.5 * r["D_tip"], "tip ring's outer radius"),
+        der("KBD_R_C", r["R_castable"], "castable's outer radius"),
+        der("KBD_Z_RING", r["z_ring"], "tip ring's back face"),
+        der("KBD_Z_CAST", r["z_castable"], "castable's back end"),
+        der("KBD_Z_FL", r["z_flange"], "head's front face (the flange's back)"),
+        der("KBD_Z_HEAD", r["z_head"], "head's back face"),
+        der("KBD_R_HEAD", r["r_head"], "head's radius"),
+        der("KBD_R_FL", by["flange"]["p"][6], "flange's radius"),
+        der("KBD_R_BEL", by["bellows"]["p"][6], "expansion joint's radius"),
+        der("KBD_Z_BEL", r["z_bellows"], "expansion joint's back face"),
+        der("KBD_Z_COAL", r["z_coal"], "coal inlet flange's back face (the burner's back end)"),
+        der("KBD_R_COALF", by["coal_inlet_flange"]["p"][6], "coal inlet flange's radius"),
+        der("KBD_Y_C", r["bodies"][6]["p"][1], "coal inlet's axis over the burner's"),
+        der("KBD_Y_BEAM", by["beam"]["p"][2], "beam's underside"),
+        der("KBD_Z_IN1", by["air_inlet_1"]["p"][2], "air inlet 1, z"),
+        der("KBD_Z_IN2", by["air_inlet_2"]["p"][2], "air inlet 2, z"),
+        der("KBD_X_IN", by["air_inlet_1"]["p"][0] + by["air_inlet_1"]["p"][7], "air inlets' outer end, x"),
+    ]
+    out += _table_consts("kiln_burner_body", dkd.params(g), dkd.ORDER)
     return out
 
 
@@ -872,6 +939,71 @@ def kiln_rotax_bas(g):
     return out
 
 
+KBB_CHUNKS = 6
+
+
+def kiln_burner_body_bas(g):
+    """kiln_burner_body.bas: the whole burner's envelope bodies
+    (plant_geometry.kiln_burner_body()) as kiln_rotax_bas writes them,
+    joined by the macro from KBB_1 .. KBB_6."""
+    r = pg.kiln_burner_body(g)
+    recs = []
+    for b in r["bodies"]:
+        nums = list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])
+        recs.append("|".join([b["name"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > KBB_CHUNKS:
+        raise ValueError(f"kiln_burner_body: {len(chunks)} chunks, the macro joins {KBB_CHUNKS}")
+    chunks += [""] * (KBB_CHUNKS - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    out += [Const(f"KBB_{i + 1}", c, "plant_geometry.kiln_burner_body() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    return out
+
+KBR_CHUNKS = 24
+
+
+def kiln_burner_bas(g):
+    """kiln_burner.bas: every body plant_geometry.kiln_burner() lays out as
+    name|group|kind|params|V|box|r g b (KBR_1 .. KBR_24, as kiln_rotax_bas),
+    and per channel (coal, axial, swirl) the joined body's volume, extent,
+    outlet count and area, inlet area."""
+    r = pg.kiln_burner(g)
+    recs = []
+    for b in r["bodies"]:
+        nums = list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])
+        recs.append("|".join([b["name"], b["group"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > KBR_CHUNKS:
+        raise ValueError(f"kiln_burner: {len(chunks)} chunks, the macro joins {KBR_CHUNKS}")
+    chunks += [""] * (KBR_CHUNKS - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies before joining")]
+    out += [Const(f"KBR_{i + 1}", c, "plant_geometry.kiln_burner() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    for grp in ("coal", "axial", "swirl"):
+        q = r["groups"][grp]
+        G = grp.upper()
+        out += [der(f"{G}_V", q["V"], f"{grp} channel volume [m3]", digits=9),
+                Const(f"{G}_N_OUT", q["n_out"], f"{grp} outlet faces in the tip plane [derived]", kind="Long"),
+                der(f"{G}_A_OUT", q["a_out"], f"{grp} outlet area [m2]", digits=9),
+                der(f"{G}_A_IN", q["a_in"], f"{grp} inlet area [m2]", digits=9)]
+        out += [der(f"{G}_BOX_{i}", x, f"{grp} extent ({'x0 y0 z0 x1 y1 z1'.split()[i]}) [m]")
+                for i, x in enumerate(q["box"])]
+    return out
+
+
 def pid_bas(g):
     """The P&ID macro's records (geometry/pid/pid.yaml; tools/pid/)."""
     from tools.pid import encode, model
@@ -884,6 +1016,8 @@ TARGETS = {
     "kiln.bas": kiln_bas,
     "kiln_wall.bas": kiln_wall_bas,
     "kiln_rotax.bas": kiln_rotax_bas,
+    "kiln_burner.bas": kiln_burner_bas,
+    "kiln_burner_body.bas": kiln_burner_body_bas,
     "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
     "id_fan.bas": id_fan_bas,
     "cyclone.bas": cyclone_bas,
@@ -1220,20 +1354,73 @@ def _id_fan_rows(g):
 
 def _kiln_burner_rows(g):
     b, bu = g["kiln_burner"], pg.kiln_burner(g)
+    bd = pg.kiln_burner_body(g)
+    gr = bu["groups"]
     return [
         row_src("Kiln yakıtı", b["fuel_flow"]),
         row_src("Yakıt alt ısıl değeri", b["fuel_LHV"]),
         row_src("Fırın yanma havası", b["kiln_air_flow"]),
-        row_src("Birincil hava payı", b["primary_air_fraction"]),
+        row_src("Birincil hava payı (eksenel + girdap)", b["primary_air_fraction"]),
         row_src("Birincil hava sıcaklığı", b["primary_air_T"]),
-        row_src("Alev momentumu", b["momentum_per_MW"]),
+        row_src("Eksenel hava basıncı", b["axial_pressure"]),
+        row_src("Girdap hava basıncı", b["swirl_pressure"]),
+        row_src("Kömür / taşıma havası yüklemesi", b["transport_loading"]),
+        row_src("Alev momentumu, alt sınır", b["momentum_min_per_MW"]),
+        row_src("Alev momentumu, üst sınır", b["momentum_max_per_MW"]),
+        row_src("Kömür hızı, karşılaştırma", b["coal_velocity_ref"]),
+        row_src("Eksenel yarık sayısı", b["n_axial"]),
+        row_src("Yarık alanı / D_uç²", b["axial_slot_area_over_D2"]),
+        row_src("Yarık boy / en", b["axial_slot_aspect"]),
+        row_src("Yarığın teğetten açısı", b["axial_slot_tilt"]),
+        row_src("Yarık halkası r / D_uç", b["axial_ring_r_over_D"]),
+        row_src("Girdap deliği sayısı", b["n_swirl"]),
+        row_src("Delik ağzı alanı / D_uç²", b["swirl_hole_area_over_D2"]),
+        row_src("Delik halkası r / D_uç", b["swirl_ring_r_over_D"]),
+        row_src("Katı yakıt borusu D / D_uç", b["coal_pipe_D_over_D"]),
+        row_src("Katı yakıt borusu kaçıklığı (yukarı) / D_uç", b["coal_pipe_offset_over_D"]),
+        row_src("Girdap deliği eksen açısı", b["swirl_angle"]),
+        row_src("Ön plaka kalınlığı", b["plate_t"]),
+        row_src("Plenum boyu", b["plenum_L"]),
+        row_src("Kömür borusu boyu / D", b["coal_pipe_L_over_D"]),
+        row_src("Plenum açıklığı", b["plenum_clearance"]),
+        row_src("Kanallar arası en ince duvar", b["wall_min"]),
         row_der("Isıl güç", bu["thermal_MW"], "MW", 2),
-        row_der("Birincil hava debisi", bu["m_pa"], "kg/s", 3),
-        row_der("Jet momentumu", bu["momentum_N"], "N", 0),
-        row_der("Ortalama jet hızı", bu["u_jet"], "m/s", 0),
-        row_der("Birincil hava yoğunluğu", bu["rho_pa"], "kg/m³", 3),
-        row_der("Jet toplam alanı", bu["jet_area"], "m²", 4),
-        row_der("Jet eşdeğer çapı", bu["jet_D_eq"] * 1e3, "mm", 0),
+        row_der("Birincil hava (eksenel + girdap)", bu["m_pa"], "kg/s", 3),
+        row_der("Eksenel hava", bu["m_axial"], "kg/s", 3),
+        row_der("Girdap hava", bu["m_swirl"], "kg/s", 3),
+        row_der("Girdap payı", bu["swirl_share"], "", 3),
+        row_der("Taşıma havası", bu["m_transport"], "kg/s", 3),
+        row_der("Fırına giren soğuk hava payı (birincil + taşıma)", bu["primary_total_share"], "", 3),
+        row_der("Eksenel jet hızı", bu["u_axial"], "m/s", 1),
+        row_der("Girdap jet hızı", bu["u_swirl"], "m/s", 1),
+        row_der("Momentum (Σ ṁu)", bu["momentum_N"], "N", 0),
+        row_der("Momentum / ısıl güç", bu["momentum_per_MW"], "N/MW", 2),
+        row_der("Eksenel momentum bileşeni", bu["momentum_axial_N"], "N", 0),
+        row_der("Uç dış çapı D_uç", bu["D_tip"] * 1e3, "mm", 0),
+        row_der("Eksenel açıklık alanı", bu["A_axial"], "m²", 5),
+        ("Yarık boy × en", f"{bu['slot_l'] * 1e3:.1f} × {bu['slot_w'] * 1e3:.1f} mm", "türetilmiş"),
+        row_der("Yarık halkası yarıçapı", bu["r_slots"] * 1e3, "mm", 1),
+        row_der("Girdap akış alanı (deliğe dik)", bu["A_swirl"], "m²", 5),
+        row_der("Girdap deliği kenarı (deliğe dik)", bu["hole_a"] * 1e3, "mm", 1),
+        row_der("Delik halkası yarıçapı", bu["r_holes"] * 1e3, "mm", 1),
+        row_der("Kömür borusu iç çapı", bu["D_coal"] * 1e3, "mm", 1),
+        row_der("Kömür borusu kaçıklığı (yukarı)", bu["y_coal"] * 1e3, "mm", 1),
+        row_der("Kömür borusu hızı", bu["u_coal"], "m/s", 1),
+        ("Eksenel plenum r", f"{bu['axial_plenum'][0] * 1e3:.1f} … {bu['axial_plenum'][1] * 1e3:.1f} mm", "türetilmiş"),
+        ("Girdap plenumu r", f"{bu['swirl_plenum'][0] * 1e3:.1f} … {bu['swirl_plenum'][1] * 1e3:.1f} mm", "türetilmiş"),
+        ("Hacim: kömür / eksenel / girdap", f"{gr['coal']['V']:.4f} / {gr['axial']['V']:.4f} / {gr['swirl']['V']:.4f} m³", "türetilmiş"),
+        row_src("Gövde: uç halkası boyu / D_uç", b["body_tip_ring_L"]),
+        row_src("Gövde: refrakter boyu / D_uç", b["body_castable_L"]),
+        row_src("Gövde: refrakter çapı / D_uç", b["body_castable_D"]),
+        row_src("Gövde: arka kafa boyu / D_uç", b["body_head_L"]),
+        row_src("Gövde: arka kafa çapı / D_uç", b["body_head_D"]),
+        row_src("Gövde: kömür girişi boyu / D_uç", b["body_coal_L"]),
+        row_src("Gövde: kiriş boyu / D_uç", b["body_beam_L"]),
+        row_src("Gövde: çelik brülör borusu et kalınlığı", b["body_pipe_t"]),
+        row_der("Brülör toplam boyu", bd["L_total"], "m", 2),
+        row_der("Refrakter dış çapı (uç halkasının arkası)", 2e3 * bd["R_castable"], "mm", 0),
+        row_der("Çelik brülör borusu dış çapı", 2e3 * bd["r_pipe"], "mm", 0),
+        row_der("Refrakter boru boyu", -bd["z_castable"], "m", 2),
     ]
 
 

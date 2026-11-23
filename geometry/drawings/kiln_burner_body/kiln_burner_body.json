@@ -1,0 +1,399 @@
+{
+  "equipment": "kiln_burner_body",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/kiln_burner_body/kiln_burner_body.pdf",
+      "geometry/drawings/kiln_burner_body/kiln_burner_body.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_kiln_burner_body_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "kiln_burner.D_tip",
+      "label": "Tip outer D (kiln_burner sheet)",
+      "value": 0.6281549175727201,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction"
+      ],
+      "value_mm": 628.154918,
+      "short": "D_tip"
+    },
+    {
+      "key": "kiln_burner_body.tip_ring_L",
+      "label": "Castable tip ring, long",
+      "value": 0.6972519585057194,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_tip_ring_L"
+      ],
+      "value_mm": 697.251959,
+      "short": "tip_ring_L"
+    },
+    {
+      "key": "kiln_burner_body.castable_L",
+      "label": "Castable, tip to its back end",
+      "value": 6.545374241107743,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_castable_L"
+      ],
+      "value_mm": 6545.374241,
+      "short": "castable_L"
+    },
+    {
+      "key": "kiln_burner_body.D_castable",
+      "label": "Castable OD behind the tip ring",
+      "value": 0.6093102700455385,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_castable_D"
+      ],
+      "value_mm": 609.31027,
+      "short": "D_castable"
+    },
+    {
+      "key": "kiln_burner_body.D_pipe",
+      "label": "Steel burner pipe OD (bore = axial plenum)",
+      "value": 0.47931253107320704,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_pipe_t"
+      ],
+      "value_mm": 479.312531,
+      "short": "D_pipe"
+    },
+    {
+      "key": "kiln_burner.body_pipe_t",
+      "label": "Steel burner pipe wall",
+      "value": 0.01,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.body_pipe_t"
+      ],
+      "value_mm": 10.0,
+      "short": "pipe_t"
+    },
+    {
+      "key": "kiln_burner_body.flange_D",
+      "label": "Mounting flange OD",
+      "value": 0.6972519585057194,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_flange_D"
+      ],
+      "value_mm": 697.251959,
+      "short": "flange_D"
+    },
+    {
+      "key": "kiln_burner_body.head_L",
+      "label": "Air connection head, long",
+      "value": 1.2563098351454407,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_head_L"
+      ],
+      "value_mm": 1256.309835,
+      "short": "head_L"
+    },
+    {
+      "key": "kiln_burner_body.D_head",
+      "label": "Air connection head OD",
+      "value": 0.559057876639721,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_head_D"
+      ],
+      "value_mm": 559.057877,
+      "short": "D_head"
+    },
+    {
+      "key": "kiln_burner_body.bellows_L",
+      "label": "Expansion joint, long",
+      "value": 0.17588337692036227,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_bellows_L"
+      ],
+      "value_mm": 175.883377,
+      "short": "bellows_L"
+    },
+    {
+      "key": "kiln_burner_body.coal_L",
+      "label": "Solid fuel inlet pipe, long (drawn straight)",
+      "value": 1.3756592694842578,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_coal_L"
+      ],
+      "value_mm": 1375.659269,
+      "short": "coal_L"
+    },
+    {
+      "key": "kiln_burner_body.D_coal_inlet",
+      "label": "Solid fuel inlet pipe OD",
+      "value": 0.23241731950190644,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_coal_D"
+      ],
+      "value_mm": 232.41732,
+      "short": "D_coal_inlet"
+    },
+    {
+      "key": "kiln_burner_body.inlet1_D",
+      "label": "Air inlet 1 OD (head side)",
+      "value": 0.31407745878636006,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_inlet1_D"
+      ],
+      "value_mm": 314.077459,
+      "short": "inlet1_D"
+    },
+    {
+      "key": "kiln_burner_body.inlet2_D",
+      "label": "Air inlet 2 OD (head side)",
+      "value": 0.22613577032617924,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_inlet2_D"
+      ],
+      "value_mm": 226.13577,
+      "short": "inlet2_D"
+    },
+    {
+      "key": "kiln_burner_body.beam_H",
+      "label": "Carriage beam, high",
+      "value": 0.29523281125917844,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_beam_H"
+      ],
+      "value_mm": 295.232811,
+      "short": "beam_H"
+    },
+    {
+      "key": "kiln_burner_body.beam_L",
+      "label": "Carriage beam, long (out of the picture)",
+      "value": 3.7689295054363203,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_beam_L"
+      ],
+      "value_mm": 3768.929505,
+      "short": "beam_L"
+    },
+    {
+      "key": "kiln_burner_body.L_total",
+      "label": "Burner, coal inlet flange to tip",
+      "value": 9.566799394632529,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_tip_ring_L",
+        "kiln_burner.body_castable_L",
+        "kiln_burner.body_collar_L",
+        "kiln_burner.body_flange_L",
+        "kiln_burner.body_head_L",
+        "kiln_burner.body_bellows_L",
+        "kiln_burner.body_coal_L"
+      ],
+      "value_mm": 9566.799395,
+      "short": "L_total"
+    },
+    {
+      "key": "kiln_burner_body.inside",
+      "label": "Channels inside the pipe behind the tip's 1 m",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: not modelled (the CFD channels end at the plenums)",
+      "inputs": [],
+      "short": "u_inside"
+    },
+    {
+      "key": "kiln_burner_body.inlets",
+      "label": "Which inlet is axial, which swirl air",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: not shown",
+      "inputs": [],
+      "short": "u_inlets"
+    },
+    {
+      "key": "kiln_burner_body.carriage",
+      "label": "Carriage rail, trolley, hoses, platform",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: not modelled",
+      "inputs": [],
+      "short": "u_carriage"
+    }
+  ],
+  "dimensioned": [
+    "L_total",
+    "castable_L",
+    "tip_ring_L",
+    "head_L",
+    "D_castable",
+    "flange_D"
+  ],
+  "also_the_sheet_of": []
+}

@@ -263,6 +263,62 @@ Const kiln_rotax_TAB_5             As String  = ""           ' parameter table r
 Const kiln_rotax_TAB_6             As String  = ""           ' parameter table rows
 Const kiln_rotax_TAB_7             As String  = ""           ' parameter table rows
 Const kiln_rotax_TAB_8             As String  = ""           ' parameter table rows
+Const BRN_V_COAL                   As Double  = 0.036103366  ' coal channel volume [m3] [derived]
+Const BRN_V_AXIAL                  As Double  = 0.018320078  ' axial channel volume [m3] [derived]
+Const BRN_V_SWIRL                  As Double  = 0.013568909  ' swirl channel volume [m3] [derived]
+Const BRN_R_C                      As Double  = 0.104745     ' coal pipe radius [derived]
+Const BRN_Y_C                      As Double  = 0.033669     ' coal pipe axis above the tip axis [derived]
+Const BRN_L_C                      As Double  = 1.047448     ' coal pipe length (its inlet at z = -L) [derived]
+Const BRN_SW_R0                    As Double  = 0.173341     ' swirl plenum inner radius [derived]
+Const BRN_SW_R1                    As Double  = 0.196288     ' swirl plenum outer radius [derived]
+Const BRN_AX_R0                    As Double  = 0.203383     ' axial plenum inner radius [derived]
+Const BRN_AX_R1                    As Double  = 0.229656     ' axial plenum outer radius [derived]
+Const BRN_T                        As Double  = 0.06         ' front plate: the openings run z -T .. 0 [derived]
+Const BRN_LP                       As Double  = 0.5          ' plenums: z -T-LP .. -T [derived]
+Const BRN_R_S                      As Double  = 0.21596      ' slot ring radius (one slot on top, x = 0) [derived]
+Const BRN_R_H                      As Double  = 0.182039     ' hole ring radius [derived]
+Const BRN_SLOT_L                   As Double  = 0.034417     ' slot long side [derived]
+Const BRN_SLOT_W                   As Double  = 0.010857     ' slot short side [derived]
+Const kiln_burner_TAB_1            As String  = "thermal_MW~Thermal input (twin kiln fuel x LHV)~67.0381~MW~derived~Estimated;m_pa~Primary air, axial + swirl (twin share)~2.63993~kg/s~derived~Estimated;m_axial~Axial air (split by the open areas)~1.93834~kg/s~derived~Estimated;m_swirl~Swirl air~0.701592~kg/s~derived~Estimated;m_transport~Coal conveying air (fuel / loading)~1.25446~kg/s~derived~Estimated;axial_pressure~Axial air pressure (JETFLEX manual)~28500~Pa~literature~Estimated;swirl_pressure~Swirl air pressure (JETFLEX manual)~16500~Pa~literature~Estimated;u_axial~Axial jet (isentropic)~200.676~m/s~derived~Estimated;u_swirl~Swirl jet (isentropic)~157.643~m/s~derived~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_2            As String  = "momentum_per_MW~Momentum sum m u (FLS 7-11)~7.45216~N/MW~derived~Estimated;D_tip~Tip outer D (scale: slots pass the axial air)~628~mm~derived~Estimated;D_coal~Solid fuel pipe bore~209~mm~derived~Estimated;y_coal~Solid fuel pipe above the tip axis~34~mm~derived~Estimated;u_coal~Coal pipe velocity (check: 33 m/s lit.)~30.2255~m/s~derived~Estimated;L_coal~Coal pipe in the solid (5 D)~1047~mm~derived~Estimated;n_axial~Axial air slots (brochure)~20~-~FLS ratio~Estimated;slot_l~Axial slot, long side~34~mm~derived~Estimated;slot_w~Axial slot, short side~11~mm~derived~Estimated;slot_tilt~Slot's long side off the tangent~13~deg~FLS ratio~Estimated;r_slots~Slot ring radius~216~mm~derived~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_3            As String  = "n_swirl~Swirl air holes (brochure)~40~-~FLS ratio~Estimated;hole_a~Swirl hole side (normal to it)~9~mm~derived~Estimated;swirl_angle~Swirl holes off the axis~30~deg~model parameter~Estimated;r_holes~Swirl hole ring radius (tip plane)~182~mm~derived~Estimated;D_swirl_in~Swirl plenum inner D~347~mm~derived~Estimated;D_swirl_out~Swirl plenum outer D~393~mm~derived~Estimated;D_axial_in~Axial plenum inner D~407~mm~derived~Estimated;D_axial_out~Axial plenum outer D~459~mm~derived~Estimated;plenum_L~Plenums (the solid's air inlets)~500~mm~model parameter~Estimated;plate_t~Front plate the openings run through~60~mm~model parameter~Estimated;" ' parameter table rows
+Const kiln_burner_TAB_4            As String  = "u_lance~Fuel lance, igniter, flame scanner (closed here)~-~~no source~Unknown;u_nozzle_angle~Axial nozzles' fixed angle, swirl sense~-~~no source~Unknown;u_insertion~Burner position in the kiln (depth, offset)~-~~no source~Unknown;" ' parameter table rows
+Const kiln_burner_TAB_5            As String  = ""           ' parameter table rows
+Const kiln_burner_TAB_6            As String  = ""           ' parameter table rows
+Const kiln_burner_TAB_7            As String  = ""           ' parameter table rows
+Const kiln_burner_TAB_8            As String  = ""           ' parameter table rows
+Const KBD_N                        As Double  = 13           ' bodies in kiln_burner_body.SLDPRT [derived]
+Const KBD_X0                       As Double  = -0.348626    ' the part's x min [derived]
+Const KBD_Y0                       As Double  = -0.348626    ' the part's y min [derived]
+Const KBD_Z0                       As Double  = -10.465061   ' the part's z min (the beam's back end) [derived]
+Const KBD_X1                       As Double  = 0.782053     ' the part's x max (the air inlets) [derived]
+Const KBD_Y1                       As Double  = 0.948514     ' the part's y max (the beam's top) [derived]
+Const KBD_Z1                       As Double  = 0#           ' the part's z max (the tip) [derived]
+Const KBD_R_TIP                    As Double  = 0.314077     ' tip ring's outer radius [derived]
+Const KBD_R_C                      As Double  = 0.304655     ' castable's outer radius [derived]
+Const KBD_Z_RING                   As Double  = -0.697252    ' tip ring's back face [derived]
+Const KBD_Z_CAST                   As Double  = -6.545374    ' castable's back end [derived]
+Const KBD_Z_FL                     As Double  = -6.758947    ' head's front face (the flange's back) [derived]
+Const KBD_Z_HEAD                   As Double  = -8.015257    ' head's back face [derived]
+Const KBD_R_HEAD                   As Double  = 0.279529     ' head's radius [derived]
+Const KBD_R_FL                     As Double  = 0.348626     ' flange's radius [derived]
+Const KBD_R_BEL                    As Double  = 0.298374     ' expansion joint's radius [derived]
+Const KBD_Z_BEL                    As Double  = -8.19114     ' expansion joint's back face [derived]
+Const KBD_Z_COAL                   As Double  = -9.566799    ' coal inlet flange's back face (the burner's back end) [derived]
+Const KBD_R_COALF                  As Double  = 0.157039     ' coal inlet flange's radius [derived]
+Const KBD_Y_C                      As Double  = 0.033669     ' coal inlet's axis over the burner's [derived]
+Const KBD_Y_BEAM                   As Double  = 0.653281     ' beam's underside [derived]
+Const KBD_Z_IN1                    As Double  = -7.324286    ' air inlet 1, z [derived]
+Const KBD_Z_IN2                    As Double  = -7.839373    ' air inlet 2, z [derived]
+Const KBD_X_IN                     As Double  = 0.782053     ' air inlets' outer end, x [derived]
+Const kiln_burner_body_TAB_1       As String  = "D_tip~Tip outer D (kiln_burner sheet)~628~mm~derived~Estimated;tip_ring_L~Castable tip ring, long~697~mm~derived~Estimated;castable_L~Castable, tip to its back end~6545~mm~derived~Estimated;D_castable~Castable OD behind the tip ring~609~mm~derived~Estimated;D_pipe~Steel burner pipe OD (bore = axial plenum)~479~mm~derived~Estimated;pipe_t~Steel burner pipe wall~10~mm~model parameter~Estimated;flange_D~Mounting flange OD~697~mm~derived~Estimated;head_L~Air connection head, long~1256~mm~derived~Estimated;D_head~Air connection head OD~559~mm~derived~Estimated;bellows_L~Expansion joint, long~176~mm~derived~Estimated;coal_L~Solid fuel inlet pipe, long (drawn straight)~1376~mm~derived~Estimated;" ' parameter table rows
+Const kiln_burner_body_TAB_2       As String  = "D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (head side)~314~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange to tip~9567~mm~derived~Estimated;u_inside~Channels inside the pipe behind the tip's 1 m~-~~no source~Unknown;u_inlets~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
+Const kiln_burner_body_TAB_3       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_4       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_5       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_6       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_7       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_8       As String  = ""           ' parameter table rows
 Const COO_L                        As Double  = 29.9         ' grate length, hot end x = 0 to the cold end [derived]
 Const COO_W                        As Double  = 4#           ' grate width [derived]
 Const COO_H                        As Double  = 3#           ' grate to roof [derived]
@@ -407,6 +463,27 @@ Const RTX_DET_D   As Double = 25#
 Const RTX_DET_R   As Double = 2#        ' detail B's circle [m, model]
 Const RTX_CUT_DZ  As Double = 0.02      ' A-A's plane this far past the inlet rollers' hood face
 
+' kiln_burner: the tip seen from the kiln (x right, y up) at 1:2.5,
+' section A-A along the axis and the outside side view under it at 1:5
+' right of it, detail B of the slot and hole rings (1:1) under the tip
+Const BRL_FRONT_X As Double = 0.13
+Const BRL_FRONT_Y As Double = 0.42
+Const BRL_FRONT_D As Double = 2.5
+Const BRL_SEC_X   As Double = 0.44
+Const BRL_SIDE_Y  As Double = 0.24
+Const BRL_DET_X   As Double = 0.13
+Const BRL_DET_Y   As Double = 0.14
+Const BRL_DET_R   As Double = 0.06      ' detail B's circle [m, model]
+
+' kiln_burner_body (1:20): the side view (z right: the tip on the right),
+' the plan under it; the back end view (1:10) at the bottom left
+Const BDL_X       As Double = 0.33
+Const BDL_SIDE_Y  As Double = 0.47
+Const BDL_PLAN_Y  As Double = 0.34
+Const BDL_END_X   As Double = 0.12
+Const BDL_END_Y   As Double = 0.15
+Const BDL_END_D   As Double = 10#
+
 ' cooler (1:100): side view, plan under it, floor view under that, the end
 ' view (1:50) at the bottom left
 Const COO_X       As Double = 0.33
@@ -535,6 +612,21 @@ Sub kiln_rotax()
 End Sub
 
 
+' The kiln burner's channels (kiln_burner.bas, JETFLEX 2.0): a CFD flow
+' volume like the others.
+Sub kiln_burner()
+    Build "kiln_burner"
+End Sub
+
+
+' The whole kiln burner as simple envelopes (kiln_burner_body.bas): not
+' the fluid geometry, an exception to this macro's rule (see
+' .claude/rules/geometry.md); the channels are on the kiln_burner sheet.
+Sub kiln_burner_body()
+    Build "kiln_burner_body"
+End Sub
+
+
 Sub cooler()
     Build "cooler"
 End Sub
@@ -570,6 +662,10 @@ Private Sub Build(ByVal which As String)
         scaleD = 200#: detailD = KLN_DET_D: detX = KLN_DET_X: detY = KLN_DET_Y
     ElseIf equip = "kiln_rotax" Then
         scaleD = 200#: detailD = RTX_DET_D: detX = RTX_DET_X: detY = RTX_DET_Y
+    ElseIf equip = "kiln_burner_body" Then
+        scaleD = 20#: detailD = BDL_END_D: detX = BDL_END_X: detY = BDL_END_Y
+    ElseIf equip = "kiln_burner" Then
+        scaleD = 5#: detailD = 1#: detX = BRL_DET_X: detY = BRL_DET_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "id_fan" Then
@@ -697,6 +793,12 @@ Private Sub ParseTable()
     ElseIf equip = "kiln" Then
         all = kiln_TAB_1 & kiln_TAB_2 & kiln_TAB_3 & kiln_TAB_4 & _
               kiln_TAB_5 & kiln_TAB_6 & kiln_TAB_7 & kiln_TAB_8
+    ElseIf equip = "kiln_burner_body" Then
+        all = kiln_burner_body_TAB_1 & kiln_burner_body_TAB_2 & kiln_burner_body_TAB_3 & kiln_burner_body_TAB_4 & _
+              kiln_burner_body_TAB_5 & kiln_burner_body_TAB_6 & kiln_burner_body_TAB_7 & kiln_burner_body_TAB_8
+    ElseIf equip = "kiln_burner" Then
+        all = kiln_burner_TAB_1 & kiln_burner_TAB_2 & kiln_burner_TAB_3 & kiln_burner_TAB_4 & _
+              kiln_burner_TAB_5 & kiln_burner_TAB_6 & kiln_burner_TAB_7 & kiln_burner_TAB_8
     ElseIf equip = "kiln_rotax" Then
         all = kiln_rotax_TAB_1 & kiln_rotax_TAB_2 & kiln_rotax_TAB_3 & kiln_rotax_TAB_4 & _
               kiln_rotax_TAB_5 & kiln_rotax_TAB_6 & kiln_rotax_TAB_7 & kiln_rotax_TAB_8
@@ -1074,6 +1176,12 @@ Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
     ElseIf equip = "kiln_rotax" Then
         CheckRotaxBox doc
         Exit Sub
+    ElseIf equip = "kiln_burner" Then
+        CheckBurnerBox doc
+        Exit Sub
+    ElseIf equip = "kiln_burner_body" Then
+        CheckBurnerBodyBox doc
+        Exit Sub
     ElseIf equip = "C1_twin" Then
         CheckTwinBox doc
         Exit Sub
@@ -1204,6 +1312,10 @@ Private Sub MakeViews()
         MakeViewsLining
     ElseIf equip = "kiln_rotax" Then
         MakeViewsRotax
+    ElseIf equip = "kiln_burner" Then
+        MakeViewsBurner
+    ElseIf equip = "kiln_burner_body" Then
+        MakeViewsBurnerBody
     ElseIf equip = "cooler" Then
         MakeViewsCooler
     ElseIf equip = "id_fan" Then
@@ -1849,6 +1961,10 @@ Private Sub DimensionAll()
         DimensionLining
     ElseIf equip = "kiln_rotax" Then
         DimensionRotax
+    ElseIf equip = "kiln_burner" Then
+        DimensionBurner
+    ElseIf equip = "kiln_burner_body" Then
+        DimensionBurnerBody
     ElseIf equip = "cooler" Then
         DimensionCooler
     ElseIf equip = "id_fan" Then
@@ -2830,7 +2946,8 @@ Private Sub DrawTitle()
     LabelPH COL_X0 + 0.0015, 0.0255, IIf(equip = "kiln", _
         "Gas bore (CFD), wall as the twin models it - not a fabrication drawing", _
         IIf(equip = "kiln_rotax", "FLS ROTAX-2 parts, envelopes - not a fabrication drawing", _
-        "Inner (fluid) geometry, dimensioned - not a fabrication drawing")), TEXT_H
+        IIf(equip = "kiln_burner_body", "JETFLEX 2.0 burner, envelopes - not a fabrication drawing", _
+        "Inner (fluid) geometry, dimensioned - not a fabrication drawing"))), TEXT_H
     ' CI-<area>-<equipment>-001; the calciner is its own area, CA (16 Nov
     ' sheet review, item 9: it was numbered in the preheater's, PH)
     Cell 0.771, 0.037, "Identification number", "CI-" & AreaCode() & "-" & equip & "-001"
@@ -2840,6 +2957,10 @@ Private Sub DrawTitle()
     CellS 0.816, 0.028, "Sheet", "1/1"
     If equip = "kiln" Then
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (C 1:50, B 1:" & Fmt(detailD) & ", D 1:" & Fmt(KLN_DETD_D) & ")"
+    ElseIf equip = "kiln_burner_body" Then
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (end view 1:" & Fmt(BDL_END_D) & ")"
+    ElseIf equip = "kiln_burner" Then
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (tip 1:" & Fmt(BRL_FRONT_D) & ", B 1:" & Fmt(detailD) & ")"
     ElseIf equip = "kiln_rotax" Then
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (A-A 1:" & Fmt(RTX_SEC_D) & ", B 1:" & Fmt(detailD) & ")"
     Else
@@ -2856,7 +2977,7 @@ End Sub
 Private Function AreaCode() As String
     Select Case equip
     Case "calciner": AreaCode = "CA"
-    Case "kiln", "kiln_inlet_chamber", "kiln_rotax": AreaCode = "RK"
+    Case "kiln", "kiln_inlet_chamber", "kiln_rotax", "kiln_burner", "kiln_burner_body": AreaCode = "RK"
     Case "cooler": AreaCode = "CL"
     Case Else: AreaCode = "PH"
     End Select
@@ -2931,6 +3052,8 @@ Private Function TitleText() As String
     Case "calciner": TitleText = "ILC CALCINER, GOOSENECK AND Y"
     Case "kiln": TitleText = "ROTARY KILN"
     Case "kiln_rotax": TitleText = "KILN: ROTAX-2 PARTS"
+    Case "kiln_burner": TitleText = "KILN BURNER JETFLEX 2.0"
+    Case "kiln_burner_body": TitleText = "KILN BURNER: WHOLE (ENVELOPE)"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
     Case "id_fan": TitleText = "PREHEATER ID FAN (1 PER STRING)"
@@ -2946,6 +3069,9 @@ Private Sub DrawNotes()
     If equip = "kiln" Then
         LabelPH COL_X0, y + 0.032, "1. Bore = the gas volume; wall as the twin models it (physics/shell.py). CFD solid:", TEXT_H
         LabelPH COL_X0, y + 0.027, "   kiln.SLDPRT, the bore from z0 (the KIC's stub before it). Not a fabrication drawing.", TEXT_H
+    ElseIf equip = "kiln_burner_body" Then
+        LabelPH COL_X0, y + 0.032, "1. The whole burner as simple envelopes (kiln_burner_body.SLDPRT); not a CFD input, not a", TEXT_H
+        LabelPH COL_X0, y + 0.027, "   fabrication drawing. Its channels at the tip (the CFD solid): see the kiln_burner sheet.", TEXT_H
     ElseIf equip = "kiln_rotax" Then
         LabelPH COL_X0, y + 0.032, "1. Mechanical parts after FLS ROTAX-2 as simple envelopes (kiln_rotax.SLDPRT); not a", TEXT_H
         LabelPH COL_X0, y + 0.027, "   CFD input, not a fabrication drawing. Kiln shell (5300) phantom: see the kiln sheet.", TEXT_H
@@ -2965,6 +3091,18 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.077, KLN_LAYER_1, TEXT_H * 0.85
         LabelPH COL_X0, y + 0.072, KLN_LAYER_2, TEXT_H * 0.85
         LabelPH COL_X0, y + 0.067, KLN_LAYER_3, TEXT_H * 0.85
+    ElseIf equip = "kiln_burner_body" Then
+        LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, the burner back along -z; y up. Not placed in the kiln.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. Lengths: ratios of the tip D on the Fuller JETFLEX 2.0 brochure's side view (no capacity", TEXT_H
+        LabelPH COL_X0, y + 0.002, "   stated), scaled by the tip D of the kiln_burner sheet. Beam length: schematic.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. The steel pipe's bore = the channels' axial plenum; the pipe's inside behind the tip: Unknown.", TEXT_H
+        LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml (kiln_burner body_), plant_geometry.kiln_burner_body()", TEXT_H
+    ElseIf equip = "kiln_burner" Then
+        LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, flow towards +z (into the kiln); y up.", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. FLS gives no size: the tip is the Fuller JETFLEX 2.0 brochure's (image ratios), scaled", TEXT_H
+        LabelPH COL_X0, y + 0.002, "   so the slots pass the twin's axial air at the manual's 285 mbar (Pedersen 2017: 210).", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. Inlets: the plenums' and the coal pipe's back faces; outlets: the openings at z = 0.", TEXT_H
+        LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml (kiln_burner), plant_geometry.kiln_burner()", TEXT_H
     ElseIf equip = "kiln_rotax" Then
         LabelPH COL_X0, y + 0.012, "3. Axis z, z = 0 at the back end, y up; the slope is not built in, the piers reach the sloped ground.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. FLS gives no ROTAX-2 size: image ratios, literature (TAPPI 2019, cementkilns.co.uk) or", TEXT_H
@@ -3025,6 +3163,10 @@ Private Sub DrawFlows()
         DrawLabelsLining
     ElseIf equip = "kiln_rotax" Then
         DrawLabelsRotax
+    ElseIf equip = "kiln_burner" Then
+        DrawLabelsBurner
+    ElseIf equip = "kiln_burner_body" Then
+        DrawLabelsBurnerBody
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
     ElseIf equip = "id_fan" Then
@@ -3337,6 +3479,10 @@ Private Sub DrawAxes()
         DrawAxesLining
     ElseIf equip = "kiln_rotax" Then
         DrawAxesRotax
+    ElseIf equip = "kiln_burner" Then
+        DrawAxesBurner
+    ElseIf equip = "kiln_burner_body" Then
+        DrawAxesBurnerBody
     ElseIf equip = "cooler" Then
         DrawAxesCooler
     ElseIf equip = "id_fan" Then
@@ -3624,6 +3770,286 @@ Private Sub DrawAxesRotax()
     AxisM vSec, 0#, -R - 0.6, zFarSec, 0#, R + 0.6, zFarSec
     AxisM vSec, 0#, 0#, zFarSec, RTX_X_R, RTX_Y_R, zFarSec
     AxisM vSec, 0#, 0#, zFarSec, -RTX_X_R, RTX_Y_R, zFarSec
+End Sub
+
+
+'==================================================================
+' kiln_burner: the JETFLEX 2.0 burner's channels (kiln_burner.SLDPRT,
+' plant_geometry.kiln_burner())
+'==================================================================
+
+' Three bodies, coal / axial / swirl, each its generated volume.
+Private Sub CheckBurnerBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc, bodies As Variant, b As SldWorks.Body2
+    Dim i As Long, mp As Variant, want As Double, hit As Long
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 2 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 3 -- rebuild it with kiln_burner.bas."
+    For i = 0 To 2
+        Set b = bodies(i)
+        Select Case b.Name
+            Case "coal": want = BRN_V_COAL
+            Case "axial": want = BRN_V_AXIAL
+            Case "swirl": want = BRN_V_SWIRL
+            Case Else: Fail partPath & " has a body " & b.Name & " -- rebuild it with kiln_burner.bas."
+        End Select
+        mp = b.GetMassProperties(1#)
+        If Abs(mp(3) - want) > 0.0001 * want Then Fail partPath & ": " & b.Name & " is " & Num(mp(3), 6) & _
+            " m3, today's source " & Num(want, 6) & " -- rebuild it with kiln_burner.bas."
+        hit = hit + 1
+    Next i
+    Note "part: coal, axial, swirl, each its source volume"
+End Sub
+
+
+' The tip seen from the kiln (x right, y up) and section A-A along the
+' vertical plane x = 0 right of it (through the top slot and the coal
+' pipe), both 1:5; detail B of the slot and hole rings at the top, 1:2.
+Private Sub MakeViewsBurner()
+    Dim ax As Double, ay As Double, qx As Double, qy As Double
+    Dim tries As Long, nSeen As Long, nFit As Long
+
+    Set vFront = OrientedView(1, 0, 0, 0, 1, 0, BRL_FRONT_X, BRL_FRONT_Y, "front")
+    vFront.ScaleDecimal = 1# / BRL_FRONT_D
+    PlaceAt vFront, BRL_FRONT_X, BRL_FRONT_Y
+    LogMap vFront, "front", BRL_FRONT_D
+    swDraw.EditSheet
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vFront, 0#, BRN_AX_R1 + 0.04, 0#, ax, ay
+            ToSheet vFront, 0#, -BRN_AX_R1 - 0.04, 0#, qx, qy
+        Else
+            ToSheet vFront, 0#, -BRN_AX_R1 - 0.04, 0#, ax, ay
+            ToSheet vFront, 0#, BRN_AX_R1 + 0.04, 0#, qx, qy
+        End If
+        Set vSec = SectionFrom(vFront, ax, ay, qx, qy, "A", BRL_SEC_X, BRL_FRONT_Y)
+        If Maps(vSec, 0, 0, 1, 0, 1, 0) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "top down", "bottom up") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A shows z right, y up in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    vSec.RemoveAlignment
+    vSec.ScaleDecimal = 1# / scaleD
+    PlaceOutlineAt vSec, BRL_SEC_X, BRL_FRONT_Y
+    swModel.ForceRebuild3 False
+    ' (a section through the axis hides the pipes' end circles behind its
+    ' cut faces; the plenums' inner circles show through the hollow)
+    If FindEdge(vSec, "circle", 0#, BRN_SW_R0, -BRN_T - BRN_LP, BRN_SW_R0, -BRN_T - BRN_LP, nSeen, nFit) Is Nothing Then
+        ListCircles vSec
+        Fail "section A-A shows no swirl plenum inlet circle among its " & nSeen & " edges."
+    End If
+    LogMap vSec, "A-A", scaleD
+
+    ' the outside seen from +x... whichever named view maps z right, y up:
+    ' the end circles seen edge-on carry the lengths
+    swDraw.EditSheet
+    Set vSide = OrientedView(0, 0, 1, 0, 1, 0, BRL_SEC_X, BRL_SIDE_Y, "side")
+    LogMap vSide, "side", scaleD
+
+    swDraw.EditSheet
+    ' (at 45 deg on the rings, clear of A-A's cutting line at x = 0)
+    Set vDet = DetailAt(vFront, 0.3536 * (BRN_R_S + BRN_R_H), 0.3536 * (BRN_R_S + BRN_R_H), 0#, BRL_DET_R, "B")
+    LogMap vDet, "detail B", detailD
+    Note "views: front " & vFront.Name & ", A-A " & vSec.Name & ", side " & vSide.Name & ", detail B " & vDet.Name
+End Sub
+
+
+' Six dimensions between edges the solid has: in the front view the coal
+' pipe's bore and the plenums' outer diameters (their front faces' circles
+' at z = -T); in the side view the coal pipe's length, the plenums' length
+' and the front plate (the tip plane to the plenums' front), each between
+' end circles seen edge-on.
+Private Sub DimensionBurner()
+    Dim zp As Double
+    zp = -BRN_T
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "D_coal", 2# * BRN_R_C, vFront, _
+        "circle", 0, BRN_Y_C + BRN_R_C, 0, BRN_R_C, 0, _
+        "", 0, 0, 0, 0, 0, _
+        0.05, BRN_Y_C - 0.03, 0
+    DimEdges "D_swirl_out", 2# * BRN_SW_R1, vFront, _
+        "circle", -0.7071 * BRN_SW_R1, -0.7071 * BRN_SW_R1, zp, BRN_SW_R1, zp, _
+        "", 0, 0, 0, 0, 0, _
+        -0.25, -0.215, zp
+    DimEdges "D_axial_out", 2# * BRN_AX_R1, vFront, _
+        "circle", 0.7071 * BRN_AX_R1, -0.7071 * BRN_AX_R1, zp, BRN_AX_R1, zp, _
+        "", 0, 0, 0, 0, 0, _
+        0.25, -0.235, zp
+    DimEdges "L_coal", BRN_L_C, vSide, _
+        "circle", 0, BRN_Y_C + BRN_R_C, -BRN_L_C, BRN_R_C, -BRN_L_C, _
+        "circle", 0, BRN_Y_C + BRN_R_C, 0, BRN_R_C, 0, _
+        0, BRN_AX_R1 + 0.035, -0.5 * BRN_L_C
+    DimEdges "plenum_L", BRN_LP, vSide, _
+        "circle", 0, -BRN_AX_R1, zp - BRN_LP, BRN_AX_R1, zp - BRN_LP, _
+        "circle", 0, -BRN_AX_R1, zp, BRN_AX_R1, zp, _
+        0, -BRN_AX_R1 - 0.06, zp - 0.5 * BRN_LP
+    DimEdges "plate_t", BRN_T, vSide, _
+        "circle", 0, BRN_Y_C - BRN_R_C, 0, BRN_R_C, 0, _
+        "circle", 0, -BRN_AX_R1, zp, BRN_AX_R1, zp, _
+        0.03, -BRN_AX_R1 - 0.025, -0.5 * BRN_T
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+Private Sub DrawLabelsBurner()
+    UseLayer L_TEXT
+    LabelM3 vFront, -0.085, BRN_Y_C + 0.055, 0#, "Coal + conveying air"
+    LabelM3 vFront, 0.1, BRN_AX_R1 + 0.045, 0#, "Axial air: 20 slots"
+    LabelM3 vFront, 0.1, BRN_AX_R1 + 0.02, 0#, "Swirl air: 40 holes, 30 deg"
+    LabelM3 vSec, 0#, BRN_Y_C + 0.01, -BRN_L_C - 0.16, "Coal in"
+    LabelM3 vSec, 0#, BRN_AX_R1 - 0.02, -BRN_T - BRN_LP - 0.2, "Axial air in"
+    LabelM3 vSec, 0#, -BRN_SW_R1 + 0.02, -BRN_T - BRN_LP - 0.2, "Swirl air in"
+    LabelM3 vSec, 0#, -0.02, 0.08, "To the kiln"
+    UseLayer L_FLOW
+    ArrowM3 vSec, 0#, BRN_Y_C, -BRN_L_C - 0.12, 0#, BRN_Y_C, -BRN_L_C + 0.02
+    ArrowM3 vSec, 0#, 0.5 * (BRN_AX_R0 + BRN_AX_R1), -BRN_T - BRN_LP - 0.12, 0#, 0.5 * (BRN_AX_R0 + BRN_AX_R1), -BRN_T - BRN_LP + 0.02
+    ArrowM3 vSec, 0#, -0.5 * (BRN_SW_R0 + BRN_SW_R1), -BRN_T - BRN_LP - 0.12, 0#, -0.5 * (BRN_SW_R0 + BRN_SW_R1), -BRN_T - BRN_LP + 0.02
+    ArrowM3 vSec, 0#, 0#, 0.02, 0#, 0#, 0.14
+    UseLayer L_TEXT
+    ViewTitle vFront, "TIP - seen from the kiln, 1:" & Fmt(BRL_FRONT_D), "above", 0.02, TEXT_H
+    ViewTitle vSide, "SIDE VIEW - outside", "above", 0.016, TEXT_H
+End Sub
+
+
+Private Sub DrawAxesBurner()
+    UseLayer L_AXIS
+    AxisM vFront, -BRN_AX_R1 - 0.03, 0#, 0#, BRN_AX_R1 + 0.03, 0#, 0#
+    AxisM vFront, 0#, -BRN_AX_R1 - 0.03, 0#, 0#, BRN_AX_R1 + 0.03, 0#
+    AxisM vSec, 0#, 0#, -BRN_T - BRN_LP - 0.04, 0#, 0#, 0.03
+    AxisM vSec, 0#, BRN_Y_C, -BRN_L_C - 0.04, 0#, BRN_Y_C, 0.03
+    AxisM vSide, 0#, 0#, -BRN_T - BRN_LP - 0.04, 0#, 0#, 0.03
+    AxisM vSide, 0#, BRN_Y_C, -BRN_L_C - 0.04, 0#, BRN_Y_C, 0.03
+End Sub
+
+
+'==================================================================
+' kiln_burner_body: the whole burner as simple envelopes
+' (kiln_burner_body.SLDPRT, plant_geometry.kiln_burner_body())
+'==================================================================
+
+Private Sub CheckBurnerBodyBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc, bodies As Variant, b As SldWorks.Body2, box As Variant
+    Dim lo(2) As Double, hi(2) As Double, want(5) As Double, i As Long, k As Long, nm As Variant
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) + 1 <> CLng(KBD_N) Then Fail partPath & " has " & (UBound(bodies) + 1) & _
+        " bodies, not " & CLng(KBD_N) & " -- rebuild it with kiln_burner_body.bas."
+    For k = 0 To 2: lo(k) = 1E+30: hi(k) = -1E+30: Next k
+    For i = 0 To UBound(bodies)
+        Set b = bodies(i)
+        box = ExactBox(b)
+        For k = 0 To 2
+            If box(k) < lo(k) Then lo(k) = box(k)
+            If box(k + 3) > hi(k) Then hi(k) = box(k + 3)
+        Next k
+    Next i
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    want(0) = KBD_X0: want(1) = KBD_Y0: want(2) = KBD_Z0: want(3) = KBD_X1: want(4) = KBD_Y1: want(5) = KBD_Z1
+    For k = 0 To 2
+        If Abs(lo(k) - want(k)) > 0.001 Then Fail partPath & ": " & nm(k) & " is " & Num(lo(k), 4) & _
+            " m, today's burner has " & Num(want(k), 4) & " -- rebuild it with kiln_burner_body.bas."
+        If Abs(hi(k) - want(k + 3)) > 0.001 Then Fail partPath & ": " & nm(k + 3) & " is " & Num(hi(k), 4) & _
+            " m, today's burner has " & Num(want(k + 3), 4) & " -- rebuild it with kiln_burner_body.bas."
+    Next k
+    Note "part box: x " & Num(lo(0), 3) & " .. " & Num(hi(0), 3) & ", y " & Num(lo(1), 3) & " .. " & Num(hi(1), 3) & _
+         ", z " & Num(lo(2), 3) & " .. " & Num(hi(2), 3) & " m, " & (UBound(bodies) + 1) & " bodies"
+End Sub
+
+
+' The side view (z right, y up) and the plan under it (z right, +x up),
+' 1:20; the back end view (looking along +z from behind: -x right, y up)
+' at 1:10, bottom left.
+Private Sub MakeViewsBurnerBody()
+    Set vFront = OrientedView(0, 0, 1, 0, 1, 0, BDL_X, BDL_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+    swDraw.EditSheet
+    Set vPlan = OrientedView(0, 0, 1, 1, 0, 0, BDL_X, BDL_PLAN_Y, "plan")
+    LogMap vPlan, "plan", scaleD
+    swDraw.EditSheet
+    Set vSide = OrientedView(-1, 0, 0, 0, 1, 0, BDL_END_X, BDL_END_Y, "back end")
+    vSide.ScaleDecimal = 1# / BDL_END_D
+    PlaceOutlineAt vSide, BDL_END_X, BDL_END_Y
+    LogMap vSide, "back end", BDL_END_D
+    Note "views: side " & vFront.Name & ", plan " & vPlan.Name & ", back end " & vSide.Name
+End Sub
+
+
+' Lengths between end circles seen edge-on in the side view; the castable's
+' and the flange's diameters each from one circle seen edge-on.
+Private Sub DimensionBurnerBody()
+    Dim yt As Double
+    yt = KBD_Y_BEAM + 0.75
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "L_total", -KBD_Z_COAL, vFront, _
+        "circle", 0, -KBD_R_TIP, 0, KBD_R_TIP, 0, _
+        "circle", 0, KBD_Y_C - KBD_R_COALF, KBD_Z_COAL, KBD_R_COALF, KBD_Z_COAL, _
+        0, -KBD_R_TIP - 0.75, 0.5 * KBD_Z_COAL
+    DimEdges "castable_L", -KBD_Z_CAST, vFront, _
+        "circle", 0, -KBD_R_TIP, 0, KBD_R_TIP, 0, _
+        "circle", 0, -KBD_R_C, KBD_Z_CAST, KBD_R_C, KBD_Z_CAST, _
+        0, -KBD_R_TIP - 0.4, 0.5 * KBD_Z_CAST
+    DimEdges "tip_ring_L", -KBD_Z_RING, vFront, _
+        "circle", 0, KBD_R_TIP, 0, KBD_R_TIP, 0, _
+        "circle", 0, KBD_R_TIP, KBD_Z_RING, KBD_R_TIP, KBD_Z_RING, _
+        0, KBD_R_TIP + 0.3, 0.5 * KBD_Z_RING
+    ' (the head's own end circles lie on the flange's and the joint's faces
+    ' and are not drawn: the flange's back circle and the joint's front one)
+    DimEdges "head_L", KBD_Z_FL - KBD_Z_HEAD, vFront, _
+        "circle", 0, -KBD_R_FL, KBD_Z_FL, KBD_R_FL, KBD_Z_FL, _
+        "circle", 0, -KBD_R_BEL, KBD_Z_HEAD, KBD_R_BEL, KBD_Z_HEAD, _
+        0, -KBD_R_TIP - 0.4, 0.5 * (KBD_Z_FL + KBD_Z_HEAD)
+    DimEdges "D_castable", 2# * KBD_R_C, vFront, _
+        "circle", 0, KBD_R_C, KBD_Z_CAST, KBD_R_C, KBD_Z_CAST, _
+        "", 0, 0, 0, 0, 0, _
+        0, KBD_R_TIP + 0.35, KBD_Z_CAST + 1#
+    DimEdges "flange_D", 2# * KBD_R_FL, vFront, _
+        "circle", 0, KBD_R_FL, KBD_Z_FL, KBD_R_FL, KBD_Z_FL, _
+        "", 0, 0, 0, 0, 0, _
+        0, -0.1, KBD_Z_FL + 0.5
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+Private Sub DrawLabelsBurnerBody()
+    UseLayer L_TEXT
+    LabelM3 vFront, 0#, KBD_R_TIP + 0.75, -3.2, "Castable over the steel burner pipe"
+    LabelM3 vFront, 0#, KBD_Y_BEAM + 0.75, KBD_Z_HEAD - 1.2, "Carriage beam (schematic length)"
+    LabelM3 vFront, 0#, KBD_R_TIP + 0.6, -1.6, "Tip: channels on the kiln_burner sheet"
+    LabelM3 vPlan, KBD_X_IN + 0.1, 0#, KBD_Z_IN1 + 0.4, "Air inlets 1, 2 (axial / swirl: not shown)"
+    LabelM3 vPlan, -0.75, 0#, KBD_Z_COAL - 0.2, "Coal + conveying air in"
+    LabelM3 vPlan, -0.75, 0#, KBD_Z_HEAD + 0.1, "Expansion joint"
+    ViewTitle vFront, "SIDE VIEW - tip right", "above", 0.02, TEXT_H
+    ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H
+    ViewTitle vSide, "BACK END VIEW (1:" & Fmt(BDL_END_D) & ")", "above", 0.004, TEXT_H
+End Sub
+
+
+Private Sub DrawAxesBurnerBody()
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, KBD_Z_COAL - 0.2, 0#, 0#, 0.2
+    AxisM vPlan, 0#, 0#, KBD_Z_COAL - 0.2, 0#, 0#, 0.2
+    AxisM vSide, -KBD_R_TIP - 0.08, 0#, KBD_Z_COAL, KBD_X_IN + 0.08, 0#, KBD_Z_COAL
+    AxisM vSide, 0#, -KBD_R_TIP - 0.08, KBD_Z_COAL, 0#, KBD_Y_BEAM, KBD_Z_COAL
 End Sub
 
 

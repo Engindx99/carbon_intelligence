@@ -1,0 +1,646 @@
+{
+  "equipment": "kiln_burner",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/kiln_burner/kiln_burner.pdf",
+      "geometry/drawings/kiln_burner/kiln_burner.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_kiln_burner_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "kiln_burner.thermal_MW",
+      "label": "Thermal input (twin kiln fuel x LHV)",
+      "value": 67.03808,
+      "unit": "MW",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.fuel_flow",
+        "kiln_burner.fuel_LHV"
+      ],
+      "short": "thermal_MW"
+    },
+    {
+      "key": "kiln_burner.m_pa",
+      "label": "Primary air, axial + swirl (twin share)",
+      "value": 2.63993,
+      "unit": "kg/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction"
+      ],
+      "short": "m_pa"
+    },
+    {
+      "key": "kiln_burner.m_axial",
+      "label": "Axial air (split by the open areas)",
+      "value": 1.9383377233421286,
+      "unit": "kg/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2"
+      ],
+      "short": "m_axial"
+    },
+    {
+      "key": "kiln_burner.m_swirl",
+      "label": "Swirl air",
+      "value": 0.7015922766578715,
+      "unit": "kg/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2"
+      ],
+      "short": "m_swirl"
+    },
+    {
+      "key": "kiln_burner.m_transport",
+      "label": "Coal conveying air (fuel / loading)",
+      "value": 1.2544550898203592,
+      "unit": "kg/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.fuel_flow",
+        "kiln_burner.transport_loading"
+      ],
+      "short": "m_transport"
+    },
+    {
+      "key": "kiln_burner.axial_pressure",
+      "label": "Axial air pressure (JETFLEX manual)",
+      "value": 28500,
+      "unit": "Pa",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure"
+      ],
+      "short": "axial_pressure"
+    },
+    {
+      "key": "kiln_burner.swirl_pressure",
+      "label": "Swirl air pressure (JETFLEX manual)",
+      "value": 16500,
+      "unit": "Pa",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.swirl_pressure"
+      ],
+      "short": "swirl_pressure"
+    },
+    {
+      "key": "kiln_burner.u_axial",
+      "label": "Axial jet (isentropic)",
+      "value": 200.6758479333669,
+      "unit": "m/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.primary_air_T"
+      ],
+      "short": "u_axial"
+    },
+    {
+      "key": "kiln_burner.u_swirl",
+      "label": "Swirl jet (isentropic)",
+      "value": 157.64296107863962,
+      "unit": "m/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T"
+      ],
+      "short": "u_swirl"
+    },
+    {
+      "key": "kiln_burner.momentum_per_MW",
+      "label": "Momentum sum m u (FLS 7-11)",
+      "value": 7.45216226620996,
+      "unit": "N/MW",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.fuel_flow",
+        "kiln_burner.fuel_LHV"
+      ],
+      "short": "momentum_per_MW"
+    },
+    {
+      "key": "kiln_burner.D_tip",
+      "label": "Tip outer D (scale: slots pass the axial air)",
+      "value": 0.6281549175727201,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2"
+      ],
+      "value_mm": 628.154918,
+      "short": "D_tip"
+    },
+    {
+      "key": "kiln_burner.D_coal",
+      "label": "Solid fuel pipe bore",
+      "value": 0.20948966501050217,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.coal_pipe_D_over_D"
+      ],
+      "value_mm": 209.489665,
+      "short": "D_coal"
+    },
+    {
+      "key": "kiln_burner.y_coal",
+      "label": "Solid fuel pipe above the tip axis",
+      "value": 0.0336691035818978,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.coal_pipe_offset_over_D"
+      ],
+      "value_mm": 33.669104,
+      "short": "y_coal"
+    },
+    {
+      "key": "kiln_burner.u_coal",
+      "label": "Coal pipe velocity (check: 33 m/s lit.)",
+      "value": 30.225533162417907,
+      "unit": "m/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.fuel_flow",
+        "kiln_burner.transport_loading",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.coal_pipe_D_over_D"
+      ],
+      "short": "u_coal"
+    },
+    {
+      "key": "kiln_burner.L_coal",
+      "label": "Coal pipe in the solid (5 D)",
+      "value": 1.0474483250525108,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.coal_pipe_D_over_D",
+        "kiln_burner.coal_pipe_L_over_D"
+      ],
+      "value_mm": 1047.448325,
+      "short": "L_coal"
+    },
+    {
+      "key": "kiln_burner.n_axial",
+      "label": "Axial air slots (brochure)",
+      "value": 20,
+      "unit": "-",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.n_axial"
+      ],
+      "short": "n_axial"
+    },
+    {
+      "key": "kiln_burner.slot_l",
+      "label": "Axial slot, long side",
+      "value": 0.03441687104934598,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.axial_slot_aspect"
+      ],
+      "value_mm": 34.416871,
+      "short": "slot_l"
+    },
+    {
+      "key": "kiln_burner.slot_w",
+      "label": "Axial slot, short side",
+      "value": 0.010857057113358354,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.axial_slot_aspect"
+      ],
+      "value_mm": 10.857057,
+      "short": "slot_w"
+    },
+    {
+      "key": "kiln_burner.axial_slot_tilt",
+      "label": "Slot's long side off the tangent",
+      "value": 13.0,
+      "unit": "deg",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_slot_tilt"
+      ],
+      "short": "slot_tilt"
+    },
+    {
+      "key": "kiln_burner.r_slots",
+      "label": "Slot ring radius",
+      "value": 0.21595966066150118,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.axial_ring_r_over_D"
+      ],
+      "value_mm": 215.959661,
+      "short": "r_slots"
+    },
+    {
+      "key": "kiln_burner.n_swirl",
+      "label": "Swirl air holes (brochure)",
+      "value": 40,
+      "unit": "-",
+      "source": "derived_from_reference",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.n_swirl"
+      ],
+      "short": "n_swirl"
+    },
+    {
+      "key": "kiln_burner.hole_a",
+      "label": "Swirl hole side (normal to it)",
+      "value": 0.009407667552349551,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2"
+      ],
+      "value_mm": 9.407668,
+      "short": "hole_a"
+    },
+    {
+      "key": "kiln_burner.swirl_angle",
+      "label": "Swirl holes off the axis",
+      "value": 30.0,
+      "unit": "deg",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.swirl_angle"
+      ],
+      "short": "swirl_angle"
+    },
+    {
+      "key": "kiln_burner.r_holes",
+      "label": "Swirl hole ring radius (tip plane)",
+      "value": 0.1820392951125743,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.swirl_ring_r_over_D"
+      ],
+      "value_mm": 182.039295,
+      "short": "r_holes"
+    },
+    {
+      "key": "kiln_burner.D_swirl_in",
+      "label": "Swirl plenum inner D",
+      "value": 0.3466818187337745,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.swirl_ring_r_over_D",
+        "kiln_burner.plenum_clearance"
+      ],
+      "value_mm": 346.681819,
+      "short": "D_swirl_in"
+    },
+    {
+      "key": "kiln_burner.D_swirl_out",
+      "label": "Swirl plenum outer D",
+      "value": 0.3925769385139717,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.swirl_ring_r_over_D",
+        "kiln_burner.plenum_clearance"
+      ],
+      "value_mm": 392.576939,
+      "short": "D_swirl_out"
+    },
+    {
+      "key": "kiln_burner.D_axial_in",
+      "label": "Axial plenum inner D",
+      "value": 0.4067654674204707,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.axial_ring_r_over_D",
+        "kiln_burner.axial_slot_aspect",
+        "kiln_burner.plenum_clearance"
+      ],
+      "value_mm": 406.765467,
+      "short": "D_axial_in"
+    },
+    {
+      "key": "kiln_burner.D_axial_out",
+      "label": "Axial plenum outer D",
+      "value": 0.459312531073207,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_angle",
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.primary_air_T",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.n_swirl",
+        "kiln_burner.swirl_hole_area_over_D2",
+        "kiln_burner.axial_ring_r_over_D",
+        "kiln_burner.axial_slot_aspect",
+        "kiln_burner.plenum_clearance"
+      ],
+      "value_mm": 459.312531,
+      "short": "D_axial_out"
+    },
+    {
+      "key": "kiln_burner.plenum_L",
+      "label": "Plenums (the solid's air inlets)",
+      "value": 0.5,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.plenum_L"
+      ],
+      "value_mm": 500.0,
+      "short": "plenum_L"
+    },
+    {
+      "key": "kiln_burner.plate_t",
+      "label": "Front plate the openings run through",
+      "value": 0.06,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.plate_t"
+      ],
+      "value_mm": 60.0,
+      "short": "plate_t"
+    },
+    {
+      "key": "kiln_burner.lance",
+      "label": "Fuel lance, igniter, flame scanner (closed here)",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: no flow path in this solid",
+      "inputs": [],
+      "short": "u_lance"
+    },
+    {
+      "key": "kiln_burner.nozzle_angle",
+      "label": "Axial nozzles' fixed angle, swirl sense",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: not published (axial 0 deg, anticlockwise: model)",
+      "inputs": [],
+      "short": "u_nozzle_angle"
+    },
+    {
+      "key": "kiln_burner.insertion",
+      "label": "Burner position in the kiln (depth, offset)",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_burner.md: for the flame domain",
+      "inputs": [],
+      "short": "u_insertion"
+    }
+  ],
+  "dimensioned": [
+    "D_coal",
+    "D_swirl_out",
+    "D_axial_out",
+    "L_coal",
+    "plenum_L",
+    "plate_t"
+  ],
+  "also_the_sheet_of": []
+}

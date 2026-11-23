@@ -9,3 +9,5 @@ kiln_inlet_chamber kic_solid
 kiln kiln_solid
 kiln_wall kiln_wall_solid
 kiln_rotax kiln_rotax_solid
+kiln_burner kiln_burner_solid
+kiln_burner_body kiln_burner_body_solid

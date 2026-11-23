@@ -96,7 +96,8 @@ EQUIPMENT = [
      ["kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"], ""),
     ("Rotary kiln", "BRN", "Kiln burner (JETFLEX)", "1",
      ["kiln_burner."], "primary air + fuel -> kiln",
-     ["kiln/kiln_burner.md: a selection from the kiln firing (no published plant dimension); burner pipe, channels, nozzles unknown; drawn as an arrow only"], ""),
+     ["kiln/kiln_burner.md: no published size; JETFLEX 2.0 tip from the brochure (image ratios) scaled so the slots pass the twin's axial air at the manual's pressure; conveying air not in the twin; fuel lance, nozzle angle, swirl sense, position in the kiln unknown"],
+     "kiln_burner.SLDPRT (channels to the tip); the whole burner as envelopes: kiln_burner_body.SLDPRT, sheet kiln_burner_body (not a CFD input)"),
     ("Clinker cooler", "COOL", "Grate cooler", "1",
      ["cooler."],
      "kiln clinker -> cooler; air -> secondary / tertiary / vent",
@@ -108,7 +109,7 @@ EQUIPMENT = [
 
 
 # Equipment drawn on another's sheet (same geometry, one solid).
-SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln", "KROT": "kiln_rotax", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
+SAME_SHEET = {"R1": "C1_twin", "R2-R3": "C4", "R4": "C5", "KILN": "kiln", "KWALL": "kiln", "KROT": "kiln_rotax", "BRN": "kiln_burner", "KIC": "kiln_inlet_chamber", "COOL": "cooler", "IDF": "id_fan", "C2": "C4", "C3": "C4", "GN": "calciner", "ILC": "calciner", "TAD": "calciner", "NOZ": "calciner"}
 
 
 def _matches(key, prefixes):

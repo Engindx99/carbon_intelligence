@@ -428,7 +428,98 @@ kiln_burner:
   kiln_air_flow:       {value: 26.3993, unit: kg/s,  source: model,       doc: kiln/kiln_burner.md}
   primary_air_fraction: {value: 0.10,   unit: "-",   source: model,       doc: kiln/kiln_burner.md}
   primary_air_T:       {value: 293.15,  unit: K,     source: model,       doc: kiln/kiln_burner.md}
-  momentum_per_MW:     {value: 9.0,     unit: N/MW,  source: literature,  doc: kiln/kiln_burner.md}
+  # FLSmidth's JETFLEX flame momentum range, primary air (flsmidth.com
+  # JETFLEX page): the derived momentum must sit in it (22 Nov 2026: the
+  # momentum follows from the channel pressures, no longer an input).
+  momentum_min_per_MW: {value: 7.0,     unit: N/MW,  source: literature,  doc: kiln/kiln_burner.md}
+  momentum_max_per_MW: {value: 11.0,    unit: N/MW,  source: literature,  doc: kiln/kiln_burner.md}
+  # The burner's flow geometry (user, 22 Nov 2026: CFD level; JETFLEX 2.0
+  # with fixed nozzles; the twin's primary air = axial + swirl air, the
+  # coal's conveying air on top). FLS publishes no size.
+  # Channel pressures over the hood: JETFLEX 2.0 manual, axial air
+  # 220-350 mbar, swirl air channel about 150-180 mbar (the middles);
+  # Pedersen et al. 2017 (Energy Fuels 31, Table 2) measured 210 / 150
+  # mbar on a 65 MW JETFLEX.
+  axial_pressure:      {value: 28500,   unit: Pa,    source: literature,  doc: kiln/kiln_burner.md}
+  swirl_pressure:      {value: 16500,   unit: Pa,    source: literature,  doc: kiln/kiln_burner.md}
+  # Coal over its conveying air, kg/kg: Pedersen 2017 Plant 2, 70 MW of
+  # 75 % coal (25.2 MJ/kg) + 25 % petcoke (30.7 MJ/kg) = 2.65 kg/s with
+  # 4400 m3/h (normal: 1.58 kg/s) of transport air.
+  transport_loading:   {value: 1.67,    unit: "-",   source: literature,  doc: kiln/kiln_burner.md}
+  # A check, not an input: the coal velocity of a five-channel kiln burner
+  # (Appl. Sci. 2026, 16, 2029: 33 m/s); the derived pipe must be near it.
+  coal_velocity_ref:   {value: 33.0,    unit: m/s,   source: literature,  doc: kiln/kiln_burner.md}
+  # The tip, Fuller JETFLEX 2.0 brochure p. 5 (fixed nozzles), measured at
+  # 300 dpi against the tip's outer D (the castable ring's): 20 slots
+  # 18.0 deg apart, 40 holes 9.0 deg apart; the slot's long side 103 deg
+  # off the radius (13 deg off the tangent); the solid fuel pipe's centre
+  # above the tip's. Areas from the pixel count, the slot's aspect from
+  # its second moments.
+  n_axial:             {value: 20,      unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  axial_slot_area_over_D2: {value: 0.000947, unit: "-", source: derived_from_reference, doc: kiln/kiln_burner.md}
+  axial_slot_aspect:   {value: 3.17,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  axial_slot_tilt:     {value: 13.0,    unit: deg,   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  axial_ring_r_over_D: {value: 0.3438,  unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  n_swirl:             {value: 40,      unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  swirl_hole_area_over_D2: {value: 0.000259, unit: "-", source: derived_from_reference, doc: kiln/kiln_burner.md}   # its opening in the tip plane
+  swirl_ring_r_over_D: {value: 0.2898,  unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  coal_pipe_D_over_D:  {value: 0.3335,  unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  coal_pipe_offset_over_D: {value: 0.0536, unit: "-", source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # No source (model): the swirl holes' angle off the axis (swirl burners'
+  # usual 30-45 deg, the low end; the holes' tip openings, 1.2 times as
+  # long round the ring as across, fit about 33 deg), the front plate the
+  # openings run through (about 5.5 slot widths: the jets leave along
+  # the openings; thicker, the inclined holes' feet run into the axial
+  # plenum), the plenums behind it (the solid's inlets: several plenum
+  # widths), the coal pipe's length (a developed profile), the plenums'
+  # clearance round their openings and the least wall between channels.
+  swirl_angle:         {value: 30.0,    unit: deg,   source: model,       doc: kiln/kiln_burner.md}
+  plate_t:             {value: 0.06,    unit: m,     source: model,       doc: kiln/kiln_burner.md}
+  plenum_L:            {value: 0.50,    unit: m,     source: model,       doc: kiln/kiln_burner.md}
+  coal_pipe_L_over_D:  {value: 5.0,     unit: "-",   source: model,       doc: kiln/kiln_burner.md}
+  plenum_clearance:    {value: 0.004,   unit: m,     source: model,       doc: kiln/kiln_burner.md}
+  wall_min:            {value: 0.003,   unit: m,     source: model,       doc: kiln/kiln_burner.md}
+  # The whole burner as simple envelopes (user, 22 Nov 2026: a solid and a
+  # sheet of all of it, not a CFD input; kiln_burner_body.bas). Fuller
+  # JETFLEX 2.0 brochure p. 3, the side view (orthographic), measured on a
+  # 200 dpi render against the tip's outer D (79 px, +-2 px = +-0.03 D):
+  # lengths along the axis from the tip back; diameters. The brochure's
+  # burner is of no stated capacity: the ratios are carried to this one.
+  body_tip_ring_L:     {value: 1.11,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # castable tip ring (the tip's D)
+  body_castable_L:     {value: 10.42,   unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # castable to its back end
+  body_castable_D:     {value: 0.97,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # behind the tip ring
+  body_collar_L:       {value: 0.24,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # bare steel pipe behind it
+  body_flange_L:       {value: 0.10,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_flange_D:       {value: 1.11,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_head_L:         {value: 2.00,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # the air connection head
+  body_head_D:         {value: 0.89,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_bellows_L:      {value: 0.28,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # expansion joint
+  body_bellows_D:      {value: 0.95,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_coal_L:         {value: 2.19,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}   # solid fuel inlet pipe (drawn straight)
+  body_coal_D:         {value: 0.37,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_coal_flange_D:  {value: 0.50,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # the two air inlets on the head's side (+x), from its front face; which
+  # is axial and which swirl air is not shown
+  body_inlet1_at:      {value: 0.90,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_inlet1_D:       {value: 0.50,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_inlet2_at:      {value: 1.72,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_inlet2_D:       {value: 0.36,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # the carriage beam over the head: its underside over the axis, its
+  # height; two hangers down to the head (from the head's front face)
+  body_beam_y:         {value: 1.04,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_beam_H:         {value: 0.47,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_hanger1_at:     {value: 0.0,     unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_hanger1_L:      {value: 0.44,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_hanger2_at:     {value: 1.47,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  body_hanger2_L:      {value: 0.66,    unit: "-",   source: derived_from_reference, doc: kiln/kiln_burner.md}
+  # Not in the side view (schematic): the beam runs out of the picture,
+  # its width and the hangers' across, the inlets' reach off the head's
+  # side. No source (model): the steel burner pipe's wall (inside the
+  # castable, its bore the axial plenum's outer D).
+  body_beam_L:         {value: 6.0,     unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_beam_W:         {value: 0.40,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_inlet_reach:    {value: 0.80,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}
+  body_pipe_t:         {value: 0.010,   unit: m,     source: model,       doc: kiln/kiln_burner.md}
 
 # ---------------------------------------------------------------------
 # Kiln hood and kiln inlet chamber (user decision, 16 Nov 2026: size by

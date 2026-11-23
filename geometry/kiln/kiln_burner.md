@@ -12,16 +12,67 @@ Bu tesisin yakıcısı için yayınlanmış bir ölçü yok. Yakıcı **prosese 
 | Kiln yakıtı | 2.09494 kg/s | modelleme |
 | Yakıt alt ısıl değeri | 32 MJ/kg | modelleme |
 | Fırın yanma havası | 26.3993 kg/s | modelleme |
-| Birincil hava payı | 0.1 | modelleme |
+| Birincil hava payı (eksenel + girdap) | 0.1 | modelleme |
 | Birincil hava sıcaklığı | 293.15 K | modelleme |
-| Alev momentumu | 9 N/MW | literatür |
+| Eksenel hava basıncı | 28500 Pa | literatür |
+| Girdap hava basıncı | 16500 Pa | literatür |
+| Kömür / taşıma havası yüklemesi | 1.67 | literatür |
+| Alev momentumu, alt sınır | 7 N/MW | literatür |
+| Alev momentumu, üst sınır | 11 N/MW | literatür |
+| Kömür hızı, karşılaştırma | 33 m/s | literatür |
+| Eksenel yarık sayısı | 20 | FLS oranıyla türetilmiş |
+| Yarık alanı / D_uç² | 0.000947 | FLS oranıyla türetilmiş |
+| Yarık boy / en | 3.17 | FLS oranıyla türetilmiş |
+| Yarığın teğetten açısı | 13 ° | FLS oranıyla türetilmiş |
+| Yarık halkası r / D_uç | 0.3438 | FLS oranıyla türetilmiş |
+| Girdap deliği sayısı | 40 | FLS oranıyla türetilmiş |
+| Delik ağzı alanı / D_uç² | 0.000259 | FLS oranıyla türetilmiş |
+| Delik halkası r / D_uç | 0.2898 | FLS oranıyla türetilmiş |
+| Katı yakıt borusu D / D_uç | 0.3335 | FLS oranıyla türetilmiş |
+| Katı yakıt borusu kaçıklığı (yukarı) / D_uç | 0.0536 | FLS oranıyla türetilmiş |
+| Girdap deliği eksen açısı | 30 ° | modelleme |
+| Ön plaka kalınlığı | 0.06 m | modelleme |
+| Plenum boyu | 0.5 m | modelleme |
+| Kömür borusu boyu / D | 5 | modelleme |
+| Plenum açıklığı | 0.004 m | modelleme |
+| Kanallar arası en ince duvar | 0.003 m | modelleme |
 | Isıl güç | 67.04 MW | türetilmiş |
-| Birincil hava debisi | 2.640 kg/s | türetilmiş |
-| Jet momentumu | 603 N | türetilmiş |
-| Ortalama jet hızı | 229 m/s | türetilmiş |
-| Birincil hava yoğunluğu | 1.204 kg/m³ | türetilmiş |
-| Jet toplam alanı | 0.0096 m² | türetilmiş |
-| Jet eşdeğer çapı | 111 mm | türetilmiş |
+| Birincil hava (eksenel + girdap) | 2.640 kg/s | türetilmiş |
+| Eksenel hava | 1.938 kg/s | türetilmiş |
+| Girdap hava | 0.702 kg/s | türetilmiş |
+| Girdap payı | 0.266 | türetilmiş |
+| Taşıma havası | 1.254 kg/s | türetilmiş |
+| Fırına giren soğuk hava payı (birincil + taşıma) | 0.148 | türetilmiş |
+| Eksenel jet hızı | 200.7 m/s | türetilmiş |
+| Girdap jet hızı | 157.6 m/s | türetilmiş |
+| Momentum (Σ ṁu) | 500 N | türetilmiş |
+| Momentum / ısıl güç | 7.45 N/MW | türetilmiş |
+| Eksenel momentum bileşeni | 485 N | türetilmiş |
+| Uç dış çapı D_uç | 628 mm | türetilmiş |
+| Eksenel açıklık alanı | 0.00747 m² | türetilmiş |
+| Yarık boy × en | 34.4 × 10.9 mm | türetilmiş |
+| Yarık halkası yarıçapı | 216.0 mm | türetilmiş |
+| Girdap akış alanı (deliğe dik) | 0.00354 m² | türetilmiş |
+| Girdap deliği kenarı (deliğe dik) | 9.4 mm | türetilmiş |
+| Delik halkası yarıçapı | 182.0 mm | türetilmiş |
+| Kömür borusu iç çapı | 209.5 mm | türetilmiş |
+| Kömür borusu kaçıklığı (yukarı) | 33.7 mm | türetilmiş |
+| Kömür borusu hızı | 30.2 m/s | türetilmiş |
+| Eksenel plenum r | 203.4 … 229.7 mm | türetilmiş |
+| Girdap plenumu r | 173.3 … 196.3 mm | türetilmiş |
+| Hacim: kömür / eksenel / girdap | 0.0361 / 0.0183 / 0.0136 m³ | türetilmiş |
+| Gövde: uç halkası boyu / D_uç | 1.11 | FLS oranıyla türetilmiş |
+| Gövde: refrakter boyu / D_uç | 10.42 | FLS oranıyla türetilmiş |
+| Gövde: refrakter çapı / D_uç | 0.97 | FLS oranıyla türetilmiş |
+| Gövde: arka kafa boyu / D_uç | 2 | FLS oranıyla türetilmiş |
+| Gövde: arka kafa çapı / D_uç | 0.89 | FLS oranıyla türetilmiş |
+| Gövde: kömür girişi boyu / D_uç | 2.19 | FLS oranıyla türetilmiş |
+| Gövde: kiriş boyu / D_uç | 6 | şematik |
+| Gövde: çelik brülör borusu et kalınlığı | 0.01 m | modelleme |
+| Brülör toplam boyu | 9.57 m | türetilmiş |
+| Refrakter dış çapı (uç halkasının arkası) | 609 mm | türetilmiş |
+| Çelik brülör borusu dış çapı | 479 mm | türetilmiş |
+| Refrakter boru boyu | 6.55 m | türetilmiş |
 <!-- END GENERATED -->
 
 ## Dayanak

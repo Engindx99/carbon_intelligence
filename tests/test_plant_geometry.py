@@ -898,8 +898,9 @@ class TheIdFanSolidIsTheSourcesTest(unittest.TestCase):
 
 
 class TheKilnBurnerIsTheKilnFiringTest(unittest.TestCase):
-    """The JETFLEX burner (kiln/kiln_burner.md) takes the twin's kiln
-    firing; the jet follows from FLSmidth's N/MW."""
+    """The JETFLEX 2.0 burner (kiln/kiln_burner.md) takes the twin's kiln
+    firing; its primary air (axial + swirl) leaves at the manual's channel
+    pressures through the brochure's openings, scaled to pass it."""
 
     @classmethod
     def setUpClass(cls):
@@ -923,16 +924,135 @@ class TheKilnBurnerIsTheKilnFiringTest(unittest.TestCase):
             cfg = yaml.safe_load(handle)
         self.assertEqual(pg.v(self.g["kiln_burner"]["primary_air_fraction"]), cfg["burning"]["primary_air_fraction"])
 
-    def test_the_jet_follows_from_the_momentum(self):
+    def test_the_channels_pass_the_flows(self):
         b = self.b
-        self.assertAlmostEqual(b["u_jet"] * b["m_pa"], b["momentum_N"], places=6)
-        self.assertAlmostEqual(b["rho_pa"] * b["u_jet"] * b["jet_area"], b["m_pa"], places=9)
-        self.assertAlmostEqual(b["momentum_N"] / b["thermal_MW"], pg.v(self.g["kiln_burner"]["momentum_per_MW"]), places=9)
+        self.assertAlmostEqual(b["m_axial"] + b["m_swirl"], b["m_pa"], places=12)
+        self.assertAlmostEqual(b["rho_axial"] * b["u_axial"] * b["A_axial"], b["m_axial"], places=12)
+        self.assertAlmostEqual(b["rho_swirl"] * b["u_swirl"] * b["A_swirl"], b["m_swirl"], places=12)
+        self.assertAlmostEqual(b["rho_transport"] * b["u_coal"] * b["A_coal"], b["m_transport"], places=12)
+        f = self.g["kiln_burner"]
+        self.assertAlmostEqual(b["A_axial"], pg.v(f["n_axial"]) * b["slot_l"] * b["slot_w"], places=12)
+        self.assertAlmostEqual(b["A_axial"], pg.v(f["n_axial"]) * pg.v(f["axial_slot_area_over_D2"]) * b["D_tip"] ** 2,
+                               places=12)
+        self.assertAlmostEqual(b["slot_l"] / b["slot_w"], pg.v(f["axial_slot_aspect"]), places=9)
+
+    def test_the_jets_are_the_isentropic_ones(self):
+        # 1/2 u^2 = cp (T0 - T), p / rho = R T at ambient pressure
+        b, f = self.b, self.g["kiln_burner"]
+        cp = 1.4 / 0.4 * pg.R_GAS / 0.028965
+        T0 = pg.v(f["primary_air_T"])
+        for ch in ("axial", "swirl"):
+            with self.subTest(ch):
+                self.assertAlmostEqual(0.5 * b[f"u_{ch}"] ** 2, cp * (T0 - b[f"T_{ch}"]), places=6)
+                self.assertAlmostEqual(101325.0 / b[f"rho_{ch}"], pg.R_GAS / 0.028965 * b[f"T_{ch}"], places=6)
+        self.assertLess(b["u_axial"], 340.0 * 0.7)
 
     def test_it_is_inside_the_jetflex_range(self):
-        # 10-250 MW, 7-11 N/MW (FLSmidth)
-        self.assertTrue(10.0 <= self.b["thermal_MW"] <= 250.0)
-        self.assertTrue(7.0 <= self.b["momentum_N"] / self.b["thermal_MW"] <= 11.0)
+        # 10-250 MW (FLSmidth); the momentum in its 7-11 N/MW
+        b, f = self.b, self.g["kiln_burner"]
+        self.assertTrue(10.0 <= b["thermal_MW"] <= 250.0)
+        self.assertAlmostEqual(b["momentum_N"], b["m_axial"] * b["u_axial"] + b["m_swirl"] * b["u_swirl"], places=9)
+        self.assertTrue(pg.v(f["momentum_min_per_MW"]) <= b["momentum_per_MW"] <= pg.v(f["momentum_max_per_MW"]))
+
+    def test_the_coal_pipe_meets_the_literature_velocity(self):
+        # not an input: the scale comes from the slots; within 15 % of 33 m/s
+        ref = pg.v(self.g["kiln_burner"]["coal_velocity_ref"])
+        self.assertLess(abs(self.b["u_coal"] - ref) / ref, 0.15)
+
+    def test_the_channels_do_not_meet(self):
+        b, f = self.b, self.g["kiln_burner"]
+        for what, gap in b["walls"].items():
+            with self.subTest(what):
+                self.assertGreaterEqual(gap, pg.v(f["wall_min"]))
+        self.assertLessEqual(b["axial_plenum"][1], 0.5 * b["D_tip"])
+
+    def test_the_groups_hold_their_openings(self):
+        b, f = self.b, self.g["kiln_burner"]
+        n = {g: sum(1 for q in b["bodies"] if q["group"] == g) for g in ("coal", "axial", "swirl")}
+        self.assertEqual(n, {"coal": 1, "axial": pg.v(f["n_axial"]) + 1, "swirl": pg.v(f["n_swirl"]) + 1})
+        sw = b["groups"]["swirl"]
+        self.assertAlmostEqual(sw["a_out"] * math.cos(b["swirl_angle"]), b["A_swirl"], places=12)
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_burner_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheKilnBurnerSolidIsTheSourcesTest(unittest.TestCase):
+    """kiln_burner.bas builds the three channels; its log carries their
+    volumes and boundary faces, held here to plant_geometry.kiln_burner."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_burner_build.log").read_text(encoding="latin-1")
+        cls.b = pg.kiln_burner(pg.load())
+
+    def num(self, pattern):
+        m = re.search(pattern.replace("#", r"(-?[\d.,]+)"), self.log)
+        self.assertIsNotNone(m, pattern)
+        return [float(x.replace(",", ".").rstrip(".")) for x in m.groups()]
+
+    def test_the_build_succeeded(self):
+        self.assertTrue(self.log.startswith("kiln_burner built"), self.log.splitlines()[0])
+
+    def test_each_channel_is_the_sources(self):
+        for g, q in self.b["groups"].items():
+            with self.subTest(g):
+                self.assertAlmostEqual(self.num(rf"body {g}: # m3")[0], q["V"], delta=2e-6)
+                n, a = self.num(rf"boundary {g}_outlet: # faces, # m2")
+                self.assertEqual(int(n), q["n_out"])
+                self.assertAlmostEqual(a, q["a_out"], delta=2e-6)
+                self.assertAlmostEqual(self.num(rf"boundary {g}_inlet: 1 faces, # m2")[0], q["a_in"], delta=2e-6)
+
+
+class TheWholeBurnerIsTheBrochuresSideViewTest(unittest.TestCase):
+    """plant_geometry.kiln_burner_body(): the whole burner as envelopes,
+    each length a brochure ratio of the tip D; the channel solid fits
+    inside its steel pipe."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.r = pg.kiln_burner_body(cls.g)
+        cls.ch = pg.kiln_burner(cls.g)
+
+    def test_the_lengths_add_up(self):
+        b, D = self.g["kiln_burner"], self.r["D_tip"]
+        parts = ("castable_L", "collar_L", "flange_L", "head_L", "bellows_L", "coal_L")
+        want = sum(pg.v(b[f"body_{k}"]) for k in parts) * D
+        self.assertAlmostEqual(self.r["L_total"], want, places=9)
+        self.assertAlmostEqual(self.r["D_tip"], self.ch["D_tip"], places=12)
+
+    def test_the_channels_fit_inside_the_pipe(self):
+        r = self.r
+        self.assertAlmostEqual(r["r_pipe_in"], self.ch["axial_plenum"][1], places=12)
+        self.assertLess(r["r_pipe"], r["R_castable"])
+        self.assertLess(r["R_castable"], 0.5 * r["D_tip"])
+        self.assertLess(self.ch["L_coal"], r["L_total"])
+
+    def test_each_body_its_volume_and_box(self):
+        for q in self.r["bodies"]:
+            with self.subTest(q["name"]):
+                bx = q["box"]
+                self.assertGreater(q["V"], 0.0)
+                self.assertLessEqual(q["V"], (bx[3] - bx[0]) * (bx[4] - bx[1]) * (bx[5] - bx[2]) * (1 + 1e-12))
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_burner_body_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheWholeBurnerSolidIsTheSourcesTest(unittest.TestCase):
+    """kiln_burner_body.bas logs each body's volume: held to the source."""
+
+    def test_each_body(self):
+        log = (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_burner_body_build.log").read_text(encoding="latin-1")
+        self.assertTrue(log.startswith("kiln_burner_body built"), log.splitlines()[0])
+        for q in pg.kiln_burner_body(pg.load())["bodies"]:
+            with self.subTest(q["name"]):
+                m = re.search(rf"body {q['name']} \(\w+\): (-?[\d.,]+) m3", log)
+                self.assertIsNotNone(m)
+                self.assertAlmostEqual(float(m.group(1).replace(",", ".")), q["V"], delta=2e-6)
 
 
 class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):

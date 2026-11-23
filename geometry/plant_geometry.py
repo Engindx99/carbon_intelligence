@@ -1162,32 +1162,302 @@ def _id_fan_flow_path(f, q, dp, rho, n, d1, d2, u2):
 
 
 # ======================================================================
-# The kiln burner (JETFLEX): thermal input, primary air, jet momentum
+# The kiln burner (JETFLEX 2.0): duty, primary air, its channels' flow
+# volume (kiln_burner.bas builds it)
 # ======================================================================
-def kiln_burner(g):
-    """The burner's duty and its primary air jet: the thermal input from
-    the kiln's fuel, the primary air from its share of the kiln air, the
-    momentum from FLSmidth's N/MW; the mean jet velocity is the momentum
-    over the air flow, the jet area the air flow over its density (ambient
-    pressure, the primary air's temperature) times the velocity."""
+P_ATM = 101325.0           # Pa, the kiln hood (the jets leave into it)
+M_AIR = 0.028965           # kg/mol
+GAMMA_AIR = 1.4
 
+
+def nozzle(dp, T0):
+    """Isentropic air jet from p_atm + dp, T0 down to p_atm: (u, rho, T)
+    at the exit (subsonic: dp under the critical 0.89 bar)."""
+    p0 = P_ATM + dp
+    if p0 / P_ATM >= ((GAMMA_AIR + 1.0) / 2.0) ** (GAMMA_AIR / (GAMMA_AIR - 1.0)):
+        raise ValueError(f"nozzle: {dp} Pa over ambient is choked; the formula is subsonic")
+    cp = GAMMA_AIR / (GAMMA_AIR - 1.0) * R_GAS / M_AIR
+    T = T0 * (P_ATM / p0) ** ((GAMMA_AIR - 1.0) / GAMMA_AIR)
+    u = math.sqrt(2.0 * cp * (T0 - T))
+    return u, P_ATM * M_AIR / (R_GAS * T), T
+
+
+def kiln_burner(g):
+    """The JETFLEX 2.0 burner (kiln/kiln_burner.md; user, 22 Nov 2026: a
+    flow geometry a CFD can take).
+
+    Duty: the twin's kiln fuel times its LHV. Primary air: the twin's share
+    of the kiln air is the axial + swirl air (user); the coal's conveying
+    air comes on top, the fuel over a literature solids loading.
+
+    The tip's layout is the brochure's (Fuller JETFLEX 2.0, p. 5, fixed
+    nozzles): a straight solid fuel pipe a little above the centre, a ring
+    of swirl air holes round it, a ring of rectangular axial air slots
+    outside -- their counts, sizes and radii as ratios of the tip's outer
+    D (image ratios). The jets leave at the JETFLEX manual's channel
+    pressures (isentropic, ambient exit). The open areas' ratio, at those
+    velocities, splits the air between axial and swirl; the slots' area
+    then gives the scale (the tip's D), and with it the coal pipe -- whose
+    velocity is a check against the literature, not an input. The
+    momentum (sum of m u) follows and must sit in FLSmidth's 7-11 N/MW.
+
+    The flow volume, frame: the burner's axis z, the tip plane z = 0, the
+    flow towards +z (into the kiln), y up, x as seen from the kiln to the
+    right. Three bodies, each a channel: coal (the pipe), axial (an annular
+    plenum behind the front plate + the slots through it), swirl (a
+    plenum + holes inclined swirl_angle towards +theta: the swirl turns
+    anticlockwise seen from the kiln; sense not published, model).
+    "bodies": [{name, group, kind, p, V, box, rgb}] as kiln_rotax(), kinds
+      cyl   p = (bx, by, bz, ax, ay, az, r, length)
+      ring  p = (r0, r1, z0, z1)
+      slot  p = (cx, cy, z0, z1, l, w, alpha)  a box l x w x (z1 - z0), its
+                long side alpha from +x about +z, centred on (cx, cy)
+      hole  p = (px, py, pz, e1(3), e2(3), d(3), a, H, z0, z1)  a square
+                prism a x a along d through P, H long, cut to z0 .. z1
+    "groups": {name: {V, box, n_out, a_out, a_in}} the bodies once joined.
+    """
     b = g["kiln_burner"]
     q_th = v(b["fuel_flow"]) * v(b["fuel_LHV"])                 # MW
     m_pa = v(b["kiln_air_flow"]) * v(b["primary_air_fraction"])
-    force = v(b["momentum_per_MW"]) * q_th                       # N
-    u = force / m_pa
-    rho = 101325.0 * 0.028965 / (R_GAS * v(b["primary_air_T"]))
-    area = m_pa / (rho * u)
+    T0 = v(b["primary_air_T"])
+    u_ax, rho_ax, T_ax = nozzle(v(b["axial_pressure"]), T0)
+    u_sw, rho_sw, T_sw = nozzle(v(b["swirl_pressure"]), T0)
+    th = math.radians(v(b["swirl_angle"]))
+
+    # open areas over D_tip^2 (image), the swirl holes' flow area normal to them
+    n_ax, n_sw = int(v(b["n_axial"])), int(v(b["n_swirl"]))
+    a_ax_img = n_ax * v(b["axial_slot_area_over_D2"])
+    a_sw_face_img = n_sw * v(b["swirl_hole_area_over_D2"])
+    a_sw_img = a_sw_face_img * math.cos(th)
+    # split: m_ax / m_sw = (rho u A)_ax / (rho u A)_sw
+    ratio = (rho_ax * u_ax * a_ax_img) / (rho_sw * u_sw * a_sw_img)
+    m_ax = m_pa * ratio / (1.0 + ratio)
+    m_sw = m_pa - m_ax
+    A_ax = m_ax / (rho_ax * u_ax)
+    A_sw = m_sw / (rho_sw * u_sw)                                # normal to the holes
+    D_tip = math.sqrt(A_ax / a_ax_img)
+    force = m_ax * u_ax + m_sw * u_sw
+    force_axial = m_ax * u_ax + m_sw * u_sw * math.cos(th)
+
+    # coal pipe: from the scale; its conveying air from the loading
+    m_tr = v(b["fuel_flow"]) / v(b["transport_loading"])
+    rho_tr = P_ATM * M_AIR / (R_GAS * T0)
+    D_c = v(b["coal_pipe_D_over_D"]) * D_tip
+    A_c = 0.25 * math.pi * D_c * D_c
+    u_c = m_tr / (rho_tr * A_c)
+    y_c = v(b["coal_pipe_offset_over_D"]) * D_tip
+
+    # the openings
+    A_slot = A_ax / n_ax
+    asp = v(b["axial_slot_aspect"])
+    w_s = math.sqrt(A_slot / asp)
+    l_s = asp * w_s
+    r_s = v(b["axial_ring_r_over_D"]) * D_tip
+    tilt = math.radians(v(b["axial_slot_tilt"]))
+    a_h = math.sqrt(A_sw / n_sw)                                 # hole side, normal to its axis
+    r_h = v(b["swirl_ring_r_over_D"]) * D_tip
+
+    t_pl = v(b["plate_t"])
+    L_pl = v(b["plenum_L"])
+    L_c = v(b["coal_pipe_L_over_D"]) * D_c
+    clr = v(b["plenum_clearance"])
+    dz = 0.01                                    # the openings reach this far into their plenum
+    z_pl0, z_pl1 = -t_pl - L_pl, -t_pl
+
+    bodies = []
+
+    def add(name, group, kind, p, V, pts, rgb):
+        xs, ys, zs = zip(*pts)
+        bodies.append({"name": name, "group": group, "kind": kind, "p": tuple(p), "V": V,
+                       "box": (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)), "rgb": rgb})
+
+    def ring_pts(r0, r1, z0, z1):
+        return [(-r1, -r1, z0), (r1, r1, z1)]
+
+    C_COAL, C_AX, C_SW = (0.35, 0.25, 0.15), (0.1, 0.3, 0.8), (0.1, 0.6, 0.3)
+    add("coal", "coal", "cyl", (0.0, y_c, -L_c, 0.0, 0.0, 1.0, 0.5 * D_c, L_c), A_c * L_c,
+        [(-0.5 * D_c, y_c - 0.5 * D_c, -L_c), (0.5 * D_c, y_c + 0.5 * D_c, 0.0)], C_COAL)
+
+    # axial slots: centres on the ring, the long side tilt off the tangent
+    # (brochure: about 13 deg, turned the same way round the ring)
+    slot_r = []
+    for k in range(n_ax):
+        psi = 2.0 * math.pi * k / n_ax + math.pi / 2.0          # one slot on top
+        cx, cy = r_s * math.cos(psi), r_s * math.sin(psi)
+        alpha = psi + math.pi / 2.0 - tilt
+        ca, sa = math.cos(alpha), math.sin(alpha)
+        corners = [(cx + ca * u - sa * w, cy + sa * u + ca * w)
+                   for u in (-0.5 * l_s, 0.5 * l_s) for w in (-0.5 * w_s, 0.5 * w_s)]
+        slot_r += [math.hypot(x, y) for x, y in corners]
+        add(f"axial_slot_{k:02d}", "axial", "slot", (cx, cy, z_pl1 - dz, 0.0, l_s, w_s, alpha),
+            l_s * w_s * (dz + t_pl), [(x, y, z) for x, y in corners for z in (z_pl1 - dz, 0.0)], C_AX)
+    ax_r0, ax_r1 = min(slot_r) - clr, max(slot_r) + clr
+
+    # swirl holes: square, inclined th towards +theta; cut by the planes
+    hole_r = []
+    for k in range(n_sw):
+        psi = 2.0 * math.pi * (k + 0.5) / n_sw + math.pi / 2.0
+        er = (math.cos(psi), math.sin(psi), 0.0)
+        et = (-math.sin(psi), math.cos(psi), 0.0)
+        d = (math.sin(th) * et[0], math.sin(th) * et[1], math.cos(th))
+        e2 = (math.cos(th) * et[0], math.cos(th) * et[1], -math.sin(th))
+        P = (r_h * er[0], r_h * er[1], 0.0)
+        def corners(zc):
+            # P + s1 a er + s2 a e2 + s d on the plane z = zc
+            out = []
+            for s1 in (-0.5, 0.5):
+                for s2 in (-0.5, 0.5):
+                    s = (zc - s2 * a_h * e2[2]) / d[2]
+                    out.append(tuple(P[i] + s1 * a_h * er[i] + s2 * a_h * e2[i] + s * d[i] for i in range(3)))
+            return out
+        pts = corners(z_pl1 - dz) + corners(0.0)
+        # the edges are chords: they dip inwards between their ends
+        for j in range(11):
+            hole_r += [math.hypot(p[0], p[1]) for p in corners(z_pl1 - dz + (dz + t_pl) * j / 10.0)]
+        H = 2.0 * (t_pl + dz + a_h) / math.cos(th)
+        add(f"swirl_hole_{k:02d}", "swirl", "hole", P + er + e2 + d + (a_h, H, z_pl1 - dz, 0.0),
+            a_h * a_h / math.cos(th) * (dz + t_pl), pts, C_SW)
+    sw_r0, sw_r1 = min(hole_r) - clr, max(hole_r) + clr
+
+    for name, r0, r1, rgb in (("axial", ax_r0, ax_r1, C_AX), ("swirl", sw_r0, sw_r1, C_SW)):
+        add(f"{name}_plenum", name, "ring", (r0, r1, z_pl0, z_pl1),
+            math.pi * (r1 * r1 - r0 * r0) * L_pl, ring_pts(r0, r1, z_pl0, z_pl1), rgb)
+
+    # the channels must not meet: coal pipe | swirl plenum | axial plenum
+    r_coal_max = abs(y_c) + 0.5 * D_c
+    walls = {"coal pipe to swirl plenum": sw_r0 - r_coal_max, "swirl to axial plenum": ax_r0 - sw_r1}
+    for what, gap in walls.items():
+        if gap < v(b["wall_min"]):
+            raise ValueError(f"kiln_burner: {what} wall {gap * 1e3:.1f} mm, under {v(b['wall_min']) * 1e3:.0f} mm")
+    if ax_r1 > 0.5 * D_tip:
+        raise ValueError("kiln_burner: the axial plenum runs past the tip's outer D")
+
+    groups = {}
+    for grp, a_out, a_in, n_out in (
+            ("coal", A_c, A_c, 1),
+            ("axial", n_ax * l_s * w_s, math.pi * (ax_r1 ** 2 - ax_r0 ** 2), n_ax),
+            ("swirl", n_sw * a_h * a_h / math.cos(th), math.pi * (sw_r1 ** 2 - sw_r0 ** 2), n_sw)):
+        mine = [q for q in bodies if q["group"] == grp]
+        bx = [q["box"] for q in mine]
+        if grp == "coal":
+            V = A_c * L_c
+        else:   # plenum + each opening above it (the dz inside it counted once)
+            V = sum(q["V"] for q in mine if q["kind"] == "ring") + a_out * t_pl
+        groups[grp] = {"V": V, "n_out": n_out, "a_out": a_out, "a_in": a_in,
+                       "box": tuple(min(q[i] for q in bx) for i in range(3)) + tuple(max(q[i] for q in bx) for i in range(3, 6))}
+
     return {
         "thermal_MW": q_th,
         "m_pa": m_pa,
+        "m_axial": m_ax,
+        "m_swirl": m_sw,
+        "swirl_share": m_sw / m_pa,
+        "m_transport": m_tr,
+        "m_primary_total": m_pa + m_tr,
+        "primary_total_share": (m_pa + m_tr) / v(b["kiln_air_flow"]),
+        "u_axial": u_ax, "rho_axial": rho_ax, "T_axial": T_ax,
+        "u_swirl": u_sw, "rho_swirl": rho_sw, "T_swirl": T_sw,
+        "A_axial": A_ax, "A_swirl": A_sw, "A_swirl_face": n_sw * a_h * a_h / math.cos(th),
         "momentum_N": force,
-        "u_jet": u,
-        "rho_pa": rho,
-        "jet_area": area,
-        "jet_D_eq": math.sqrt(4.0 * area / math.pi),
+        "momentum_per_MW": force / q_th,
+        "momentum_axial_N": force_axial,
+        "D_tip": D_tip,
+        "D_coal": D_c, "y_coal": y_c, "A_coal": A_c, "u_coal": u_c, "rho_transport": rho_tr, "L_coal": L_c,
+        "slot_l": l_s, "slot_w": w_s, "r_slots": r_s, "slot_tilt": tilt,
+        "hole_a": a_h, "r_holes": r_h, "swirl_angle": th,
+        "plate_t": t_pl, "plenum_L": L_pl,
+        "axial_plenum": (ax_r0, ax_r1), "swirl_plenum": (sw_r0, sw_r1),
+        "walls": walls,
+        "bodies": bodies,
+        "groups": groups,
     }
 
+
+
+def kiln_burner_body(g):
+    """The whole JETFLEX 2.0 burner as simple envelopes (user, 22 Nov 2026:
+    a solid and a sheet of all of it; not a CFD input; kiln_burner_body.bas
+    builds it). Frame as kiln_burner(): the tip plane z = 0, the burner
+    back along -z, y up, x to the right seen from the kiln. Every length a
+    ratio of the tip's outer D (brochure side view) times kiln_burner()'s
+    D_tip; the steel burner pipe's bore is the channels' axial plenum (the
+    channel solid fits inside it: kiln_burner_assembly).
+
+    "bodies": [{name, kind, p, V, box, rgb}], kinds as kiln_rotax():
+      ring  p = (r0, r1, z0, z1)
+      box   p = (x0, x1, y0, y1, z0, z1)
+      cyl   p = (bx, by, bz, ax, ay, az, r, length)
+    """
+    b = g["kiln_burner"]
+    ch = kiln_burner(g)
+    D = ch["D_tip"]
+
+    def q(key):
+        return v(b[f"body_{key}"]) * D
+
+    r_in = ch["axial_plenum"][1]
+    r_p = r_in + v(b["body_pipe_t"])
+    R_tip, R_c = 0.5 * D, 0.5 * q("castable_D")
+    if not r_p < R_c < R_tip:
+        raise ValueError("kiln_burner_body: the steel pipe does not fit inside the castable")
+    z_ring = -q("tip_ring_L")
+    z_cast = -q("castable_L")
+    z_pipe = z_cast - q("collar_L")
+    z_fl = z_pipe - q("flange_L")
+    z_head = z_fl - q("head_L")
+    z_bel = z_head - q("bellows_L")
+    z_coal = z_bel - q("coal_L")
+    r_head = 0.5 * q("head_D")
+    y_c = ch["y_coal"]
+
+    STEEL, CAST, PIPE = (0.45, 0.46, 0.48), (0.72, 0.66, 0.56), (0.1, 0.16, 0.72)
+    bodies = []
+
+    def ring(name, r0, r1, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "ring", "p": (r0, r1, z0, z1),
+                       "V": math.pi * (r1 * r1 - r0 * r0) * (z1 - z0),
+                       "box": (-r1, -r1, z0, r1, r1, z1), "rgb": rgb})
+
+    def box(name, x0, x1, y0, y1, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "box", "p": (x0, x1, y0, y1, z0, z1),
+                       "V": (x1 - x0) * (y1 - y0) * (z1 - z0),
+                       "box": (x0, y0, z0, x1, y1, z1), "rgb": rgb})
+
+    def cyl_z(name, y, r, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "cyl", "p": (0.0, y, z0, 0.0, 0.0, 1.0, r, z1 - z0),
+                       "V": math.pi * r * r * (z1 - z0),
+                       "box": (-r, y - r, z0, r, y + r, z1), "rgb": rgb})
+
+    def cyl_x(name, z, r, x0, x1, rgb):
+        bodies.append({"name": name, "kind": "cyl", "p": (x0, 0.0, z, 1.0, 0.0, 0.0, r, x1 - x0),
+                       "V": math.pi * r * r * (x1 - x0),
+                       "box": (x0, -r, z - r, x1, r, z + r), "rgb": rgb})
+
+    ring("tip_ring", r_p, R_tip, z_ring, 0.0, CAST)
+    ring("castable", r_p, R_c, z_cast, z_ring, CAST)
+    ring("burner_pipe", r_in, r_p, z_pipe, 0.0, STEEL)
+    cyl_z("flange", 0.0, 0.5 * q("flange_D"), z_fl, z_pipe, STEEL)
+    cyl_z("head", 0.0, r_head, z_head, z_fl, STEEL)
+    cyl_z("bellows", 0.0, 0.5 * q("bellows_D"), z_bel, z_head, STEEL)
+    t_cf = q("flange_L")
+    cyl_z("coal_inlet", y_c, 0.5 * q("coal_D"), z_coal + t_cf, z_bel, PIPE)
+    cyl_z("coal_inlet_flange", y_c, 0.5 * q("coal_flange_D"), z_coal, z_coal + t_cf, PIPE)
+    for k in (1, 2):
+        cyl_x(f"air_inlet_{k}", z_fl - q(f"inlet{k}_at"), 0.5 * q(f"inlet{k}_D"), r_head, r_head + q("inlet_reach"), PIPE)
+    y_b, h_b, w_b = q("beam_y"), q("beam_H"), 0.5 * q("beam_W")
+    box("beam", -w_b, w_b, y_b, y_b + h_b, z_pipe - q("beam_L"), z_pipe, STEEL)
+    for k in (1, 2):
+        z1 = z_fl - q(f"hanger{k}_at")
+        box(f"hanger_{k}", -w_b, w_b, r_head, y_b, z1 - q(f"hanger{k}_L"), z1, STEEL)
+
+    lo = [min(x["box"][i] for x in bodies) for i in range(3)]
+    hi = [max(x["box"][i] for x in bodies) for i in range(3, 6)]
+    return {
+        "D_tip": D, "r_pipe_in": r_in, "r_pipe": r_p, "R_castable": R_c,
+        "L_total": -z_coal, "z_ring": z_ring, "z_castable": z_cast, "z_pipe": z_pipe,
+        "z_flange": z_fl, "z_head": z_head, "z_bellows": z_bel, "z_coal": z_coal,
+        "r_head": r_head, "bodies": bodies, "box": tuple(lo + hi),
+    }
 
 # ======================================================================
 # The kiln hood and the kiln inlet chamber: gas velocity checks
