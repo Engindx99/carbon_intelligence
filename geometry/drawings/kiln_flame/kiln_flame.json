@@ -283,7 +283,7 @@
     {
       "key": "kiln_flame.L_flame",
       "label": "Bore in the volume (the twin's burning zone)",
-      "value": 43.17,
+      "value": 35.0,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -292,7 +292,7 @@
         "kiln.L",
         "kiln.transition_L"
       ],
-      "value_mm": 43170.0,
+      "value_mm": 35000.0,
       "short": "L_flame"
     },
     {
@@ -353,7 +353,7 @@
     {
       "key": "kiln_flame.tip_to_cut",
       "label": "Burner tip to the kiln gas outlet",
-      "value": 42.92,
+      "value": 34.75,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -363,7 +363,7 @@
         "kiln.transition_L",
         "kiln_hood.burner_insertion"
       ],
-      "value_mm": 42920.0,
+      "value_mm": 34750.0,
       "short": "tip_to_cut"
     },
     {
@@ -405,7 +405,7 @@
     {
       "key": "kiln_flame.bed_fill",
       "label": "Clinker bed fill, burning zone (continuity)",
-      "value": 0.053148091441100435,
+      "value": 0.06200610668128385,
       "unit": "-",
       "source": "derived",
       "status": "Estimated",
@@ -424,7 +424,7 @@
     {
       "key": "kiln_flame.bed_chord",
       "label": "Bed surface width (at the repose angle)",
-      "value": 2.89834841234358,
+      "value": 3.035678142782715,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -438,7 +438,7 @@
         "kiln.L",
         "kiln.transition_L"
       ],
-      "value_mm": 2898.348412,
+      "value_mm": 3035.678143,
       "short": "bed_chord"
     },
     {

@@ -5,7 +5,7 @@ where it comes from (same scheme as kiln.py).
 The solid is kiln_rotax.SLDPRT (kiln_rotax.bas; plant_geometry.kiln_rotax()
 lays every body out): tyres with tangential suspension, roller stations,
 friction drive, thrust device, seals, cooling fans, piers, walkway, as
-simple envelopes (user, 22 Nov 2026: the kiln's dimensions stay, only these
+simple envelopes (user, 22 Nov 2026: only these
 parts are added). The kiln's shell is drawn as a phantom outline from the
 kiln's own numbers; it is not in this solid. Not a fabrication drawing.
 FLS publishes no ROTAX-2 size: the values are image ratios, literature or

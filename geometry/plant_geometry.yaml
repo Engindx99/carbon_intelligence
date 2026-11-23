@@ -241,10 +241,17 @@ gooseneck:
 # ---------------------------------------------------------------------
 kiln:
   D:                   {value: 4.8,  unit: m,     source: published,    doc: kiln/kiln.md}
-  L:                   {value: 74.0, unit: m,     source: published,    doc: kiln/kiln.md}
+  # Length: 60 m (user decision, 23 Nov 2026), not PF5000's published
+  # 74 m. 74 m (L/D 15.4 on the 4.8 m bore, ~17 inside a real lining) is
+  # a first-generation three-base precalciner kiln's proportion; a modern
+  # two-base kiln (the ROTAX-2 this model's parts follow) runs L/D 10-13
+  # (Techniques de l'Ingenieur BE8845; FLS kiln brochure: 2-base ~13 D,
+  # 3-base ~17 D, 5.3 vs 5.0 t/(d m3)). 4.8 x 60 m: L/D 12.5, 4.61 t/(d m3)
+  # for 5000 t/d; D stays the flow bore (lining and shell outward).
+  L:                   {value: 60.0, unit: m,     source: cfd_decision, doc: kiln/kiln.md}
   slope:               {value: 3.0,  unit: "%",   source: published,    doc: kiln/kiln.md}
   # the back end the twin's transition zone solves (25/60 of the tube)
-  transition_L:        {value: 30.83, unit: m,    source: model,        doc: kiln/kiln.md}
+  transition_L:        {value: 25.0, unit: m,     source: model,        doc: kiln/kiln.md}
   # The clinker bed in the burning zone (the flame volume's floor; user,
   # 23 Nov 2026: fill by continuity, a flat surface at the dynamic angle
   # of repose). Fill = clinker flow x transit time / bulk density over
@@ -252,8 +259,9 @@ kiln:
   # - the plant's 5000 t/d of clinker (user decision, 12 Oct 2026)
   clinker_flow:        {value: 57.8704, unit: kg/s, source: cfd_decision, doc: kiln/kiln.md}
   # - the twin's speed (configs/twin_cfg.yaml motion.rpm_default; the
-  #   PF5000 drive turns 0.6-4.0 rpm, the 25-35 min transit band)
-  rpm:                 {value: 3.5,  unit: rpm,   source: model,        doc: kiln/kiln.md}
+  #   PF5000 drive turns 0.6-4.0 rpm; 3.0 rpm keeps the 60 m tube's
+  #   transit at 27.1 min, inside the 25-35 min band; user, 23 Nov 2026)
+  rpm:                 {value: 3.0,  unit: rpm,   source: model,        doc: kiln/kiln.md}
   # - dynamic angle of repose, raw meal / clinker (twin_cfg repose_angle_deg;
   #   1.77 sqrt(40) = the industry's 11.2 in t = 11.2 L/(r D s))
   repose_angle:        {value: 40.0, unit: deg,   source: literature,   doc: kiln/kiln.md}

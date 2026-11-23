@@ -67,7 +67,7 @@ Görünüm gerçek bir tesisin DCS ekranından alınmıştır: kalsinatör ortad
 | Kalsinatör | Ø6.7404, 30.0 m (koni dahil), boğaz Ø3.130, koni 65° | calciner.md (PF5000) |
 | Kaz boynu | üç düz parçalı boyun (45°/0°/45°), Ø4.950, aşağıda 2 kol × Ø3.50, her kol C5 girişine iner | gooseneck.md |
 | Tersiyer hava kanalı | Ø2.4393 | calciner.md |
-| Fırın | Ø4.8 × 74 m, %3 eğim | kiln.md (PF5000) |
+| Fırın | Ø4.8 × 60 m, %3 eğim | kiln.md (PF5000) |
 | Soğutucu | ızgara 119.6 m² = 4 × 29.90 m, gövde 3 m | cooler.md (PF5000, FLS) |
 <!-- END GENERATED -->
 
@@ -208,7 +208,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `TA_D` | 2.4393 | plant_geometry.yaml |
 | `MEAL_SLOPE_DEG` | 60 | plant_geometry.yaml |
 | `KILN_D` | 4.8 | plant_geometry.yaml |
-| `KILN_L` | 74 | plant_geometry.yaml |
+| `KILN_L` | 60 | plant_geometry.yaml |
 | `KILN_SLOPE` | 0.03 | plant_geometry.yaml |
 | `COOLER_AREA` | 119.6 | plant_geometry.yaml |
 | `COOLER_W` | 4 | plant_geometry.yaml |
@@ -316,9 +316,9 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | C2 toz çıkışı / çıkış borusu tepesi | z 66.522 / 85.477 |
 | C1 toz çıkışı / çıkış borusu tepesi | z 89.477 / 103.617 |
 | Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 107.937 |
-| Fırın | (3.400, 10.000) → (77.367, 7.781) |
-| Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
-| Fırın başlığı | x 77.367 .. 83.347, z 4.381 .. 11.581 |
+| Fırın | (3.400, 10.000) → (63.373, 8.201) |
+| Soğutucu | x 63.373 .. 93.273, z 1.801 .. 4.801 |
+| Fırın başlığı | x 63.373 .. 69.353, z 4.801 .. 12.001 |
 <!-- END GENERATED -->
 
 Fırın giriş odasının düz tabanı yoktur: tabanı fırının alt dudağından odanın sol üst köşesine çıkan bir rampadır. Y kaz boynunun kolları boynun içinden başlar, dirsekle döner, C5'in giriş kotuna iner ve yatay olarak C5 gövdesine girer. R4, R3 ve R2 C5, C4 ve C3'ün çıkış borusudur; R1 C2'nin çıkış borusundan, C2'nin ekseninde dik çıkar. İkiz C1'ler R1'in iki yanında, C2'nin üstünde, birbirinin aynasıdır.

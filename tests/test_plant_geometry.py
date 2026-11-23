@@ -151,9 +151,9 @@ class TheDerivedValuesAreTodaysTest(unittest.TestCase):
 
     def test_kiln_and_cooler(self):
         k, c = pg.kiln(self.g), pg.cooler(self.g)
-        self.near(k["volume"], 1339.07, 0.01)
-        self.near(k["wall_area"], 1115.89, 0.01)
-        self.near(k["burning_L"], 43.17, 1e-9)
+        self.near(k["volume"], 1085.73, 0.01)
+        self.near(k["wall_area"], 904.78, 0.01)
+        self.near(k["burning_L"], 35.0, 1e-9)
         self.near(c["length"], 29.9, 1e-9)
         self.near(c["box_volume"], 358.80, 1e-9)
 
@@ -1448,8 +1448,8 @@ class TheClinkerBedIsTheContinuitysTest(unittest.TestCase):
         cls.b, cls.k = pg.kiln_bed(cls.g), pg.kiln(cls.g)
 
     def test_the_transit_is_the_twins(self):
-        # configs/twin_cfg.yaml: 3.5 rpm, 3 % give 28.70 min over the 74 m tube
-        self.assertAlmostEqual(self.b["tau"] / 60.0, 28.70, places=2)
+        # configs/twin_cfg.yaml: 3.0 rpm, 3 % give 27.14 min over the 60 m tube
+        self.assertAlmostEqual(self.b["tau"] / 60.0, 27.14, places=2)
 
     def test_the_fill_is_flow_times_time(self):
         k, b = self.g["kiln"], self.b

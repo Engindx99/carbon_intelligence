@@ -695,8 +695,8 @@ def kiln(g):
 
 def kiln_rotax(g):
     """The kiln's mechanical parts after FLS ROTAX-2 (user, 22 Nov 2026:
-    the kiln's dimensions stay, these parts are added as simple
-    envelopes; kiln_rotax.bas builds them). The kiln's frame as
+    these parts are added as simple envelopes; kiln_rotax.bas builds them;
+    23 Nov 2026: the kiln is 60 m, L/D 12.5, a two-base kiln's). The kiln's frame as
     kiln_wall.bas: axis z (back end 0, hood end L), y up, x across; the
     slope is not built in, the piers reach the sloped ground.
 

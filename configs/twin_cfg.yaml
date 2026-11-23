@@ -17,21 +17,20 @@ plant:
 # because they are the one rotary tube; the calciner, preheater
 # and cooler keep their own.
 #
-# THE 5000 t/d PLANT'S KILN (user decision, 12 Oct 2026). The
-# plant is two identical 2500 t/d strings on one kiln, and the
-# kiln is the published PF5000 one, taken by the same rule as the
-# 2500 line's (geometry/kiln/kiln.md): the published shell 4.8 m
-# as the bore, 74 m long, laid at 3 %.
+# THE 5000 t/d PLANT'S KILN (user decision, 23 Nov 2026): 4.8 m bore
+# x 60 m, laid at 3 %. The 4.8 m is the flow bore; the lining and the
+# shell go outward (geometry/kiln/kiln.md). L/D 12.5, a modern two-base
+# kiln's (L/D 10-13; the ROTAX-2 the geometry's parts follow), 4.61
+# t/(d m3) for 5000 t/d.
 #
-# L/D is 15.4. That is past the "below 14:1" US4425092 gives an
-# in-line calciner kiln (7:1-11:1 preferred, 15:1-17:1 for a
-# conventional preheater kiln), the criterion the previous
-# 4.5 x 60 m tube (L/D 13.33) was chosen against. The published
-# 5000 t/d precalciner line is what it is; the patent is a
-# design preference, and this plant does not meet it.
+# Superseded (12 Oct - 23 Nov 2026): the published PF5000 tube, its
+# 4.8 m shell taken as the bore, 74 m long (L/D 15.4) -- a first-
+# generation three-base precalciner kiln's proportion, past the
+# "below 14:1" US4425092 gives an in-line calciner kiln; it left the
+# tube oversized for the feed (3.73 t/(d m3)).
 #
 # The transition zone keeps the old 25/60 share of the tube:
-# 30.83 m, the burning zone 43.17 m (user decision, 12 Oct 2026).
+# 25.0 m, the burning zone 35.0 m (user decision, 23 Nov 2026).
 #
 # Superseded: 4.5 x 60 m with a 25 m transition (L/D 13.33, the
 # 2500-era twin, at 27.78 kg/s of meal); before that 46.2 m at
@@ -414,9 +413,10 @@ cooler_air:
 # rotational Reynolds number in nusselt_gas_bed (about -13 K on
 # the bed from 3.0 to 4.0 rpm at fixed tau).
 #
-# 3.5 rpm and 3 % give tau = 28.70 min over the 74 m, 4.8 m tube
-# (PF5000; geometry/kiln/kiln.md). The PF5000 drive turns it at
-# 0.6-4.0 rpm, so the band's 25-35 min is 2.87-4.0 rpm.
+# 3.0 rpm and 3 % give tau = 27.14 min over the 60 m, 4.8 m tube
+# (user decision, 23 Nov 2026; geometry/kiln/kiln.md). The drive
+# turns it at 0.6-4.0 rpm, so the band's 25-35 min is 2.32-3.25 rpm.
+# Superseded: 3.5 rpm, 28.70 min over the 74 m tube.
 #
 # Superseded: the 2500-era 4.5 x 60 m tube at 3.5 rpm and 2.2 %
 # gave 33.84 min, and the band's faster half broke the 1773 K
@@ -430,11 +430,11 @@ cooler_air:
 # confusion is exactly the one Sullivan's correlation invites,
 # since it takes the inclination in DEGREES (1.72 deg here).
 motion:
-  rpm_default: 3.5
+  rpm_default: 3.0
   rpm_min: 0.6             # PF5000 drive (geometry/kiln/kiln.md)
   rpm_max: 4.0
   # inclination_pct: the kiln's slope, geometry/plant_geometry.yaml
-  # (3 % = 1.71836 deg; tau = 28.70 min)
+  # (3 % = 1.71836 deg; tau = 27.14 min)
 
   # Dynamic angle of repose of the kiln bed [degrees]. A MATERIAL
   # property, read only by physics.rotary_bed_motion, where it is

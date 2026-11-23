@@ -38,10 +38,10 @@ Const LINE_KEY As String = "2500"
 ' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
 ' change the source and run: python3 tools/gen_geometry.py
 Const KILN_D                       As Double  = 4.8          ' effective inner diameter [published, kiln/kiln.md]
-Const KILN_L                       As Double  = 74#          ' back end (z = 0) to hood end [published, kiln/kiln.md]
+Const KILN_L                       As Double  = 60#          ' back end (z = 0) to hood end [cfd_decision, kiln/kiln.md]
 Const KILN_Z0                      As Double  = 2.4          ' the solid's back face: the kiln inlet chamber's stub ends here (stub + solid = KILN_L) [derived]
 Const KILN_SLOPE                   As Double  = 3#           ' %: the installed slope, not built into the solid [published, kiln/kiln.md]
-Const KILN_TRANSITION_L            As Double  = 30.83        ' the transition zone from the back end (model split) [model, kiln/kiln.md]
+Const KILN_TRANSITION_L            As Double  = 25#          ' the transition zone from the back end (model split) [model, kiln/kiln.md]
 ' END GENERATED
 
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"

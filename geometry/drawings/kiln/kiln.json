@@ -47,15 +47,15 @@
     {
       "key": "kiln.L",
       "label": "Kiln length (all lined)",
-      "value": 74.0,
+      "value": 60.0,
       "unit": "m",
-      "source": "published",
-      "status": "Verified",
+      "source": "cfd_decision",
+      "status": "Estimated",
       "doc": "kiln/kiln.md",
       "inputs": [
         "kiln.L"
       ],
-      "value_mm": 74000.0,
+      "value_mm": 60000.0,
       "short": "L_kiln"
     },
     {
@@ -76,7 +76,7 @@
     {
       "key": "kiln.L_cfd",
       "label": "CFD solid's length (L minus the KIC's stub)",
-      "value": 71.6,
+      "value": 57.6,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -86,7 +86,7 @@
         "kiln.D",
         "kiln_inlet_chamber.mouth_stub_over_D"
       ],
-      "value_mm": 71600.0,
+      "value_mm": 57600.0,
       "short": "L_cfd"
     },
     {
@@ -105,7 +105,7 @@
     {
       "key": "kiln.transition_L",
       "label": "Transition zone (alumina), model split",
-      "value": 30.83,
+      "value": 25.0,
       "unit": "m",
       "source": "model",
       "status": "Estimated",
@@ -113,13 +113,13 @@
       "inputs": [
         "kiln.transition_L"
       ],
-      "value_mm": 30830.0,
+      "value_mm": 25000.0,
       "short": "transition_L"
     },
     {
       "key": "kiln.burning_L",
       "label": "Burning zone (magnesia-spinel)",
-      "value": 43.17,
+      "value": 35.0,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -128,13 +128,13 @@
         "kiln.L",
         "kiln.transition_L"
       ],
-      "value_mm": 43170.0,
+      "value_mm": 35000.0,
       "short": "burning_L"
     },
     {
       "key": "kiln.volume_cfd",
       "label": "Gas volume (CFD solid)",
-      "value": 1295.643075822888,
+      "value": 1042.3050442374072,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -149,7 +149,7 @@
     {
       "key": "kiln.wall_area_cfd",
       "label": "Wetted area (CFD solid)",
-      "value": 1079.70256318574,
+      "value": 868.587536864506,
       "unit": "m2",
       "source": "derived",
       "status": "Estimated",
@@ -192,7 +192,7 @@
     {
       "key": "kiln.V_brick_transition",
       "label": "Volume, alumina brick",
-      "value": 106.9669949878355,
+      "value": 86.73937316561427,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -207,7 +207,7 @@
     {
       "key": "kiln.V_brick_burning",
       "label": "Volume, magnesia-spinel brick",
-      "value": 149.78154958238272,
+      "value": 121.43512243185997,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -223,7 +223,7 @@
     {
       "key": "kiln.V_shell",
       "label": "Volume, steel shell",
-      "value": 36.75474909140825,
+      "value": 29.801147911952633,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -298,7 +298,7 @@
     {
       "key": "kiln.brick_rings",
       "label": "Rings (each zone's last one cut)",
-      "value": 375,
+      "value": 304,
       "unit": "-",
       "source": "derived",
       "status": "Estimated",
@@ -313,7 +313,7 @@
     {
       "key": "kiln.brick_total",
       "label": "Bricks in all (2 end rings modelled brick by brick)",
-      "value": 60000,
+      "value": 48640,
       "unit": "-",
       "source": "derived",
       "status": "Estimated",

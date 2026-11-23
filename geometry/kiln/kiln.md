@@ -9,17 +9,17 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000; değerler `c99b93a^:geometry/ca
 | Ölçü | Değer | Kaynak |
 |---|---|---|
 | Efektif iç çap | 4.8 m | yayınlanmış |
-| Boy | 74 m | yayınlanmış |
+| Boy | 60 m | CFD kararı |
 | Eğim | 3 % | yayınlanmış |
-| Geçiş bölgesi (arka uç) | 30.83 m | modelleme |
-| Yanma bölgesi | 43.17 m | türetilmiş |
+| Geçiş bölgesi (arka uç) | 25 m | modelleme |
+| Yanma bölgesi | 35.00 m | türetilmiş |
 | Sac kabuk kalınlığı | 0.030 m | literatür |
 | Tuğla (astar) kalınlığı | 0.220 m | literatür |
 | Tuğla soğuk yüzü A (ISO 5417) | 0.103 m | literatür |
 | Tuğla boyu L, bir halka (ISO 5417) | 0.198 m | literatür |
 | Giriş tayrı, L'nin oranı (ROTAX-2) | 0.33 | FLS oranıyla türetilmiş |
 | Çıkış tayrı, L'nin oranı (ROTAX-2) | 0.85 | FLS oranıyla türetilmiş |
-| Tayr açıklığı | 38.48 m | türetilmiş |
+| Tayr açıklığı | 31.20 m | türetilmiş |
 | Tayr genişliği | 0.90 m | FLS oranıyla türetilmiş |
 | Tayr kalınlığı (radyal) | 0.45 m | FLS oranıyla türetilmiş |
 | Tayr ile sac arası (teğet askı) | 0.35 m | FLS oranıyla türetilmiş |
@@ -28,8 +28,8 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000; değerler `c99b93a^:geometry/ca
 | Makara çapı / tayr çapı | 0.324 | literatür |
 | Makara açısı (düşeyden) | 30.0 ° | literatür |
 | Makara çapı | 2.24 m | türetilmiş |
-| **Ekipman hacmi** | 1339.07 m³ | türetilmiş |
-| **Duvar alanı** | 1115.89 m² | türetilmiş |
+| **Ekipman hacmi** | 1085.73 m³ | türetilmiş |
+| **Duvar alanı** | 904.78 m² | türetilmiş |
 <!-- END GENERATED -->
 
 Dönme hızı, min: 0.6 rpm

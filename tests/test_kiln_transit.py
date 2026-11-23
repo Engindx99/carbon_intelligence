@@ -295,17 +295,19 @@ class TheConfiguredKilnTest(unittest.TestCase):
 
         transit_min = self.cfg["kiln"]["length"] / u_s / 60.0
 
-        # The PF5000 tube, 74 m x 4.8 m at 3 % and 3.5 rpm. The
-        # 2500-era 60 m x 4.5 m tube at 2.2 % read 33.84 min.
-        self.assertAlmostEqual(transit_min, 28.70, delta=0.02)
+        # The 60 m x 4.8 m tube at 3 % and 3.0 rpm (23 Nov 2026; the
+        # PF5000's 74 m at 3.5 rpm read 28.70 min, the 2500-era 60 m x
+        # 4.5 m tube at 2.2 % 33.84 min).
+        self.assertAlmostEqual(transit_min, 27.14, delta=0.02)
         self.assertGreaterEqual(transit_min, 25.0)
         self.assertLessEqual(transit_min, 35.0)
 
         # And the bed it implies. A cement kiln usually runs 5-17 %.
         # The 2500-era tube carried 18 kg/s of clinker at 3.49 %, a
         # bore sized for two to three times that; the 5000 t/d plant
-        # fills the PF5000 tube into the band.
-        self.assertAlmostEqual(100.0 * fill, 8.12, delta=0.02)
+        # fills the 60 m tube into the band (9.48 % at 3.0 rpm; the
+        # PF5000's 74 m at 3.5 rpm read 8.12 %).
+        self.assertAlmostEqual(100.0 * fill, 9.48, delta=0.02)
         self.assertGreater(100.0 * fill, 5.0)
         self.assertLess(100.0 * fill, 17.0)
 

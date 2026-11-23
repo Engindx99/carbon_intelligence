@@ -55,14 +55,14 @@ Const LINE_KEY As String = "2500"
 ' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
 ' change the source and run: python3 tools/gen_geometry.py
 Const KILN_D                       As Double  = 4.8          ' the flow (gas) bore: the brick's hot face, the whole tube (the twin's D) [published, kiln/kiln.md]
-Const KILN_L                       As Double  = 74#          ' back end (z = 0) to hood end: the whole tube is lined [published, kiln/kiln.md]
+Const KILN_L                       As Double  = 60#          ' back end (z = 0) to hood end: the whole tube is lined [cfd_decision, kiln/kiln.md]
 Const KILN_SHELL_T                 As Double  = 0.03         ' steel shell plate [literature, kiln/kiln.md]
 Const KILN_BRICK_T                 As Double  = 0.22         ' brick ring, both zones [literature, kiln/kiln.md]
-Const V_SHELL                      As Double  = 36.754749    ' steel shell, one tube 0 .. L [m3] [derived]
+Const V_SHELL                      As Double  = 29.801148    ' steel shell, one tube 0 .. L [m3] [derived]
 Const KILN_BRICK_L                 As Double  = 0.198        ' brick length along the axis (ISO 5417): one ring [literature, kiln/kiln.md]
 Const BRICK_N                      As Double  = 160          ' bricks per ring (both zones) [derived]
 Const V_RING                       As Double  = 0.686976     ' one brick ring, all its bricks [m3] [derived]
-Const V_BRICK                      As Double  = 255.374593   ' brick tube between the two brick-by-brick end rings [m3] [derived]
+Const V_BRICK                      As Double  = 206.800544   ' brick tube between the two brick-by-brick end rings [m3] [derived]
 ' END GENERATED
 
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"

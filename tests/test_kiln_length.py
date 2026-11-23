@@ -24,17 +24,17 @@ plant below 14:1. It says nothing about the precalciner vessel.
   85.0   4.2  20.24   long-dry/wet territory -- wrong kiln type
   60.0   4.2  14.29   misses the < 14:1 criterion
   60.0   4.5  13.33   the 2500-era twin
-  74.0   4.8  15.42   committed: the 5000 t/d plant's PF5000 kiln
+  74.0   4.8  15.42   superseded (12 Oct - 23 Nov 2026): PF5000, a 3-base kiln's ratio
+  60.0   4.8  12.50   committed: the 5000 t/d plant's two-base kiln
 
-THE 5000 t/d PLANT (user decision, 12 Oct 2026). Two identical
-2500 t/d strings share one kiln, the published PF5000 one, taken by
-the 2500 line's rule (geometry/kiln/kiln.md): shell 4.8 m as the
-bore, 74 m, 3 %. Its L/D of 15.42 is past the < 14:1 criterion the
-4.5 x 60 m tube was chosen against, and inside the patent's 15:1-17:1
-for a conventional preheater kiln. The published line is what it
-is; the criterion is a design preference this plant does not meet,
-and the tests below say so rather than hide it. The transition
-keeps the old 25/60 share of the tube: 30.83 m.
+THE 5000 t/d PLANT (user decision, 23 Nov 2026). Two identical
+2500 t/d strings share one kiln: a 4.8 m flow bore (lining and shell
+outward) x 60 m at 3 %, L/D 12.50 -- a modern two-base kiln's (L/D
+10-13; the ROTAX-2 the geometry's parts follow), under the < 14:1
+criterion. The published PF5000 tube (74 m, L/D 15.42) it replaces is
+a first-generation three-base kiln's ratio and left the tube
+oversized for the feed. The transition keeps the old 25/60 share of
+the tube: 25.0 m.
 
 WhatItMovedTest and TheClinkerGotWorseTest are records of the
 2500-era tube and are kept as history.
@@ -57,8 +57,8 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         kiln = self.cfg["kiln"]["length"]
         transition = self.cfg["transition"]["length"]
 
-        self.assertAlmostEqual(kiln, 74.0)
-        self.assertAlmostEqual(transition, 30.83)
+        self.assertAlmostEqual(kiln, 60.0)
+        self.assertAlmostEqual(transition, 25.0)
 
         burning = main.Burning(
             N=self.cfg["plant"]["N"],
@@ -67,7 +67,7 @@ class TheTubeHasOneLengthTest(unittest.TestCase):
         )
 
         self.assertAlmostEqual(burning.L, kiln - transition)
-        self.assertAlmostEqual(burning.L, 43.17)
+        self.assertAlmostEqual(burning.L, 35.0)
 
     def test_moving_the_split_does_not_lengthen_the_tube(self):
         """The regression. Before this, transition.length was
@@ -222,19 +222,23 @@ class TheRatioIsAPrecalcinerPlantsKilnTest(unittest.TestCase):
 
         self.assertLess(self.cfg["fuel"]["kiln_fraction"], 0.5)
 
-    def test_the_kiln_is_the_published_5000_t_d_one(self):
+    def test_the_kiln_is_the_5000_t_d_two_base_one(self):
 
-        self.assertAlmostEqual(self.L, 74.0)
+        self.assertAlmostEqual(self.L, 60.0)
         self.assertAlmostEqual(self.D, 4.8)
-        self.assertAlmostEqual(self.L / self.D, 15.42, delta=0.01)
+        self.assertAlmostEqual(self.L / self.D, 12.5, delta=0.01)
 
-    def test_it_misses_the_short_kiln_criterion_and_says_so(self):
+    def test_it_meets_the_short_kiln_criterion(self):
         """US4425092: below 14:1 for the rotary kiln of a
-        precalciner plant, 15:1-17:1 for a conventional preheater
-        kiln. The published 5000 t/d line sits in the second band."""
+        precalciner plant; a two-base kiln runs 10-13."""
 
-        self.assertGreater(self.L / self.D, 14.0)
-        self.assertLess(self.L / self.D, 17.0)
+        self.assertLess(self.L / self.D, 14.0)
+        self.assertGreaterEqual(self.L / self.D, 10.0)
+
+    def test_the_published_pf5000_tube_missed_it(self):
+        """Recorded: the PF5000's 74 m (12 Oct - 23 Nov 2026)."""
+
+        self.assertGreater(74.0 / 4.8, 14.0)
 
     def test_the_2500_era_tube_met_it(self):
         """Recorded: 4.5 x 60 m was chosen against the criterion,

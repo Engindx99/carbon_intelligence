@@ -1533,10 +1533,10 @@
         },
         {
           "key": "kiln.L",
-          "value": 74.0,
+          "value": 60.0,
           "unit": "m",
-          "source": "published",
-          "status": "Verified",
+          "source": "cfd_decision",
+          "status": "Estimated",
           "doc": "kiln/kiln.md"
         },
         {
@@ -1549,7 +1549,7 @@
         },
         {
           "key": "kiln.transition_L",
-          "value": 30.83,
+          "value": 25.0,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
@@ -1565,7 +1565,7 @@
         },
         {
           "key": "kiln.rpm",
-          "value": 3.5,
+          "value": 3.0,
           "unit": "rpm",
           "source": "model",
           "status": "Estimated",
@@ -1629,8 +1629,8 @@
         }
       ],
       "status_counts": {
-        "Verified": 3,
-        "Estimated": 10
+        "Verified": 2,
+        "Estimated": 11
       },
       "missing": [],
       "cfd_solid": "kiln.SLDPRT",

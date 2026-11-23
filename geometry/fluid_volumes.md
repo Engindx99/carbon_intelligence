@@ -20,8 +20,8 @@ Kademe numaraları twin'in gaz sırasıdır (kademe 1 = C4). Ön ısıtıcı sat
 | Kalsinatör bölgesi | kalsinatör gövdesi, farin girişinden tavana (yakıt burada) | **775.91** |
 | Kalsinatör bölgesi | kaz boynu, C5 girişlerine kadar | **684.84** |
 | Kalsinatör bölgesi | C5 (×2) | **622.17** |
-| Geçiş | fırının arka 30.83 m'si | **557.89** |
-| Yanma | fırının ön 43.17 m'si | **781.19** |
+| Geçiş | fırının arka 25 m'si | **452.39** |
+| Yanma | fırının ön 35.00 m'si | **633.35** |
 | Soğutucu | ızgara kutusu | **358.80** |
 <!-- END GENERATED -->
 
