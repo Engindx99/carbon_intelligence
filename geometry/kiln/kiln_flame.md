@@ -75,7 +75,7 @@ Uygulama notları:
 
 ## Açık konular
 
-- **Hood genişliği ve yüksekliği** şematik değerlere dayanıyor: conta derinliği ve fırın ekseninin soğutucu tavanı üstündeki yüksekliği.
+- **Hood genişliği ve yüksekliği** şematik değerlere dayanıyor: conta derinliği ve fırın ekseninin soğutucu tavanı üstündeki yüksekliği. 23 Kasım 2026 araştırmasında ikisi için de yayınlanmış ölçü bulunamadı; kullanıcı kararıyla şematik kaldılar. Fuller'ın çıkış lamel contası broşüründeki görsel, conta halkasının fırın ucunun yaklaşık 1,4–1,5 katı olduğunu gösteriyor (modelde 1,34). Bu oranla hood hızı 3,55 m/s'ye, yani 4–10 m/s bandının altına düşerdi: conta boyutu ile hız ölçütü arasında bir gerilim var.
 - **Alev boyu** tek bir kaynağa dayanıyor (Sarkar ve Bhad 2009 özeti); hacim tahminin 2,7 katı.
 - **Fırının dönme yönü** (yatak +x tarafına yükseliyor) ve **swirl yönü** yayınlanmamış; ikisi de `model`.
 - **Twin:** taşıma havası yok; yakıt ısısı yanma bölgesine eksenel ağırlıklarla dağıtılıyor, alev boyuyla karşılaştırılmalı.

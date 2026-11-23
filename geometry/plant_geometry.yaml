@@ -369,6 +369,11 @@ kiln_rotax:
   # outlet seal and the nose ring fan).
   inlet_seal_depth:    {value: 0.65,  unit: m,    source: schematic,    doc: kiln/kiln.md}
   inlet_seal_L:        {value: 0.90,  unit: m,    source: schematic,    doc: kiln/kiln.md}
+  # Searched 23 Nov 2026 (it sizes the kiln hood): no published depth.
+  # Fuller's outlet lamella seal brochure (C 1-26 400-31-ENG) shows its
+  # ring ~1.4-1.5 x the kiln end's height (a perspective render; here
+  # 3.55 / 2.65 = 1.34). Taken at 1.48 the hood would drop to 3.55 m/s,
+  # under the 4 m/s floor: kept schematic (user, 23 Nov 2026).
   outlet_seal_depth:   {value: 0.90,  unit: m,    source: schematic,    doc: kiln/kiln.md}
   outlet_seal_L:       {value: 1.30,  unit: m,    source: schematic,    doc: kiln/kiln.md}
   # (the chutes reach down to the outlet pier: their length follows)
@@ -743,4 +748,5 @@ layout:
   # R1 is C2's outlet pipe straight up on C2's axis (user decisions,
   # 17 Nov 2026 and 21 Nov 2026: R1's bore = C2's D_x, so the conical
   # reducer D_x 4.63 -> 3.07 at 45 deg it had is gone).
+  # No source found (23 Nov 2026 search; it sets the kiln hood's height): schematic.
   cooler_drop:         {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
