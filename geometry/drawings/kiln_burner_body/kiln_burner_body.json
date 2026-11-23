@@ -354,15 +354,83 @@
       "short": "L_total"
     },
     {
-      "key": "kiln_burner_body.inside",
-      "label": "Channels inside the pipe behind the tip's 1 m",
-      "value": null,
-      "unit": "",
-      "source": "unknown",
-      "status": "Unknown",
-      "doc": "kiln/kiln_burner.md: not modelled (the CFD channels end at the plenums)",
-      "inputs": [],
-      "short": "u_inside"
+      "key": "kiln_burner_body.D_core",
+      "label": "Core tube OD (= swirl plenum's inner D)",
+      "value": 0.3466818187337745,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_ring_r_over_D"
+      ],
+      "value_mm": 346.681819,
+      "short": "D_core"
+    },
+    {
+      "key": "kiln_burner_body.D_swirl_tube",
+      "label": "Swirl tube ID (= swirl plenum's outer D)",
+      "value": 0.3925769385139717,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.swirl_ring_r_over_D"
+      ],
+      "value_mm": 392.576939,
+      "short": "D_swirl_tube"
+    },
+    {
+      "key": "kiln_burner_body.D_fuel_pipe",
+      "label": "Common fuel pipe ID (= the CFD coal pipe)",
+      "value": 0.20948966501050217,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction"
+      ],
+      "value_mm": 209.489665,
+      "short": "D_fuel_pipe"
+    },
+    {
+      "key": "kiln_burner_body.partition_at",
+      "label": "Head partition, back from its front face",
+      "value": 0.8794168846018078,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.axial_pressure",
+        "kiln_burner.swirl_pressure",
+        "kiln_burner.n_axial",
+        "kiln_burner.axial_slot_area_over_D2",
+        "kiln_burner.kiln_air_flow",
+        "kiln_burner.primary_air_fraction",
+        "kiln_burner.body_partition_at"
+      ],
+      "value_mm": 879.416885,
+      "short": "partition_at"
     },
     {
       "key": "kiln_burner_body.inlets",
@@ -371,9 +439,9 @@
       "unit": "",
       "source": "unknown",
       "status": "Unknown",
-      "doc": "kiln/kiln_burner.md: not shown",
+      "doc": "kiln/kiln_burner.md: not shown; the model takes inlet 1 (the elbow, front compartment) as the axial air, inlet 2 (back compartment) as the swirl air",
       "inputs": [],
-      "short": "u_inlets"
+      "short": "inlet_roles"
     },
     {
       "key": "kiln_burner_body.carriage",

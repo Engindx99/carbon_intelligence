@@ -1625,6 +1625,40 @@ def kiln_burner_body(g):
     void("air_inlet_2", (x0, 0.0, z2), (-1.0, 0.0, 0.0), r2 - pt, r_head + reach + x0 - 0.5 * t, "head")
     tube("air_inlet_2_flange", (-r_head - reach, 0.0, z2), (-1.0, 0.0, 0.0), 1.3 * r2, t, r2 - pt, PIPE, "head")
 
+    # inside the steel pipe (brochure p. 4: two air systems, axial and
+    # swirl; the solid fuel through one straight, uninterrupted pipe): the
+    # concentric tubes that carry the head's two compartments to the
+    # channel solid's plenums, and the common fuel pipe to its coal pipe.
+    #   axial air: air inlet 1 (the elbow) -> the front compartment (head
+    #     front .. partition, outside the swirl tube) -> the flange's bore
+    #     -> the annulus swirl tube .. steel pipe -> the axial plenum
+    #   swirl air: air inlet 2 -> the back compartment (partition ..
+    #     expansion joint's back wall, outside the core tube) -> the
+    #     annulus core tube .. swirl tube (open at its back end) -> the
+    #     swirl plenum
+    #   the core (inside the core tube) shut to the air: the fuel pipe and
+    #   the tip's tubes run through it
+    # Which inlet feeds which: a model assumption (not shown; the outer
+    # annulus from the front compartment, the larger inlet for the larger
+    # axial share). The tubes' radii are the plenums', so they meet them.
+    sw0, sw1 = ch["swirl_plenum"]
+    ax0, ax1 = ch["axial_plenum"]
+    if abs(ax1 - r_in) > 1e-9:
+        raise ValueError("kiln_burner_body: the steel pipe's bore is not the axial plenum's outer wall")
+    z_pl = -(ch["plate_t"] + ch["plenum_L"])               # the plenums' back face
+    z_c0 = z_bel + pt                                      # the expansion joint's back wall, front face
+    r_fo = 0.5 * ch["D_coal"] + pt                         # the fuel pipe's outer radius
+    reach_in = max([abs(y_c) + r_fo] + [math.hypot(x_t, y_t) + r_t for _, x_t, y_t, r_t in tips])
+    if reach_in >= sw0 - pt:
+        raise ValueError("kiln_burner_body: the fuel pipe or the tip's tubes leave the core tube")
+    tube("core_tube", (0.0, 0.0, z_c0), (0.0, 0.0, 1.0), sw0, z_pl - z_c0, sw0 - pt, STEEL)
+    z_part = z_fl - q("partition_at")
+    if not (z2 + 1.3 * r2 < z_part - 0.5 * t and z_part + 0.5 * t < z_up - r_e):
+        raise ValueError("kiln_burner_body: the head's partition does not sit between its two inlets")
+    tube("swirl_tube", (0.0, 0.0, z_part - 0.5 * t), (0.0, 0.0, 1.0), ax0, z_pl - z_part + 0.5 * t, sw1, STEEL)
+    ring("head_partition", ax0, r_head - pt, z_part - 0.5 * t, z_part + 0.5 * t, STEEL)   # touching the shell, not in it
+    tube("fuel_pipe", (0.0, y_c, z_c0), (0.0, 0.0, 1.0), r_fo, -ch["L_coal"] - z_c0, 0.5 * ch["D_coal"], PIPE)
+
     # the carriage beam: two channels back to back (webs inside, open
     # outward), a diagonal stiffener in each, an end plate and pins at the front
     zb0, zb1 = z_pipe - q("beam_L"), z_pipe
@@ -1689,7 +1723,7 @@ def kiln_burner_body(g):
         "L_total": -z_coal, "z_ring": z_ring, "z_castable": z_cast, "z_pipe": z_pipe,
         "z_flange": z_fl, "z_head": z_head, "z_bellows": z_bel, "z_coal": z_coal,
         "r_head": r_head, "r_head_flange": r_hf, "x_elbow": x_leg, "z_elbow_up": z_up, "y_elbow_top": y_top,
-        "z_inlet2": z2, "y_coal_flange": E[1], "x_inlet2": -(r_head + reach + t),
+        "z_inlet2": z2, "y_coal_flange": E[1], "z_partition": z_part, "z_plenums": z_pl, "x_inlet2": -(r_head + reach + t),
         "bodies": bodies, "groups": G, "box": tuple(lo + hi),
     }
 

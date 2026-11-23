@@ -579,6 +579,11 @@ kiln_burner:
   body_nozzle_at:      {value: 0.18,    unit: "-",   source: schematic,   doc: kiln/kiln_burner.md}   # its axis in front of the coal flange
   body_nozzle_deg:     {value: 30.0,    unit: deg,   source: schematic,   doc: kiln/kiln_burner.md}   # its tilt up from level (out to -x)
   body_pipe_t:         {value: 0.010,   unit: m,     source: model,       doc: kiln/kiln_burner.md}
+  # The head's partition between its two compartments (front: air inlet 1,
+  # the axial air; back: air inlet 2, the swirl air -- a model assumption,
+  # the brochure shows neither), back from the head's front face: between
+  # the elbow's neck (0.94-1.32 D) and inlet 2 (1.49-1.95 D).
+  body_partition_at:   {value: 1.40,    unit: "-",   source: model,       doc: kiln/kiln_burner.md}
 
 # ---------------------------------------------------------------------
 # Kiln hood and kiln inlet chamber (user decision, 16 Nov 2026: size by

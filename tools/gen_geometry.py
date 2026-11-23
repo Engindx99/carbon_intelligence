@@ -650,6 +650,9 @@ def _kiln_burner_body_sheet_consts(g):
         der("KBD_X_IN", r["x_inlet2"], "air inlet 2's outer end, x"),
         der("KBD_X_EL", r["x_elbow"], "the elbow's leg, x"),
         der("KBD_R_HF", r["r_head_flange"], "head flanges' radius"),
+        der("KBD_Z_PART", r["z_partition"], "head partition, z"),
+        der("KBD_Z_SEC", r["z_elbow_up"], "section B-B: through the head's front compartment at air inlet 1, z"),
+        der("KBD_R_CORE", pg.kiln_burner(g)["swirl_plenum"][0], "core tube's outer radius (= swirl plenum's inner)"),
     ]
     out += _table_consts("kiln_burner_body", dkd.params(g), dkd.ORDER)
     return out

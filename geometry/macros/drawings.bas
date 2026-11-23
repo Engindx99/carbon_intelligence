@@ -287,7 +287,7 @@ Const kiln_burner_TAB_5            As String  = ""           ' parameter table r
 Const kiln_burner_TAB_6            As String  = ""           ' parameter table rows
 Const kiln_burner_TAB_7            As String  = ""           ' parameter table rows
 Const kiln_burner_TAB_8            As String  = ""           ' parameter table rows
-Const KBD_N                        As Double  = 15           ' bodies in kiln_burner_body.SLDPRT [derived]
+Const KBD_N                        As Double  = 19           ' bodies in kiln_burner_body.SLDPRT [derived]
 Const KBD_X0                       As Double  = -0.987145    ' the part's x min (the air inlets) [derived]
 Const KBD_Y0                       As Double  = -0.496242    ' the part's y min [derived]
 Const KBD_Z0                       As Double  = -10.465061   ' the part's z min (the beam's back end) [derived]
@@ -314,9 +314,12 @@ Const KBD_Z_IN2                    As Double  = -7.839373    ' air inlet 2, z [d
 Const KBD_X_IN                     As Double  = -0.493102    ' air inlet 2's outer end, x [derived]
 Const KBD_X_EL                     As Double  = -0.826024    ' the elbow's leg, x [derived]
 Const KBD_R_HF                     As Double  = 0.314077     ' head flanges' radius [derived]
+Const KBD_Z_PART                   As Double  = -7.638364    ' head partition, z [derived]
+Const KBD_Z_SEC                    As Double  = -7.468762    ' section B-B: through the head's front compartment at air inlet 1, z [derived]
+Const KBD_R_CORE                   As Double  = 0.173341     ' core tube's outer radius (= swirl plenum's inner) [derived]
 Const kiln_burner_body_TAB_1       As String  = "D_tip~Tip outer D (kiln_burner sheet)~628~mm~derived~Estimated;tip_ring_L~Castable tip ring, long~697~mm~derived~Estimated;castable_L~Castable, tip to its back end~6545~mm~derived~Estimated;D_castable~Castable OD behind the tip ring~609~mm~derived~Estimated;D_pipe~Steel burner pipe OD (bore = axial plenum)~479~mm~derived~Estimated;pipe_t~Steel burner pipe wall~10~mm~model parameter~Estimated;flange_D~Mounting flange OD~697~mm~derived~Estimated;head_L~Air connection head, long~1256~mm~derived~Estimated;D_head~Air connection head OD~559~mm~derived~Estimated;bellows_L~Expansion joint, long~176~mm~derived~Estimated;" ' parameter table rows
-Const kiln_burner_body_TAB_2       As String  = "coal_L~Solid fuel inlet pipe, long (to its flange's back centre)~1376~mm~derived~Estimated;D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (the elbow)~239~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange (back centre) to tip~9567~mm~derived~Estimated;u_inside~Channels inside the pipe behind the tip's 1 m~-~~no source~Unknown;u_inlets~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
-Const kiln_burner_body_TAB_3       As String  = ""           ' parameter table rows
+Const kiln_burner_body_TAB_2       As String  = "coal_L~Solid fuel inlet pipe, long (to its flange's back centre)~1376~mm~derived~Estimated;D_coal_inlet~Solid fuel inlet pipe OD~232~mm~derived~Estimated;inlet1_D~Air inlet 1 OD (the elbow)~239~mm~derived~Estimated;inlet2_D~Air inlet 2 OD (head side)~226~mm~derived~Estimated;beam_H~Carriage beam, high~295~mm~derived~Estimated;beam_L~Carriage beam, long (out of the picture)~3769~mm~derived~Schematic;L_total~Burner, coal inlet flange (back centre) to tip~9567~mm~derived~Estimated;D_core~Core tube OD (= swirl plenum's inner D)~347~mm~derived~Estimated;D_swirl_tube~Swirl tube ID (= swirl plenum's outer D)~393~mm~derived~Estimated;" ' parameter table rows
+Const kiln_burner_body_TAB_3       As String  = "D_fuel_pipe~Common fuel pipe ID (= the CFD coal pipe)~209~mm~derived~Estimated;partition_at~Head partition, back from its front face~879~mm~derived~Estimated;inlet_roles~Which inlet is axial, which swirl air~-~~no source~Unknown;u_carriage~Carriage rail, trolley, hoses, platform~-~~no source~Unknown;" ' parameter table rows
 Const kiln_burner_body_TAB_4       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_5       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_6       As String  = ""           ' parameter table rows
@@ -486,6 +489,8 @@ Const BDL_PLAN_Y  As Double = 0.34
 Const BDL_END_X   As Double = 0.12
 Const BDL_END_Y   As Double = 0.15
 Const BDL_END_D   As Double = 10#
+Const BDL_SEC_X   As Double = 0.34      ' section B-B through the head (1:10, as the end view)
+Const BDL_SEC_Y   As Double = 0.15
 
 ' cooler (1:100): side view, plan under it, floor view under that, the end
 ' view (1:50) at the bottom left
@@ -3098,8 +3103,9 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, the burner back along -z; y up. Not placed in the kiln.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. Lengths: ratios of the tip D on the Fuller JETFLEX 2.0 brochure's side view (no capacity", TEXT_H
         LabelPH COL_X0, y + 0.002, "   stated), scaled by the tip D of the kiln_burner sheet. Beam length: schematic.", TEXT_H
-        LabelPH COL_X0, y - 0.003, "5. The steel pipe's bore = the channels' axial plenum; the pipe's inside behind the tip: Unknown.", TEXT_H
-        LabelPH COL_X0, y - 0.008, "6. Source: geometry/plant_geometry.yaml (kiln_burner body_), plant_geometry.kiln_burner_body()", TEXT_H
+        LabelPH COL_X0, y - 0.003, "5. Inside: core + swirl tubes meet the channels' plenums, the fuel pipe their coal pipe (B-B).", TEXT_H
+        LabelPH COL_X0, y - 0.008, "   Head partition: inlet 1 axial air, inlet 2 swirl air -- assumed (the brochure shows neither).", TEXT_H
+        LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_burner body_), plant_geometry.kiln_burner_body()", TEXT_H
     ElseIf equip = "kiln_burner" Then
         LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, flow towards +z (into the kiln); y up.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. FLS gives no size: the tip is the Fuller JETFLEX 2.0 brochure's (image ratios), scaled", TEXT_H
@@ -3972,8 +3978,12 @@ End Sub
 
 ' The side view (z right, y up) and the plan under it (z right, +x up),
 ' 1:20; the back end view (looking along +z from behind: -x right, y up)
-' at 1:10, bottom left.
+' at 1:10, bottom left; beside it section B-B through the head's front
+' compartment at air inlet 1 (seen as the end view), 1:10: the tubes
+' inside (core, swirl tube, fuel pipe, the tip's tubes).
 Private Sub MakeViewsBurnerBody()
+    Dim tries As Long, ax As Double, ay As Double, qx As Double, qy As Double
+    Dim nSeen As Long, nFit As Long
     Set vFront = OrientedView(0, 0, 1, 0, 1, 0, BDL_X, BDL_SIDE_Y, "side")
     LogMap vFront, "side", scaleD
     swDraw.EditSheet
@@ -3984,7 +3994,31 @@ Private Sub MakeViewsBurnerBody()
     vSide.ScaleDecimal = 1# / BDL_END_D
     PlaceOutlineAt vSide, BDL_END_X, BDL_END_Y
     LogMap vSide, "back end", BDL_END_D
-    Note "views: side " & vFront.Name & ", plan " & vPlan.Name & ", back end " & vSide.Name
+    swDraw.EditSheet
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vFront, 0#, KBD_Y1 + 0.1, KBD_Z_SEC, ax, ay
+            ToSheet vFront, 0#, KBD_Y0 - 0.1, KBD_Z_SEC, qx, qy
+        Else
+            ToSheet vFront, 0#, KBD_Y0 - 0.1, KBD_Z_SEC, ax, ay
+            ToSheet vFront, 0#, KBD_Y1 + 0.1, KBD_Z_SEC, qx, qy
+        End If
+        Set vSec = SectionFrom(vFront, ax, ay, qx, qy, "B", BDL_SEC_X, BDL_SEC_Y)
+        If Maps(vSec, -1, 0, 0, 0, 1, 0) Then Exit For
+        Note "section B-B, line drawn " & IIf(tries = 0, "top down", "bottom up") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section B-B is seen from behind (-x right, y up) in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    vSec.RemoveAlignment
+    vSec.ScaleDecimal = 1# / BDL_END_D
+    PlaceOutlineAt vSec, BDL_SEC_X, BDL_SEC_Y
+    swModel.ForceRebuild3 False
+    LogMap vSec, "section B-B", BDL_END_D
+    If FindEdge(vSec, "circle", 0#, KBD_R_CORE, KBD_Z_SEC, KBD_R_CORE, KBD_Z_SEC, nSeen, nFit) Is Nothing Then
+        ListCircles vSec
+        Note "section B-B: no core tube circle among its " & nSeen & " edges"
+    End If
+    Note "views: side " & vFront.Name & ", plan " & vPlan.Name & ", back end " & vSide.Name & ", B-B " & vSec.Name
 End Sub
 
 
@@ -4038,12 +4072,15 @@ Private Sub DrawLabelsBurnerBody()
     LabelM3 vFront, 0#, KBD_R_TIP + 0.75, -3.2, "Castable over the steel burner pipe"
     LabelM3 vFront, 0#, KBD_Y_BEAM + 0.75, KBD_Z_HEAD - 1.2, "Carriage beam (schematic length)"
     LabelM3 vFront, 0#, KBD_R_TIP + 0.6, -1.6, "Tip: channels on the kiln_burner sheet"
-    LabelM3 vPlan, KBD_X_EL - 0.45, 0#, KBD_Z_IN1 + 0.6, "Air inlet 1 (elbow), air inlet 2 (axial / swirl: not shown)"
+    LabelM3 vPlan, KBD_X_EL - 0.45, 0#, KBD_Z_IN1 + 0.6, "Air inlet 1 (elbow): axial air, air inlet 2: swirl air (assumed)"
     LabelM3 vPlan, 0.45, 0#, KBD_Z_COAL - 0.2, "Coal + conveying air in"
     LabelM3 vPlan, 0.6, 0#, KBD_Z_HEAD + 0.1, "Expansion joint"
     ViewTitle vFront, "SIDE VIEW - tip right", "above", 0.02, TEXT_H
     ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H
     ViewTitle vSide, "BACK END VIEW (1:" & Fmt(BDL_END_D) & ")", "above", 0.004, TEXT_H
+    ViewTitle vSec, "SECTION B-B (1:" & Fmt(BDL_END_D) & ") - head, front compartment", "above", 0.004, TEXT_H
+    LabelM3 vSec, 0.25, -0.80, KBD_Z_SEC, "Core: fuel pipe, lance, scanner, igniter"
+    LabelM3 vSec, 0.25, -0.88, KBD_Z_SEC, "Swirl air: core .. swirl tube; axial air: outside it (assumed)"
 End Sub
 
 

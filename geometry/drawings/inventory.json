@@ -2754,10 +2754,18 @@
           "source": "model",
           "status": "Estimated",
           "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_burner.body_partition_at",
+          "value": 1.4,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
         }
       ],
       "status_counts": {
-        "Estimated": 62,
+        "Estimated": 63,
         "Schematic": 19
       },
       "missing": [

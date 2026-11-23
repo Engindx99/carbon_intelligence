@@ -23,7 +23,7 @@ ORDER = (
     "D_tip", "tip_ring_L", "castable_L", "D_castable", "D_pipe", "pipe_t",
     "flange_D", "head_L", "D_head", "bellows_L", "coal_L", "D_coal_inlet",
     "inlet1_D", "inlet2_D", "beam_H", "beam_L", "L_total",
-    "u_inside", "u_inlets", "u_carriage",
+    "D_core", "D_swirl_tube", "D_fuel_pipe", "partition_at", "inlet_roles", "u_carriage",
 )
 
 
@@ -65,12 +65,20 @@ def params(g, name="kiln_burner_body"):
     ratio("L_total", "Burner, coal inlet flange (back centre) to tip", r["L_total"],
           "tip_ring_L", "castable_L", "collar_L", "flange_L", "head_L", "bellows_L", "coal_L")
     doc = P["pipe_t"].doc
-    P["u_inside"] = pv.unknown("kiln_burner_body.inside", "Channels inside the pipe behind the tip's 1 m",
-                               f"{doc}: not modelled (the CFD channels end at the plenums)")
-    P["u_inlets"] = pv.unknown("kiln_burner_body.inlets", "Which inlet is axial, which swirl air",
-                               f"{doc}: not shown")
+    sw0, sw1 = ch["swirl_plenum"]
+    ax0 = ch["axial_plenum"][0]
+    plen = [pv.primary(g, f"kiln_burner.{k}", k, key=f"kiln_burner.{k}") for k in ("swirl_ring_r_over_D",)]
+    P["D_core"] = pv.derived("kiln_burner_body.D_core", "Core tube OD (= swirl plenum's inner D)", 2 * sw0, "m",
+                             D + plen)
+    P["D_swirl_tube"] = pv.derived("kiln_burner_body.D_swirl_tube", "Swirl tube ID (= swirl plenum's outer D)",
+                                   2 * sw1, "m", D + plen)
+    P["D_fuel_pipe"] = pv.derived("kiln_burner_body.D_fuel_pipe", "Common fuel pipe ID (= the CFD coal pipe)",
+                                  ch["D_coal"], "m", D)
+    ratio("partition_at", "Head partition, back from its front face", r["z_flange"] - r["z_partition"], "partition_at")
+    P["inlet_roles"] = pv.unknown("kiln_burner_body.inlets", "Which inlet is axial, which swirl air",
+                                  f"{doc}: not shown; the model takes inlet 1 (the elbow, front compartment) "
+                                  "as the axial air, inlet 2 (back compartment) as the swirl air")
     P["u_carriage"] = pv.unknown("kiln_burner_body.carriage", "Carriage rail, trolley, hoses, platform",
                                  f"{doc}: not modelled")
     assert set(ORDER) == set(P) and set(DIMENSIONED) <= set(P), set(ORDER) ^ set(P)
-    del ch
     return P

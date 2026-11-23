@@ -1030,6 +1030,41 @@ class TheWholeBurnerIsTheBrochuresSideViewTest(unittest.TestCase):
         self.assertLess(r["R_castable"], 0.5 * r["D_tip"])
         self.assertLess(self.ch["L_coal"], r["L_total"])
 
+    def test_the_inner_tubes_meet_the_plenums(self):
+        """Inside the steel pipe the core tube and the swirl tube bound the
+        two annuli the channel solid's plenums continue (brochure p. 4:
+        two air systems), and end at the plenums' back face."""
+        by = {b["name"]: b for b in self.r["bodies"]}
+        sw0, sw1 = self.ch["swirl_plenum"]
+        ax0, ax1 = self.ch["axial_plenum"]
+        core, swirl = by["core_tube"]["p"], by["swirl_tube"]["p"]
+        self.assertAlmostEqual(core[6], sw0, places=12)                    # core tube OD = swirl plenum's inner wall
+        self.assertAlmostEqual(swirl[8], sw1, places=12)                   # swirl tube ID = swirl plenum's outer wall
+        self.assertAlmostEqual(swirl[6], ax0, places=12)                   # swirl tube OD = axial plenum's inner wall
+        self.assertAlmostEqual(self.r["r_pipe_in"], ax1, places=12)       # steel pipe = axial plenum's outer wall
+        z_pl = -(self.ch["plate_t"] + self.ch["plenum_L"])
+        for p in (core, swirl):
+            self.assertAlmostEqual(p[2] + p[7], z_pl, places=9)
+
+    def test_the_core_holds_the_fuel_pipe_and_the_tip_tubes(self):
+        by = {b["name"]: b for b in self.r["bodies"]}
+        r_core_in = by["core_tube"]["p"][8]
+        fuel = by["fuel_pipe"]["p"]
+        self.assertAlmostEqual(fuel[8], 0.5 * self.ch["D_coal"], places=12)     # its bore = the CFD coal pipe
+        self.assertAlmostEqual(fuel[2] + fuel[7], -self.ch["L_coal"], places=9)  # runs on into it
+        self.assertLess(abs(fuel[1]) + fuel[6], r_core_in)
+        for name in ("fuel_lance", "flame_scanner", "igniter"):
+            p = by[name]["p"]
+            self.assertLess(math.hypot(p[0], p[1]) + p[6], r_core_in, name)
+
+    def test_the_partition_parts_the_two_inlets(self):
+        """The head's partition: the elbow (axial air) in front of it, air
+        inlet 2 (swirl air) behind it."""
+        by = {b["name"]: b for b in self.r["bodies"]}
+        z0, z1 = by["head_partition"]["p"][2:4]
+        self.assertLess(by["air_inlet_2_flange"]["box"][5], z0)
+        self.assertGreater(by["elbow_leg"]["box"][2], z1)
+
     def test_each_body_its_volume_and_box(self):
         for q in self.r["bodies"]:
             with self.subTest(q["name"]):
