@@ -1402,3 +1402,21 @@ class TheFlameBoundariesAreTheTwinsAirAndBalanceTest(unittest.TestCase):
         h = pg.kiln_hood(self.g)
         self.assertAlmostEqual(h["m"], self.sp["secondary"] + self.fb["bc"]["tertiary_supply_in"]["m"])
         self.assertTrue(h["u_min"] <= h["u"] <= h["u_max"], h["u"])
+
+
+class TheTertiaryOutletIsClearOfTheHoodTest(unittest.TestCase):
+    """The tertiary air outlet face sits tertiary_outlet_L_over_D duct
+    diameters up the duct, clear of the hood's recirculation (user,
+    23 Nov 2026: 3 D)."""
+
+    def test_the_outlet_is_3_D_off_the_roof(self):
+        g = pg.load()
+        f, hd = pg.kiln_flame(g), pg.kiln_hood(g)
+        n = pg.v(g["kiln_hood"]["tertiary_outlet_L_over_D"])
+        self.assertAlmostEqual(f["L_ta"], n * 2.0 * f["r_ta"])
+        self.assertGreaterEqual(n, 3.0)
+        _, p, nrm, a, _ = next(x for x in f["faces"] if x[0] == "tertiary_air_out")
+        # the face's height over the kiln axis, along the plant's up
+        up = sum((p[i] - (0.0, 0.0, pg.kiln(g)["L"])[i]) * f["U"][i] for i in range(3))
+        self.assertAlmostEqual(up, hd["above"] + f["L_ta"])
+        self.assertAlmostEqual(f["box"][4], p[1] + f["r_ta"] * abs(f["U"][2]), places=6)

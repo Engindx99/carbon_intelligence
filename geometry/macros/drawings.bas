@@ -329,7 +329,7 @@ Const KFD_X0                       As Double  = -3.8         ' the part's x min 
 Const KFD_Y0                       As Double  = -3.808587    ' the part's y min (segment 2's stub) [derived]
 Const KFD_Z0                       As Double  = 30.83        ' the part's z min (the kiln gas outlet) [derived]
 Const KFD_X1                       As Double  = 3.8          ' the part's x max [derived]
-Const KFD_Y1                       As Double  = 4.219241     ' the part's y max (the tertiary air mouth) [derived]
+Const KFD_Y1                       As Double  = 11.283963    ' the part's y max (the tertiary air mouth) [derived]
 Const KFD_Z1                       As Double  = 80.094258    ' the part's z max (the hood's front wall) [derived]
 Const KFD_W                        As Double  = 7.6          ' hood inner width [derived]
 Const KFD_DEPTH                    As Double  = 5.98         ' hood depth [derived]
@@ -337,7 +337,7 @@ Const KFD_SEG                      As Double  = 2.99         ' cooler segment un
 Const KFD_R                        As Double  = 2.4          ' kiln bore radius [derived]
 Const KFD_Z_CUT                    As Double  = 30.83        ' kiln gas outlet, z [derived]
 Const KFD_R_TA                     As Double  = 1.21965      ' tertiary air mouth radius [derived]
-Const KFD_Z_TA                     As Double  = 78.361538    ' its top face's centre, z [derived]
+Const KFD_Z_TA                     As Double  = 78.149596    ' its top face's centre, z [derived]
 Const KFD_Z_TIP                    As Double  = 73.75        ' burner tip, z [derived]
 Const KFD_TIP_TO_CUT               As Double  = 42.92        ' burner tip to the gas outlet [derived]
 Const KFD_Z_FRONT                  As Double  = 79.977311    ' hood front wall at the kiln axis, z [derived]
@@ -353,27 +353,34 @@ Const KFD_SEGA_Z                   As Double  = 77.101854    ' segment 2 stub's 
 Const KFD_SEGB_X                   As Double  = -2#          ' segment 2 stub's front edge, side view, x [derived]
 Const KFD_SEGB_Y                   As Double  = -3.593983    ' segment 2 stub's front edge, side view, y [derived]
 Const KFD_SEGB_Z                   As Double  = 80.09051     ' segment 2 stub's front edge, side view, z [derived]
+Const KFD_ROOF_X                   As Double  = -3.8         ' roof's edge, side view, x [derived]
+Const KFD_ROOF_Y                   As Double  = 3.847249     ' roof's edge, side view, y [derived]
+Const KFD_ROOF_Z                   As Double  = 75.517992    ' roof's edge, side view, z [derived]
+Const KFD_L_TA                     As Double  = 7.3179       ' tertiary outlet run off the roof [derived]
+Const KFD_TAT_X                    As Double  = -0.862415    ' tertiary outlet's top circle, a point on it (side view), x [derived]
+Const KFD_TAT_Y                    As Double  = 11.273251    ' tertiary outlet's top circle, a point on it (side view), y [derived]
+Const KFD_TAT_Z                    As Double  = 79.011623    ' tertiary outlet's top circle, a point on it (side view), z [derived]
 Const KFD_BORE_X                   As Double  = -1.69704     ' kiln gas outlet circle, a point on it, x [derived]
 Const KFD_BORE_Y                   As Double  = 1.69704      ' kiln gas outlet circle, a point on it, y [derived]
 Const KFD_BORE_Z                   As Double  = 30.83        ' kiln gas outlet circle, a point on it, z [derived]
 Const KFD_TA_X                     As Double  = 0.862415     ' tertiary air mouth circle, a point on it, x [derived]
-Const KFD_TA_Y                     As Double  = 4.208529     ' tertiary air mouth circle, a point on it, y [derived]
-Const KFD_TA_Z                     As Double  = 79.223564    ' tertiary air mouth circle, a point on it, z [derived]
+Const KFD_TA_Y                     As Double  = 11.273251    ' tertiary air mouth circle, a point on it, y [derived]
+Const KFD_TA_Z                     As Double  = 79.011623    ' tertiary air mouth circle, a point on it, z [derived]
 Const KFD_TIPL_X                   As Double  = 0#           ' burner tip face's cut edge, A-A, x [derived]
 Const KFD_TIPL_Y                   As Double  = -0.271867    ' burner tip face's cut edge, A-A, y [derived]
 Const KFD_TIPL_Z                   As Double  = 73.75        ' burner tip face's cut edge, A-A, z [derived]
 Const KFD_CUTL_X                   As Double  = 0#           ' kiln gas outlet's cut edge, A-A, x [derived]
 Const KFD_CUTL_Y                   As Double  = -1.2         ' kiln gas outlet's cut edge, A-A, y [derived]
 Const KFD_CUTL_Z                   As Double  = 30.83        ' kiln gas outlet's cut edge, A-A, z [derived]
-Const KFD_SEC_T_X                  As Double  = 0#           ' A-A's cutting line, top (front view), x [derived]
-Const KFD_SEC_T_Y                  As Double  = 4.277476     ' A-A's cutting line, top (front view), y [derived]
-Const KFD_SEC_T_Z                  As Double  = 79.854366    ' A-A's cutting line, top (front view), z [derived]
+Const KFD_SEC_T_X                  As Double  = 0#           ' A-A's cutting line, top (front view; over the tertiary outlet), x [derived]
+Const KFD_SEC_T_Y                  As Double  = 12.791545    ' A-A's cutting line, top (front view; over the tertiary outlet), y [derived]
+Const KFD_SEC_T_Z                  As Double  = 79.598944    ' A-A's cutting line, top (front view; over the tertiary outlet), z [derived]
 Const KFD_SEC_B_X                  As Double  = 0#           ' A-A's cutting line, bottom (front view), x [derived]
 Const KFD_SEC_B_Y                  As Double  = -4.018792    ' A-A's cutting line, bottom (front view), y [derived]
 Const KFD_SEC_B_Z                  As Double  = 80.103254    ' A-A's cutting line, bottom (front view), z [derived]
 Const kiln_flame_TAB_1             As String  = "m_air~Air through the hood (secondary + tertiary)~73.4045~kg/s~derived~Estimated;area~Hood section, width x height~54.72~m2~derived~Schematic;area_min~Section the velocity limit needs~22.41~m2~derived~Estimated;u~Hood air velocity at the tertiary air T (4-10 m/s)~4.09453~m/s~derived~Schematic;u_hot~Hood air velocity at the secondary air T~4.76929~m/s~derived~Schematic;R_seal~Outlet seal's outer radius (kiln_rotax)~3550~mm~derived~Schematic;seal_clearance~Back wall round the seal, clearance~250~mm~model parameter~Estimated;hood_W~Hood inner width (seal + clearance, both sides)~7600~mm~derived~Schematic;hood_H~Hood inner height (cooler roof to the roof)~7200~mm~derived~Schematic;" ' parameter table rows
-Const kiln_flame_TAB_2             As String  = "hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;flame_stub_L~Inlet / outlet stubs (segment 2: twice)~250~mm~model parameter~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~43170~mm~derived~Estimated;burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;" ' parameter table rows
-Const kiln_flame_TAB_3             As String  = "burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~42920~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
+Const kiln_flame_TAB_2             As String  = "hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;flame_stub_L~Inlet / outlet stubs (segment 2: twice)~250~mm~model parameter~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;L_ta~Tertiary outlet run off the roof (3 D: clear of the recirculation)~7318~mm~derived~Estimated;D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~43170~mm~derived~Estimated;" ' parameter table rows
+Const kiln_flame_TAB_3             As String  = "burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~42920~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
 Const kiln_flame_TAB_4             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_5             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_6             As String  = ""           ' parameter table rows
@@ -4266,10 +4273,11 @@ Private Sub MakeViewsFlame()
 End Sub
 
 
-' Five dimensions between edges the solid has: in the side view the hood's
+' Six dimensions between edges the solid has: in the side view the hood's
 ' depth (its back and front walls' edges, both along the plant's up), the
 ' cooler segment (segment 2's stub's edges) and the kiln bore (the gas
-' outlet's circle seen edge-on); in A-A the burner tip to the gas outlet;
+' outlet's circle seen edge-on), the tertiary outlet's run (the roof to its
+' top circle seen edge-on); in A-A the burner tip to the gas outlet;
 ' in the plan the tertiary air mouth. The hood's width and height rest on
 ' schematic values: listed, not dimensioned.
 Private Sub DimensionFlame()
@@ -4285,7 +4293,7 @@ Private Sub DimensionFlame()
     DimEdges "hood_depth", KFD_DEPTH, vFront, _
         "line", KFD_BACK_X, KFD_BACK_Y, KFD_BACK_Z, 0, 0, _
         "line", KFD_FRONT_X, KFD_FRONT_Y, KFD_FRONT_Z, 0, 0, _
-        KFD_BACK_X, KFD_BACK_Y + 2.5, 0.5 * (KFD_BACK_Z + KFD_FRONT_Z)
+        KFD_BACK_X, KFD_Y1 + 1#, 0.5 * (KFD_BACK_Z + KFD_FRONT_Z)
     DimEdges "segment_L", KFD_SEG, vFront, _
         "line", KFD_SEGA_X, KFD_SEGA_Y, KFD_SEGA_Z, 0, 0, _
         "line", KFD_SEGB_X, KFD_SEGB_Y, KFD_SEGB_Z, 0, 0, _
@@ -4294,6 +4302,10 @@ Private Sub DimensionFlame()
         "circle", KFD_BORE_X, KFD_BORE_Y, KFD_BORE_Z, KFD_R, KFD_Z_CUT, _
         "", 0, 0, 0, 0, 0, _
         0, 0, KFD_Z_CUT - 2#
+    DimEdges "L_ta", KFD_L_TA, vFront, _
+        "line", KFD_ROOF_X, KFD_ROOF_Y, KFD_ROOF_Z, 0, 0, _
+        "circle", KFD_TAT_X, KFD_TAT_Y, KFD_TAT_Z, KFD_R_TA, KFD_Z_TA, _
+        KFD_ROOF_X, KFD_ROOF_Y + 0.5 * KFD_L_TA, KFD_ROOF_Z - 3#
     DimEdges "tip_to_cut", KFD_TIP_TO_CUT, vSec, _
         "line", KFD_CUTL_X, KFD_CUTL_Y, KFD_CUTL_Z, 0, 0, _
         "line", KFD_TIPL_X, KFD_TIPL_Y, KFD_TIPL_Z, 0, 0, _
@@ -4310,7 +4322,7 @@ End Sub
 Private Sub DrawLabelsFlame()
     UseLayer L_TEXT
     LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (no clinker bed)"
-    LabelM3 vFront, 0#, KFD_Y1 + 1.2, KFD_Z_FRONT - 0.5 * KFD_DEPTH, "Hood"
+    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_FRONT + 1.5, "Hood"
     LabelM3 vSec, 0#, KFD_Y1 + 1.2, KFD_Z_TIP - 14#, "Burner tip 0.25 m inside the kiln, on its axis"
     LabelM3 vSec, 0#, KFD_Y0 - 1.6, KFD_Z_FRONT - 12#, "Secondary air in | tertiary supply in"
     LabelM3 vPlan, 0#, 0#, KFD_Z_CUT + 2#, "Kiln gas out"
@@ -4320,7 +4332,7 @@ Private Sub DrawLabelsFlame()
     UseLayer L_TEXT
     ViewTitle vFront, "SIDE VIEW - hood right", "above", 0.012, TEXT_H
     ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H
-    ViewTitle vSide, "HOOD FROM THE BURNER'S SIDE (1:" & Fmt(KFS_END_D) & ")", "above", 0.004, TEXT_H
+    ViewTitle vSide, "HOOD FROM THE BURNER'S SIDE (1:" & Fmt(KFS_END_D) & ")", "above", 0.014, TEXT_H
 End Sub
 
 

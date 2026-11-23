@@ -682,7 +682,7 @@ def _kiln_flame_sheet_consts(g):
     d, W, above, below = hd["depth"], hd["W"], hd["above"], hd["below"]
     st, seg, cw = pg.v(g["kiln_hood"]["flame_stub_L"]), co["segment_L"], co["width"]
     R, r_ta, z_cut, tip = 0.5 * kl["D"], f["r_ta"], f["z_cut"], f["tip"]
-    c_ta = at(f["h_ta"], above + st)
+    c_ta = at(f["h_ta"], above + f["L_ta"])
     bx = f["box"]
     out = [
         der("KFD_X0", bx[0], "the part's x min"), der("KFD_Y0", bx[1], "the part's y min (segment 2's stub)"),
@@ -701,13 +701,17 @@ def _kiln_flame_sheet_consts(g):
     out += pt("KFD_FRONT", at(d, 0.5 * (above + 0.5 * kl["D"]), xs), "front wall's edge, side view")
     out += pt("KFD_SEGA", at(seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's back edge, side view")
     out += pt("KFD_SEGB", at(2.0 * seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's front edge, side view")
+    out += pt("KFD_ROOF", at(0.5 * f["h_ta"] - 0.5 * r_ta, above, xs), "roof's edge, side view")
+    out += [der("KFD_L_TA", f["L_ta"], "tertiary outlet run off the roof")]
+    out += pt("KFD_TAT", tuple(c_ta[i] + r_ta * 0.7071 * ((-1.0, 0.0, 0.0)[i] + Hd[i]) for i in range(3)),
+              "tertiary outlet's top circle, a point on it (side view)")
     out += pt("KFD_BORE", (-0.7071 * R, 0.7071 * R, z_cut), "kiln gas outlet circle, a point on it")
     out += pt("KFD_TA", tuple(c_ta[i] + r_ta * 0.7071 * ((1.0, 0.0, 0.0)[i] + Hd[i]) for i in range(3)),
               "tertiary air mouth circle, a point on it")
     r_tipline = -0.5 * (ch["axial_plenum"][1] + 0.5 * pg.kiln_burner_body(g)["D_tip"])
     out += pt("KFD_TIPL", (0.0, r_tipline, tip[2]), "burner tip face's cut edge, A-A")
     out += pt("KFD_CUTL", (0.0, -0.5 * R, z_cut), "kiln gas outlet's cut edge, A-A")
-    out += pt("KFD_SEC_T", at(d, above + 0.3), "A-A's cutting line, top (front view)")
+    out += pt("KFD_SEC_T", at(d, above + f["L_ta"] + 1.5), "A-A's cutting line, top (front view; over the tertiary outlet)")
     out += pt("KFD_SEC_B", at(d, -below - 2.0 * st - 0.3), "A-A's cutting line, bottom (front view)")
     out += _table_consts("kiln_flame", dkf.params(g), dkf.ORDER)
     return out

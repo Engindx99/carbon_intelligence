@@ -1903,8 +1903,10 @@ def kiln_flame(g):
     h_ta = co["hood_L"] - 0.5 * seg
     if h_ta + r_ta > depth or h_ta - r_ta < 0.0:
         raise ValueError("kiln_flame: the tertiary air mouth does not fit on the hood's roof")
-    cyl("tertiary_air_mouth", at(h_ta, above - 0.001), U, r_ta, st + 0.001)
-    faces.append(("tertiary_air_out", at(h_ta, above + st), U, math.pi * r_ta * r_ta, (0.6, 0.2, 0.8)))
+    # its first run straight up, L_ta long (model: the outlet clear of the hood's recirculation)
+    L_ta = v(g["kiln_hood"]["tertiary_outlet_L_over_D"]) * 2.0 * r_ta
+    cyl("tertiary_air_mouth", at(h_ta, above - 0.001), U, r_ta, L_ta + 0.001)
+    faces.append(("tertiary_air_out", at(h_ta, above + L_ta), U, math.pi * r_ta * r_ta, (0.6, 0.2, 0.8)))
     faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), math.pi * R * R, (0.2, 0.2, 0.9)))
 
     # the burner out of it: its tip ring, then its castable on through the front wall
@@ -1928,7 +1930,7 @@ def kiln_flame(g):
     box = tuple(min(b["box"][i] for b in solid) for i in range(3)) + tuple(max(b["box"][i] for b in solid) for i in range(3, 6))
     return {
         "bodies": bodies, "faces": faces, "box": box, "z_cut": z_cut, "L_flame": kl["burning_L"],
-        "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta,
+        "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta, "L_ta": L_ta,
         "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},
     }
 

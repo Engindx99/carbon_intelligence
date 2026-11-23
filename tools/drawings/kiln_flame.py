@@ -22,14 +22,14 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 
 # What the macro dimensions (its log names them "dim <key> <mm>"), each
 # between edges the solid has.
-DIMENSIONED = ("hood_depth", "segment_L", "D_bore", "D_ta", "tip_to_cut")
+DIMENSIONED = ("hood_depth", "segment_L", "D_bore", "D_ta", "L_ta", "tip_to_cut")
 
 ALSO = {}
 
 ORDER = (
     "m_air", "area", "area_min", "u", "u_hot",
     "R_seal", "seal_clearance", "hood_W", "hood_H", "hood_depth", "segment_L", "flame_stub_L",
-    "D_ta", "h_ta", "D_bore", "L_flame",
+    "D_ta", "h_ta", "L_ta", "D_bore", "L_flame",
     "burner_insertion", "burner_offset_x", "burner_offset_y", "burner_tilt_deg",
     "tip_to_cut", "castable_past_front",
     "u_bed", "u_doors",
@@ -83,6 +83,8 @@ def params(g, name="kiln_flame"):
     dta = y("calciner.D_tertiary_air", "Tertiary air duct D")
     P["D_ta"] = pv.derived("kiln_flame.D_ta", "Tertiary air mouth on the roof (the duct's D)",
                            2.0 * f["r_ta"], "m", [dta])
+    P["L_ta"] = pv.derived("kiln_flame.L_ta", "Tertiary outlet run off the roof (3 D: clear of the recirculation)",
+                           f["L_ta"], "m", [dta, y("kiln_hood.tertiary_outlet_L_over_D", "L / D")])
     P["h_ta"] = pv.derived("kiln_flame.h_ta", "Its axis from the back wall (over segment 2)",
                            f["h_ta"], "m", depth_in)
     P["D_bore"] = y("kiln.D", "Kiln bore D (the kiln sheet)", key="kiln.D")

@@ -2136,6 +2136,14 @@
           "doc": "kiln/kiln_hood.md"
         },
         {
+          "key": "kiln_hood.tertiary_outlet_L_over_D",
+          "value": 3.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
           "key": "layout.cooler_drop",
           "value": 1.0,
           "unit": "m",
@@ -2145,7 +2153,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 10,
+        "Estimated": 11,
         "Schematic": 1
       },
       "missing": [

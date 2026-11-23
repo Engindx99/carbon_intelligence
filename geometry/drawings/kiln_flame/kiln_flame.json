@@ -252,6 +252,21 @@
       "short": "h_ta"
     },
     {
+      "key": "kiln_flame.L_ta",
+      "label": "Tertiary outlet run off the roof (3 D: clear of the recirculation)",
+      "value": 7.3179,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D_tertiary_air",
+        "kiln_hood.tertiary_outlet_L_over_D"
+      ],
+      "value_mm": 7317.9,
+      "short": "L_ta"
+    },
+    {
       "key": "kiln.D",
       "label": "Kiln bore D (the kiln sheet)",
       "value": 4.8,
@@ -399,6 +414,7 @@
     "segment_L",
     "D_bore",
     "D_ta",
+    "L_ta",
     "tip_to_cut"
   ],
   "also_the_sheet_of": []

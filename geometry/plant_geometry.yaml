@@ -629,6 +629,11 @@ kiln_hood:
   # twice as deep so the two faces stay apart; the tertiary air duct's
   # mouth on the roof). No source: model.
   flame_stub_L:        {value: 0.25,   unit: m,      source: model,       doc: kiln/kiln_hood.md}
+  # The tertiary air outlet: the duct's first run straight up off the
+  # roof, this many duct diameters, so the hood's recirculation does not
+  # reach the outlet face (backflow there; user, 23 Nov 2026: 3 D). The
+  # duct's real path to the calciner is not in this volume. Model.
+  tertiary_outlet_L_over_D: {value: 3.0, unit: "-",  source: model,       doc: kiln/kiln_hood.md}
 kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
   # The CFD solid's kiln mouth (user decision, 22 Nov 2026): a short
