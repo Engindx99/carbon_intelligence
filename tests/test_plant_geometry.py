@@ -1287,7 +1287,7 @@ class TheFlameVolumeIsHoodBoreAndPlacedChannelsTest(unittest.TestCase):
 
     def test_the_seven_boundaries(self):
         self.assertEqual(set(self.faces), {"secondary_air_in", "tertiary_supply_in", "tertiary_air_out",
-                                           "kiln_gas_out", "coal_in", "axial_in", "swirl_in"})
+                                           "kiln_gas_out", "bed", "coal_in", "axial_in", "swirl_in"})
         for name, p, n, a, rgb in self.f["faces"]:
             with self.subTest(name):
                 self.assertAlmostEqual(math.sqrt(sum(c * c for c in n)), 1.0)
@@ -1302,7 +1302,7 @@ class TheFlameVolumeIsHoodBoreAndPlacedChannelsTest(unittest.TestCase):
     def test_the_kiln_outlet_is_the_bore_at_the_burning_zones_start(self):
         _, p, n, a, _ = self.faces["kiln_gas_out"]
         self.assertAlmostEqual(p[2], self.k["L"] - self.k["burning_L"])
-        self.assertAlmostEqual(a, math.pi * 0.25 * self.k["D"] ** 2)
+        self.assertAlmostEqual(a, (1.0 - self.f["bed"]["fill"]) * math.pi * 0.25 * self.k["D"] ** 2)
         self.assertEqual(n, (0.0, 0.0, -1.0))
 
     def test_the_cooler_openings_are_its_two_hood_segments(self):
@@ -1369,7 +1369,7 @@ class TheFlameBoundariesAreTheTwinsAirAndBalanceTest(unittest.TestCase):
         self.assertEqual(set(self.fb["bc"]), faces)
         for name, b in self.fb["bc"].items():
             with self.subTest(name):
-                self.assertIn(b["kind"], ("mass_flow_inlet", "mass_flow_outlet", "pressure_outlet"))
+                self.assertIn(b["kind"], ("mass_flow_inlet", "mass_flow_outlet", "pressure_outlet", "wall"))
                 if b["kind"] == "mass_flow_inlet":
                     self.assertGreater(b["m"], 0.0)
                     self.assertGreater(b["T"], 0.0)
@@ -1434,3 +1434,38 @@ class TheFlameVolumeHoldsTheFlameTest(unittest.TestCase):
         self.assertAlmostEqual(f["L_flame_est"], est)
         self.assertGreaterEqual(f["L_tip_to_cut"], pg.v(h["flame_domain_margin"]) * est)
         self.assertEqual(h["flame_L_ref"]["source"], "literature")
+
+
+class TheClinkerBedIsTheContinuitysTest(unittest.TestCase):
+    """plant_geometry.kiln_bed(): the bed's fill is the clinker flow times
+    its Sullivan transit over the bulk density (user decision, 23 Nov
+    2026), its surface at the dynamic angle of repose; the flame volume
+    loses that segment over the burning zone."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.b, cls.k = pg.kiln_bed(cls.g), pg.kiln(cls.g)
+
+    def test_the_transit_is_the_twins(self):
+        # configs/twin_cfg.yaml: 3.5 rpm, 3 % give 28.70 min over the 74 m tube
+        self.assertAlmostEqual(self.b["tau"] / 60.0, 28.70, places=2)
+
+    def test_the_fill_is_flow_times_time(self):
+        k, b = self.g["kiln"], self.b
+        held = pg.v(k["clinker_flow"]) * b["tau_bz"] / pg.v(k["clinker_bulk_density"])
+        self.assertAlmostEqual(b["A_bed"] * self.k["burning_L"], held, places=9)
+        self.assertAlmostEqual((b["phi"] - math.sin(b["phi"])) / (2.0 * math.pi), b["fill"], places=9)
+
+    def test_the_surface_is_at_the_repose_angle(self):
+        n = self.b["n"]
+        self.assertAlmostEqual(math.degrees(math.acos(n[1])), pg.v(self.g["kiln"]["repose_angle"]))
+        R = 0.5 * self.k["D"]
+        self.assertAlmostEqual(self.b["c"] ** 2 + self.b["d_c"] ** 2, R * R)
+
+    def test_the_bed_face_and_the_gas_outlet(self):
+        f = pg.kiln_flame(self.g)
+        faces = {x[0]: x for x in f["faces"]}
+        L_bz = self.k["burning_L"]
+        self.assertAlmostEqual(faces["bed"][3], 2.0 * self.b["c"] * L_bz)
+        self.assertAlmostEqual(faces["kiln_gas_out"][3] + self.b["A_bed"], math.pi * 0.25 * self.k["D"] ** 2)

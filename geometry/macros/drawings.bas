@@ -380,8 +380,8 @@ Const KFD_SEC_B_Y                  As Double  = -4.018792    ' A-A's cutting lin
 Const KFD_SEC_B_Z                  As Double  = 80.103254    ' A-A's cutting line, bottom (front view), z [derived]
 Const kiln_flame_TAB_1             As String  = "m_air~Air through the hood (secondary + tertiary)~73.4045~kg/s~derived~Estimated;area~Hood section, width x height~54.72~m2~derived~Schematic;area_min~Section the velocity limit needs~22.41~m2~derived~Estimated;u~Hood air velocity at the tertiary air T (4-10 m/s)~4.09453~m/s~derived~Schematic;u_hot~Hood air velocity at the secondary air T~4.76929~m/s~derived~Schematic;R_seal~Outlet seal's outer radius (kiln_rotax)~3550~mm~derived~Schematic;seal_clearance~Back wall round the seal, clearance~250~mm~model parameter~Estimated;hood_W~Hood inner width (seal + clearance, both sides)~7600~mm~derived~Schematic;hood_H~Hood inner height (cooler roof to the roof)~7200~mm~derived~Schematic;" ' parameter table rows
 Const kiln_flame_TAB_2             As String  = "hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;flame_stub_L~Inlet / outlet stubs (segment 2: twice)~250~mm~model parameter~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;L_ta~Tertiary outlet run off the roof (3 D: clear of the recirculation)~7318~mm~derived~Estimated;D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~43170~mm~derived~Estimated;" ' parameter table rows
-Const kiln_flame_TAB_3             As String  = "burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~42920~mm~derived~Estimated;L_flame_est~Flame length, estimate (Sarkar 2009, scaled by D)~12659~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;" ' parameter table rows
-Const kiln_flame_TAB_4             As String  = "u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
+Const kiln_flame_TAB_3             As String  = "burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~42920~mm~derived~Estimated;L_flame_est~Flame length, estimate (Sarkar 2009, scaled by D)~12659~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;bed_fill~Clinker bed fill, burning zone (continuity)~0.0531481~-~derived~Estimated;" ' parameter table rows
+Const kiln_flame_TAB_4             As String  = "bed_chord~Bed surface width (at the repose angle)~2898~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
 Const kiln_flame_TAB_5             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_6             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_7             As String  = ""           ' parameter table rows
@@ -3208,7 +3208,7 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Kiln frame: z along the kiln axis, z = 0 at the back end, y up; the hood stands on the", TEXT_H
         LabelPH COL_X0, y + 0.007, "   plant's level, turned by the kiln's 3 % (1.72 deg); the kiln's slope is not built in.", TEXT_H
         LabelPH COL_X0, y + 0.002, "4. Boundaries: segment 1 secondary air in, segment 2 tertiary supply in, roof mouth out, kiln", TEXT_H
-        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; coal, axial, swirl in. No clinker bed (as kiln.SLDPRT).", TEXT_H
+        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; coal, axial, swirl in; clinker bed surface (wall).", TEXT_H
         LabelPH COL_X0, y - 0.008, "5. Hood W, H rest on schematic values (seal depth, cooler drop): listed, not dimensioned.", TEXT_H
         LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_hood), plant_geometry.kiln_flame()", TEXT_H
     ElseIf equip = "kiln_burner" Then
@@ -4321,7 +4321,7 @@ End Sub
 
 Private Sub DrawLabelsFlame()
     UseLayer L_TEXT
-    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (no clinker bed)"
+    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (clinker bed cut out)"
     LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_FRONT + 1.5, "Hood"
     LabelM3 vSec, 0#, KFD_Y1 + 1.2, KFD_Z_TIP - 14#, "Burner tip 0.25 m inside the kiln, on its axis"
     LabelM3 vSec, 0#, KFD_Y0 - 1.6, KFD_Z_FRONT - 12#, "Secondary air in | tertiary supply in"

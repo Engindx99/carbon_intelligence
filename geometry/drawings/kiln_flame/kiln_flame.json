@@ -403,6 +403,45 @@
       "short": "castable_past_front"
     },
     {
+      "key": "kiln_flame.bed_fill",
+      "label": "Clinker bed fill, burning zone (continuity)",
+      "value": 0.053148091441100435,
+      "unit": "-",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.clinker_flow",
+        "kiln.rpm",
+        "kiln.repose_angle",
+        "kiln.clinker_bulk_density",
+        "kiln.D",
+        "kiln.L",
+        "kiln.transition_L"
+      ],
+      "short": "bed_fill"
+    },
+    {
+      "key": "kiln_flame.bed_chord",
+      "label": "Bed surface width (at the repose angle)",
+      "value": 2.89834841234358,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.clinker_flow",
+        "kiln.rpm",
+        "kiln.repose_angle",
+        "kiln.clinker_bulk_density",
+        "kiln.D",
+        "kiln.L",
+        "kiln.transition_L"
+      ],
+      "value_mm": 2898.348412,
+      "short": "bed_chord"
+    },
+    {
       "key": "kiln_flame.bed",
       "label": "Clinker bed in the kiln and on the grate",
       "value": null,

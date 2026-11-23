@@ -1792,6 +1792,50 @@ def kiln_hood(g):
     }
 
 
+def kiln_bed(g):
+    """The clinker bed over the burning zone, as the flame volume's floor
+    (user decision, 23 Nov 2026). Fill by continuity: the clinker flow
+    times its transit through the zone (Sullivan, as the twin:
+    tau = 1.77 L sqrt(theta) / (D N beta_deg) min, the zone's share by
+    length) over the bulk density, as a share of the bore. The bed is a
+    circular segment; its flat surface lies at the dynamic angle of repose
+    to the plant's horizontal, rising to the bed_rise_side (kiln frame, the
+    slope not built in, as the kiln's solids).
+
+    n: the surface's normal into the gas; t: along the surface across the
+    kiln; d_c: the surface from the axis; c: its half chord; phi: the
+    segment's angle; fill: its share of the bore's section."""
+    k = g["kiln"]
+    kl = kiln(g)
+    L, D, R = kl["L"], kl["D"], 0.5 * kl["D"]
+    th = math.radians(v(k["repose_angle"]))
+    beta = math.degrees(math.atan(0.01 * kl["slope"]))
+    tau = 1.77 * L * math.sqrt(math.degrees(th)) / (D * v(k["rpm"]) * beta) * 60.0      # s
+    L_bz = kl["burning_L"]
+    tau_bz = tau * L_bz / L
+    A = math.pi * R * R
+    fill = v(k["clinker_flow"]) * tau_bz / v(k["clinker_bulk_density"]) / (L_bz * A)
+    if not 0.0 < fill < 0.5:
+        raise ValueError(f"kiln_bed: fill {fill:.3f} outside (0, 0.5)")
+    lo, hi = 0.0, math.pi                       # (phi - sin phi) / (2 pi) = fill
+    for _ in range(100):
+        mid = 0.5 * (lo + hi)
+        if (mid - math.sin(mid)) / (2.0 * math.pi) < fill:
+            lo = mid
+        else:
+            hi = mid
+    phi = 0.5 * (lo + hi)
+    sd = v(k["bed_rise_side"])
+    n = (-sd * math.sin(th), math.cos(th), 0.0)
+    t = (math.cos(th), sd * math.sin(th), 0.0)
+    return {
+        "tau": tau, "tau_bz": tau_bz, "fill": fill, "phi": phi,
+        "d_c": R * math.cos(0.5 * phi), "c": R * math.sin(0.5 * phi),
+        "A_bed": fill * A, "A_gas": (1.0 - fill) * A, "n": n, "t": t, "theta": th,
+        "z0": L - L_bz, "z1": L,
+    }
+
+
 def kiln_burner_placement(g):
     """The burner in the kiln's mouth (literature, kiln_hood.burner_*): its
     tip burner_insertion inside the kiln's end, on (offset from) the
@@ -1907,7 +1951,20 @@ def kiln_flame(g):
     L_ta = v(g["kiln_hood"]["tertiary_outlet_L_over_D"]) * 2.0 * r_ta
     cyl("tertiary_air_mouth", at(h_ta, above - 0.001), U, r_ta, L_ta + 0.001)
     faces.append(("tertiary_air_out", at(h_ta, above + L_ta), U, math.pi * r_ta * r_ta, (0.6, 0.2, 0.8)))
-    faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), math.pi * R * R, (0.2, 0.2, 0.9)))
+    # the clinker bed cut out of the bore over the burning zone (to the kiln's
+    # mouth): a box under its surface, as wide as its chord (kiln_bed())
+    bd = kiln_bed(g)
+    n_b, t_b, d_c, c_b = bd["n"], bd["t"], bd["d_c"], bd["c"]
+    a_b = R + 0.1 - d_c
+    zc = 0.5 * (L + z_cut - 0.5)
+    ctr = tuple(-(d_c + 0.5 * a_b) * n_b[i] + (0.0, 0.0, zc)[i] for i in range(3))
+    top = max(c_b * t_b[1] - d_c * n_b[1], -c_b * t_b[1] - d_c * n_b[1])
+    if top >= 0.0:
+        raise ValueError("kiln_flame: the bed's box reaches over the axis (it would cut the hood)")
+    fbox("void_clinker_bed", ctr, n_b, t_b, (0.0, 0.0, 1.0), a_b, 2.0 * c_b + 0.02, L - z_cut + 0.5)
+    faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), bd["A_gas"], (0.2, 0.2, 0.9)))
+    faces.append(("bed", tuple(-d_c * n_b[i] + (0.0, 0.0, 0.5 * (z_cut + L))[i] for i in range(3)),
+                  tuple(-a for a in n_b), 2.0 * c_b * (L - z_cut), (0.45, 0.3, 0.15)))
 
     # the burner out of it: its tip ring, then its castable on through the front wall
     to_k = pl["to_kiln"]
@@ -1940,7 +1997,7 @@ def kiln_flame(g):
     return {
         "L_flame_est": L_est, "L_tip_to_cut": L_tip,
         "bodies": bodies, "faces": faces, "box": box, "z_cut": z_cut, "L_flame": kl["burning_L"],
-        "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta, "L_ta": L_ta,
+        "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta, "L_ta": L_ta, "bed": bd,
         "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},
     }
 
@@ -2005,6 +2062,8 @@ def kiln_flame_boundaries(g):
                              "note": "to the calciner: the calciner's tertiary air inlet flow"},
         "kiln_gas_out": {"kind": "pressure_outlet", "m": None, "T": None, "gas": None, "particles": None,
                          "note": "0 Pa gauge (reference); carries the rest"},
+        "bed": {"kind": "wall", "m": None, "T": None, "gas": None, "particles": None,
+                "note": "clinker bed surface (kiln_bed()); its temperature from the twin's burning zone, set in the CFD"},
         "coal_in": {"kind": "mass_flow_inlet", "m": ch["m_transport"], "T": T0, "gas": "air",
                     "particles": {"m": fuel, "T": T0, "size": None,
                                   "size_note": "no source: the coal's fineness (R90) is not in the yaml"},

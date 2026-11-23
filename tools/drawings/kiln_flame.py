@@ -31,7 +31,7 @@ ORDER = (
     "R_seal", "seal_clearance", "hood_W", "hood_H", "hood_depth", "segment_L", "flame_stub_L",
     "D_ta", "h_ta", "L_ta", "D_bore", "L_flame",
     "burner_insertion", "burner_offset_x", "burner_offset_y", "burner_tilt_deg",
-    "tip_to_cut", "L_flame_est", "castable_past_front",
+    "tip_to_cut", "L_flame_est", "castable_past_front", "bed_fill", "bed_chord",
     "u_bed", "u_doors",
 )
 
@@ -101,6 +101,13 @@ def params(g, name="kiln_flame"):
                                   f["L_flame_est"], "m",
                                   [y("kiln_hood.flame_L_ref", "Flame L, ref."), y("kiln_hood.flame_L_ref_D", "Ref. kiln D"),
                                    P["D_bore"]])
+    bd = f["bed"]
+    bed_in = [y("kiln.clinker_flow", "Clinker"), y("kiln.rpm", "rpm"), y("kiln.repose_angle", "Repose"),
+              y("kiln.clinker_bulk_density", "Bulk density"), P["D_bore"], P["L_flame"]]
+    P["bed_fill"] = pv.derived("kiln_flame.bed_fill", "Clinker bed fill, burning zone (continuity)",
+                               bd["fill"], "-", bed_in)
+    P["bed_chord"] = pv.derived("kiln_flame.bed_chord", "Bed surface width (at the repose angle)",
+                                2.0 * bd["c"], "m", bed_in)
     body = [y("kiln_burner.body_castable_L", "castable_L"), y("kiln_burner.body_tip_ring_L", "tip_ring_L")]
     P["castable_past_front"] = pv.derived("kiln_flame.castable_past_front",
                                           "Burner castable past the hood's front wall (> 0: no bare steel)",

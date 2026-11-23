@@ -1556,6 +1556,46 @@
           "doc": "kiln/kiln.md"
         },
         {
+          "key": "kiln.clinker_flow",
+          "value": 57.8704,
+          "unit": "kg/s",
+          "source": "cfd_decision",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.rpm",
+          "value": 3.5,
+          "unit": "rpm",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.repose_angle",
+          "value": 40.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.clinker_bulk_density",
+          "value": 1400.0,
+          "unit": "kg/m3",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
+          "key": "kiln.bed_rise_side",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln.md"
+        },
+        {
           "key": "kiln.shell_t",
           "value": 0.03,
           "unit": "m",
@@ -1590,7 +1630,7 @@
       ],
       "status_counts": {
         "Verified": 3,
-        "Estimated": 5
+        "Estimated": 10
       },
       "missing": [],
       "cfd_solid": "kiln.SLDPRT",

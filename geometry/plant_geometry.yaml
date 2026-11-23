@@ -245,6 +245,24 @@ kiln:
   slope:               {value: 3.0,  unit: "%",   source: published,    doc: kiln/kiln.md}
   # the back end the twin's transition zone solves (25/60 of the tube)
   transition_L:        {value: 30.83, unit: m,    source: model,        doc: kiln/kiln.md}
+  # The clinker bed in the burning zone (the flame volume's floor; user,
+  # 23 Nov 2026: fill by continuity, a flat surface at the dynamic angle
+  # of repose). Fill = clinker flow x transit time / bulk density over
+  # the zone's bore, the transit Sullivan's (physics.rotary_bed_motion).
+  # - the plant's 5000 t/d of clinker (user decision, 12 Oct 2026)
+  clinker_flow:        {value: 57.8704, unit: kg/s, source: cfd_decision, doc: kiln/kiln.md}
+  # - the twin's speed (configs/twin_cfg.yaml motion.rpm_default; the
+  #   PF5000 drive turns 0.6-4.0 rpm, the 25-35 min transit band)
+  rpm:                 {value: 3.5,  unit: rpm,   source: model,        doc: kiln/kiln.md}
+  # - dynamic angle of repose, raw meal / clinker (twin_cfg repose_angle_deg;
+  #   1.77 sqrt(40) = the industry's 11.2 in t = 11.2 L/(r D s))
+  repose_angle:        {value: 40.0, unit: deg,   source: literature,   doc: kiln/kiln.md}
+  # - loose clinker bulk density: BIMCO solid bulk cargo database, cement
+  #   clinkers 1190-1639 kg/m3; mid-range
+  clinker_bulk_density: {value: 1400.0, unit: kg/m3, source: literature, doc: kiln/kiln.md}
+  # - the bed rides up the wall on this side (+1: +x, the kiln frame);
+  #   the rotation sense is not published: model
+  bed_rise_side:       {value: 1.0,  unit: "-",   source: model,        doc: kiln/kiln.md}
   # The wall stack, hot face outward (physics/shell.py has the materials).
   # NOTE: the published 4.8 m is the SHELL diameter; the twin uses it as
   # the bore (user decision, 12 Oct 2026), so the stack is added outward:
