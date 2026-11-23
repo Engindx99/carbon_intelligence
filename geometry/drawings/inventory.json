@@ -2056,9 +2056,17 @@
       "connections": "cooler -> secondary air -> kiln; -> tertiary air duct",
       "dimensions": [
         {
-          "key": "kiln_hood.secondary_air_flow",
-          "value": 26.246,
-          "unit": "kg/s",
+          "key": "kiln_hood.seal_air_fraction",
+          "value": 0.2,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "kiln_hood.secondary_air_T",
+          "value": 1250.0,
+          "unit": "K",
           "source": "model",
           "status": "Estimated",
           "doc": "kiln/kiln_hood.md"
@@ -2137,7 +2145,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 9,
+        "Estimated": 10,
         "Schematic": 1
       },
       "missing": [

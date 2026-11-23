@@ -591,7 +591,17 @@ kiln_burner:
 # passes both checks, so it stays and is a model value, not a schematic).
 # ---------------------------------------------------------------------
 kiln_hood:
-  secondary_air_flow:  {value: 26.246, unit: kg/s,   source: model,       doc: kiln/kiln_hood.md}
+  # The kiln's air (kiln_burner.kiln_air_flow) splits as the twin splits
+  # it (main._update_steady_state_mass_flow): primary air (axial + swirl,
+  # kiln_burner.primary_air_fraction), air leaking in cold through the
+  # outlet seal, and the cooler's secondary air, the rest (23 Nov 2026:
+  # the flat 26.246 kg/s of 14 Nov predated the seal leak). The leak's
+  # share: the VDZ BAT reference kiln, CEMCAP D3.2 rev 2 (zenodo 1257112)
+  # Tables 3.8/3.9, as configs/twin_cfg.yaml burning.kiln_seal_air_fraction.
+  seal_air_fraction:   {value: 0.20,   unit: "-",    source: literature,  doc: kiln/kiln_hood.md}
+  # The secondary air off the cooler's first segment (the twin's, ~1255 K
+  # on 23 Nov 2026; the twin is not final): model.
+  secondary_air_T:     {value: 1250.0, unit: K,      source: model,       doc: kiln/kiln_hood.md}
   air_velocity_min:    {value: 4.0,    unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
   air_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
   # The hood as a box (user decision, 23 Nov 2026: size it from the

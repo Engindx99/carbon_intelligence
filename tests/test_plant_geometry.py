@@ -1337,3 +1337,68 @@ class TheFlameSolidIsTheSourcesTest(unittest.TestCase):
                 m = re.search(rf"boundary {name}: 1 face, ([\d.,]+) m2", log)
                 self.assertIsNotNone(m)
                 self.assertAlmostEqual(float(m.group(1).replace(",", ".")), a, delta=1e-5 * max(1.0, a))
+
+
+class TheFlameBoundariesAreTheTwinsAirAndBalanceTest(unittest.TestCase):
+    """plant_geometry.kiln_air_split() / kiln_flame_boundaries(): the kiln's
+    air split as the twin splits it, one value per flame face, mass in =
+    out; the seal's leak enters with the secondary air (user decision,
+    23 Nov 2026: no face of its own)."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.sp, cls.fb = pg.kiln_air_split(cls.g), pg.kiln_flame_boundaries(cls.g)
+
+    def test_the_seal_share_is_the_twins(self):
+        import yaml
+        cfg = yaml.safe_load((REPO_ROOT / "configs" / "twin_cfg.yaml").read_text(encoding="utf-8"))
+        self.assertAlmostEqual(pg.v(self.g["kiln_hood"]["seal_air_fraction"]),
+                               cfg["burning"]["kiln_seal_air_fraction"])
+        self.assertAlmostEqual(pg.v(self.g["kiln_burner"]["primary_air_fraction"]),
+                               cfg["burning"]["primary_air_fraction"])
+
+    def test_the_split_adds_up_to_the_kiln_air(self):
+        sp = self.sp
+        self.assertAlmostEqual(sp["primary"] + sp["seal"] + sp["secondary"], sp["kiln"], places=12)
+        ch = pg.kiln_burner(self.g)
+        self.assertAlmostEqual(ch["m_axial"] + ch["m_swirl"], sp["primary"], places=12)
+
+    def test_every_face_has_a_value(self):
+        faces = {f[0] for f in pg.kiln_flame(self.g)["faces"]}
+        self.assertEqual(set(self.fb["bc"]), faces)
+        for name, b in self.fb["bc"].items():
+            with self.subTest(name):
+                self.assertIn(b["kind"], ("mass_flow_inlet", "mass_flow_outlet", "pressure_outlet"))
+                if b["kind"] == "mass_flow_inlet":
+                    self.assertGreater(b["m"], 0.0)
+                    self.assertGreater(b["T"], 0.0)
+
+    def test_mass_in_is_mass_out(self):
+        bc, bal = self.fb["bc"], self.fb["balance"]
+        m_in = sum(b["m"] for b in bc.values() if b["kind"] == "mass_flow_inlet")
+        m_in += bc["coal_in"]["particles"]["m"]
+        self.assertAlmostEqual(m_in, bal["in"], places=9)
+        self.assertAlmostEqual(bal["in"], bal["tertiary_out"] + bal["kiln_gas_out"], places=9)
+        self.assertAlmostEqual(bc["tertiary_air_out"]["m"], bc["tertiary_supply_in"]["m"], places=12)
+
+    def test_the_mixed_secondary_inlet_holds_the_enthalpy(self):
+        b, sp = self.fb["bc"]["secondary_air_in"], self.sp
+        self.assertAlmostEqual(b["m"], sp["secondary"] + sp["seal"], places=12)
+        T_sec = pg.v(self.g["kiln_hood"]["secondary_air_T"])
+        T0 = pg.v(self.g["kiln_burner"]["primary_air_T"])
+        self.assertTrue(T0 < b["T"] < T_sec)
+        h_mix = sp["secondary"] * pg._air_h(T_sec) + sp["seal"] * pg._air_h(T0)
+        self.assertAlmostEqual(b["m"] * pg._air_h(b["T"]), h_mix, delta=1e-6 * abs(h_mix))
+
+    def test_the_air_enthalpy_is_the_shells_cp(self):
+        from physics.shell import cp_air
+        for T in (300.0, 800.0, 1300.0, 2000.0):
+            with self.subTest(T=T):
+                dh = (pg._air_h(T + 0.5) - pg._air_h(T - 0.5))
+                self.assertAlmostEqual(dh, cp_air(T), delta=1e-3)
+
+    def test_the_hood_still_passes_the_velocity_band(self):
+        h = pg.kiln_hood(self.g)
+        self.assertAlmostEqual(h["m"], self.sp["secondary"] + self.fb["bc"]["tertiary_supply_in"]["m"])
+        self.assertTrue(h["u_min"] <= h["u"] <= h["u_max"], h["u"])

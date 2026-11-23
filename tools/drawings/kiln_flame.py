@@ -45,7 +45,9 @@ def params(g, name="kiln_flame"):
     def y(dotted, label, key=None):
         return pv.primary(g, dotted, label, key=key or dotted)
 
-    sec = y("kiln_hood.secondary_air_flow", "Secondary air")
+    sec = [y("kiln_burner.kiln_air_flow", "Kiln air"), y("kiln_burner.primary_air_fraction", "Primary share"),
+           y("kiln_hood.seal_air_fraction", "Seal leak share")]
+    T_sec = y("kiln_hood.secondary_air_T", "Secondary air T")
     ta_m, ta_T = y("calciner.tertiary_air_flow", "Tertiary air"), y("calciner.tertiary_air_T", "Tertiary air T")
     vmin = y("kiln_hood.air_velocity_min", "Hood air velocity, min (literature)")
     vmax = y("kiln_hood.air_velocity_max", "Hood air velocity, max (literature)")
@@ -55,7 +57,7 @@ def params(g, name="kiln_flame"):
     drop = y("layout.cooler_drop", "Kiln axis over the cooler roof")
 
     P["m_air"] = pv.derived("kiln_flame.m_air", "Air through the hood (secondary + tertiary)",
-                            hd["m"], "kg/s", [sec, ta_m])
+                            hd["m"], "kg/s", sec + [ta_m])
     P["seal_clearance"] = y("kiln_hood.seal_clearance", "Back wall round the seal, clearance",
                             key="kiln_hood.seal_clearance")
     P["R_seal"] = pv.derived("kiln_flame.R_seal", "Outlet seal's outer radius (kiln_rotax)",
@@ -76,8 +78,8 @@ def params(g, name="kiln_flame"):
                                [P["m_air"], ta_T, vmax])
     P["u"] = pv.derived("kiln_flame.u", "Hood air velocity at the tertiary air T (4-10 m/s)",
                         hd["u"], "m/s", [P["m_air"], ta_T, P["area"], vmin, vmax])
-    P["u_hot"] = pv.derived("kiln_flame.u_hot", "Hood air velocity at 1250 K", hd["u_hot"], "m/s",
-                            [P["m_air"], P["area"], vmin, vmax])
+    P["u_hot"] = pv.derived("kiln_flame.u_hot", "Hood air velocity at the secondary air T", hd["u_hot"], "m/s",
+                            [P["m_air"], T_sec, P["area"], vmin, vmax])
     dta = y("calciner.D_tertiary_air", "Tertiary air duct D")
     P["D_ta"] = pv.derived("kiln_flame.D_ta", "Tertiary air mouth on the roof (the duct's D)",
                            2.0 * f["r_ta"], "m", [dta])

@@ -1730,6 +1730,21 @@ def kiln_burner_body(g):
 # ======================================================================
 # The kiln hood and the kiln inlet chamber: gas velocity checks
 # ======================================================================
+def kiln_air_split(g):
+    """The kiln's air (kiln_burner.kiln_air_flow) split as the twin splits
+    it (main._update_steady_state_mass_flow): primary (the burner's axial +
+    swirl air), the outlet seal's cold leak, the cooler's secondary air
+    (the rest). The coal's conveying air is on top (kiln_burner(); not in
+    the twin: an open finding)."""
+    b, h = g["kiln_burner"], g["kiln_hood"]
+    m = v(b["kiln_air_flow"])
+    f_pa, f_seal = v(b["primary_air_fraction"]), v(h["seal_air_fraction"])
+    if not 0.0 <= f_seal < 1.0 - f_pa:
+        raise ValueError("kiln_air_split: the seal leak leaves no secondary air")
+    return {"kiln": m, "primary": f_pa * m, "seal": f_seal * m,
+            "secondary": (1.0 - f_pa - f_seal) * m}
+
+
 def kiln_hood(g):
     """The hood as a box on the cooler round the kiln's end (user decision,
     23 Nov 2026: sized from the kiln's outlet seal). Its back wall, the
@@ -1739,8 +1754,10 @@ def kiln_hood(g):
     cooler's roof (cooler_drop under the kiln's bore) and runs over the
     cooler's hood opening (its depth). The air through it is the
     secondary air and the tertiary air; at the tertiary air's temperature
-    (and at 1250 K, the hotter secondary air) the velocity over its
-    section (width x height) is held to the literature's range."""
+    (and at the hotter secondary air's) the velocity over its section
+    (width x height) is held to the literature's range. The secondary air
+    is the kiln's air less the primary air and the seal's leak (as the
+    twin splits it; kiln_air_split())."""
 
     h = g["kiln_hood"]
     kl, co = kiln(g), cooler(g)
@@ -1750,7 +1767,7 @@ def kiln_hood(g):
     below = 0.5 * kl["D"] + v(g["layout"]["cooler_drop"])      # the kiln's axis over the cooler's roof
     W, H, depth = 2.0 * half_w, below + half_w, co["hood_L"]
     bnd = calciner_boundaries(g)["tertiary_air_inlet"]
-    m = bnd["flow"] + v(h["secondary_air_flow"])
+    m = bnd["flow"] + kiln_air_split(g)["secondary"]
     area = W * H
 
     def vel(T):
@@ -1768,7 +1785,7 @@ def kiln_hood(g):
         "above": half_w, "below": below,     # the roof over, the floor under the kiln's axis
         "area": area,
         "u": vel(bnd["T"]),
-        "u_hot": vel(1250.0),
+        "u_hot": vel(v(h["secondary_air_T"])),
         "area_min": m / rho / vmax,
         "u_min": v(h["air_velocity_min"]),
         "u_max": vmax,
@@ -1914,6 +1931,83 @@ def kiln_flame(g):
         "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta,
         "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},
     }
+
+
+def _air_h(T, T_ref=298.15):
+    """Dry air's sensible enthalpy [J/kg] from T_ref, cp of physics/shell.py
+    (cp_air, a polynomial in T) integrated exactly."""
+    c = (1034.09, -0.2849, 7.8173e-4, -4.9701e-7, 1.0777e-10)
+
+    def H(t):
+        return sum(ci * t ** (i + 1) / (i + 1) for i, ci in enumerate(c))
+    return H(T) - H(T_ref)
+
+
+def _air_T_of_h(h, lo=200.0, hi=2500.0):
+    for _ in range(80):
+        mid = 0.5 * (lo + hi)
+        if _air_h(mid) < h:
+            lo = mid
+        else:
+            hi = mid
+    return 0.5 * (lo + hi)
+
+
+def kiln_flame_boundaries(g):
+    """The flame volume's boundary values, one per kiln_flame() face (CFD
+    set-up input, kiln frame). Air streams from kiln_air_split() and the
+    burner (kiln_burner()), the tertiary air from the calciner's boundary
+    (calciner_boundaries()).
+
+    The outlet seal's cold leak has no face of its own (user decision,
+    23 Nov 2026): it enters with the secondary air through segment 1, at
+    the mixed temperature (an enthalpy balance, dry air); listed apart in
+    "streams". The local cold jet at the seal is not modelled.
+
+    Each: {"kind": mass_flow_inlet | mass_flow_outlet | pressure_outlet,
+    "m" [kg/s] (None: the solver's), "T" [K] (None: the solver's), "gas":
+    air | None, "particles": {...} | None, "note"}. "streams" lists every
+    stream in [kg/s]; "balance" in = out (the fuel burns into gas and
+    ash, all leaving by the kiln gas outlet)."""
+    b, h = g["kiln_burner"], g["kiln_hood"]
+    split, ch = kiln_air_split(g), kiln_burner(g)
+    ta = calciner_boundaries(g)["tertiary_air_inlet"]
+    T0, T_sec = v(b["primary_air_T"]), v(h["secondary_air_T"])
+    m_sec, m_seal = split["secondary"], split["seal"]
+    m_in1 = m_sec + m_seal
+    T_in1 = _air_T_of_h((m_sec * _air_h(T_sec) + m_seal * _air_h(T0)) / m_in1)
+    fuel = v(b["fuel_flow"])
+    streams = {
+        "secondary_air": m_sec, "seal_leak": m_seal, "tertiary_air": ta["flow"],
+        "axial_air": ch["m_axial"], "swirl_air": ch["m_swirl"], "conveying_air": ch["m_transport"],
+        "coal": fuel,
+    }
+    m_in = sum(streams.values())
+    m_ta_out = ta["flow"]
+    bc = {
+        "secondary_air_in": {"kind": "mass_flow_inlet", "m": m_in1, "T": T_in1, "gas": "air", "particles": None,
+                             "note": "secondary air + the outlet seal's leak (no face of its own), mixed"},
+        "tertiary_supply_in": {"kind": "mass_flow_inlet", "m": ta["flow"], "T": ta["T"], "gas": "air",
+                               "particles": None, "note": "cooler segment 2: the tertiary air's supply"},
+        "tertiary_air_out": {"kind": "mass_flow_outlet", "m": m_ta_out, "T": None, "gas": None, "particles": None,
+                             "note": "to the calciner: the calciner's tertiary air inlet flow"},
+        "kiln_gas_out": {"kind": "pressure_outlet", "m": None, "T": None, "gas": None, "particles": None,
+                         "note": "0 Pa gauge (reference); carries the rest"},
+        "coal_in": {"kind": "mass_flow_inlet", "m": ch["m_transport"], "T": T0, "gas": "air",
+                    "particles": {"m": fuel, "T": T0, "size": None,
+                                  "size_note": "no source: the coal's fineness (R90) is not in the yaml"},
+                    "note": "conveying air (not in the twin) + the coal"},
+        "axial_in": {"kind": "mass_flow_inlet", "m": ch["m_axial"], "T": T0, "gas": "air", "particles": None,
+                     "note": "the twin's primary air, axial share"},
+        "swirl_in": {"kind": "mass_flow_inlet", "m": ch["m_swirl"], "T": T0, "gas": "air", "particles": None,
+                     "note": "the twin's primary air, swirl share"},
+    }
+    names = {f[0] for f in kiln_flame(g)["faces"]}
+    if set(bc) != names:
+        raise ValueError(f"kiln_flame_boundaries: faces {sorted(names ^ set(bc))} without a value")
+    return {"bc": bc, "streams": streams,
+            "balance": {"in": m_in, "tertiary_out": m_ta_out, "kiln_gas_out": m_in - m_ta_out},
+            "T_secondary_mixed": T_in1}
 
 
 def chamber_section(g):

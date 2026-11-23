@@ -1548,8 +1548,21 @@ def _kiln_burner_rows(g):
 
 def _kiln_hood_rows(g):
     h, hd = g["kiln_hood"], pg.kiln_hood(g)
+    sp, fb = pg.kiln_air_split(g), pg.kiln_flame_boundaries(g)
+    bc = fb["bc"]
     return [
-        row_src("İkincil hava debisi", h["secondary_air_flow"]),
+        row_src("Conta kaçağı payı (fırın havasının)", h["seal_air_fraction"]),
+        row_src("İkincil hava sıcaklığı", h["secondary_air_T"]),
+        row_der("Fırın havası (twin)", sp["kiln"], "kg/s", 3),
+        row_der("Birincil hava (eksenel + swirl)", sp["primary"], "kg/s", 3),
+        row_der("Conta kaçağı (ortam sıcaklığında)", sp["seal"], "kg/s", 3),
+        row_der("İkincil hava (fırın havası − birincil − kaçak)", sp["secondary"], "kg/s", 3),
+        row_der("CFD: segment 1 girişi (ikincil + kaçak)", bc["secondary_air_in"]["m"], "kg/s", 3),
+        row_der("CFD: segment 1 girişi, karışım sıcaklığı", bc["secondary_air_in"]["T"], "K", 1),
+        row_der("CFD: segment 2 girişi (tersiyer besleme)", bc["tertiary_supply_in"]["m"], "kg/s", 3),
+        row_der("CFD: kömür taşıma havası (twin'de yok)", bc["coal_in"]["m"], "kg/s", 3),
+        row_der("CFD: kömür", bc["coal_in"]["particles"]["m"], "kg/s", 3),
+        row_der("CFD: fırın gazı çıkışı (kütle dengesi)", fb["balance"]["kiln_gas_out"], "kg/s", 3),
         row_src("Hız ölçütü, alt", h["air_velocity_min"]),
         row_src("Hız ölçütü, üst", h["air_velocity_max"]),
         row_der("Başlıktan geçen hava (ikincil + tersiyer)", hd["m"], "kg/s", 2),
@@ -1561,7 +1574,7 @@ def _kiln_hood_rows(g):
         row_der("Başlık derinliği (soğutucunun başlık açıklığı)", hd["depth"], "m", 2),
         row_der("Kesit alanı (genişlik × yükseklik)", hd["area"], "m²", 2),
         row_der("Hız (1073 K)", hd["u"], "m/s", 2),
-        row_der("Hız (1250 K)", hd["u_hot"], "m/s", 2),
+        row_der("Hız (ikincil havanın sıcaklığında)", hd["u_hot"], "m/s", 2),
         row_der("Ölçütün izin verdiği en küçük kesit", hd["area_min"], "m²", 2),
     ]
 

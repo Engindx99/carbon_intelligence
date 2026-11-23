@@ -9,20 +9,31 @@ Başlık için yayınlanmış bir ölçü ya da ölçü kuralı bulunamadı (16 
 <!-- BEGIN GENERATED (tools/gen_geometry.py) -- elle düzenlenmez; kaynak geometry/plant_geometry.yaml -->
 | Ölçü | Değer | Kaynak |
 |---|---|---|
-| İkincil hava debisi | 26.246 kg/s | modelleme |
+| Conta kaçağı payı (fırın havasının) | 0.2 | literatür |
+| İkincil hava sıcaklığı | 1250 K | modelleme |
+| Fırın havası (twin) | 26.399 kg/s | türetilmiş |
+| Birincil hava (eksenel + swirl) | 2.640 kg/s | türetilmiş |
+| Conta kaçağı (ortam sıcaklığında) | 5.280 kg/s | türetilmiş |
+| İkincil hava (fırın havası − birincil − kaçak) | 18.480 kg/s | türetilmiş |
+| CFD: segment 1 girişi (ikincil + kaçak) | 23.759 kg/s | türetilmiş |
+| CFD: segment 1 girişi, karışım sıcaklığı | 1052.0 K | türetilmiş |
+| CFD: segment 2 girişi (tersiyer besleme) | 54.925 kg/s | türetilmiş |
+| CFD: kömür taşıma havası (twin'de yok) | 1.254 kg/s | türetilmiş |
+| CFD: kömür | 2.095 kg/s | türetilmiş |
+| CFD: fırın gazı çıkışı (kütle dengesi) | 29.749 kg/s | türetilmiş |
 | Hız ölçütü, alt | 4 m/s | literatür |
 | Hız ölçütü, üst | 10 m/s | literatür |
-| Başlıktan geçen hava (ikincil + tersiyer) | 81.17 kg/s | türetilmiş |
-| Hacimsel debi (1073 K) | 247.8 m³/s | türetilmiş |
+| Başlıktan geçen hava (ikincil + tersiyer) | 73.40 kg/s | türetilmiş |
+| Hacimsel debi (1073 K) | 224.1 m³/s | türetilmiş |
 | Çıkış contasının dış yarıçapı (ROTAX) | 3.55 m | türetilmiş |
 | Conta çevresindeki pay | 0.25 m | modelleme |
 | Başlık genişliği (2 × (conta + pay)) | 7.60 m | türetilmiş |
 | Başlık yüksekliği (soğutucu tavanından contanın üstüne) | 7.20 m | türetilmiş |
 | Başlık derinliği (soğutucunun başlık açıklığı) | 5.98 m | türetilmiş |
 | Kesit alanı (genişlik × yükseklik) | 54.72 m² | türetilmiş |
-| Hız (1073 K) | 4.53 m/s | türetilmiş |
-| Hız (1250 K) | 5.27 m/s | türetilmiş |
-| Ölçütün izin verdiği en küçük kesit | 24.78 m² | türetilmiş |
+| Hız (1073 K) | 4.09 m/s | türetilmiş |
+| Hız (ikincil havanın sıcaklığında) | 4.77 m/s | türetilmiş |
+| Ölçütün izin verdiği en küçük kesit | 22.41 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## Dayanak
