@@ -1420,3 +1420,17 @@ class TheTertiaryOutletIsClearOfTheHoodTest(unittest.TestCase):
         up = sum((p[i] - (0.0, 0.0, pg.kiln(g)["L"])[i]) * f["U"][i] for i in range(3))
         self.assertAlmostEqual(up, hd["above"] + f["L_ta"])
         self.assertAlmostEqual(f["box"][4], p[1] + f["r_ta"] * abs(f["U"][2]), places=6)
+
+
+class TheFlameVolumeHoldsTheFlameTest(unittest.TestCase):
+    """The flame volume runs at least flame_domain_margin estimated flame
+    lengths from the burner tip (CLAUDE.md rule 8: the flame's end is not
+    cut off); the estimate is the literature's flame scaled by the kiln D."""
+
+    def test_the_margin(self):
+        g = pg.load()
+        f, h = pg.kiln_flame(g), g["kiln_hood"]
+        est = pg.v(h["flame_L_ref"]) * pg.kiln(g)["D"] / pg.v(h["flame_L_ref_D"])
+        self.assertAlmostEqual(f["L_flame_est"], est)
+        self.assertGreaterEqual(f["L_tip_to_cut"], pg.v(h["flame_domain_margin"]) * est)
+        self.assertEqual(h["flame_L_ref"]["source"], "literature")

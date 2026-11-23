@@ -367,6 +367,22 @@
       "short": "tip_to_cut"
     },
     {
+      "key": "kiln_flame.L_flame_est",
+      "label": "Flame length, estimate (Sarkar 2009, scaled by D)",
+      "value": 12.659340659340659,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_hood.flame_L_ref",
+        "kiln_hood.flame_L_ref_D",
+        "kiln.D"
+      ],
+      "value_mm": 12659.340659,
+      "short": "L_flame_est"
+    },
+    {
       "key": "kiln_flame.castable_past_front",
       "label": "Burner castable past the hood's front wall (> 0: no bare steel)",
       "value": 0.3126838463104207,

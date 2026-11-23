@@ -2144,6 +2144,30 @@
           "doc": "kiln/kiln_hood.md"
         },
         {
+          "key": "kiln_hood.flame_L_ref",
+          "value": 12.0,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.flame_L_ref_D",
+          "value": 4.55,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.flame_domain_margin",
+          "value": 2.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
           "key": "layout.cooler_drop",
           "value": 1.0,
           "unit": "m",
@@ -2153,7 +2177,7 @@
         }
       ],
       "status_counts": {
-        "Estimated": 11,
+        "Estimated": 14,
         "Schematic": 1
       },
       "missing": [

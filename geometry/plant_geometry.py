@@ -1926,9 +1926,19 @@ def kiln_flame(g):
     faces.append(("axial_in", to_k((0.0, 0.5 * (ax0 + ax1), -T - LP)), nb, ch["groups"]["axial"]["a_in"], (0.9, 0.0, 0.0)))
     faces.append(("swirl_in", to_k((0.0, 0.5 * (sw0 + sw1), -T - LP)), nb, ch["groups"]["swirl"]["a_in"], (1.0, 0.45, 0.45)))
 
+    # the flame must end well inside the volume (rule 8): the literature's
+    # flame length scaled by the kiln's D, times a margin, from the tip
+    hk = g["kiln_hood"]
+    L_est = v(hk["flame_L_ref"]) * kl["D"] / v(hk["flame_L_ref_D"])
+    L_tip = tip[2] - z_cut
+    if L_tip < v(hk["flame_domain_margin"]) * L_est:
+        raise ValueError(f"kiln_flame: the volume runs {L_tip:.1f} m from the tip, the flame's "
+                         f"estimate {L_est:.1f} m needs {v(hk['flame_domain_margin']) * L_est:.1f} m")
+
     solid = [b for b in bodies if not b["name"].startswith("void_")]
     box = tuple(min(b["box"][i] for b in solid) for i in range(3)) + tuple(max(b["box"][i] for b in solid) for i in range(3, 6))
     return {
+        "L_flame_est": L_est, "L_tip_to_cut": L_tip,
         "bodies": bodies, "faces": faces, "box": box, "z_cut": z_cut, "L_flame": kl["burning_L"],
         "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta, "L_ta": L_ta,
         "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},

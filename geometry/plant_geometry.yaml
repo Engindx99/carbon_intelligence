@@ -634,6 +634,20 @@ kiln_hood:
   # reach the outlet face (backflow there; user, 23 Nov 2026: 3 D). The
   # duct's real path to the calciner is not in this volume. Model.
   tertiary_outlet_L_over_D: {value: 3.0, unit: "-",  source: model,       doc: kiln/kiln_hood.md}
+  # The flame's length, to check the flame volume holds it (CLAUDE.md
+  # rule 8). One published case near this plant: Sarkar & Bhad, CFD of a
+  # cement kiln with a multi-channel coal burner (7th Int. Conf. on CFD
+  # in the Minerals and Process Industries, CSIRO, Melbourne 2009; Fluent):
+  # 68 m x 4.55 m ID kiln, 4500 t/d, the flame zone up to 12 m from the
+  # burner (from the abstract as quoted in search results, 23 Nov 2026;
+  # the full text was not reachable). Scaled to this kiln by its D
+  # (enclosed jet flames: Thring & Newby 1953, Craya-Curtet similarity at
+  # a like momentum ratio): an estimate, not a prediction.
+  flame_L_ref:         {value: 12.0,   unit: m,      source: literature,  doc: kiln/kiln_burner.md}
+  flame_L_ref_D:       {value: 4.55,   unit: m,      source: literature,  doc: kiln/kiln_burner.md}
+  # The volume must run at least this many flame lengths from the tip
+  # (the burnout and the post-flame mixing inside it; model).
+  flame_domain_margin: {value: 2.0,    unit: "-",    source: model,       doc: kiln/kiln_burner.md}
 kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
   # The CFD solid's kiln mouth (user decision, 22 Nov 2026): a short
