@@ -9,6 +9,7 @@ from the source (step 4), the macros are held to it here.
 import math
 import re
 import unittest
+import yaml
 
 from geometry import plant_geometry as pg
 from tests.test_plant_topology_cfd_lock import MACROS, _cases, _consts
@@ -660,13 +661,15 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
         self.assertIn("closed manifold solid", self.log)
 
     def test_the_tube_is_the_sources(self):
-        d, length, z0, l_cfd, slope, vol = self.num(
-            r"kiln: D # m, L # m \(the solid from z #, the chamber's stub before it: # m\), "
+        d, length, z0, z1, slope, vol = self.num(
+            r"kiln: D # m, L # m \(the solid from z # to z #: the chamber's stub before it, the flame volume after it\), "
             r"slope # % \(installation, not built into the solid\), volume # m3")
         self.assertAlmostEqual(d, self.k["D"], places=5)
         self.assertAlmostEqual(length, self.k["L"], places=5)
         self.assertAlmostEqual(z0, self.k["z_cfd0"], places=5)
-        self.assertAlmostEqual(z0 + l_cfd, self.k["L"], places=5)          # no extra length
+        self.assertAlmostEqual(z1, self.k["z_cfd1"], places=5)
+        # the flame volume's bore takes over at z1: stub + solid + its bore = L, no overlap
+        self.assertAlmostEqual(z1, pg.kiln_flame(pg.load())["z_cut"], places=9)
         self.assertAlmostEqual(z0, pg.kiln_inlet_chamber(pg.load())["L_stub"], places=9)
         self.assertAlmostEqual(slope, self.k["slope"], places=5)
         self.assertAlmostEqual(vol, self.k["volume_cfd"], delta=1e-6 * self.k["volume_cfd"])
@@ -681,15 +684,175 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
         self.assertAlmostEqual(vol, self.k["volume_cfd"], delta=1e-3 * self.k["volume_cfd"])
         zmin, zmax = self.num(r"extent: x [-\d.,]+ \.\. [-\d.,]+, y [-\d.,]+ \.\. [-\d.,]+, z # \.\. # m")
         self.assertAlmostEqual(zmin, self.k["z_cfd0"], places=2)
-        self.assertAlmostEqual(zmax, self.k["L"], places=2)
+        self.assertAlmostEqual(zmax, self.k["z_cfd1"], places=2)
 
     def test_the_two_ends_are_the_boundaries(self):
         area = math.pi * (0.5 * self.k["D"]) ** 2
-        for name in ("kiln_back", "kiln_hood"):
+        for name in ("kiln_back", "burning_zone"):
             with self.subTest(name):
                 self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], area, delta=2e-3 * area)
         self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.k["wall_area_cfd"],
                                delta=2e-3 * self.k["wall_area_cfd"])
+
+
+class TheCoolerVolumeIsItsAirTest(unittest.TestCase):
+    """The cooler's CFD volume (cooler_cfd(), cooler_boundaries(); user
+    decisions, 23 Nov 2026): the FLS segment shape at the twin's 2.2
+    kg/kg, the hood outlets as the flame volume's cooler inlets, the vent
+    the rest, the bed the FLS design bed at the twin's grate speed."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.c, cls.f = pg.cooler(cls.g), pg.cooler_cfd(cls.g)
+        cls.b = pg.cooler_boundaries(cls.g)
+
+    def test_the_segments_carry_the_air_rate_in_the_fls_shape(self):
+        co, m = self.g["cooler"], self.b["air"]["m"]
+        clinker = self.g["kiln"]["clinker_flow"]["value"]
+        self.assertAlmostEqual(sum(m), co["air_rate"]["value"] * clinker, places=9)
+        fls = [40.89, 18.56] + [16.24] * 8
+        for got, w in zip(m, fls):
+            self.assertAlmostEqual(got / sum(m), w / sum(fls), places=12)
+        self.assertEqual(len(m), self.c["segments"])
+
+    def test_the_mass_balances_and_the_vent_takes_the_rest(self):
+        bal = self.b["balance"]
+        self.assertAlmostEqual(bal["in"], bal["hood_1"] + bal["hood_2"] + bal["vent"], places=9)
+        self.assertGreater(bal["vent"], 0.0)
+        bc = self.b["bc"]
+        inlets = sum(x["m"] for k, x in bc.items() if x["kind"] == "mass_flow_inlet")
+        self.assertAlmostEqual(inlets, bal["in"], places=9)
+        self.assertEqual(bc["vent_out"]["kind"], "pressure_outlet")
+
+    def test_the_hood_outlets_are_the_flame_volumes_cooler_inlets(self):
+        fb = pg.kiln_flame_boundaries(self.g)
+        seal = fb["streams"]["seal_leak"]
+        self.assertAlmostEqual(self.b["bc"]["hood_1"]["m"] + seal, fb["bc"]["secondary_air_in"]["m"], places=9)
+        self.assertAlmostEqual(self.b["bc"]["hood_2"]["m"], fb["bc"]["tertiary_supply_in"]["m"], places=9)
+        faces = {x[0]: x for x in pg.kiln_flame(self.g)["faces"]}
+        for mine, theirs in (("hood_1", "secondary_air_in"), ("hood_2", "tertiary_supply_in")):
+            with self.subTest(mine):
+                self.assertAlmostEqual(self.f["faces"][mine], faces[theirs][3])
+
+    def test_every_face_has_a_value(self):
+        self.assertEqual(set(self.f["faces"]), set(self.b["bc"]))
+
+    def test_the_vent_is_its_flow_at_the_literature_velocity(self):
+        co = self.g["cooler"]
+        rho = 101325.0 * pg.AIR_M / (pg.R_GAS * co["vent_T"]["value"])
+        u = self.b["balance"]["vent"] / (rho * self.f["faces"]["vent_out"])
+        self.assertAlmostEqual(u, co["vent_velocity"]["value"], places=9)
+        self.assertGreaterEqual(self.f["vent_L"] / self.f["vent_D"], 3.0 - 1e-12)
+        self.assertLessEqual(self.f["vent_x"] + 0.5 * self.f["vent_D"], self.c["length"])
+        # near the middle, one segment towards the cold end (user, 23 Nov 2026)
+        self.assertAlmostEqual(self.f["vent_x"], 0.5 * self.c["length"] + self.c["segment_L"], places=12)
+        self.assertLess(self.f["vent_D"], self.c["width"])
+
+    def test_the_bed_is_the_fls_bed_at_the_twins_grate_speed(self):
+        cfg = yaml.safe_load((REPO_ROOT / "configs" / "twin_cfg.yaml").read_text())["cooler"]
+        co = self.g["cooler"]
+        self.assertEqual(cfg["bed_porosity"], co["bed_porosity"]["value"])
+        self.assertEqual(cfg["solid_density"], co["solid_density"]["value"])
+        self.assertEqual(cfg["particle_diameter_m"], co["particle_d"]["value"])
+        clinker = self.g["kiln"]["clinker_flow"]["value"]
+        h = clinker / (self.c["bed_rho"] * self.c["width"] * cfg["grate_speed_m_s"])
+        self.assertAlmostEqual(h, self.c["bed_h"], delta=1e-3 * self.c["bed_h"])
+        self.assertAlmostEqual(self.b["bed"]["clinker_velocity"], cfg["grate_speed_m_s"], delta=1e-4)
+
+    def test_the_inlet_grate_is_the_sources(self):
+        co = self.g["cooler"]
+        self.assertAlmostEqual(self.c["cis_L"], co["cis_segments"]["value"] * self.c["segment_L"])
+        self.assertAlmostEqual(self.c["cis_rise"], self.c["cis_L"] * math.tan(math.radians(co["cis_angle"]["value"])))
+        self.assertLess(self.c["cis_rise"] + self.c["bed_h"], self.c["casing_height"])
+
+    def test_the_ergun_coefficients(self):
+        eps, d = 0.4, 0.015
+        visc, inert = pg.ergun(eps, d)
+        self.assertAlmostEqual(visc, 150 * 0.36 / (0.064 * 2.25e-4), delta=1e-6 * visc)
+        self.assertAlmostEqual(inert, 3.5 * 0.6 / (0.064 * 0.015), delta=1e-9 * inert)
+
+
+class TheCoolerMeetsTheHoodFaceToFaceTest(unittest.TestCase):
+    """The cooler, the hood and the kiln one gas path (user, 23 Nov 2026):
+    placed by cooler_placement(), the cooler's hood_1 / hood_2 lie on the
+    flame volume's secondary_air_in / tertiary_supply_in (same plane, same
+    rectangle), its roof elsewhere on the hood's floor level, no gap or
+    overlap."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.cp, cls.c, cls.f = pg.cooler_placement(cls.g), pg.cooler(cls.g), pg.cooler_cfd(cls.g)
+        cls.fl = {x[0]: x for x in pg.kiln_flame(cls.g)["faces"]}
+
+    def test_the_hood_openings_are_the_flame_inlets(self):
+        seg, w2 = self.c["segment_L"], 0.5 * self.c["width"]
+        for k, (mine, theirs) in enumerate((("hood_1", "secondary_air_in"), ("hood_2", "tertiary_supply_in"))):
+            z = self.f["hood_z"][k]
+            with self.subTest(mine):
+                # the centre on the flame face's point, the normals opposite, the areas equal
+                ctr = self.cp["to_kiln"](((k + 0.5) * seg, 0.0, z))
+                for a, b in zip(ctr, self.fl[theirs][1]):
+                    self.assertAlmostEqual(a, b, places=9)
+                up = self.cp["R"][2]
+                self.assertAlmostEqual(sum(a * b for a, b in zip(up, self.fl[theirs][2])), -1.0, places=12)
+                self.assertAlmostEqual(self.f["faces"][mine], self.fl[theirs][3], places=9)
+                # its corners too: the rectangle seg x width, hot end at the hood's back wall
+                for x in (k * seg, (k + 1) * seg):
+                    for y in (-w2, w2):
+                        p = self.cp["to_kiln"]((x, y, z))
+                        h = sum((p[i] - (0.0, 0.0, pg.kiln(self.g)["L"])[i]) * self.cp["R"][0][i] for i in range(3))
+                        self.assertGreaterEqual(h, -1e-9)
+                        self.assertLessEqual(h, pg.kiln_hood(self.g)["depth"] + 1e-9)
+
+    def test_the_roof_is_the_hoods_floor(self):
+        hd = pg.kiln_hood(self.g)
+        p = self.cp["to_kiln"]((0.0, 0.0, self.c["casing_height"]))
+        u = sum((p[i] - (0.0, 0.0, pg.kiln(self.g)["L"])[i]) * self.cp["R"][2][i] for i in range(3))
+        self.assertAlmostEqual(u, -hd["below"], places=9)
+        # the roof is flat (no steps) and the flame volume has no stubs: its
+        # floor is split across at one segment into its two inlets
+        self.assertEqual(self.f["hood_z"], (self.c["casing_height"],) * 2)
+        fl = pg.kiln_flame(self.g)
+        self.assertFalse([b for b in fl["bodies"] if b["name"].startswith("cooler_seg")])
+        K = (0.0, 0.0, pg.kiln(self.g)["L"])
+        for q in fl["floor_split"]:
+            h = sum((q[i] - K[i]) * self.cp["R"][0][i] for i in range(3))
+            u = sum((q[i] - K[i]) * self.cp["R"][2][i] for i in range(3))
+            self.assertAlmostEqual(h, self.c["segment_L"], places=9)
+            self.assertAlmostEqual(u, -hd["below"], places=9)
+
+    def test_the_assembly_holds_the_cooler_where_placed(self):
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "kiln_outlet_assembly_build.log"
+        if not log.is_file():
+            self.skipTest("no assembly log")
+        text = log.read_text(encoding="latin-1")
+        self.assertIn("placed cooler.SLDPRT", text)
+        m = re.search(r"component cooler-1: x ([-\d.,]+) \.\. ([-\d.,]+), y ([-\d.,]+) \.\. ([-\d.,]+), z ([-\d.,]+) \.\. ([-\d.,]+)", text)
+        self.assertIsNotNone(m)
+        got = [float(t.replace(",", ".").rstrip(".")) for t in m.groups()]
+        want = [self.cp["box"][i] for i in (0, 3, 1, 4, 2, 5)]
+        for a, b in zip(got, want):
+            self.assertAlmostEqual(a, b, delta=0.01)
+
+    def test_the_kiln_bore_meets_the_flame_volume(self):
+        # the kiln's CFD bore ends where the flame volume's begins (one gas
+        # path from the inlet chamber's stub to the hood), and the assembly
+        # holds it there
+        k, f = pg.kiln(self.g), pg.kiln_flame(self.g)
+        self.assertAlmostEqual(k["z_cfd1"], f["z_cut"], places=12)
+        self.assertAlmostEqual(k["z_cfd0"] + k["L_cfd"] + f["L_flame"], k["L"], places=9)
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "kiln_outlet_assembly_build.log"
+        if not log.is_file():
+            self.skipTest("no assembly log")
+        text = log.read_text(encoding="latin-1")
+        m = re.search(r"component kiln-1: x [-\d.,]+ \.\. [-\d.,]+, y [-\d.,]+ \.\. [-\d.,]+, z ([-\d.,]+) \.\. ([-\d.,]+)", text)
+        self.assertIsNotNone(m)
+        z0, z1 = (float(t.replace(",", ".").rstrip(".")) for t in m.groups())
+        self.assertAlmostEqual(z0, k["z_cfd0"], delta=0.01)
+        self.assertAlmostEqual(z1, k["z_cfd1"], delta=0.01)
+        self.assertIn("view from the kiln inlet, kiln bore hidden, flame volume and cooler see-through", text)
 
 
 @unittest.skipUnless(
@@ -697,14 +860,15 @@ class TheKilnSolidIsTheSourcesTest(unittest.TestCase):
     "no SolidWorks build log here",
 )
 class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
-    """cooler.bas builds the box of cooler.md; its log carries the size,
-    the floor's strips, the hood opening and the wall, held here to
-    plant_geometry.cooler."""
+    """cooler.bas builds cooler_cfd(): the bed and the freeboard; its log
+    carries the size, the volumes, the floor's strips, the hood outlets,
+    the vent and the walls, held here to plant_geometry."""
 
     @classmethod
     def setUpClass(cls):
         cls.log = (REPO_ROOT / "geometry" / "output" / "2500" / "cooler_build.log").read_text(encoding="latin-1")
-        cls.c = pg.cooler(pg.load())
+        g = pg.load()
+        cls.c, cls.f = pg.cooler(g), pg.cooler_cfd(g)
 
     def num(self, pattern):
         m = re.search(pattern.replace("#", r"(-?[\d.,]+)"), self.log)
@@ -713,16 +877,25 @@ class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
 
     def test_the_build_succeeded(self):
         self.assertTrue(self.log.startswith("cooler built"), self.log.splitlines()[0])
-        self.assertIn("closed manifold solid", self.log)
+        self.assertIn("bed: closed manifold solid", self.log)
+        self.assertIn("freeboard: closed manifold solid", self.log)
 
-    def test_the_box_is_the_sources(self):
-        w, length, h, vol = self.num(r"cooler: # m wide, # m long, # m high, volume # m3")
-        self.assertAlmostEqual(w, self.c["width"], places=5)
-        self.assertAlmostEqual(length, self.c["length"], places=5)
-        self.assertAlmostEqual(h, self.c["casing_height"], places=5)
-        self.assertAlmostEqual(vol, self.c["box_volume"], delta=1e-6 * self.c["box_volume"])
-        got = self.num(r"cooler volume # m3")[0]
-        self.assertAlmostEqual(got, self.c["box_volume"], delta=1e-3 * self.c["box_volume"])
+    def test_the_casing_is_the_sources(self):
+        w, length, h, cis, rise, bed = self.num(
+            r"cooler: # m wide, # m long, # m high; inlet grate # m, rising # m to the hot end; bed # m deep")
+        for got, want in ((w, self.c["width"]), (length, self.c["length"]), (h, self.c["casing_height"]),
+                          (cis, self.c["cis_L"]), (rise, self.c["cis_rise"]), (bed, self.c["bed_h"])):
+            self.assertAlmostEqual(got, want, places=5)
+        for what, key in (("bed", "bed_volume"), ("freeboard", "freeboard_volume")):
+            with self.subTest(what):
+                got = self.num(rf"{what} volume # m3")[0]
+                self.assertAlmostEqual(got, self.f[key], delta=1e-3 * self.f[key])
+
+    def test_the_vent_is_the_sources(self):
+        D, x, L = self.num(r"vent: bore # m at x = # m, run # m up")
+        self.assertAlmostEqual(D, self.f["vent_D"], places=5)
+        self.assertAlmostEqual(x, self.f["vent_x"], places=4)
+        self.assertAlmostEqual(L, self.f["vent_L"], places=5)
 
     def test_the_zones_are_the_sources(self):
         n, seg, nh, hood = self.num(r"cooler: # segments of # m \(grate_air_1 \.\. \d+ from the hot end\), hood opening # segments, x 0 \.\. # m")
@@ -731,15 +904,20 @@ class TheCoolerSolidIsTheSourcesTest(unittest.TestCase):
         self.assertEqual(int(nh), self.c["hood_segments"])
         self.assertAlmostEqual(hood, self.c["hood_L"], places=5)
 
-    def test_every_strip_and_the_hood_are_one_face(self):
-        for i in range(1, self.c["segments"] + 1):
-            with self.subTest(i):
-                self.assertAlmostEqual(self.num(rf"boundary grate_air_{i}: # m2")[0], self.c["segment_area"],
-                                       delta=2e-3 * self.c["segment_area"])
-        self.assertAlmostEqual(self.num(r"boundary hood_opening: # m2")[0], self.c["hood_area"],
-                               delta=2e-3 * self.c["hood_area"])
-        self.assertAlmostEqual(self.num(r"boundary wall: \d+ faces, # m2")[0], self.c["wall_area"],
-                               delta=2e-3 * self.c["wall_area"])
+    def test_every_face_is_the_sources(self):
+        for name, area in self.f["faces"].items():
+            if name == "bed_top":
+                continue
+            with self.subTest(name):
+                self.assertAlmostEqual(self.num(rf"boundary {name}: # m2")[0], area, delta=2e-3 * area)
+        top = self.num(r"boundary bed_top: # m2 \(bed\), # m2 \(freeboard\)")
+        for got in top:
+            self.assertAlmostEqual(got, self.f["faces"]["bed_top"], delta=2e-3 * self.f["faces"]["bed_top"])
+        for what in ("bed", "freeboard"):
+            with self.subTest(what):
+                want = self.f["walls"][what]
+                self.assertAlmostEqual(self.num(rf"boundary wall \({what}\): \d+ faces, # m2")[0], want,
+                                       delta=2e-3 * want)
 
 
 class TheIdFanIsTheProcessDutyTest(unittest.TestCase):
@@ -1110,7 +1288,25 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
         self.assertTrue(h["u_min"] <= h["u"] <= h["u_max"], h["u"])
         self.assertTrue(h["u_min"] <= h["u_hot"] <= h["u_max"], h["u_hot"])      # the hotter secondary air too
         self.assertGreaterEqual(h["area"], h["area_min"])
-        self.assertAlmostEqual(h["area"], h["W"] * h["H"])
+        # the box less the two triangles under the hopper's walls
+        self.assertAlmostEqual(h["area"], h["W"] * h["H"] - h["hopper_dw"] * h["hopper_rise"])
+
+    def test_the_hopper_runs_from_the_coolers_edge_to_the_hood_wall(self):
+        h, co = self.hood, pg.cooler(self.g)
+        self.assertAlmostEqual(2.0 * h["hopper_dw"] + co["width"], h["W"])
+        self.assertAlmostEqual(h["hopper_rise"], h["hopper_dw"] * math.tan(h["hopper_angle"]))
+        # steeper than the clinker's angle of repose: no dust settles on it
+        self.assertGreater(math.degrees(h["hopper_angle"]), pg.v(self.g["kiln"]["repose_angle"]))
+        self.assertLess(h["hopper_rise"], h["H"])
+
+    def test_the_hopper_clears_the_kilns_bore(self):
+        h, co, kl = self.hood, pg.cooler(self.g), pg.kiln(self.g)
+        R, x0 = 0.5 * kl["D"], 0.5 * co["width"]
+        for i in range(101):
+            x = x0 + i * (min(R, 0.5 * h["W"]) - x0) / 100
+            bore = h["below"] - math.sqrt(max(0.0, R * R - x * x))
+            self.assertGreater(bore - (x - x0) * math.tan(h["hopper_angle"]), 1.0, x)
+        self.assertGreater(h["hopper_gap"], 1.0)
 
     def test_the_hood_holds_the_outlet_seal(self):
         h = self.hood
@@ -1287,7 +1483,7 @@ class TheFlameVolumeIsHoodBoreAndPlacedChannelsTest(unittest.TestCase):
 
     def test_the_seven_boundaries(self):
         self.assertEqual(set(self.faces), {"secondary_air_in", "tertiary_supply_in", "tertiary_air_out",
-                                           "kiln_gas_out", "bed", "coal_in", "axial_in", "swirl_in"})
+                                           "kiln_gas_out", "coal_in", "axial_in", "swirl_in"})
         for name, p, n, a, rgb in self.f["faces"]:
             with self.subTest(name):
                 self.assertAlmostEqual(math.sqrt(sum(c * c for c in n)), 1.0)
@@ -1302,7 +1498,7 @@ class TheFlameVolumeIsHoodBoreAndPlacedChannelsTest(unittest.TestCase):
     def test_the_kiln_outlet_is_the_bore_at_the_burning_zones_start(self):
         _, p, n, a, _ = self.faces["kiln_gas_out"]
         self.assertAlmostEqual(p[2], self.k["L"] - self.k["burning_L"])
-        self.assertAlmostEqual(a, (1.0 - self.f["bed"]["fill"]) * math.pi * 0.25 * self.k["D"] ** 2)
+        self.assertAlmostEqual(a, math.pi * 0.25 * self.k["D"] ** 2)          # the bore whole: no bed in it
         self.assertEqual(n, (0.0, 0.0, -1.0))
 
     def test_the_cooler_openings_are_its_two_hood_segments(self):
@@ -1463,12 +1659,19 @@ class TheClinkerBedIsTheContinuitysTest(unittest.TestCase):
         R = 0.5 * self.k["D"]
         self.assertAlmostEqual(self.b["c"] ** 2 + self.b["d_c"] ** 2, R * R)
 
-    def test_the_bed_face_and_the_gas_outlet(self):
+    def test_the_bed_is_a_wall_strip_not_material(self):
+        # user decision, 23 Nov 2026: no bed in the volume; the strip of the
+        # bore's wall under its chord is a CFD region
         f = pg.kiln_flame(self.g)
-        faces = {x[0]: x for x in f["faces"]}
-        L_bz = self.k["burning_L"]
-        self.assertAlmostEqual(faces["bed"][3], 2.0 * self.b["c"] * L_bz)
-        self.assertAlmostEqual(faces["kiln_gas_out"][3] + self.b["A_bed"], math.pi * 0.25 * self.k["D"] ** 2)
+        self.assertNotIn("bed", {x[0] for x in f["faces"]})
+        self.assertFalse(any("clinker_bed" in b["name"] for b in f["bodies"]))
+        st, R = f["bed_strip"], 0.5 * self.k["D"]
+        self.assertAlmostEqual(st["d_c"] ** 2 + st["c"] ** 2, R * R)
+        self.assertAlmostEqual(st["arc"], 2.0 * R * math.asin(self.b["c"] / R))
+        self.assertAlmostEqual(st["area"], st["arc"] * self.k["burning_L"])
+        # the strip's arc is the bed's: its segment area is the fill
+        phi = st["arc"] / R
+        self.assertAlmostEqual(0.5 * R * R * (phi - math.sin(phi)), self.b["A_bed"], places=9)
 
 
 class TheFuelFinenessIsSourcedTest(unittest.TestCase):
@@ -1484,3 +1687,124 @@ class TheFuelFinenessIsSourcedTest(unittest.TestCase):
         for k in ("fuel_rr_mean", "fuel_rr_n", "fuel_d_min", "fuel_d_max"):
             with self.subTest(k):
                 self.assertEqual(g["kiln_burner"][k]["source"], "literature")
+
+
+class TheCoolersMechanicalPartsAreTheSourcesTest(unittest.TestCase):
+    """cooler_body(): the cooler's mechanical envelopes (user, 23 Nov 2026;
+    not a CFD input): one fan and compartment per segment, Cross-Bar lanes
+    and cylinders, the undergrate on the plant's ground."""
+
+    def setUp(self):
+        self.g = pg.load()
+        self.b, self.co = pg.cooler_body(self.g), pg.cooler(self.g)
+
+    def test_one_fan_and_compartment_per_segment(self):
+        n = self.co["segments"]
+        names = [q["name"] for q in self.b["bodies"]]
+        self.assertEqual(len(self.b["fans"]), n)
+        self.assertEqual(sum(nm.startswith("fan_volute_") for nm in names), n)
+        self.assertEqual(sum(nm.startswith("partition_") for nm in names), n)      # the last: the chute's back wall
+
+    def test_the_fans_carry_the_segments_air_at_the_sourced_pressures(self):
+        f, bd = self.b["fans"], self.g["cooler_body"]
+        self.assertAlmostEqual(sum(q["m"] for q in f), pg.cooler_air(self.g)["total"], places=9)
+        self.assertAlmostEqual(f[0]["dp"], pg.v(bd["fan_dp_first"]))
+        self.assertAlmostEqual(f[-1]["dp"], pg.v(bd["fan_dp_last"]))
+        for q in f:
+            self.assertLess(q["D1"], q["D2"])
+            self.assertAlmostEqual(q["P"], q["q"] * q["dp"] / pg.v(bd["fan_efficiency"]), places=6)
+
+    def test_lanes_are_cross_bar_frames_and_no_cylinder_in_the_first_chamber(self):
+        self.assertEqual(self.b["lanes"], round(self.co["width"] / 0.6))
+        cyl = [q for q in self.b["bodies"] if q["name"].startswith("cylinder_")]
+        self.assertEqual(len(cyl), self.b["lanes"] * int(pg.v(self.g["cooler_body"]["cylinders_per_lane"])))
+        seg = self.co["segment_L"]
+        for q in cyl:
+            self.assertGreater(q["box"][0], seg)          # past the first chamber
+
+    def test_the_undergrate_stands_on_the_ground_under_the_grate(self):
+        self.assertGreater(self.b["h_undergrate"], 1.0)
+        slab = next(q for q in self.b["bodies"] if q["name"] == "ground_slab")
+        self.assertAlmostEqual(slab["box"][5], self.b["z_ground"], places=12)
+        for q in self.b["bodies"]:
+            if not q["name"].startswith("ground_slab"):
+                self.assertGreaterEqual(q["box"][2], self.b["z_ground"] - 1e-9, q["name"])
+
+    def test_the_slab_is_open_under_the_chute(self):
+        L, Lt = self.co["length"], pg.cooler_cfd(self.g)["length_total"]
+        for q in self.b["bodies"]:
+            if q["name"].startswith("ground_slab"):
+                x0, y0, _, x1, y1, _ = q["box"]
+                under = x0 < Lt - 1e-9 and x1 > L + 1e-9 and y0 < -1e-9 and y1 > 1e-9
+                self.assertFalse(under, q["name"])
+
+    def test_no_part_enters_the_cfd_volume(self):
+        w2, H = 0.5 * self.co["width"], self.co["casing_height"]
+        L = pg.cooler_cfd(self.g)["length_total"]
+        for q in self.b["bodies"]:
+            x0, y0, z0, x1, y1, z1 = q["box"]
+            inside = x0 < L - 1e-9 and x1 > 1e-9 and y0 < w2 - 1e-9 and y1 > -w2 + 1e-9 and z0 < H - 1e-9 and z1 > 1e-9
+            self.assertFalse(inside, q["name"])
+
+    def test_the_solid_is_the_sources(self):
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "cooler_body_build.log"
+        if not log.is_file():
+            self.skipTest("no cooler_body log")
+        text = log.read_text(encoding="latin-1")
+        self.assertIn("cooler_body built, verified and exported", text)
+        self.assertIn(f"{len(self.b['bodies'])} bodies, each its volume and extent", text)
+
+
+class TheTowerStandsOnOneGasPathTest(unittest.TestCase):
+    """tower_placement() (user, 23 Nov 2026; option A: the CFD solids as
+    they are): each riser on the axis of the cyclone below, R1 on C2's
+    outlet face, the overlaps and the one gap listed."""
+
+    def setUp(self):
+        self.g = pg.load()
+        self.t = pg.tower_placement(self.g)
+
+    def test_twelve_parts_two_strings(self):
+        names = [p["name"] for p in self.t["parts"]]
+        self.assertEqual(len(names), 12)
+        for k in (1, 2):
+            for n in ("C5", "C4", "C3", "C2", "C1_twin"):
+                self.assertIn(f"{n}_{k}", names)
+
+    def test_every_riser_stands_on_the_cyclone_below(self):
+        for j in self.t["joints"]:
+            if j["kind"] == "overlap":
+                for a, b in zip(j["riser_at"], j["axis_below"]):
+                    self.assertAlmostEqual(a, b, places=6, msg=j["what"])
+                self.assertGreater(j["L"], 0.0, j["what"])            # the two domains share a piece of riser
+
+    def test_r1_sits_on_c2s_outlet_face(self):
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "c1_twin_build.log"
+        if not log.is_file():
+            self.skipTest("no c1_twin log")
+        z_floor = float(re.search(r"R1 stub: D [\d.]+, z (-?[\d.]+)", log.read_text(encoding="latin-1")).group(1))
+        lay, c2 = pg.layout(self.g), pg.cyclone(self.g, "C2")
+        top = lay["z_dust"][2] + c2["height"] + c2["outlet_rise"]
+        self.assertAlmostEqual(lay["z_dust"][1] + z_floor, top, places=3)
+
+    def test_the_gooseneck_arm_meets_c5s_inlet_level(self):
+        for j in self.t["joints"]:
+            if j["what"].startswith("gooseneck"):
+                # the arm's axis r_leg under C5's roof, the duct's H_inlet / 2: 4 mm apart (D_leg 3.50 vs H 3.508)
+                self.assertAlmostEqual(j["z"][0], j["z"][1], delta=0.01)
+                self.assertGreater(j["L"], 0.0)                           # the known gap (cyclone_C5.md)
+
+    def test_the_rotations_are_proper(self):
+        for p in self.t["parts"]:
+            R = p["R"]
+            det = (R[0][0] * (R[1][1] * R[2][2] - R[1][2] * R[2][1]) - R[0][1] * (R[1][0] * R[2][2] - R[1][2] * R[2][0])
+                   + R[0][2] * (R[1][0] * R[2][1] - R[1][1] * R[2][0]))
+            self.assertAlmostEqual(det, 1.0, places=9, msg=p["name"])
+
+    def test_the_assembly_holds_every_part(self):
+        log = REPO_ROOT / "geometry" / "output" / "2500" / "plant_assembly_build.log"
+        if not log.is_file():
+            self.skipTest("no plant_assembly log")
+        text = log.read_text(encoding="latin-1")
+        self.assertIn("plant_assembly built, verified and saved", text)
+        self.assertEqual(text.count("placed "), 12)

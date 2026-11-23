@@ -22,16 +22,16 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 
 # What the macro dimensions (its log names them "dim <key> <mm>"), each
 # between edges the solid has.
-DIMENSIONED = ("hood_depth", "segment_L", "D_bore", "D_ta", "L_ta", "tip_to_cut")
+DIMENSIONED = ("hood_depth", "D_bore", "D_ta", "L_ta", "tip_to_cut")
 
 ALSO = {}
 
 ORDER = (
     "m_air", "area", "area_min", "u", "u_hot",
-    "R_seal", "seal_clearance", "hood_W", "hood_H", "hood_depth", "segment_L", "flame_stub_L",
+    "R_seal", "seal_clearance", "hood_W", "hood_H", "hopper_angle", "hopper_rise", "hood_depth", "segment_L",
     "D_ta", "h_ta", "L_ta", "D_bore", "L_flame",
     "burner_insertion", "burner_offset_x", "burner_offset_y", "burner_tilt_deg",
-    "tip_to_cut", "L_flame_est", "castable_past_front", "bed_fill", "bed_chord",
+    "tip_to_cut", "L_flame_est", "castable_past_front", "bed_fill", "bed_chord", "bed_strip",
     "u_bed", "u_doors",
 )
 
@@ -70,10 +70,12 @@ def params(g, name="kiln_flame"):
                                  hd["depth"], "m", depth_in)
     P["segment_L"] = pv.derived("kiln_flame.segment_L", "Cooler segment under the hood, long",
                                 co["segment_L"], "m", depth_in)
-    P["flame_stub_L"] = y("kiln_hood.flame_stub_L", "Inlet / outlet stubs (segment 2: twice)",
-                          key="kiln_hood.flame_stub_L")
-    P["area"] = pv.derived("kiln_flame.area", "Hood section, width x height", hd["area"], "m2",
-                           [P["hood_W"], P["hood_H"]])
+    P["hopper_angle"] = pv.primary(g, "kiln_hood.hopper_angle", "Hopper walls beside the cooler (Fuller ABC Inlet)",
+                                   key="kiln_hood.hopper_angle")
+    P["hopper_rise"] = pv.derived("kiln_flame.hopper_rise", "Hopper wall height (cooler edge to hood wall)",
+                                  hd["hopper_rise"], "m", [P["hood_W"], P["hopper_angle"]])
+    P["area"] = pv.derived("kiln_flame.area", "Hood section, width x height less the hopper", hd["area"], "m2",
+                           [P["hood_W"], P["hood_H"], P["hopper_rise"]])
     P["area_min"] = pv.derived("kiln_flame.area_min", "Section the velocity limit needs", hd["area_min"], "m2",
                                [P["m_air"], ta_T, vmax])
     P["u"] = pv.derived("kiln_flame.u", "Hood air velocity at the tertiary air T (4-10 m/s)",
@@ -114,6 +116,8 @@ def params(g, name="kiln_flame"):
                                           pl["castable_past_front"], "m",
                                           body + [P["burner_insertion"], P["hood_depth"]])
     doc = P["seal_clearance"].doc
+    P["bed_strip"] = pv.derived("kiln_flame.bed_strip", "Bore wall under the bed (a CFD region, not a face)",
+                                f["bed_strip"]["area"], "m2", [P["bed_chord"]])
     P["u_bed"] = pv.unknown("kiln_flame.bed", "Clinker bed in the kiln and on the grate",
                             f"{doc}: not in the volume (as kiln.SLDPRT)")
     P["u_doors"] = pv.unknown("kiln_flame.doors", "Hood doors, seal leaks, refractory detail",

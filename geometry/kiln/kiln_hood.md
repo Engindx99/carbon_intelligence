@@ -30,9 +30,11 @@ Başlık için yayınlanmış bir ölçü ya da ölçü kuralı bulunamadı (16 
 | Başlık genişliği (2 × (conta + pay)) | 7.60 m | türetilmiş |
 | Başlık yüksekliği (soğutucu tavanından contanın üstüne) | 7.20 m | türetilmiş |
 | Başlık derinliği (soğutucunun başlık açıklığı) | 5.98 m | türetilmiş |
-| Kesit alanı (genişlik × yükseklik) | 54.72 m² | türetilmiş |
-| Hız (1073 K) | 4.09 m/s | türetilmiş |
-| Hız (ikincil havanın sıcaklığında) | 4.77 m/s | türetilmiş |
+| Huni duvarlarının eğimi (soğutucunun kenarından hood duvarına) | 60 ° | modelleme |
+| Huni duvarının yüksekliği | 3.12 m | türetilmiş |
+| Kesit alanı (genişlik × yükseklik, huni düşülmüş) | 49.11 m² | türetilmiş |
+| Hız (1073 K) | 4.56 m/s | türetilmiş |
+| Hız (ikincil havanın sıcaklığında) | 5.31 m/s | türetilmiş |
 | Ölçütün izin verdiği en küçük kesit | 22.41 m² | türetilmiş |
 <!-- END GENERATED -->
 

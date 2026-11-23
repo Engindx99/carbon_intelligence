@@ -214,7 +214,7 @@ Const KLN_R_SHELL                  As Double  = 2.65         ' shell outer radiu
 Const KLN_LAYER_1                  As String  = "brick (transition zone): alumina brick, k 2 W/(m K), rho 2600 kg/m3, cp 1000 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
 Const KLN_LAYER_2                  As String  = "brick (burning zone): magnesia-spinel brick, k 3 W/(m K), rho 2930 kg/m3, cp 950 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
 Const KLN_LAYER_3                  As String  = "steel_shell (whole kiln): steel shell, k 45 W/(m K), rho 7850 kg/m3, cp 480 J/(kg K)" ' physics/shell.py DEFAULT_WALL_STACKS
-Const kiln_TAB_1                   As String  = "D_kiln~Flow bore D = brick hot face (whole tube)~4800~mm~published~Verified;D_shell~Shell outer D (one tube)~5300~mm~derived~Estimated;L_kiln~Kiln length (all lined)~60000~mm~CFD decision~Estimated;z_cfd0~CFD solid from z0 (the KIC's stub before it)~2400~mm~derived~Estimated;L_cfd~CFD solid's length (L minus the KIC's stub)~57600~mm~derived~Estimated;slope~Slope (installed, not built in)~3~%~published~Verified;transition_L~Transition zone (alumina), model split~25000~mm~model parameter~Estimated;burning_L~Burning zone (magnesia-spinel)~35000~mm~derived~Estimated;volume~Gas volume (CFD solid)~1042.31~m3~derived~Estimated;wall_area~Wetted area (CFD solid)~868.59~m2~derived~Estimated;" ' parameter table rows
+Const kiln_TAB_1                   As String  = "D_kiln~Flow bore D = brick hot face (whole tube)~4800~mm~published~Verified;D_shell~Shell outer D (one tube)~5300~mm~derived~Estimated;L_kiln~Kiln length (all lined)~60000~mm~CFD decision~Estimated;z_cfd0~CFD solid from z0 (the KIC's stub before it)~2400~mm~derived~Estimated;L_cfd~CFD solid's length (L minus the KIC's stub)~22600~mm~derived~Estimated;slope~Slope (installed, not built in)~3~%~published~Verified;transition_L~Transition zone (alumina), model split~25000~mm~model parameter~Estimated;burning_L~Burning zone (magnesia-spinel)~35000~mm~derived~Estimated;volume~Gas volume (CFD solid)~408.96~m3~derived~Estimated;wall_area~Wetted area (CFD solid)~340.80~m2~derived~Estimated;" ' parameter table rows
 Const kiln_TAB_2                   As String  = "shell_t~Steel shell plate~30~mm~literature~Estimated;brick_t~Brick ring H (both zones)~220~mm~literature~Estimated;V_brick_transition~Volume, alumina brick~86.74~m3~derived~Estimated;V_brick_burning~Volume, magnesia-spinel brick~121.44~m3~derived~Estimated;V_shell~Volume, steel shell~29.80~m3~derived~Estimated;brick_A~Brick cold face A (ISO 5417)~103~mm~literature~Estimated;brick_L~Brick length L, one ring (ISO 5417)~198~mm~literature~Estimated;brick_B~Brick hot face B, equivalent (ISO 522/622 mix)~94~mm~derived~Estimated;brick_n~Bricks per ring~160~-~derived~Estimated;brick_rings~Rings (each zone's last one cut)~304~-~derived~Estimated;" ' parameter table rows
 Const kiln_TAB_3                   As String  = "brick_total~Bricks in all (2 end rings modelled brick by brick)~48640~-~derived~Estimated;u_coating~Clinker coating (left out, user 22 Nov 2026)~-~~no source~Unknown;u_tyre~Tyres, rollers, drive, seals (kiln_rotax.SLDPRT, ROTAX-2)~-~~no source~Unknown;u_shape~Joints, mortar, metal plates, key bricks~-~~no source~Unknown;u_ends~Inlet / outlet castable, nose ring~-~~no source~Unknown;" ' parameter table rows
 Const kiln_TAB_4                   As String  = ""           ' parameter table rows
@@ -326,11 +326,11 @@ Const kiln_burner_body_TAB_6       As String  = ""           ' parameter table r
 Const kiln_burner_body_TAB_7       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_8       As String  = ""           ' parameter table rows
 Const KFD_X0                       As Double  = -3.8         ' the part's x min [derived]
-Const KFD_Y0                       As Double  = -3.808587    ' the part's y min (segment 2's stub) [derived]
+Const KFD_Y0                       As Double  = -3.398471    ' the part's y min (the hood's floor) [derived]
 Const KFD_Z0                       As Double  = 25#          ' the part's z min (the kiln gas outlet) [derived]
 Const KFD_X1                       As Double  = 3.8          ' the part's x max [derived]
 Const KFD_Y1                       As Double  = 11.283963    ' the part's y max (the tertiary air mouth) [derived]
-Const KFD_Z1                       As Double  = 66.094258    ' the part's z max (the hood's front wall) [derived]
+Const KFD_Z1                       As Double  = 66.079265    ' the part's z max (the hood's front wall) [derived]
 Const KFD_W                        As Double  = 7.6          ' hood inner width [derived]
 Const KFD_DEPTH                    As Double  = 5.98         ' hood depth [derived]
 Const KFD_SEG                      As Double  = 2.99         ' cooler segment under the hood [derived]
@@ -347,12 +347,6 @@ Const KFD_BACK_Z                   As Double  = 59.907042    ' back wall's edge,
 Const KFD_FRONT_X                  As Double  = -3.8         ' front wall's edge, side view, x [derived]
 Const KFD_FRONT_Y                  As Double  = 3.277925     ' front wall's edge, side view, y [derived]
 Const KFD_FRONT_Z                  As Double  = 65.884353    ' front wall's edge, side view, z [derived]
-Const KFD_SEGA_X                   As Double  = -2#          ' segment 2 stub's back edge, side view, x [derived]
-Const KFD_SEGA_Y                   As Double  = -3.683643    ' segment 2 stub's back edge, side view, y [derived]
-Const KFD_SEGA_Z                   As Double  = 63.101854    ' segment 2 stub's back edge, side view, z [derived]
-Const KFD_SEGB_X                   As Double  = -2#          ' segment 2 stub's front edge, side view, x [derived]
-Const KFD_SEGB_Y                   As Double  = -3.593983    ' segment 2 stub's front edge, side view, y [derived]
-Const KFD_SEGB_Z                   As Double  = 66.09051     ' segment 2 stub's front edge, side view, z [derived]
 Const KFD_ROOF_X                   As Double  = -3.8         ' roof's edge, side view, x [derived]
 Const KFD_ROOF_Y                   As Double  = 3.847249     ' roof's edge, side view, y [derived]
 Const KFD_ROOF_Z                   As Double  = 61.517992    ' roof's edge, side view, z [derived]
@@ -378,10 +372,10 @@ Const KFD_SEC_T_Z                  As Double  = 65.598944    ' A-A's cutting lin
 Const KFD_SEC_B_X                  As Double  = 0#           ' A-A's cutting line, bottom (front view), x [derived]
 Const KFD_SEC_B_Y                  As Double  = -4.018792    ' A-A's cutting line, bottom (front view), y [derived]
 Const KFD_SEC_B_Z                  As Double  = 66.103254    ' A-A's cutting line, bottom (front view), z [derived]
-Const kiln_flame_TAB_1             As String  = "m_air~Air through the hood (secondary + tertiary)~73.4045~kg/s~derived~Estimated;area~Hood section, width x height~54.72~m2~derived~Schematic;area_min~Section the velocity limit needs~22.41~m2~derived~Estimated;u~Hood air velocity at the tertiary air T (4-10 m/s)~4.09453~m/s~derived~Schematic;u_hot~Hood air velocity at the secondary air T~4.76929~m/s~derived~Schematic;R_seal~Outlet seal's outer radius (kiln_rotax)~3550~mm~derived~Schematic;seal_clearance~Back wall round the seal, clearance~250~mm~model parameter~Estimated;hood_W~Hood inner width (seal + clearance, both sides)~7600~mm~derived~Schematic;hood_H~Hood inner height (cooler roof to the roof)~7200~mm~derived~Schematic;" ' parameter table rows
-Const kiln_flame_TAB_2             As String  = "hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;flame_stub_L~Inlet / outlet stubs (segment 2: twice)~250~mm~model parameter~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;L_ta~Tertiary outlet run off the roof (3 D: clear of the recirculation)~7318~mm~derived~Estimated;D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~35000~mm~derived~Estimated;" ' parameter table rows
-Const kiln_flame_TAB_3             As String  = "burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~34750~mm~derived~Estimated;L_flame_est~Flame length, estimate (Sarkar 2009, scaled by D)~12659~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;bed_fill~Clinker bed fill, burning zone (continuity)~0.0620061~-~derived~Estimated;" ' parameter table rows
-Const kiln_flame_TAB_4             As String  = "bed_chord~Bed surface width (at the repose angle)~3036~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
+Const kiln_flame_TAB_1             As String  = "m_air~Air through the hood (secondary + tertiary)~73.4045~kg/s~derived~Estimated;area~Hood section, width x height less the hopper~49.11~m2~derived~Schematic;area_min~Section the velocity limit needs~22.41~m2~derived~Estimated;u~Hood air velocity at the tertiary air T (4-10 m/s)~4.56243~m/s~derived~Schematic;u_hot~Hood air velocity at the secondary air T~5.3143~m/s~derived~Schematic;R_seal~Outlet seal's outer radius (kiln_rotax)~3550~mm~derived~Schematic;seal_clearance~Back wall round the seal, clearance~250~mm~model parameter~Estimated;hood_W~Hood inner width (seal + clearance, both sides)~7600~mm~derived~Schematic;" ' parameter table rows
+Const kiln_flame_TAB_2             As String  = "hood_H~Hood inner height (cooler roof to the roof)~7200~mm~derived~Schematic;hopper_angle~Hopper walls beside the cooler (Fuller ABC Inlet)~60~deg~model parameter~Estimated;hopper_rise~Hopper wall height (cooler edge to hood wall)~3118~mm~derived~Schematic;hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;L_ta~Tertiary outlet run off the roof (3 D: clear of the recirculation)~7318~mm~derived~Estimated;" ' parameter table rows
+Const kiln_flame_TAB_3             As String  = "D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~35000~mm~derived~Estimated;burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~34750~mm~derived~Estimated;L_flame_est~Flame length, estimate (Sarkar 2009, scaled by D)~12659~mm~derived~Estimated;" ' parameter table rows
+Const kiln_flame_TAB_4             As String  = "castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;bed_fill~Clinker bed fill, burning zone (continuity)~0.0620061~-~derived~Estimated;bed_chord~Bed surface width (at the repose angle)~3036~mm~derived~Estimated;bed_strip~Bore wall under the bed (a CFD region, not a face)~115.03~m2~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
 Const kiln_flame_TAB_5             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_6             As String  = ""           ' parameter table rows
 Const kiln_flame_TAB_7             As String  = ""           ' parameter table rows
@@ -392,9 +386,16 @@ Const COO_H                        As Double  = 3#           ' grate to roof [de
 Const COO_SEG_L                    As Double  = 2.99         ' one segment's length [derived]
 Const COO_HOOD_L                   As Double  = 5.98         ' the hood opening's length from x = 0 [derived]
 Const COO_SEGMENTS                 As Double  = 10#          ' undergrate air segments [derived]
-Const cooler_TAB_1                 As String  = "grate_area~Grate area (PF5000)~119.60~m2~published~Verified;w_cool~Grate width~4000~mm~literature~Estimated;L_cool~Grate length (area / width)~29900~mm~derived~Estimated;H_cool~Height, grate to roof~3000~mm~literature~Estimated;segments~Undergrate air segments (FLS)~10~-~literature~Estimated;segment~One segment: length~2990~mm~derived~Estimated;hood_segments~Segments under the hood's opening (hot end)~2~-~literature~Estimated;hood~Hood opening: length from the hot end~5980~mm~derived~Estimated;volume~Volume (box, bed included)~358.80~m3~derived~Estimated;wall_area~Wall area (sides, ends, roof but the hood)~299.08~m2~derived~Estimated;" ' parameter table rows
-Const cooler_TAB_2                 As String  = "u_vent~Vent outlet (cold end): place and size~-~~no source~Unknown;u_plate~Grate plates / compartment walls~-~~no source~Unknown;u_crusher~Clinker crusher~-~~no source~Unknown;u_chute~Clinker chute from the kiln~-~~no source~Unknown;u_wall~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
-Const cooler_TAB_3                 As String  = ""           ' parameter table rows
+Const COO_CIS_L                    As Double  = 2.99         ' the inclined inlet grate's length along x [derived]
+Const COO_CIS_RISE                 As Double  = 0.635544     ' the inlet grate's height at x = 0 [derived]
+Const COO_BED_H                    As Double  = 0.409217     ' the clinker bed's depth [derived]
+Const COO_VENT_D                   As Double  = 2.797401     ' the vent duct's bore [derived]
+Const COO_VENT_X                   As Double  = 17.94        ' the vent duct's axis, x [derived]
+Const COO_HRB_L                    As Double  = 4#           ' the HRB deck past the grate's end (the clinker outlet) [derived]
+Const COO_VENT_L                   As Double  = 8.392202     ' the vent duct's run off the roof [derived]
+Const cooler_TAB_1                 As String  = "grate_area~Grate area (PF5000)~119.60~m2~published~Verified;w_cool~Grate width~4000~mm~literature~Estimated;L_cool~Grate length (area / width)~29900~mm~derived~Estimated;H_cool~Height, grate to roof~3000~mm~literature~Estimated;segments~Undergrate air segments (FLS)~10~-~literature~Estimated;segment~One segment: length~2990~mm~derived~Estimated;hood_segments~Segments under the hood's opening (hot end)~2~-~literature~Estimated;hood~Hood opening: length from the hot end~5980~mm~derived~Estimated;cis_angle~Inlet grate (CIS): slope~12~deg~literature~Estimated;cis_rise~Inlet grate: height at the hot end (one segment long)~636~mm~derived~Estimated;" ' parameter table rows
+Const cooler_TAB_2                 As String  = "bed_h~Clinker bed depth (the FLS design bed)~409~mm~derived~Estimated;vent_D~Vent duct bore (vent air at 250 degC, 13 m/s)~2797~mm~derived~Estimated;vent_x~Vent duct axis from the hot end~17940~mm~derived~Estimated;vent_L~Vent duct run off the roof (3 D)~8392~mm~derived~Estimated;hrb_rollers~Clinker outlet: roller breaker (HRB) rollers~4~-~model parameter~Estimated;hrb_pitch~HRB roller pitch~1000~mm~schematic~Schematic;hrb_L~HRB deck past the grate's end (freeboard over it)~4000~mm~derived~Schematic;volume_bed~Bed body (porous zone)~48.94~m3~derived~Estimated;volume_fb~Freeboard body (vent duct included)~405.64~m3~derived~Schematic;" ' parameter table rows
+Const cooler_TAB_3                 As String  = "volume~CFD volume (bed + freeboard)~454.58~m3~derived~Schematic;u_plate~Grate plates / compartment walls~-~~no source~Unknown;u_chute~Clinker chute from the kiln~-~~no source~Unknown;u_wall~Casing / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;" ' parameter table rows
 Const cooler_TAB_4                 As String  = ""           ' parameter table rows
 Const cooler_TAB_5                 As String  = ""           ' parameter table rows
 Const cooler_TAB_6                 As String  = ""           ' parameter table rows
@@ -568,8 +569,8 @@ Const KFS_END_D   As Double = 100#
 ' view (1:50) at the bottom left
 Const COO_X       As Double = 0.33
 Const COO_SIDE_Y  As Double = 0.5
-Const COO_PLAN_Y  As Double = 0.4
-Const COO_FLOOR_Y As Double = 0.3
+Const COO_PLAN_Y  As Double = 0.36
+Const COO_FLOOR_Y As Double = 0.275
 Const COO_END_X   As Double = 0.14
 Const COO_END_Y   As Double = 0.13
 
@@ -1121,14 +1122,26 @@ Private Sub CheckCoolerBox(doc As SldWorks.ModelDoc2)
     Dim want(5) As Double, i As Long, nm As Variant
     nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
     Set pd = doc
+    Dim bb As Variant, k As Long
     bodies = pd.GetBodies2(swSolidBody, True)
     If IsEmpty(bodies) Then Fail partPath & " has no solid body."
-    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1."
-    Set b = bodies(0)
-    box = ExactBox(b)
-    want(0) = 0#: want(3) = COO_L
+    If UBound(bodies) <> 1 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 2 (the bed and the freeboard)."
+    ' the two bodies' box together
+    For k = 0 To 1
+        Set b = bodies(k)
+        bb = ExactBox(b)
+        If k = 0 Then
+            box = bb
+        Else
+            For i = 0 To 2
+                If bb(i) < box(i) Then box(i) = bb(i)
+                If bb(i + 3) > box(i + 3) Then box(i + 3) = bb(i + 3)
+            Next i
+        End If
+    Next k
+    want(0) = 0#: want(3) = COO_L + COO_HRB_L
     want(1) = -0.5 * COO_W: want(4) = 0.5 * COO_W
-    want(2) = 0#: want(5) = COO_H
+    want(2) = 0#: want(5) = COO_H + COO_VENT_L
     For i = 0 To 5
         If Abs(box(i) - want(i)) > 0.01 Then
             Fail partPath & ": " & nm(i) & " is " & Num(box(i), 3) & " m, today's cooler has " & Num(want(i), 3) & _
@@ -2179,30 +2192,47 @@ Private Sub DimensionCooler()
     swModel.GraphicsRedraw2
     swModel.ClearSelection2 True
 
+    ' (the roof flat at H; hood_1 / hood_2 split off it, their lines seen in the plan)
     xe = 0#
     If FindEdge(vSide, "line", 0#, 0#, COO_H, 0, 0, nSeen, nFit) Is Nothing Or foundDist > SEL_TOL Then xe = COO_L
     Note "end view: the near end face is at x = " & Num(xe, 3) & " m"
 
-    DimEdges "L_cool", COO_L, vTop, _
-        "line", 0, 0, COO_H, 0, 0, _
-        "line", COO_L, 0, COO_H, 0, 0, _
-        0.5 * COO_L, -hw - 2.4, COO_H
+    ' the grate's length: the back wall's edge and the bed's end (clinker_out) in the side view
+    DimEdges "L_cool", COO_L, vFront, _
+        "line", 0, -hw, 0.5 * (COO_H + COO_CIS_RISE + COO_BED_H), 0, 0, _
+        "line", COO_L, -hw, 0.5 * COO_BED_H, 0, 0, _
+        0.5 * COO_L, -hw, -2.2, "h"
     DimEdges "hood", COO_HOOD_L, vTop, _
         "line", 0, 0, COO_H, 0, 0, _
         "line", COO_HOOD_L, 0, COO_H, 0, 0, _
-        0.5 * COO_HOOD_L, hw + 1.6, COO_H
+        0.5 * COO_HOOD_L, hw + 1.6, COO_H, "h"
     DimEdges "segment", COO_SEG_L, vLeft, _
-        "line", 0, 0, 0, 0, 0, _
         "line", COO_SEG_L, 0, 0, 0, 0, _
-        0.5 * COO_SEG_L, hw + 1.6, 0
+        "line", 2# * COO_SEG_L, 0, 0, 0, 0, _
+        1.5 * COO_SEG_L, hw + 1.6, 0
     DimEdges "w_cool", COO_W, vSide, _
-        "line", xe, 0, COO_H, 0, 0, _
+        "line", xe, 0, IIf(xe = 0#, COO_H, COO_H), 0, 0, _
         "", 0, 0, 0, 0, 0, _
         xe, 0, COO_H + 2.4
-    DimEdges "H_cool", COO_H, vSide, _
-        "line", xe, -hw, 0.5 * COO_H, 0, 0, _
+    ' the height: the roof's and the flat floor's long edges in the side view
+    DimEdges "H_cool", COO_H, vFront, _
+        "line", 16.4, -hw, COO_H, 0, 0, _
+        "line", 16.4, -hw, 0, 0, 0, _
+        7.5, -hw, 0.5 * COO_H, "v"
+    ' the bed: its end face's two edges across the near end (x = 0: on the inlet grate's rise)
+    DimEdges "bed_h", COO_BED_H, vSide, _
+        "line", xe, 0, IIf(xe = 0#, COO_CIS_RISE, 0#), 0, 0, _
+        "line", xe, 0, IIf(xe = 0#, COO_CIS_RISE, 0#) + COO_BED_H, 0, 0, _
+        xe, hw + 2.5, IIf(xe = 0#, COO_CIS_RISE, 0#) + 0.5 * COO_BED_H, "v"
+    ' the vent duct: its end circle (plan) and its run, end circle to the roof's edge (side view)
+    DimEdges "vent_D", COO_VENT_D, vTop, _
+        "circle", COO_VENT_X, 0.5 * COO_VENT_D, COO_H + COO_VENT_L, 0.5 * COO_VENT_D, COO_H + COO_VENT_L, _
         "", 0, 0, 0, 0, 0, _
-        xe, -hw - 3#, 0.5 * COO_H
+        COO_VENT_X - 4.5, 1.2, COO_H + COO_VENT_L
+    DimEdges "vent_L", COO_VENT_L, vFront, _
+        "circle", COO_VENT_X, -0.5 * COO_VENT_D, COO_H + COO_VENT_L, 0.5 * COO_VENT_D, COO_H + COO_VENT_L, _
+        "line", COO_VENT_X - 0.5 * COO_VENT_D - 0.5, -hw, COO_H, 0, 0, _
+        COO_VENT_X + 0.5 * COO_VENT_D + 1.5, 0, COO_H + 0.5 * COO_VENT_L, "v"
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -3208,7 +3238,7 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.012, "3. Kiln frame: z along the kiln axis, z = 0 at the back end, y up; the hood stands on the", TEXT_H
         LabelPH COL_X0, y + 0.007, "   plant's level, turned by the kiln's 3 % (1.72 deg); the kiln's slope is not built in.", TEXT_H
         LabelPH COL_X0, y + 0.002, "4. Boundaries: segment 1 secondary air in, segment 2 tertiary supply in, roof mouth out, kiln", TEXT_H
-        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; petcoke, axial, swirl in; clinker bed surface (wall).", TEXT_H
+        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; petcoke, axial, swirl in. Bore whole: the bed's wall strip is set in the CFD.", TEXT_H
         LabelPH COL_X0, y - 0.008, "5. Hood W, H rest on schematic values (seal depth, cooler drop): listed, not dimensioned.", TEXT_H
         LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_hood), plant_geometry.kiln_flame()", TEXT_H
     ElseIf equip = "kiln_burner" Then
@@ -3229,9 +3259,9 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y + 0.002, "5. Source: geometry/plant_geometry.yaml, geometry/preheater/cyclone_C1.md", TEXT_H
     ElseIf equip = "cooler" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: x along the grate, x = 0 at the hot end (under the hood); z up from the grate.", TEXT_H
-        LabelPH COL_X0, y + 0.007, "4. The clinker bed is a cell zone in the box, not a body; the vent outlet has no source.", TEXT_H
-        LabelPH COL_X0, y + 0.002, "5. Floor: " & Num(COO_SEGMENTS, 0) & " air segments (FLS); hood opening over the first two.  Dimensions mm.", TEXT_H
-        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/cooler/cooler.md", TEXT_H
+        LabelPH COL_X0, y + 0.007, "4. Two bodies: the clinker bed (porous zone) and the freeboard with the vent duct; inlet grate 12 deg.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Floor: " & Num(COO_SEGMENTS, 0) & " air segments (FLS); hood_1, hood_2 over the first two.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/cooler/cooler.md, cooler_cfd.md", TEXT_H
     ElseIf equip = "id_fan" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: y along the axis (hub y = 0, gas in towards -y), x across, z up; turns +x to +z.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. Three CFD zones: rotor (MRF, blades cut hub to shroud), volute, inlet box + cone.", TEXT_H
@@ -3317,7 +3347,8 @@ End Sub
 ' two legs, the meal in along each pipe (A-A), the tertiary air along -x
 ' (plan) and the fuel along its pipe (left view).
 ' The cooler's flows (side view): the air up through each floor segment, out
-' of the hood opening, and the clinker along the grate (a bed zone, not in the solid).
+' of the hood's two openings and the vent duct, and the clinker along the grate
+' (the bed body).
 Private Sub DrawFlowsCooler()
     Dim i As Long, cx As Double
     UseLayer L_FLOW
@@ -3325,12 +3356,15 @@ Private Sub DrawFlowsCooler()
         cx = (i + 0.5) * COO_SEG_L
         ArrowM3 vFront, cx, 0#, -2.2, cx, 0#, -0.3
     Next i
-    ArrowM3 vFront, 0.5 * COO_HOOD_L, 0#, COO_H + 0.3, 0.5 * COO_HOOD_L, 0#, COO_H + 2.2
-    ArrowM3 vFront, 9#, 0#, 0.4, 19#, 0#, 0.4
+    ArrowM3 vFront, 0.5 * COO_SEG_L, 0#, COO_H + 0.3, 0.5 * COO_SEG_L, 0#, COO_H + 2.2
+    ArrowM3 vFront, 1.5 * COO_SEG_L, 0#, COO_H + 0.3, 1.5 * COO_SEG_L, 0#, COO_H + 2.2
+    ArrowM3 vFront, COO_VENT_X, 0#, COO_H + COO_VENT_L + 0.3, COO_VENT_X, 0#, COO_H + COO_VENT_L + 2.2
+    ArrowM3 vFront, 9#, 0#, 1.4, 19#, 0#, 1.4
     UseLayer L_TEXT
-    LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment)"
-    LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "Hood opening (to the kiln and the tertiary air)"
-    LabelM3 vFront, 20#, 0#, 0.7, "Clinker travel (bed zone)"
+    LabelM3 vFront, 0.4 * COO_L, 0#, -3.2, "Cooling air in (one per segment; 1: the inclined inlet grate)"
+    LabelM3 vFront, COO_HOOD_L + 0.6, 0#, COO_H + 1.2, "hood_1 to the kiln, hood_2 to the tertiary air duct"
+    LabelM3 vFront, COO_VENT_X - 9#, 0#, COO_H + COO_VENT_L + 1.2, "Vent air out (to the dedusting)"
+    LabelM3 vFront, 20#, 0#, 1.7, "Clinker travel (bed body, porous)"
     ' ISO 128-3: the floor view (under the plan: in first angle it would
     ' stand over the side view) looks from below, arrow A, right of the box
     ' so it is not read as one of the air arrows; the end view (1:50, lower
@@ -3338,7 +3372,7 @@ Private Sub DrawFlowsCooler()
     ViewArrow vFront, COO_L + 1.5, 0#, -2.5, COO_L + 1.5, 0#, -0.3, "A"
     ViewArrow vFront, -5#, 0#, 0.5 * COO_H, -0.5, 0#, 0.5 * COO_H, "B"
     ViewTitle vLeft, "A", "above", 0.004, VIEW_LETTER_H
-    ViewTitle vSide, "B (1:" & Fmt(detailD) & ")", "above", 0.055, VIEW_LETTER_H
+    ViewTitle vSide, "B (1:" & Fmt(detailD) & ")", "above", 0.008, VIEW_LETTER_H
     ViewTitle vFront, "SIDE VIEW", "right", 0.03, TEXT_H
     ViewTitle vTop, "PLAN - roof (from above)", "right", 0.03, TEXT_H
 End Sub
@@ -4273,9 +4307,9 @@ Private Sub MakeViewsFlame()
 End Sub
 
 
-' Six dimensions between edges the solid has: in the side view the hood's
-' depth (its back and front walls' edges, both along the plant's up), the
-' cooler segment (segment 2's stub's edges) and the kiln bore (the gas
+' Five dimensions between edges the solid has: in the side view the hood's
+' depth (its back and front walls' edges, both along the plant's up) and
+' the kiln bore (the gas
 ' outlet's circle seen edge-on), the tertiary outlet's run (the roof to its
 ' top circle seen edge-on); in A-A the burner tip to the gas outlet;
 ' in the plan the tertiary air mouth. The hood's width and height rest on
@@ -4294,10 +4328,6 @@ Private Sub DimensionFlame()
         "line", KFD_BACK_X, KFD_BACK_Y, KFD_BACK_Z, 0, 0, _
         "line", KFD_FRONT_X, KFD_FRONT_Y, KFD_FRONT_Z, 0, 0, _
         KFD_BACK_X, KFD_Y1 + 1#, 0.5 * (KFD_BACK_Z + KFD_FRONT_Z)
-    DimEdges "segment_L", KFD_SEG, vFront, _
-        "line", KFD_SEGA_X, KFD_SEGA_Y, KFD_SEGA_Z, 0, 0, _
-        "line", KFD_SEGB_X, KFD_SEGB_Y, KFD_SEGB_Z, 0, 0, _
-        KFD_SEGA_X, KFD_SEGA_Y - 1.5, 0.5 * (KFD_SEGA_Z + KFD_SEGB_Z)
     DimEdges "D_bore", 2# * KFD_R, vFront, _
         "circle", KFD_BORE_X, KFD_BORE_Y, KFD_BORE_Z, KFD_R, KFD_Z_CUT, _
         "", 0, 0, 0, 0, 0, _
@@ -4321,7 +4351,7 @@ End Sub
 
 Private Sub DrawLabelsFlame()
     UseLayer L_TEXT
-    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (clinker bed cut out)"
+    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (whole; no clinker bed)"
     LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_FRONT + 1.5, "Hood"
     LabelM3 vSec, 0#, KFD_Y1 + 1.2, KFD_Z_TIP - 14#, "Burner tip 0.25 m inside the kiln, on its axis"
     LabelM3 vSec, 0#, KFD_Y0 - 1.6, KFD_Z_FRONT - 12#, "Secondary air in | tertiary supply in"

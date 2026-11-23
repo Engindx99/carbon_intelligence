@@ -9,11 +9,15 @@ Attribute VB_Name = "kiln_flame"
 '
 '   hood                      the hood's inside: a box on the cooler's roof
 '                             round the kiln's end (kiln_hood())
-'   cooler_seg_1, _2          stubs under its floor: the cooler's two hood
-'                             segments (secondary air in, tertiary air in)
+'                             (its flat floor split into the cooler's two hood
+'                             segments: secondary air in, tertiary air in)
 '   tertiary_air_mouth        a stub on its roof: the tertiary air out
 '   kiln_bore                 the kiln's gas bore back over the burning zone
 '   void_burner_*             the burner (tip ring, castable) cut out
+'   void_hopper_p, _m         the hood's bottom corners beside the cooler cut
+'                             off: the hopper's walls (Fuller ABC Inlet)
+'   (no clinker bed: the bore is whole; the strip of wall under the bed is
+'    a region set in the CFD, plant_geometry.kiln_flame()["bed_strip"])
 '   + the channels            coal, axial, swirl copied from kiln_burner.SLDPRT
 '                             and placed by kiln_burner_placement()
 '
@@ -42,15 +46,15 @@ Const LINE_KEY As String = "2500"
 ' BEGIN GENERATED (tools/gen_geometry.py) -- do not edit by hand.
 ' From geometry/plant_geometry.yaml through geometry/plant_geometry.py;
 ' change the source and run: python3 tools/gen_geometry.py
-Const N_BODIES                     As Double  = 8            ' bodies before joining [derived]
+Const N_BODIES                     As Double  = 7            ' bodies before joining [derived]
 Const N_GROUPS                     As Double  = 1            ' bodies in the part [derived]
-Const N_FACES                      As Double  = 8            ' boundary faces [derived]
-Const KFL_1                        As String  = "hood|flame|fbox|0|0.289569723|62.982658106|0|0.029986509|0.999550304|0|0.999550304|-0.029986509|1|0|0|5.98|7.2|7.6|327.2256|-3.8|-3.398471032|59.886051265|3.8|3.977610478|66.079264946|0.85|0.35|0.1;kiln_bore|flame|cyl|0|0|25|0|0|1|2.4|35.072072|634.64926315|-2.4|-2.4|25|2.4|2.4|60.072072|0.85|0.35|0.1;cooler_seg_1|flame|fbox|0|-3.478085214|61.600015155|0|0.029986509|0.999550304|0|0.999550304|-0.029986509|1|0|0|2.99|0.251|4|3.00196|-2|-3.648358608|60.101924144|2|-3.307811819|63.098106166|0.85|0.35|0.1;cooler_seg_2|flame|fbox|0|-3.513369339|64.592418876|0|0.029986509|0.999550304|0|0.999550304|-0.029986509|1|0|0|2.99|0.501|4|5.99196|-2|-3.808586522|63.090579552|2|-3.218152157|66.094258201|0.85|0.35|0.1;" ' plant_geometry.kiln_flame() bodies
-Const KFL_2                        As String  = "tertiary_air_mouth|flame|cyl|0|3.931781096|64.369064363|0|0.999550304|-0.029986509|1.21965|7.3189|34.203151672|-1.21965|3.895208051|62.930494574|1.21965|11.283962859|65.588165891|0.85|0.35|0.1;void_clinker_bed|flame|fbox|1.400980106|-1.669623074|42.25|-0.64278761|0.766044443|0|0.766044443|0.64278761|0|0|0|1|0.640923737|3.055678143|35.5|69.525211179|0.024598557|-2.897187132|24.5|2.777361655|-0.442059016|60|0.85|0.35|0.1;void_burner_tip_ring|flame|cyl|0|0|59.75|0|0|1|0.314077459|0.698251959|0.216389195|-0.314077459|-0.314077459|59.75|0.314077459|0.314077459|60.448251959|0.85|0.35|0.1;void_burner_castable|flame|cyl|0|0|60.447251959|0|0|1|0.304655135|7.545374241|2.200126556|-0.304655135|-0.304655135|60.447251959|0.304655135|0.304655135|67.9926262|0.85|0.35|0.1;" ' plant_geometry.kiln_flame() bodies
+Const N_FACES                      As Double  = 7            ' boundary faces [derived]
+Const KFL_1                        As String  = "hood|flame|fbox|0|0.289569723|62.982658106|0|0.029986509|0.999550304|0|0.999550304|-0.029986509|1|0|0|5.98|7.2|7.6|327.2256|-3.8|-3.398471032|59.886051265|3.8|3.977610478|66.079264946|0.85|0.35|0.1;kiln_bore|flame|cyl|0|0|25|0|0|1|2.4|35.072072|634.64926315|-2.4|-2.4|25|2.4|2.4|60.072072|0.85|0.35|0.1;void_hopper_p|flame|fbox|4.474519053|-2.082216216|63.053811684|0|0.029986509|0.999550304|0.5|0.865635955|-0.025969079|0.866025404|-0.499775152|0.014993255|7.98|4.6|3.058845727|112.28410894|2|-4.957192628|58.982946066|6.949038106|0.792760196|67.124677302|0.85|0.35|0.1;void_hopper_m|flame|fbox|-4.474519053|-2.082216216|63.053811684|0|0.029986509|0.999550304|-0.5|0.865635955|-0.025969079|-0.866025404|-0.499775152|0.014993255|7.98|4.6|3.058845727|112.28410894|-6.949038106|-4.957192628|58.982946066|-2|0.792760196|67.124677302|0.85|0.35|0.1;" ' plant_geometry.kiln_flame() bodies
+Const KFL_2                        As String  = "tertiary_air_mouth|flame|cyl|0|3.931781096|64.369064363|0|0.999550304|-0.029986509|1.21965|7.3189|34.203151672|-1.21965|3.895208051|62.930494574|1.21965|11.283962859|65.588165891|0.85|0.35|0.1;void_burner_tip_ring|flame|cyl|0|0|59.75|0|0|1|0.314077459|0.698251959|0.216389195|-0.314077459|-0.314077459|59.75|0.314077459|0.314077459|60.448251959|0.85|0.35|0.1;void_burner_castable|flame|cyl|0|0|60.447251959|0|0|1|0.304655135|7.545374241|2.200126556|-0.304655135|-0.304655135|60.447251959|0.304655135|0.304655135|67.9926262|0.85|0.35|0.1;" ' plant_geometry.kiln_flame() bodies
 Const KFL_3                        As String  = ""           ' plant_geometry.kiln_flame() bodies
 Const KFL_4                        As String  = ""           ' plant_geometry.kiln_flame() bodies
-Const KFL_GROUPS                   As String  = "flame|-1|8;" ' the part's body: name|V (-1: parts overlap)|parts
-Const KFL_FACES                    As String  = "secondary_air_in|0|-3.603528777|61.603778462|0|-0.999550304|0.029986509|11.96|1|0.55|0;tertiary_supply_in|0|-3.76375669|64.599930497|0|-0.999550304|0.029986509|11.96|0.95|0.8|0.1;tertiary_air_out|0|11.247389813|64.149596102|0|0.999550304|-0.029986509|4.67326397|0.6|0.2|0.8;kiln_gas_out|0|0|25|0|0|-1|16.973537612|0.2|0.2|0.9;bed|1.194991188|-1.424135041|42.5|0.64278761|-0.766044443|0|106.248734997|0.45|0.3|0.15;coal_in|0|0.033669104|60.797448325|0|0|1|0.034467921|0.55|0|0;axial_in|0|0.2165195|60.31|0|0|1|0.035743357|0.9|0|0;swirl_in|0|0.184814689|60.31|0|0|1|0.026647279|1|0.45|0.45;" ' boundaries: name|point|outward normal|area|rgb
+Const KFL_GROUPS                   As String  = "flame|-1|7;" ' the part's body: name|V (-1: parts overlap)|parts
+Const KFL_FACES                    As String  = "secondary_air_in|0|-3.353641201|61.596281835|0|-0.999550304|0.029986509|11.96|1|0.55|0;tertiary_supply_in|0|-3.263981539|64.584937242|0|-0.999550304|0.029986509|11.96|0.95|0.8|0.1;tertiary_air_out|0|11.247389813|64.149596102|0|0.999550304|-0.029986509|4.67326397|0.6|0.2|0.8;kiln_gas_out|0|0|25|0|0|-1|18.095573685|0.2|0.2|0.9;coal_in|0|0.033669104|60.797448325|0|0|1|0.034467921|0.55|0|0;axial_in|0|0.2165195|60.31|0|0|1|0.035743357|0.9|0|0;swirl_in|0|0.184814689|60.31|0|0|1|0.026647279|1|0.45|0.45;" ' boundaries: name|point|outward normal|area|rgb
 Const KFL_R11                      As Double  = -1#          ' the burner's x axis, kiln x [derived]
 Const KFL_R12                      As Double  = 0#           ' the burner's x axis, kiln y [derived]
 Const KFL_R13                      As Double  = 0#           ' the burner's x axis, kiln z [derived]
@@ -75,6 +79,36 @@ Const KFL_BRN_Z0                   As Double  = 59.75        ' the placed whole 
 Const KFL_BRN_X1                   As Double  = 0.987145     ' the placed whole burner's extent, kiln frame [derived]
 Const KFL_BRN_Y1                   As Double  = 0.948514     ' the placed whole burner's extent, kiln frame [derived]
 Const KFL_BRN_Z1                   As Double  = 70.215061    ' the placed whole burner's extent, kiln frame [derived]
+Const KFL_COO_R11                  As Double  = 0#           ' the cooler's x axis, kiln x [derived]
+Const KFL_COO_R12                  As Double  = 0.029986509  ' the cooler's x axis, kiln y [derived]
+Const KFL_COO_R13                  As Double  = 0.999550304  ' the cooler's x axis, kiln z [derived]
+Const KFL_COO_R21                  As Double  = 1#           ' the cooler's y axis, kiln x [derived]
+Const KFL_COO_R22                  As Double  = 0#           ' the cooler's y axis, kiln y [derived]
+Const KFL_COO_R23                  As Double  = 0#           ' the cooler's y axis, kiln z [derived]
+Const KFL_COO_R31                  As Double  = 0#           ' the cooler's z axis, kiln x [derived]
+Const KFL_COO_R32                  As Double  = 0.999550304  ' the cooler's z axis, kiln y [derived]
+Const KFL_COO_R33                  As Double  = -0.029986509 ' the cooler's z axis, kiln z [derived]
+Const KFL_COO_TX                   As Double  = 0#           ' the cooler's origin, kiln x [derived]
+Const KFL_COO_TY                   As Double  = -6.397122    ' the cooler's origin, kiln y [derived]
+Const KFL_COO_TZ                   As Double  = 60.191914    ' the cooler's origin, kiln z [derived]
+Const KFL_COO_X0                   As Double  = -2#          ' the placed cooler's extent, kiln frame [derived]
+Const KFL_COO_Y0                   As Double  = -6.397122    ' the placed cooler's extent, kiln frame [derived]
+Const KFL_COO_Z0                   As Double  = 59.850301    ' the placed cooler's extent, kiln frame [derived]
+Const KFL_COO_X1                   As Double  = 2#           ' the placed cooler's extent, kiln frame [derived]
+Const KFL_COO_Y1                   As Double  = 6.0065       ' the placed cooler's extent, kiln frame [derived]
+Const KFL_COO_Z1                   As Double  = 94.076669    ' the placed cooler's extent, kiln frame [derived]
+Const KFL_CBD_X0                   As Double  = -5.831446    ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_CBD_Y0                   As Double  = -8.505295    ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_CBD_Z0                   As Double  = 59.690139    ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_CBD_X1                   As Double  = 5.831446     ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_CBD_Y1                   As Double  = -1.970114    ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_CBD_Z1                   As Double  = 94.539374    ' the placed cooler_body's extent, kiln frame [derived]
+Const KFL_SPLIT_AX                 As Double  = -2.5         ' the hood floor's split line, end A, x [derived]
+Const KFL_SPLIT_AY                 As Double  = -3.308811    ' the hood floor's split line, end A, y [derived]
+Const KFL_SPLIT_AZ                 As Double  = 63.09061     ' the hood floor's split line, end A, z [derived]
+Const KFL_SPLIT_BX                 As Double  = 2.5          ' the hood floor's split line, end B, x [derived]
+Const KFL_SPLIT_BY                 As Double  = -3.308811    ' the hood floor's split line, end B, y [derived]
+Const KFL_SPLIT_BZ                 As Double  = 63.09061     ' the hood floor's split line, end B, z [derived]
 ' END GENERATED
 
 Const OUT_ROOT As String = "C:\Users\engin\carbon_intelligence\geometry\output\"
@@ -127,6 +161,8 @@ Sub main()
     Build
     phase = "verifying the bodies"
     Verify
+    phase = "splitting the hood floor"
+    SplitFloor
     phase = "tagging the boundary faces"
     TagFaces
     phase = "exporting"
@@ -154,7 +190,9 @@ End Sub
 ' assembly: the kiln's end with the burner in it -- the kiln wall and its
 ' ROTAX parts (kiln frame), the burner's channels and its whole body
 ' (placed: kiln_burner_placement(), rows KFL_R, tip KFL_T) and this flame
-' zone volume  ->  kiln_outlet_assembly.SLDASM + jpgs. The parts stay
+' zone volume, and the cooler's volume under the hood (cooler_placement():
+' its hood_1 / hood_2 on the hood floor's two faces)  ->  kiln_outlet_assembly.SLDASM
+' + jpgs. The parts stay
 ' separate files, so rebuilding any updates it.
 '==================================================================
 Sub assembly()
@@ -172,8 +210,9 @@ Sub assembly()
     If swApp Is Nothing Then Fail "SolidWorks is not running."
     Set mu = swApp.GetMathUtility
     outDir = OUT_ROOT & LINE_KEY & "\"
-    parts = Array("kiln_wall.SLDPRT", "kiln_rotax.SLDPRT", "kiln_burner.SLDPRT", "kiln_burner_body.SLDPRT", PART_NAME & ".SLDPRT")
-    placed = Array(False, False, True, True, False)
+    parts = Array("kiln_wall.SLDPRT", "kiln_rotax.SLDPRT", "kiln_burner.SLDPRT", "kiln_burner_body.SLDPRT", PART_NAME & ".SLDPRT", _
+                  "cooler.SLDPRT", "kiln.SLDPRT", "cooler_body.SLDPRT")
+    placed = Array(False, False, True, True, False, True, False, True)
 
     phase = "opening the parts"
     For k = 0 To UBound(parts)
@@ -198,16 +237,30 @@ Sub assembly()
             ' readings, the whole burner's extent decides
             ok = False
             For j = 0 To 1
-                comp.Transform2 = Placement(j = 1)
+                If parts(k) = "cooler.SLDPRT" Or parts(k) = "cooler_body.SLDPRT" Then
+                    comp.Transform2 = CoolerPlacement(j = 1)
+                Else
+                    comp.Transform2 = Placement(j = 1)
+                End If
                 asmDoc.ForceRebuild3 False
-                If parts(k) <> "kiln_burner_body.SLDPRT" Then ok = True: Exit For
+                If parts(k) = "kiln_burner.SLDPRT" Then ok = True: Exit For
                 bx = comp.GetBox(False, False)
                 If Not IsEmpty(bx) Then
-                    If Abs(bx(2) - KFL_BRN_Z0) < 0.05 And Abs(bx(5) - KFL_BRN_Z1) < 0.05 And _
-                       Abs(bx(0) - KFL_BRN_X0) < 0.05 And Abs(bx(4) - KFL_BRN_Y1) < 0.05 Then ok = True: Exit For
+                    If parts(k) = "cooler.SLDPRT" Then
+                        ' the cooler under the hood: its roof's openings on the flame volume's floor
+                        If Abs(bx(0) - KFL_COO_X0) < 0.05 And Abs(bx(1) - KFL_COO_Y0) < 0.05 And Abs(bx(2) - KFL_COO_Z0) < 0.05 And _
+                           Abs(bx(3) - KFL_COO_X1) < 0.05 And Abs(bx(4) - KFL_COO_Y1) < 0.05 And Abs(bx(5) - KFL_COO_Z1) < 0.05 Then ok = True: Exit For
+                    ElseIf parts(k) = "cooler_body.SLDPRT" Then
+                        ' the cooler's mechanical parts, placed as the cooler
+                        If Abs(bx(0) - KFL_CBD_X0) < 0.1 And Abs(bx(1) - KFL_CBD_Y0) < 0.1 And Abs(bx(2) - KFL_CBD_Z0) < 0.1 And _
+                           Abs(bx(3) - KFL_CBD_X1) < 0.1 And Abs(bx(4) - KFL_CBD_Y1) < 0.1 And Abs(bx(5) - KFL_CBD_Z1) < 0.1 Then ok = True: Exit For
+                    ElseIf Abs(bx(2) - KFL_BRN_Z0) < 0.05 And Abs(bx(5) - KFL_BRN_Z1) < 0.05 And _
+                       Abs(bx(0) - KFL_BRN_X0) < 0.05 And Abs(bx(4) - KFL_BRN_Y1) < 0.05 Then
+                        ok = True: Exit For
+                    End If
                 End If
             Next j
-            If Not ok Then Fail "the whole burner landed at " & BoxOf(bx) & " in neither reading, not at its placement."
+            If Not ok Then Fail parts(k) & " landed at " & BoxOf(bx) & " in neither reading, not at its placement."
             Note "placed " & parts(k) & IIf(j = 1, " (transposed reading)", "")
         Else
             comp.Transform2 = mu.CreateTransform(Identity())
@@ -241,6 +294,24 @@ Sub assembly()
             swSaveAsCurrentVersion, swSaveAsOptions_Silent, Nothing, e, w
         k = k + 1
     Next vw
+    ' The gas (CFD) volumes are solids. (Display states were tried, 23 Nov
+    ' 2026: CreateDisplayState / RenameDisplayState refused on this assembly.)
+    ' Only the kiln's bore (kiln.SLDPRT, the inlet side) is hidden; the
+    ' outlet's gas parts (kiln_flame, cooler) stay: their faces are painted
+    ' see-through, so the burner's tip shows through them (user, 23 Nov 2026).
+    Dim nGas As Long
+    For k = 0 To UBound(comps)
+        Set comp = comps(k)
+        If Left$(comp.Name2, 5) = "kiln-" Then
+            comp.Visible = swComponentHidden: nGas = nGas + 1
+        End If
+    Next k
+    asmDoc.ShowNamedView2 "", swBackView
+    asmDoc.ViewZoomtofit2
+    asmDoc.GraphicsRedraw2
+    asmDoc.Extension.SaveAs outDir & "kiln_outlet_assembly_from_inlet.jpg", swSaveAsCurrentVersion, swSaveAsOptions_Silent, Nothing, e, w
+    Note "view from the kiln inlet, kiln bore hidden, flame volume and cooler see-through: kiln_outlet_assembly_from_inlet.jpg"
+    Note nGas & " gas volume saved hidden (kiln, the inlet side): Show it in the FeatureManager"
     asmDoc.ShowNamedView2 "", swIsometricView
     asmDoc.ViewZoomtofit2
     asmDoc.Extension.SaveAs outDir & "kiln_outlet_assembly.SLDASM", swSaveAsCurrentVersion, swSaveAsOptions_Silent, Nothing, e, w
@@ -255,6 +326,28 @@ Failed:
     WriteLog "kiln_outlet_assembly ABORTED while " & phase & ": " & why
     If Dir(OUT_ROOT & "quiet.flag") = "" Then MsgBox "kiln_outlet_assembly ABORTED:" & vbLf & why, vbCritical, "Kiln outlet assembly"
 End Sub
+
+
+' The gas (CFD) volumes among the assembly's components.
+Private Function IsGas(ByVal nm As String) As Boolean
+    IsGas = (Left$(nm, 11) = "kiln_flame-" Or Left$(nm, 7) = "cooler-" Or Left$(nm, 5) = "kiln-")
+End Function
+
+
+' The cooler's placement (plant_geometry.cooler_placement()): its axes in
+' the kiln frame (rows, or their columns), its origin, scale 1.
+Private Function CoolerPlacement(ByVal transposed As Boolean) As SldWorks.MathTransform
+    Dim t(15) As Double
+    If transposed Then
+        t(0) = KFL_COO_R11: t(1) = KFL_COO_R21: t(2) = KFL_COO_R31: t(3) = KFL_COO_R12: t(4) = KFL_COO_R22: t(5) = KFL_COO_R32
+        t(6) = KFL_COO_R13: t(7) = KFL_COO_R23: t(8) = KFL_COO_R33
+    Else
+        t(0) = KFL_COO_R11: t(1) = KFL_COO_R12: t(2) = KFL_COO_R13: t(3) = KFL_COO_R21: t(4) = KFL_COO_R22: t(5) = KFL_COO_R23
+        t(6) = KFL_COO_R31: t(7) = KFL_COO_R32: t(8) = KFL_COO_R33
+    End If
+    t(9) = KFL_COO_TX: t(10) = KFL_COO_TY: t(11) = KFL_COO_TZ: t(12) = 1#
+    Set CoolerPlacement = mu.CreateTransform(t)
+End Function
 
 
 ' The burner's placement as a component transform: rotation (its axes'
@@ -372,7 +465,11 @@ Private Sub TagFaces()
         End If
         If hit >= 0 Then
             cnt(hit) = cnt(hit) + 1: ar(hit) = ar(hit) + face.GetArea
-            Paint face, P(hit, 7), P(hit, 8), P(hit, 9)
+            If nm(hit) = "secondary_air_in" Or nm(hit) = "tertiary_supply_in" Then
+                Paint face, P(hit, 7), P(hit, 8), P(hit, 9), 1#
+            Else
+                Paint face, P(hit, 7), P(hit, 8), P(hit, 9)
+            End If
         Else
             nWall = nWall + 1: aWall = aWall + face.GetArea
             Paint face, 0.7, 0.7, 0.7
@@ -388,12 +485,94 @@ Private Sub TagFaces()
 End Sub
 
 
+' The hood's flat floor (between the hopper's feet: the cooler's width) is
+' the cooler's two hood segments: a split line across it at one segment
+' (KFL_SPLIT_A..B, past both edges) makes them two faces, secondary_air_in
+' and tertiary_supply_in (no stubs; user, 23 Nov 2026). Sketched on the
+' face itself; IModelDoc2.InsertSplitLineProject wants the sketch at mark 4,
+' the face at mark 1 (both marks tried, as in cooler.bas).
+Private Sub SplitFloor()
+    Dim body As SldWorks.Body2, faces As Variant, face As SldWorks.Face2, q As Variant
+    Dim mx As Double, my As Double, mz As Double, i As Long, k As Long, n0 As Long, mk As Long
+    Dim sk As SldWorks.Sketch, skFeat As SldWorks.Feature, f As SldWorks.Feature
+    Dim xf As SldWorks.MathTransform, pa As SldWorks.MathPoint, pb As SldWorks.MathPoint
+    Dim c(2) As Double, a As Variant, b As Variant, sd As SldWorks.SelectData, ent As SldWorks.Entity
+
+    mx = 0.5 * (KFL_SPLIT_AX + KFL_SPLIT_BX): my = 0.5 * (KFL_SPLIT_AY + KFL_SPLIT_BY): mz = 0.5 * (KFL_SPLIT_AZ + KFL_SPLIT_BZ)
+    Set body = BodyNamed("flame")
+    n0 = UBound(body.GetFaces) + 1
+    For k = 0 To 3
+        Set face = FaceAt(BodyNamed("flame"), mx, my, mz)
+        If face Is Nothing Then Fail "found no face at the hood floor's split line (" & Fmt(mx) & ", " & Fmt(my) & ", " & Fmt(mz) & ")."
+        swModel.ClearSelection2 True
+        Set ent = face
+        ent.Select4 False, Nothing
+        swModel.SketchManager.InsertSketch True
+        Set sk = swModel.SketchManager.ActiveSketch
+        If sk Is Nothing Then Fail "could not open a sketch on the hood's floor."
+        Set xf = sk.ModelToSketchTransform
+        c(0) = KFL_SPLIT_AX: c(1) = KFL_SPLIT_AY: c(2) = KFL_SPLIT_AZ
+        Set pa = mu.CreatePoint(c): Set pa = pa.MultiplyTransform(xf): a = pa.ArrayData
+        c(0) = KFL_SPLIT_BX: c(1) = KFL_SPLIT_BY: c(2) = KFL_SPLIT_BZ
+        Set pb = mu.CreatePoint(c): Set pb = pb.MultiplyTransform(xf): b = pb.ArrayData
+        If Abs(a(2)) > 0.0001 Or Abs(b(2)) > 0.0001 Then Fail "the split line's ends lie off the hood's floor (" & Fmt(a(2)) & ", " & Fmt(b(2)) & " m)."
+        If swModel.SketchManager.CreateLine(a(0), a(1), 0#, b(0), b(1), 0#) Is Nothing Then Fail "CreateLine failed on the hood floor's split line."
+        swModel.SketchManager.InsertSketch True
+        Set skFeat = swModel.FeatureByPositionReverse(0)
+        mk = IIf((k And 1) <> 0, 0, 1)
+        Set face = FaceAt(BodyNamed("flame"), mx, my, mz)
+        swModel.ClearSelection2 True
+        skFeat.Select2 False, 4
+        Set sd = swModel.SelectionManager.CreateSelectData
+        sd.Mark = mk
+        Set ent = face
+        ent.Select4 True, sd
+        On Error Resume Next
+        swModel.InsertSplitLineProject ((k And 2) <> 0), False
+        If Err.Number <> 0 Then Note "InsertSplitLineProject (mark " & mk & ") raised: " & Err.Description
+        Err.Clear
+        On Error GoTo 0
+        swModel.ClearSelection2 True
+        Set body = BodyNamed("flame")
+        If UBound(body.GetFaces) + 1 = n0 + 1 Then
+            Note "split the hood's floor at one segment: " & n0 + 1 & " faces (form " & k & ")"
+            Exit Sub
+        End If
+        Set f = swModel.FeatureByPositionReverse(0)
+        If Not f Is Nothing Then
+            f.Select2 False, 0
+            swModel.EditDelete
+        End If
+        swModel.ClearSelection2 True
+    Next k
+    Fail "could not split the hood's floor: InsertSplitLineProject changed nothing in any of its forms."
+End Sub
+
+
+' The body's planar face through the point (closest point within 0.1 mm).
+Private Function FaceAt(body As SldWorks.Body2, ByVal x As Double, ByVal y As Double, ByVal z As Double) As SldWorks.Face2
+    Dim faces As Variant, q As Variant, i As Long
+    faces = body.GetFaces
+    For i = 0 To UBound(faces)
+        If faces(i).GetSurface.IsPlane Then
+            q = faces(i).GetClosestPointOn(x, y, z)
+            If Not IsEmpty(q) Then
+                If Sqr((q(0) - x) ^ 2 + (q(1) - y) ^ 2 + (q(2) - z) ^ 2) < 0.0001 Then Set FaceAt = faces(i): Exit Function
+            End If
+        End If
+    Next i
+End Function
+
+
 ' Set through the property from a typed Double array, read back and checked.
-Private Sub Paint(face As SldWorks.Face2, ByVal r As Double, ByVal g As Double, ByVal b As Double)
+Private Sub Paint(face As SldWorks.Face2, ByVal r As Double, ByVal g As Double, ByVal b As Double, _
+                  Optional ByVal see As Double = 0.6)
     Dim m(8) As Double
     Dim got As Variant
+    ' see-through (0.6) so the gas path can be looked along in the assembly;
+    ' the faces where two gas volumes meet fully (1: user, 23 Nov 2026)
     m(0) = r: m(1) = g: m(2) = b
-    m(3) = 1#: m(4) = 1#: m(5) = 0.3: m(6) = 0.3: m(7) = 0#: m(8) = 0#
+    m(3) = 1#: m(4) = 1#: m(5) = 0.3: m(6) = 0.3: m(7) = see: m(8) = 0#
     face.MaterialPropertyValues = m
     got = face.MaterialPropertyValues
     If IsEmpty(got) Then Fail "a face reports no colour after one was set on it."

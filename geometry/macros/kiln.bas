@@ -9,16 +9,19 @@ Attribute VB_Name = "kiln"
 '
 ' Coordinates: the kiln axis = z, the back end (towards the kiln inlet
 ' chamber, where the meal enters) at z = 0, the hood end (the clinker
-' leaves, the hot air enters) at z = KILN_L. The solid starts at
-' z = KILN_Z0: the kiln inlet chamber's CFD solid carries the tube's
-' first KILN_Z0 (its stub, user decision 22 Nov 2026), so the two
-' together are KILN_L long, no more. The tube's slope (3 %, the
+' leaves, the hot air enters) at z = KILN_L. The solid runs from
+' z = KILN_Z0 to z = KILN_Z1: the kiln inlet chamber's CFD solid carries
+' the tube's first KILN_Z0 (its stub, user decision 22 Nov 2026), the
+' flame volume (kiln_flame.bas: the burning zone and the hood) the rest
+' from KILN_Z1, the transition zone's end (user, 23 Nov 2026: one gas
+' path); the three together are KILN_L long, no more. The tube's slope (3 %, the
 ' feed end up) belongs to how it is installed (plant_geometry.layout
 ' tilts it); it is not built into the solid, so both ends stay true
 ' circles and the drawing can measure them.
 '
 ' Boundary faces: kiln_back (z = KILN_Z0, the chamber's kiln_gas_inlet
-' face) and kiln_hood (z = KILN_L); the
+' face) and burning_zone (z = KILN_Z1, the flame volume's kiln_gas_out
+' face); the
 ' wall is everything else. Their positions are coloured for Fluent.
 '
 ' SI ONLY. The SolidWorks API is always metres and radians.
@@ -39,7 +42,8 @@ Const LINE_KEY As String = "2500"
 ' change the source and run: python3 tools/gen_geometry.py
 Const KILN_D                       As Double  = 4.8          ' effective inner diameter [published, kiln/kiln.md]
 Const KILN_L                       As Double  = 60#          ' back end (z = 0) to hood end [cfd_decision, kiln/kiln.md]
-Const KILN_Z0                      As Double  = 2.4          ' the solid's back face: the kiln inlet chamber's stub ends here (stub + solid = KILN_L) [derived]
+Const KILN_Z0                      As Double  = 2.4          ' the solid's back face: the kiln inlet chamber's stub ends here [derived]
+Const KILN_Z1                      As Double  = 25#          ' the solid's front face: the flame volume's bore (kiln_flame) starts here [derived]
 Const KILN_SLOPE                   As Double  = 3#           ' %: the installed slope, not built into the solid [published, kiln/kiln.md]
 Const KILN_TRANSITION_L            As Double  = 25#          ' the transition zone from the back end (model split) [model, kiln/kiln.md]
 ' END GENERATED
@@ -92,7 +96,7 @@ Sub main()
 
     phase = "working out the coordinates"
     R = 0.5 * KILN_D
-    vKiln = PI * R * R * (KILN_L - KILN_Z0)
+    vKiln = PI * R * R * (KILN_Z1 - KILN_Z0)
     phase = "building the solid"
     Build
     phase = "verifying the solid"
@@ -150,12 +154,12 @@ Private Sub Build()
     Set f = RevolveProfile(planeX0, Array( _
         0#, KILN_Z0, _
         R, KILN_Z0, _
-        R, KILN_L, _
-        0#, KILN_L), False)
+        R, KILN_Z1, _
+        0#, KILN_Z1), False)
     If f Is Nothing Then Fail "FeatureRevolve2 failed on the kiln profile."
 
     Note "kiln: D " & Fmt(KILN_D) & " m, L " & Fmt(KILN_L) & " m (the solid from z " & Fmt(KILN_Z0) & _
-         ", the chamber's stub before it: " & Fmt(KILN_L - KILN_Z0) & " m), slope " & Fmt(KILN_SLOPE) & _
+         " to z " & Fmt(KILN_Z1) & ": the chamber's stub before it, the flame volume after it), slope " & Fmt(KILN_SLOPE) & _
          " % (installation, not built into the solid), volume " & Fmt(vKiln) & " m3"
     Note "kiln zones (model split, not in the solid): transition " & Fmt(KILN_TRANSITION_L) & _
          " m from the back end, burning " & Fmt(KILN_L - KILN_TRANSITION_L) & " m"
@@ -208,7 +212,7 @@ Private Sub Verify()
             If sd < 0 Then b(a) = Choose(a + 1, px, py, pz) Else b(a + 3) = Choose(a + 1, px, py, pz)
         Next sd
     Next a
-    want(0) = -R: want(1) = -R: want(2) = KILN_Z0: want(3) = R: want(4) = R: want(5) = KILN_L
+    want(0) = -R: want(1) = -R: want(2) = KILN_Z0: want(3) = R: want(4) = R: want(5) = KILN_Z1
     For a = 0 To 5
         If Abs(b(a) - want(a)) > BOX_TOL Then Fail "the solid's " & nm(a) & " is " & Fmt(b(a)) & " m but should be " & Fmt(want(a)) & " m."
     Next a
@@ -226,7 +230,7 @@ Private Sub TagBoundaryFaces()
     Dim n(2) As Long, a(2) As Double
     Dim names As Variant
 
-    names = Array("kiln_back", "kiln_hood", "wall")
+    names = Array("kiln_back", "burning_zone", "wall")
     faces = TheBody().GetFaces
     For i = 0 To UBound(faces)
         Set face = faces(i)
@@ -237,7 +241,7 @@ Private Sub TagBoundaryFaces()
             If Abs(p(0)) < DIR_TOL And Abs(p(1)) < DIR_TOL Then
                 If Abs(p(5) - KILN_Z0) < 0.0001 Then
                     k = 0
-                ElseIf Abs(p(5) - KILN_L) < 0.0001 Then
+                ElseIf Abs(p(5) - KILN_Z1) < 0.0001 Then
                     k = 1
                 End If
             End If

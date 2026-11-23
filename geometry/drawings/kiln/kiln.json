@@ -76,7 +76,7 @@
     {
       "key": "kiln.L_cfd",
       "label": "CFD solid's length (L minus the KIC's stub)",
-      "value": 57.6,
+      "value": 22.6,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
@@ -86,7 +86,7 @@
         "kiln.D",
         "kiln_inlet_chamber.mouth_stub_over_D"
       ],
-      "value_mm": 57600.0,
+      "value_mm": 22600.0,
       "short": "L_cfd"
     },
     {
@@ -134,7 +134,7 @@
     {
       "key": "kiln.volume_cfd",
       "label": "Gas volume (CFD solid)",
-      "value": 1042.3050442374072,
+      "value": 408.95996527370494,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
@@ -149,7 +149,7 @@
     {
       "key": "kiln.wall_area_cfd",
       "label": "Wetted area (CFD solid)",
-      "value": 868.587536864506,
+      "value": 340.79997106142076,
       "unit": "m2",
       "source": "derived",
       "status": "Estimated",

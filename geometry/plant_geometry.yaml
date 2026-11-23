@@ -403,6 +403,119 @@ cooler:
   # hot end carry the hood's opening (segment 1 -> the kiln, 2 -> the tertiary air; both leave by the hood)
   segments:            {value: 10,   unit: "-",   source: literature,   doc: cooler/cooler.md}
   hood_segments:       {value: 2,    unit: "-",   source: literature,   doc: cooler/cooler.md}
+  # The CFD volume's set-up (user decisions, 23 Nov 2026; cooler/cooler_cfd.md):
+  # - the undergrate air: the twin's 2.2 kg/kg clinker in all (Holderbank 2000
+  #   "Clinker coolers": 1.6-2.3 Nm3/kg cli in operation; design practice
+  #   2.2-2.4 kg/kg, techcem), spread over the segments in the FLS reference
+  #   cooler's proportions (Svensen 2024 sec. IV: 40.89 / 18.56 / 8 x 16.24 kg/s
+  #   on 53.06 kg/s clinker; only the shape is used)
+  air_rate:            {value: 2.2,   unit: kg/kg, source: literature,  doc: cooler/cooler.md}
+  fls_air_seg1:        {value: 40.89, unit: kg/s,  source: literature,  doc: cooler/cooler.md}
+  fls_air_seg2:        {value: 18.56, unit: kg/s,  source: literature,  doc: cooler/cooler.md}
+  fls_air_seg_rest:    {value: 16.24, unit: kg/s,  source: literature,  doc: cooler/cooler.md}
+  # - the inlet: a fixed inclined grate with no moving rows (Holderbank 2000,
+  #   modern grate coolers: "Inclined inlet section without moving rows"),
+  #   sloped about 12 deg (Fuller, US 2,371,513: "a slope of about 12 degrees
+  #   being usually provided", well inside the clinker's angle of repose;
+  #   US 5,419,698: about 20 deg). Fuller's Cross-Bar Cooler keeps the fixed
+  #   inclined inlet (the ABC Inlet, brochure C 03-21400-44-ENG V4, 2025),
+  #   its grate horizontal after it. Its length is not published: one segment,
+  #   the FLS model's first (its most aerated) (model).
+  cis_angle:           {value: 12.0,  unit: deg,   source: literature,  doc: cooler/cooler.md}
+  cis_segments:        {value: 1,     unit: "-",   source: model,       doc: cooler/cooler.md}
+  # - the clinker bed: a porous cell zone over the grate, its design depth the
+  #   FLS cooler's (53.06 kg/s on a 4 m grate at 0.017 m/s, Svensen 2024),
+  #   porosity 0.4 and clinker density 3178 kg/m3 as the twin's cooler
+  #   (configs/twin_cfg.yaml, the same paper); nodules 15 mm as the twin's
+  #   particle_diameter_m (model)
+  fls_clinker_flow:    {value: 53.06, unit: kg/s,  source: literature,  doc: cooler/cooler.md}
+  fls_grate_speed:     {value: 0.017, unit: m/s,   source: literature,  doc: cooler/cooler.md}
+  bed_porosity:        {value: 0.4,   unit: "-",   source: literature,  doc: cooler/cooler.md}
+  solid_density:       {value: 3178.0, unit: kg/m3, source: literature, doc: cooler/cooler.md}
+  particle_d:          {value: 0.015, unit: m,     source: model,       doc: cooler/cooler.md}
+  # - the vent (waste) air: the cooling air the kiln and the calciner do not
+  #   take, "normally a temperature of 200 to 300 degC, must be vented to
+  #   ambient via a dedusting system" (Holderbank 2000); sized at the middle,
+  #   250 degC, and at a dust duct's velocity (abrasive dust 10-16 m/s, a
+  #   dedusting design note; clinker dust is abrasive). Off the roof near the
+  #   middle, one segment past it towards the cold end (user, 23 Nov 2026;
+  #   was over the last segment), run 3 D up like the tertiary outlet (model).
+  vent_T:              {value: 523.15, unit: K,    source: literature,  doc: cooler/cooler.md}
+  vent_velocity:       {value: 13.0,  unit: m/s,   source: literature,  doc: cooler/cooler.md}
+  vent_L_over_D:       {value: 3.0,   unit: "-",   source: model,       doc: cooler/cooler.md}
+  vent_offset_segments: {value: 1.0,  unit: "-",   source: model,       doc: cooler/cooler.md}   # the vent's axis: the middle + this many segments (user, 23 Nov 2026)
+  # The clinker outlet (user, 23 Nov 2026): the cooler ends in its last
+  # crushing stage, a roller breaker (Fuller HRB, "the default clinker
+  # crusher type with our Cross-Bar cooler", "standard end-of-cooler
+  # arrangement"): a level deck of rollers in line with the grate, "the
+  # number of rollers varies from three to six, according to your clinker
+  # production", transport rollers spaced so the fines fall through, the
+  # last crushing roller "slightly below the horizontal plane of the
+  # other rollers". The clinker falls through the deck into the discharge
+  # chute (Holderbank 2000 Fig. 5: crusher at the end, the casing over
+  # it). Roller D, pitch and the drop: no source (the brochure's images).
+  hrb_rollers:         {value: 4,     unit: "-",   source: model,       doc: cooler/cooler.md}
+  hrb_roller_D:        {value: 0.9,   unit: m,     source: schematic,   doc: cooler/cooler.md}
+  hrb_pitch:           {value: 1.0,   unit: m,     source: schematic,   doc: cooler/cooler.md}
+  hrb_drop:            {value: 0.10,  unit: m,     source: schematic,   doc: cooler/cooler.md}
+
+# ---------------------------------------------------------------------
+# The cooler's MECHANICAL parts, simple envelopes (user, 23 Nov 2026:
+# "altta fanlar olacak"; not a CFD input, not a fabrication drawing;
+# cooler_body.bas, plant_geometry.cooler_body()). The cooler's frame as
+# cooler.bas (x along the grate from the hot end, y across, z up from the
+# grate); placed by cooler_placement().
+# - Cross-Bar units (FLSmidth Cross-Bar brochure C 01-11 400-4-ENG V2):
+#   "standard units, each measuring 1.2 or 1.8 meters in width ... a unit
+#   includes either 2 or 3 movable frames, each 2 grates wide" -> a lane
+#   0.6 m; the cooler's 4.0 m (kept, user 23 Nov 2026) in round(w / 0.6)
+#   lanes of equal width (schematic). "Each line of movable frames ... is
+#   operated by 2 or 4 hydraulic cylinders"; "no hydraulic components in
+#   the first undergrate chamber" (its sketch: cylinders in the 2nd and
+#   5th of 6 chambers -> here the 3rd and 8th of 10, model).
+# - The undergrate: one compartment per segment (user: one fan each),
+#   floor on the plant's ground (its height follows from the layout; the
+#   Holderbank Fig. 5 section has it about 0.56 x the grate's width).
+#   Cooling fans beside the casing at undergrate level, a duct into each
+#   compartment from the side (Holderbank 2000, Fig. 5); on alternate
+#   sides here (two fans fit in a segment's length side by side: model).
+# - Fan duty: the segment's air (cooler_air) at ambient; pressure from
+#   7.3 kPa at the hot end to 2.9 kPa at the cold end, linear in the
+#   segment ("fans are sized accordingly so that the maximum pressure
+#   decreases from 7.3 kPa to 2.9 kPa", cementequipment.org clinker cooler
+#   note; Holderbank: 45 to 25 mbar for older coolers). Size by the fan
+#   laws as id_fan(): tip speed from the pressure coefficient, wheel D
+#   from the speed (a 4-pole motor at 50 Hz), eye from its velocity.
+# - The clinker outlet: the HRB deck's rollers (cooler: hrb_*) under
+#   the casing's extension, their drives off one side, the discharge
+#   chute below them between the undergrate's walls down to the ground.
+cooler_body:
+  lane_unit_width:     {value: 1.2,   unit: m,    source: literature,   doc: cooler/cooler.md}
+  frames_per_unit:     {value: 2,     unit: "-",  source: literature,   doc: cooler/cooler.md}
+  cylinders_per_lane:  {value: 2,     unit: "-",  source: literature,   doc: cooler/cooler.md}
+  cylinder_chamber_a:  {value: 3,     unit: "-",  source: model,        doc: cooler/cooler.md}
+  cylinder_chamber_b:  {value: 8,     unit: "-",  source: model,        doc: cooler/cooler.md}
+  cylinder_D:          {value: 0.25,  unit: m,    source: schematic,    doc: cooler/cooler.md}
+  cylinder_L:          {value: 1.6,   unit: m,    source: schematic,    doc: cooler/cooler.md}
+  cylinder_z:          {value: -0.45, unit: m,    source: schematic,    doc: cooler/cooler.md}   # its axis under the grate line
+  casing_wall_t:       {value: 0.40,  unit: m,    source: schematic,    doc: cooler/cooler.md}   # refractory + steel plate
+  undergrate_wall_t:   {value: 0.10,  unit: m,    source: schematic,    doc: cooler/cooler.md}   # steel plate + stiffeners
+  partition_t:         {value: 0.02,  unit: m,    source: schematic,    doc: cooler/cooler.md}
+  grate_t:             {value: 0.15,  unit: m,    source: schematic,    doc: cooler/cooler.md}   # air distribution plates + MFRs
+  fan_dp_first:        {value: 7300.0, unit: Pa,  source: literature,   doc: cooler/cooler.md}
+  fan_dp_last:         {value: 2900.0, unit: Pa,  source: literature,   doc: cooler/cooler.md}
+  fan_air_T:           {value: 293.15, unit: K,   source: model,        doc: cooler/cooler.md}
+  fan_speed:           {value: 1480.0, unit: rpm, source: model,        doc: cooler/cooler.md}
+  fan_pressure_coefficient: {value: 1.0, unit: "-", source: model,      doc: cooler/cooler.md}
+  fan_eye_velocity:    {value: 25.0,  unit: m/s,  source: model,        doc: cooler/cooler.md}
+  fan_efficiency:      {value: 0.80,  unit: "-",  source: literature,   doc: cooler/cooler.md}
+  fan_volute_ratio:    {value: 1.5,   unit: "-",  source: schematic,    doc: cooler/cooler.md}   # casing's outer radius / the wheel's
+  fan_duct_velocity:   {value: 15.0,  unit: m/s,  source: model,        doc: cooler/cooler.md}
+  fan_gap:             {value: 0.8,   unit: m,    source: schematic,    doc: cooler/cooler.md}   # casing's side to the fan's volute
+  motor_side_ref:      {value: 0.6,   unit: m,    source: schematic,    doc: cooler/cooler.md}   # a 100 kW motor's frame, side; scaled by (P / 100 kW)^(1/3)
+  motor_length_ratio:  {value: 1.6,   unit: "-",  source: schematic,    doc: cooler/cooler.md}
+  hrb_motor_L:         {value: 1.6,   unit: m,    source: schematic,    doc: cooler/cooler.md}   # each roller's geared motor off the side (the brochure's images)
+  hrb_motor_side:      {value: 0.6,   unit: m,    source: schematic,    doc: cooler/cooler.md}
 
 # ---------------------------------------------------------------------
 # Preheater ID fan (user decision, 16 Nov 2026: one per string, 8 kPa):
@@ -650,6 +763,13 @@ kiln_hood:
   # opening. No source for the clearance: model (the velocity band's
   # lower end, 4 m/s, allows at most ~0.33 m).
   seal_clearance:      {value: 0.25,   unit: m,      source: model,       doc: kiln/kiln_hood.md}
+  # The hood's floor beside the cooler: side walls falling inward from the
+  # hood's width to the grate's, a hopper over the inlet (user decision,
+  # 23 Nov 2026, after the Fuller Cross-Bar Cooler brochure, C 03-21400-44-ENG
+  # V4, 2025, p. 4: the ABC Inlet's inclined side walls). No angle is
+  # published: steeper than the clinker's 40 deg angle of repose
+  # (kiln.repose_angle) so no dust settles on them (model).
+  hopper_angle:        {value: 60.0,   unit: deg,    source: model,       doc: kiln/kiln_hood.md}
   # The burner in the kiln mouth (literature, 23 Nov 2026):
   # - tip inside the hot kiln, grate cooler: FLSmidth JETFLEX installation
   #   manual (IOM, quoted in search results; ~0.25 m in, adjustable
@@ -663,11 +783,8 @@ kiln_hood:
   burner_offset_x:     {value: 0.0,    unit: m,      source: literature,  doc: kiln/kiln_burner.md}
   burner_offset_y:     {value: 0.0,    unit: m,      source: literature,  doc: kiln/kiln_burner.md}
   burner_tilt_deg:     {value: 0.0,    unit: deg,    source: literature,  doc: kiln/kiln_burner.md}
-  # The flame zone's CFD volume: short stubs carry its inlet/outlet faces
-  # off the hood (the cooler's two hood segments under it, segment 2's
-  # twice as deep so the two faces stay apart; the tertiary air duct's
-  # mouth on the roof). No source: model.
-  flame_stub_L:        {value: 0.25,   unit: m,      source: model,       doc: kiln/kiln_hood.md}
+  # The flame zone's CFD volume: its inlets are the hood's flat floor, split
+  # across into the cooler's two hood segments (no stubs: user, 23 Nov 2026).
   # The tertiary air outlet: the duct's first run straight up off the
   # roof, this many duct diameters, so the hood's recirculation does not
   # reach the outlet face (backflow there; user, 23 Nov 2026: 3 D). The

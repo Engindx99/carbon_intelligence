@@ -13,15 +13,17 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 
 # What the macro dimensions (its log names them "dim <key> <mm>"), each
 # between edges the CFD solid really has.
-DIMENSIONED = ("L_cool", "w_cool", "H_cool", "segment", "hood")
+DIMENSIONED = ("L_cool", "w_cool", "H_cool", "segment", "hood", "bed_h", "vent_D", "vent_L")
 
 ALSO = {}
 
 # Table order on the sheet.
 ORDER = (
     "grate_area", "w_cool", "L_cool", "H_cool", "segments", "segment", "hood_segments", "hood",
-    "volume", "wall_area",
-    "u_vent", "u_plate", "u_crusher", "u_chute", "u_wall", "u_material",
+    "cis_angle", "cis_rise", "bed_h", "vent_D", "vent_x", "vent_L",
+    "hrb_rollers", "hrb_pitch", "hrb_L",
+    "volume_bed", "volume_fb", "volume",
+    "u_plate", "u_chute", "u_wall", "u_material",
 )
 
 
@@ -41,14 +43,29 @@ def params(g, name="cooler"):
                                     key="cooler.hood_segments")
     P["hood"] = pv.derived("cooler.hood_L", "Hood opening: length from the hot end", c["hood_L"], "m",
                            [P["segment"], P["hood_segments"]])
-    P["volume"] = pv.derived("cooler.volume", "Volume (box, bed included)", c["box_volume"], "m3",
-                             [P["L_cool"], P["w_cool"], P["H_cool"]])
-    P["wall_area"] = pv.derived("cooler.wall_area", "Wall area (sides, ends, roof but the hood)", c["wall_area"], "m2",
-                                [P["L_cool"], P["w_cool"], P["H_cool"], P["hood"]])
+    f = pg.cooler_cfd(g)
+    P["cis_angle"] = pv.primary(g, "cooler.cis_angle", "Inlet grate (CIS): slope", key="cooler.cis_angle")
+    P["cis_rise"] = pv.derived("cooler.cis_rise", "Inlet grate: height at the hot end (one segment long)",
+                               c["cis_rise"], "m", [P["cis_angle"], P["segment"]])
+    P["bed_h"] = pv.derived("cooler.bed_h", "Clinker bed depth (the FLS design bed)", c["bed_h"], "m",
+                            [P["w_cool"]])
+    P["vent_D"] = pv.derived("cooler.vent_D", "Vent duct bore (vent air at 250 degC, 13 m/s)", f["vent_D"], "m",
+                             [pv.primary(g, "cooler.vent_velocity", "Vent duct velocity", key="cooler.vent_velocity")])
+    P["vent_x"] = pv.derived("cooler.vent_x", "Vent duct axis from the hot end", f["vent_x"], "m", [P["L_cool"], P["vent_D"]])
+    P["vent_L"] = pv.derived("cooler.vent_L", "Vent duct run off the roof (3 D)", f["vent_L"], "m", [P["vent_D"]])
+    P["hrb_rollers"] = pv.primary(g, "cooler.hrb_rollers", "Clinker outlet: roller breaker (HRB) rollers",
+                                  key="cooler.hrb_rollers")
+    P["hrb_pitch"] = pv.primary(g, "cooler.hrb_pitch", "HRB roller pitch", key="cooler.hrb_pitch")
+    P["hrb_L"] = pv.derived("cooler.hrb_L", "HRB deck past the grate's end (freeboard over it)", f["hrb_L"], "m",
+                            [P["hrb_rollers"], P["hrb_pitch"]])
+    P["volume_bed"] = pv.derived("cooler.bed_volume", "Bed body (porous zone)", f["bed_volume"], "m3",
+                                 [P["L_cool"], P["w_cool"], P["bed_h"]])
+    P["volume_fb"] = pv.derived("cooler.freeboard_volume", "Freeboard body (vent duct included)", f["freeboard_volume"], "m3",
+                                [P["L_cool"], P["w_cool"], P["H_cool"], P["vent_D"], P["hrb_L"]])
+    P["volume"] = pv.derived("cooler.volume", "CFD volume (bed + freeboard)", f["volume"], "m3",
+                             [P["volume_bed"], P["volume_fb"]])
     doc = P["grate_area"].doc
-    P["u_vent"] = pv.unknown("cooler.vent", "Vent outlet (cold end): place and size", f"{doc}: no source, not made")
     P["u_plate"] = pv.unknown("cooler.plates", "Grate plates / compartment walls", f"{doc}: not modelled")
-    P["u_crusher"] = pv.unknown("cooler.crusher", "Clinker crusher", f"{doc}: not modelled")
     P["u_chute"] = pv.unknown("cooler.chute", "Clinker chute from the kiln", f"{doc}: not modelled")
     P["u_wall"] = pv.unknown("cooler.shell", "Casing / refractory thickness", f"{doc}: no structure modelled")
     P["u_material"] = pv.unknown("cooler.material", "Material", f"{doc}: no source")

@@ -634,8 +634,9 @@ def kiln(g):
     D, L = v(k["D"]), v(k["L"])
     # the kiln inlet chamber's CFD solid carries the tube's first stub
     # (mouth_stub_over_D D along the axis, user decision 22 Nov 2026), so
-    # the kiln's own CFD solid starts there: stub + solid = L, no extra
-    # length (the twin and the layout keep the whole L)
+    # the kiln's own CFD solid starts there; it ends at the transition
+    # zone's end, where the flame volume takes over: stub + solid + flame
+    # volume's bore = L, no extra length (the twin and the layout keep L)
     z_cfd0 = v(g["kiln_inlet_chamber"]["mouth_stub_over_D"]) * D
     t_sh, t_br = v(k["shell_t"]), v(k["lining_t"])
     L_tr = v(k["transition_L"])
@@ -675,10 +676,14 @@ def kiln(g):
     return {
         "D": D,
         "L": L,
+        # the CFD solid ends where the flame volume (kiln_flame(), the burning
+        # zone and the hood) begins: the two meet at the transition zone's end
+        # (user, 23 Nov 2026: one gas path, no overlap)
         "z_cfd0": z_cfd0,
-        "L_cfd": L - z_cfd0,
-        "volume_cfd": 0.25 * math.pi * D * D * (L - z_cfd0),
-        "wall_area_cfd": math.pi * D * (L - z_cfd0),
+        "z_cfd1": L_tr,
+        "L_cfd": L_tr - z_cfd0,
+        "volume_cfd": 0.25 * math.pi * D * D * (L_tr - z_cfd0),
+        "wall_area_cfd": math.pi * D * (L_tr - z_cfd0),
         "slope": v(k["slope"]),
         "transition_L": v(k["transition_L"]),
         # the wall stack's thicknesses, hot face outward (physics.shell)
@@ -883,6 +888,18 @@ def cooler(g):
     L = v(c["grate_area"]) / w
     n, nh = int(v(c["segments"])), int(v(c["hood_segments"]))
     hood_L = nh * L / n
+    seg = L / n
+    # the inlet: a fixed grate falling at cis_angle from the hot end over its
+    # segments, the floor flat (z = 0) after it; the roof stays at h
+    cis_L = int(v(c["cis_segments"])) * seg
+    cis_a = math.radians(v(c["cis_angle"]))
+    cis_rise = cis_L * math.tan(cis_a)
+    # the clinker bed: the FLS cooler's design depth (a model of the bed
+    # the grate speed carries), parallel to the floor
+    rho_b = v(c["solid_density"]) * (1.0 - v(c["bed_porosity"]))
+    bed_h = v(c["fls_clinker_flow"]) / (rho_b * w * v(c["fls_grate_speed"]))
+    if not 0.0 < cis_rise + bed_h < h:
+        raise ValueError("cooler: the inlet grate and the bed leave no room under the roof")
     return {
         "width": w,
         "casing_height": h,
@@ -890,14 +907,164 @@ def cooler(g):
         "grate_area": v(c["grate_area"]),
         "box_volume": w * L * h,
         "segments": n,
-        "segment_L": L / n,
-        "segment_area": w * L / n,
+        "segment_L": seg,
+        "segment_area": w * seg,
         "hood_segments": nh,
         "hood_L": hood_L,
         "hood_area": w * hood_L,
-        # the walls: two sides, two ends, and the roof but for the hood's opening
+        "cis_L": cis_L, "cis_angle": cis_a, "cis_rise": cis_rise,
+        "cis_area": w * cis_L / math.cos(cis_a),      # grate_air_1..: the inclined face
+        "bed_h": bed_h, "bed_rho": rho_b,
+        "bed_volume": w * L * bed_h,
+        # the casing's gas volume (bed + freeboard) without the vent duct
+        "casing_volume": w * (L * h - 0.5 * cis_L * cis_rise),
+        # the walls of the old box: two sides, two ends, and the roof but for the hood's opening
         "wall_area": 2.0 * L * h + 2.0 * w * h + w * (L - hood_L),
     }
+
+
+def cooler_air(g):
+    """The undergrate air per segment [kg/s], hot end first: the total
+    (air_rate x the clinker) in the FLS reference cooler's proportions
+    (segment 1, segment 2, the rest alike; user decision, 23 Nov 2026)."""
+    c, co = g["cooler"], cooler(g)
+    n = co["segments"]
+    w = [v(c["fls_air_seg1"]), v(c["fls_air_seg2"])] + [v(c["fls_air_seg_rest"])] * (n - 2)
+    total = v(c["air_rate"]) * v(g["kiln"]["clinker_flow"])
+    return {"m": [total * wi / sum(w) for wi in w], "total": total,
+            "fls_rate": sum(w) / v(c["fls_clinker_flow"])}
+
+
+AIR_M = 0.028965      # dry air [kg/mol]
+VENT_WALL_GAP = 0.10  # [m] the vent duct's edge off the cooler's end wall: a clean roof face between (model)
+
+
+def cooler_cfd(g):
+    """The cooler's CFD volume (user decisions, 23 Nov 2026; cooler.bas):
+    the casing on the grate, x along it from the hot end, y across, z up
+    from the flat grate. Two bodies: the clinker bed (a porous cell zone,
+    bed_h deep over the floor) and the freeboard over it. The floor:
+    grate_air_1 the inclined inlet (cis_angle over cis_L), grate_air_2..n
+    flat strips. The roof: hood_1 and hood_2 (the hood's opening, one
+    segment each: the flame volume's secondary_air_in and
+    tertiary_supply_in), and the vent: a round duct off the roof at the
+    middle + vent_offset_segments segments (user, 23 Nov 2026), VENT_WALL_GAP
+    from the side walls at the least; D from the vent air's flow at vent_T and vent_velocity,
+    run vent_L_over_D x D up to its end face vent_out."""
+    c, co = g["cooler"], cooler(g)
+    if co["hood_segments"] != 2:
+        raise ValueError("cooler_cfd: the hood's opening is hood_1 + hood_2, one segment each")
+    bal = cooler_boundaries(g, _geometry=False)["balance"]
+    rho = 101325.0 * AIR_M / (R_GAS * v(c["vent_T"]))
+    q = bal["vent"] / rho
+    A = q / v(c["vent_velocity"])
+    D = math.sqrt(4.0 * A / math.pi)
+    seg, w, L, H = co["segment_L"], co["width"], co["length"], co["casing_height"]
+    gap = VENT_WALL_GAP
+    x_v = 0.5 * L + v(c["vent_offset_segments"]) * seg
+    if D > w - 2.0 * gap or x_v - 0.5 * D < co["hood_L"] + gap or x_v + 0.5 * D > L - gap:
+        raise ValueError(f"cooler_cfd: the vent duct (D {D:.2f} m at x {x_v:.2f} m) does not fit on the roof")
+    L_v = v(c["vent_L_over_D"]) * D
+    V_duct = A * L_v
+    # the roof flat at H: hood_1 / hood_2 are its first two segments, split
+    # off as faces of their own, and lie on the flame volume's flat hood
+    # floor (its secondary_air_in / tertiary_supply_in), so the two volumes
+    # meet face to face (user, 23 Nov 2026: one gas path, no gap or overlap;
+    # the earlier stubs and the roof's steps under them taken out)
+    # the clinker outlet: past the grate's end the HRB deck (cooler: hrb_*,
+    # in line with the grate, z = 0) under the freeboard carried on over it;
+    # the bed ends at x = L in clinker_out (user, 23 Nov 2026)
+    L_h = v(c["hrb_rollers"]) * v(c["hrb_pitch"])
+    Lt = L + L_h
+    fb = co["casing_volume"] - co["bed_volume"] + V_duct + w * L_h * H
+    hb, zc, nh = co["bed_h"], co["cis_rise"], co["hood_segments"]
+    side = Lt * H - 0.5 * co["cis_L"] * zc                   # one side wall of the freeboard + bed
+    walls = {
+        "bed": 2.0 * L * hb + w * hb,                      # its sides and its back end
+        "freeboard": (2.0 * (side - L * hb) + w * (H - zc - hb) + w * H
+                      + w * (Lt - nh * seg) - A + math.pi * D * L_v),
+    }
+    return {
+        "vent_D": D, "vent_A": A, "vent_q": q, "vent_rho": rho, "vent_x": x_v, "vent_L": L_v,
+        "vent_z_out": H + L_v, "hood_z": (H, H), "hrb_L": L_h, "length_total": Lt,
+        "bed_volume": co["bed_volume"], "freeboard_volume": fb,
+        "volume": co["bed_volume"] + fb,
+        "walls": walls,
+        "faces": {
+            **{f"grate_air_{i + 1}": (co["cis_area"] if i < int(v(c["cis_segments"])) else w * seg)
+               for i in range(co["segments"])},
+            "hood_1": w * seg, "hood_2": w * seg,
+            "vent_out": A,
+            # the bed top: the shared face of the two bodies (an interior in the CFD)
+            "bed_top": co["cis_area"] + w * (L - co["cis_L"]),
+            # the bed's end at the grate's end: the clinker leaves the porous zone
+            "clinker_out": w * hb,
+            # the HRB deck's top past the grate's end (the rollers, the clinker on them)
+            "hrb_deck": w * L_h,
+        },
+    }
+
+
+def ergun(eps, d):
+    """Fluent's porous-zone coefficients for a packed bed of spheres d
+    across at porosity eps (Ergun): viscous 1/alpha [1/m2], inertial C2 [1/m]."""
+    return 150.0 * (1.0 - eps) ** 2 / (eps ** 3 * d ** 2), 3.5 * (1.0 - eps) / (eps ** 3 * d)
+
+
+def cooler_boundaries(g, _geometry=True):
+    """The cooler volume's boundary values, one per cooler_cfd() face (CFD
+    set-up input). The undergrate air from cooler_air(); the two hood
+    outlets take what the flame volume's cooler inlets take from the
+    cooler (kiln_flame_boundaries(); one-way through the hood plane, user
+    decision 23 Nov 2026): hood_1 the secondary air (the seal's leak joins
+    it in the hood, not here), hood_2 the tertiary air; the vent carries
+    the rest (a pressure outlet). The bed: a porous zone, Ergun from the
+    nodule size, the clinker moving through it at the grate speed.
+
+    Same form as kiln_flame_boundaries()."""
+    c, co = g["cooler"], cooler(g)
+    air = cooler_air(g)
+    split = kiln_air_split(g)
+    ta = calciner_boundaries(g)["tertiary_air_inlet"]
+    T0 = v(g["kiln_burner"]["primary_air_T"])
+    m_h1, m_h2 = split["secondary"], ta["flow"]
+    m_vent = air["total"] - m_h1 - m_h2
+    if m_vent <= 0.0:
+        raise ValueError("cooler_boundaries: the hood takes all the cooling air; no vent air left")
+    eps, d = v(c["bed_porosity"]), v(c["particle_d"])
+    visc, inert = ergun(eps, d)
+    m_cl = v(g["kiln"]["clinker_flow"])
+    bc = {f"grate_air_{i + 1}": {"kind": "mass_flow_inlet", "m": m, "T": T0, "gas": "air", "particles": None,
+                                 "note": "undergrate air, FLS segment share" + (" (the inclined inlet)" if i == 0 else "")}
+          for i, m in enumerate(air["m"])}
+    bc.update({
+        "hood_1": {"kind": "mass_flow_outlet", "m": m_h1, "T": None, "gas": None, "particles": None,
+                   "note": "to the kiln: the secondary air (kiln_flame secondary_air_in less the seal's leak)"},
+        "hood_2": {"kind": "mass_flow_outlet", "m": m_h2, "T": None, "gas": None, "particles": None,
+                   "note": "to the tertiary air duct (kiln_flame tertiary_supply_in)"},
+        "vent_out": {"kind": "pressure_outlet", "m": None, "T": None, "gas": None, "particles": None,
+                     "note": "0 Pa gauge (reference); the vent air, the rest"},
+        "bed_top": {"kind": "interior", "m": None, "T": None, "gas": None, "particles": None,
+                    "note": "the bed's top: shared face of the bed and the freeboard"},
+        "clinker_out": {"kind": "interior", "m": None, "T": None, "gas": None, "particles": None,
+                        "note": "the bed's end at the grate's end (shared with the freeboard): the clinker "
+                                "leaves the porous zone here (its enthalpy out, model); target 65 K over "
+                                "ambient (CII manual, IKN)"},
+        "hrb_deck": {"kind": "wall", "m": None, "T": None, "gas": None, "particles": None,
+                     "note": "the roller breaker's deck past the grate's end; the chute under it is "
+                             "closed by the clinker column (no false air, model)"},
+    })
+    bed = {"porosity": eps, "particle_d": d, "viscous_resistance": visc, "inertial_resistance": inert,
+           "solid_density": v(c["solid_density"]), "clinker_flow": m_cl,
+           "clinker_velocity": m_cl / (co["bed_rho"] * co["width"] * co["bed_h"]), "depth": co["bed_h"]}
+    out = {"bc": bc, "bed": bed,
+           "balance": {"in": air["total"], "hood_1": m_h1, "hood_2": m_h2, "vent": m_vent},
+           "air": air}
+    if _geometry:
+        names = set(cooler_cfd(g)["faces"])
+        if set(bc) != names:
+            raise ValueError(f"cooler_boundaries: faces {sorted(names ^ set(bc))} without a value")
+    return out
 
 
 # ======================================================================
@@ -1752,7 +1919,9 @@ def kiln_hood(g):
     seal (its outer radius plus seal_clearance either side and over it;
     under the kiln the cooler's back wall closes it); it stands on the
     cooler's roof (cooler_drop under the kiln's bore) and runs over the
-    cooler's hood opening (its depth). The air through it is the
+    cooler's hood opening (its depth). Beside the cooler's width its floor
+    is a hopper (hopper_angle up from the cooler's edges to its side walls;
+    Fuller's ABC Inlet). The air through it is the
     secondary air and the tertiary air; at the tertiary air's temperature
     (and at the hotter secondary air's) the velocity over its section
     (width x height) is held to the literature's range. The secondary air
@@ -1768,7 +1937,19 @@ def kiln_hood(g):
     W, H, depth = 2.0 * half_w, below + half_w, co["hood_L"]
     bnd = calciner_boundaries(g)["tertiary_air_inlet"]
     m = bnd["flow"] + kiln_air_split(g)["secondary"]
-    area = W * H
+    # the hopper: the floor beside the cooler's width, each side a wall at
+    # hopper_angle from the cooler's edge up to the hood's side wall
+    th = math.radians(v(h["hopper_angle"]))
+    dw = 0.5 * (W - co["width"])
+    rise = dw * math.tan(th)
+    if dw < 0.0 or rise >= H:
+        raise ValueError("kiln_hood: the hopper does not fit (the hood narrower than the cooler, or too low)")
+    R = 0.5 * kl["D"]
+    gap = min(below - math.sqrt(max(0.0, R * R - x * x)) - (x - 0.5 * co["width"]) * math.tan(th)
+              for x in [0.5 * co["width"] + i * (min(R, 0.5 * W) - 0.5 * co["width"]) / 50 for i in range(51)])
+    if gap <= 0.0:
+        raise ValueError("kiln_hood: the hopper's wall cuts into the kiln's bore")
+    area = W * H - dw * rise                       # less the two triangles under the hopper's walls
 
     def vel(T):
         rho = 101325.0 * bnd["M"] / (R_GAS * T)
@@ -1783,7 +1964,8 @@ def kiln_hood(g):
         "R_seal": R_seal,
         "W": W, "H": H, "depth": depth,
         "above": half_w, "below": below,     # the roof over, the floor under the kiln's axis
-        "area": area,
+        "area": area, "area_box": W * H,
+        "hopper_angle": th, "hopper_dw": dw, "hopper_rise": rise, "hopper_gap": gap,
         "u": vel(bnd["T"]),
         "u_hot": vel(v(h["secondary_air_T"])),
         "area_min": m / rho / vmax,
@@ -1890,10 +2072,10 @@ def kiln_flame(g):
     The bore runs on R tan a past the kiln's end so it meets the hood's
     vertical back wall all round.
 
-    Not modelled (CLAUDE.md rule 10, kiln_hood.md): the clinker bed (as
-    kiln.bas: the bore is all gas; it shades the lower wall and takes the
-    flame's radiation, so wall heat fluxes there read high), doors,
-    refractory detail, the seal's leak air.
+    Not modelled (CLAUDE.md rule 10, kiln_flame.md): the clinker bed's
+    material (the bore is all gas, user decision 23 Nov 2026; the strip of
+    wall under it is a region given the bed's temperature: "bed_strip"), doors,
+    refractory detail, the seal's leak air (it enters with the secondary air).
 
     "bodies" as kiln_burner_body(): kinds cyl/fbox; void_* cut from the
     group once joined. "faces": the boundaries, each a point inside it,
@@ -1901,7 +2083,6 @@ def kiln_flame(g):
     every other face is wall)."""
     kl, hd, co = kiln(g), kiln_hood(g), cooler(g)
     ch, body, pl = kiln_burner(g), kiln_burner_body(g), kiln_burner_placement(g)
-    st = v(g["kiln_hood"]["flame_stub_L"])
     alpha = math.atan(0.01 * kl["slope"])
     sa, ca = math.sin(alpha), math.cos(alpha)
     Hd, U, X = (0.0, sa, ca), (0.0, ca, -sa), (1.0, 0.0, 0.0)
@@ -1934,14 +2115,29 @@ def kiln_flame(g):
     # the kiln's bore over the burning zone, on past its end to the back wall
     z_cut = L - kl["burning_L"]
     cyl("kiln_bore", (0.0, 0.0, z_cut), (0.0, 0.0, 1.0), R, kl["burning_L"] + R * math.tan(alpha) * 1.001)
-    # the cooler's two hood segments under the floor (segment 2 twice as deep)
+    # the cooler's two hood segments: the hood's flat floor between the
+    # hopper's feet (cooler width), split across at one segment into two
+    # faces (the macro's split line "floor_split"); no stubs (user, 23 Nov 2026)
     seg, cw = co["segment_L"], co["width"]
+    if abs(depth - 2.0 * seg) > 1e-6:
+        raise ValueError("kiln_flame: the hood's floor is the cooler's two hood segments (depth = 2 segments)")
     faces = []
     for k in (1, 2):
-        d = k * st
-        fbox(f"cooler_seg_{k}", at((k - 0.5) * seg, -below - 0.5 * d + 0.0005), Hd, U, X, seg, d + 0.001, cw)
-        faces.append((("secondary_air_in", "tertiary_supply_in")[k - 1], at((k - 0.5) * seg, -below - d), tuple(-u for u in U),
+        faces.append((("secondary_air_in", "tertiary_supply_in")[k - 1], at((k - 0.5) * seg, -below), tuple(-u for u in U),
                       seg * cw, ((1.0, 0.55, 0.0), (0.95, 0.8, 0.1))[k - 1]))
+    floor_split = (at(seg, -below, -0.5 * cw - 0.5), at(seg, -below, 0.5 * cw + 0.5))
+    # the hopper (kiln_hood()): either side a box cut out of the hood's
+    # bottom corner, one face in the hopper's wall (from the cooler's edge
+    # on the floor up at hopper_angle), the rest outside the hood
+    th = hd["hopper_angle"]
+    ct, sn = math.cos(th), math.sin(th)
+    L_w, T_w = hd["hopper_dw"] / ct + 1.0, hd["hopper_dw"] * sn + 1.5
+    for s_, nm in ((1.0, "void_hopper_p"), (-1.0, "void_hopper_m")):
+        t = tuple(s_ * ct * X[i] + sn * U[i] for i in range(3))      # up the wall
+        n = tuple(s_ * sn * X[i] - ct * U[i] for i in range(3))      # out of the fluid
+        foot = at(0.5 * depth, -below, s_ * 0.5 * cw)
+        c = tuple(foot[i] + 0.5 * L_w * t[i] + 0.5 * T_w * n[i] for i in range(3))
+        fbox(nm, c, Hd, t, n, depth + 2.0, L_w, T_w)
     # the tertiary air duct's mouth on the roof, over segment 2
     r_ta = 0.5 * calciner_inlets(g)["tertiary_air"]["D"]
     h_ta = co["hood_L"] - 0.5 * seg
@@ -1951,20 +2147,19 @@ def kiln_flame(g):
     L_ta = v(g["kiln_hood"]["tertiary_outlet_L_over_D"]) * 2.0 * r_ta
     cyl("tertiary_air_mouth", at(h_ta, above - 0.001), U, r_ta, L_ta + 0.001)
     faces.append(("tertiary_air_out", at(h_ta, above + L_ta), U, math.pi * r_ta * r_ta, (0.6, 0.2, 0.8)))
-    # the clinker bed cut out of the bore over the burning zone (to the kiln's
-    # mouth): a box under its surface, as wide as its chord (kiln_bed())
+    # the clinker bed: no material in the volume (user decision, 23 Nov 2026:
+    # the bore whole, as CEMCAP/SINTEF's kiln CFD). The strip of the bore's
+    # wall under the bed (its chord, kiln_bed()) is a region the CFD gives
+    # the bed's temperature (a position expression on the wall, or the wall
+    # separated by a cell mark): SolidWorks merges a split made by cutting
+    # and filling back (tried 23 Nov 2026), so it is not a face of the solid.
     bd = kiln_bed(g)
-    n_b, t_b, d_c, c_b = bd["n"], bd["t"], bd["d_c"], bd["c"]
-    a_b = R + 0.1 - d_c
-    zc = 0.5 * (L + z_cut - 0.5)
-    ctr = tuple(-(d_c + 0.5 * a_b) * n_b[i] + (0.0, 0.0, zc)[i] for i in range(3))
-    top = max(c_b * t_b[1] - d_c * n_b[1], -c_b * t_b[1] - d_c * n_b[1])
-    if top >= 0.0:
-        raise ValueError("kiln_flame: the bed's box reaches over the axis (it would cut the hood)")
-    fbox("void_clinker_bed", ctr, n_b, t_b, (0.0, 0.0, 1.0), a_b, 2.0 * c_b + 0.02, L - z_cut + 0.5)
-    faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), bd["A_gas"], (0.2, 0.2, 0.9)))
-    faces.append(("bed", tuple(-d_c * n_b[i] + (0.0, 0.0, 0.5 * (z_cut + L))[i] for i in range(3)),
-                  tuple(-a for a in n_b), 2.0 * c_b * (L - z_cut), (0.45, 0.3, 0.15)))
+    arc = 2.0 * R * math.asin(bd["c"] / R)
+    bed_strip = {"n": bd["n"], "t": bd["t"], "d_c": bd["d_c"], "c": bd["c"], "arc": arc,
+                 "z0": z_cut, "z1": L, "area": arc * (L - z_cut),
+                 # a wall point is on the strip when its distance along -n from the axis is over d_c
+                 "rule": "-(n . p) > d_c, z_cut <= z <= L"}
+    faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), math.pi * R * R, (0.2, 0.2, 0.9)))
 
     # the burner out of it: its tip ring, then its castable on through the front wall
     to_k = pl["to_kiln"]
@@ -1998,8 +2193,282 @@ def kiln_flame(g):
         "L_flame_est": L_est, "L_tip_to_cut": L_tip,
         "bodies": bodies, "faces": faces, "box": box, "z_cut": z_cut, "L_flame": kl["burning_L"],
         "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta, "L_ta": L_ta, "bed": bd,
+        "bed_strip": bed_strip, "floor_split": floor_split,
         "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},
     }
+
+
+def cooler_placement(g):
+    """Where the cooler's CFD volume (cooler_cfd(), its own frame: x along
+    the grate from the hot end, y across, z up from the grate) sits in the
+    kiln frame (kiln_flame()): its x the plant's horizontal towards the
+    cooler (Hd), its z the plant's up (U), its y = U x Hd = the kiln's x;
+    its hot end under the hood's back wall, its roof (z = H) the hood's
+    floor (user, 23 Nov 2026: the cooler, the hood and the kiln one gas
+    path). Then hood_1 / hood_2 lie on the flame volume's secondary_air_in
+    / tertiary_supply_in. "R": the cooler's axes (rows) in the kiln frame;
+    "o": its origin; "box": its extent in the kiln frame."""
+    kl, hd, co, f = kiln(g), kiln_hood(g), cooler(g), cooler_cfd(g)
+    alpha = math.atan(0.01 * kl["slope"])
+    sa, ca = math.sin(alpha), math.cos(alpha)
+    Hd, U, X = (0.0, sa, ca), (0.0, ca, -sa), (1.0, 0.0, 0.0)
+    u0 = -hd["below"] - co["casing_height"]
+    o = tuple((0.0, 0.0, kl["L"])[i] + u0 * U[i] for i in range(3))
+
+    def to_kiln(p):
+        return tuple(o[i] + p[0] * Hd[i] + p[1] * X[i] + p[2] * U[i] for i in range(3))
+
+    w2 = 0.5 * co["width"]
+    pts = [to_kiln((x, y, z)) for x in (0.0, f["length_total"]) for y in (-w2, w2) for z in (0.0, f["vent_z_out"])]
+    box = tuple(min(q[i] for q in pts) for i in range(3)) + tuple(max(q[i] for q in pts) for i in range(3))
+    return {"R": (Hd, X, U), "o": o, "to_kiln": to_kiln, "box": box}
+
+
+def tower_placement(g):
+    """The tower assembly (user, 23 Nov 2026: the whole pyroprocess in
+    one assembly, step by step; option A: the CFD solids as they are):
+    each part's axes (rows, in the plant frame) and origin. The plant
+    frame is the calciner's (calciner.bas): z up from the ground, the
+    two strings at +-x (layout()'s x is one string's), the gooseneck and
+    the kiln towards -y. The kiln inlet chamber turned so its kiln (its
+    +x) runs to -y. Each cyclone turned about its axis so its CFD riser
+    stands on the axis of the cyclone below (the columns at layout()'s
+    x, one y per string); C5 so its level inlet duct is on the
+    gooseneck arm's axis. String 2 is string 1 turned 180 deg about z
+    (a mirrored part cannot be placed by a transform), so its column
+    stands at a different y. C2 = C3 = C4 (one solid, C4.SLDPRT).
+
+    Returns {"parts": [{name, file, R, o}], "joints": [...], ...}; the
+    joints are what meets and how (face to face, an overlap of two CFD
+    domains along one riser, or the gap where the domain is not the
+    plant's: C5's riser inlet under the gooseneck arm, cyclone_C5.md)."""
+    lay, gn, kl = layout(g), gooseneck(g), kiln(g)
+    c = {n: cyclone(g, f"C{n}") for n in (2, 3, 4, 5)}
+    ri = {n: cfd_riser_inlet(g, f"C{n}") for n in (4, 5)}
+    tw = c1_twin(g)
+    z0 = lay["z_calciner_throat"]
+    y_arm = -gn["y_off"]
+    z_arm = z0 + gn["z_end"]
+    duct5 = cyclone_duct_inlet(g, "C5")
+
+    def rz(th):
+        ct, st = math.cos(th), math.sin(th)
+        return ((ct, st, 0.0), (-st, ct, 0.0), (0.0, 0.0, 1.0))
+
+    def apply(R, p):
+        return tuple(sum(p[i] * R[i][k] for i in range(3)) for k in range(3))
+
+    parts = [
+        {"name": "kiln_inlet_chamber", "file": "kiln_inlet_chamber.SLDPRT",
+         "R": ((0.0, -1.0, 0.0), (1.0, 0.0, 0.0), (0.0, 0.0, 1.0)), "o": (0.0, 0.0, lay["z_chamber_floor"])},
+        {"name": "calciner", "file": "calciner.SLDPRT", "R": rz(0.0), "o": (0.0, 0.0, z0)},
+    ]
+    joints = []
+    for k, sg in ((1, 1.0), (2, -1.0)):
+        th0 = 0.0 if sg > 0 else math.pi
+        # C5: its level inlet duct (along its +x, its middle at y = duct5's) on the arm's axis
+        R5 = rz(th0)
+        yd = 0.5 * (duct5["y_inner"] + duct5["y_outer"])
+        y_col = y_arm - apply(R5, (0.0, yd, 0.0))[1]
+        axis = {5: (sg * lay["col"][5], y_col)}
+        parts.append({"name": f"C5_{k}", "file": "C5.SLDPRT", "R": R5, "o": axis[5] + (lay["z_dust"][5],)})
+        face = apply(R5, duct5["face_centre"])
+        x_face = axis[5][0] + face[0]
+        joints.append({"what": f"gooseneck arm {k} -> C5_{k} inlet duct", "kind": "gap",
+                       "L": abs(x_face - sg * gn["x_leg"]),
+                       "z": (z_arm, lay["z_dust"][5] + face[2]),
+                       "note": "C5's CFD inlet is a riser from below (cyclone_C5.md), not the arm"})
+        below = 5
+        for n in (4, 3, 2):
+            X = sg * lay["col"][n]
+            d = math.copysign(1.0, axis[below][0] - X)          # the riser: towards the cyclone below
+            r = ri[4]
+            th = math.atan2(0.0, d) - math.atan2(r["y"], r["x"])
+            R = rz(th)
+            axis[n] = (X, y_col)
+            parts.append({"name": f"C{n}_{k}", "file": "C4.SLDPRT", "R": R, "o": axis[n] + (lay["z_dust"][n],)})
+            rp = apply(R, (r["x"], r["y"], 0.0))
+            top_below = lay["z_dust"][below] + c[below]["height"] + c[below]["outlet_rise"]
+            foot = lay["z_dust"][n] + c[n]["height"] - r["drop"] - r["stub"]
+            joints.append({"what": f"C{below}_{k} outlet pipe -> C{n}_{k} riser", "kind": "overlap",
+                           "L": top_below - foot, "riser_at": (X + rp[0], y_col + rp[1]), "axis_below": axis[below],
+                           "D": (c[below]["D_vortex"], r["D"])})
+            below = n
+        # the C1 twin: R1 on C2's axis (its frame: R1 at (0, y_branch))
+        Rt = rz(th0)
+        r1 = apply(Rt, (0.0, tw["y_branch"], 0.0))
+        o = (axis[2][0] - r1[0], y_col - r1[1], lay["z_dust"][1])
+        parts.append({"name": f"C1_twin_{k}", "file": "C1_twin.SLDPRT", "R": Rt, "o": o})
+        # R1's floor (the twin's gas inlet) on C2's outlet face: L the gap (0: face to face)
+        joints.append({"what": f"C2_{k} outlet pipe -> R1_{k}", "kind": "face",
+                       "L": lay["z_r1_foot"] - (lay["z_dust"][2] + c[2]["height"] + c[2]["outlet_rise"])})
+    return {"parts": parts, "joints": joints, "y_arm": y_arm, "z_arm": z_arm}
+
+
+def cooler_fans(g):
+    """One cooling fan per segment (user, 23 Nov 2026), hot end first: the
+    segment's air (cooler_air) at fan_air_T, the pressure linear from
+    fan_dp_first to fan_dp_last, sized by the fan laws as id_fan(): tip
+    speed u = sqrt(2 dp / (rho psi)), wheel D2 = u / (pi n), eye
+    D1 = sqrt(4 Q / (pi c0)); shaft power Q dp / eta."""
+    b = g["cooler_body"]
+    m = cooler_air(g)["m"]
+    T = v(b["fan_air_T"])
+    rho = 101325.0 * AIR_M / (R_GAS * T)
+    n = v(b["fan_speed"]) / 60.0
+    p0, p1 = v(b["fan_dp_first"]), v(b["fan_dp_last"])
+    out = []
+    for i, mi in enumerate(m):
+        dp = p0 + (p1 - p0) * i / max(1, len(m) - 1)
+        q = mi / rho
+        u = math.sqrt(2.0 * dp / (rho * v(b["fan_pressure_coefficient"])))
+        d2 = u / (math.pi * n)
+        d1 = math.sqrt(4.0 * q / (math.pi * v(b["fan_eye_velocity"])))
+        if d1 >= d2:
+            raise ValueError(f"cooler_fans: fan {i + 1}'s eye ({d1:.2f} m) is not inside its wheel ({d2:.2f} m)")
+        out.append({"m": mi, "q": q, "dp": dp, "rho": rho, "u_tip": u, "D2": d2, "D1": d1,
+                    "b2": d1 * d1 / (4.0 * d2),               # the eye's meridional velocity kept to the tip
+                    "P": q * dp / v(b["fan_efficiency"])})
+    return out
+
+
+def cooler_body(g):
+    """The cooler's mechanical parts as simple envelopes (user, 23 Nov
+    2026; cooler_body.bas builds them; not a CFD input): the casing round
+    the CFD volume (cooler_cfd()), the undergrate housing with one
+    compartment per segment, its air distribution plates, the cross bar
+    lanes' hydraulic cylinders, a cooling fan per segment (volute, inlet
+    cone, motor, duct into its compartment) and the roller crusher's
+    housing at the discharge end. The cooler's frame (x along the grate
+    from the hot end, y across, z up from the grate); the undergrate's
+    floor on the plant's ground under the hood end.
+
+    "bodies" as kiln_rotax(): kinds box (x0, x1, y0, y1, z0, z1) and cyl
+    (base, unit axis, r, length)."""
+    b, co, f = g["cooler_body"], cooler(g), cooler_cfd(g)
+    kl, cp = kiln(g), cooler_placement(g)
+    L, w, H, seg, n = co["length"], co["width"], co["casing_height"], co["segment_L"], co["segments"]
+    w2 = 0.5 * w
+    tc, tu, tp, tg = v(b["casing_wall_t"]), v(b["undergrate_wall_t"]), v(b["partition_t"]), v(b["grate_t"])
+    # the ground: the plant's ground under the kiln's hood end (kiln_rotax),
+    # its height under the grate along the cooler's up
+    alpha = math.atan(v(g["kiln"]["slope"]) / 100.0)
+    P_g = (0.0, -(v(g["layout"]["kiln_axis_z"]) - kl["L"] * math.sin(alpha)), kl["L"])
+    U = cp["R"][2]
+    h_u = sum((cp["o"][i] - P_g[i]) * U[i] for i in range(3))     # grate over the ground
+    if h_u < 1.0:
+        raise ValueError(f"cooler_body: the grate is {h_u:.2f} m over the ground, no room for the undergrate")
+    zg = -h_u
+    bodies = []
+
+    def box(name, x0, x1, y0, y1, z0, z1, rgb):
+        bodies.append({"name": name, "kind": "box", "p": (x0, x1, y0, y1, z0, z1),
+                       "V": (x1 - x0) * (y1 - y0) * (z1 - z0),
+                       "box": (x0, y0, z0, x1, y1, z1), "rgb": rgb})
+
+    def cyl(name, base, axis, r, length, rgb):
+        end = tuple(bb + length * a for bb, a in zip(base, axis))
+        half = tuple(r * math.sqrt(max(0.0, 1.0 - a * a)) for a in axis)
+        lo = tuple(min(p, e) - h for p, e, h in zip(base, end, half))
+        hi = tuple(max(p, e) + h for p, e, h in zip(base, end, half))
+        bodies.append({"name": name, "kind": "cyl", "p": tuple(base) + tuple(axis) + (r, length),
+                       "V": math.pi * r * r * length, "box": lo + hi, "rgb": rgb})
+
+    BLUE, STEEL, GREY, BRICK, CONCRETE = ((0.1, 0.16, 0.72), (0.62, 0.64, 0.66), (0.45, 0.46, 0.48),
+                                          (0.72, 0.42, 0.30), (0.78, 0.77, 0.74))
+    yo = w2 + tc                                   # the casing's outer side
+    gc = g["cooler"]
+    L_h = f["hrb_L"]
+    Lt = L + L_h
+    # casing over the grate: side walls, the back wall under the hood, the
+    # roof past the hood's opening (round the vent duct)
+    for nm, sy in (("m", -1.0), ("p", 1.0)):
+        y0, y1 = sorted((sy * w2, sy * yo))
+        box(f"casing_side_{nm}", 0.0, Lt, y0, y1, 0.0, H + tc, BRICK)
+    box("casing_back", -tc, 0.0, -yo, yo, zg, H + tc, BRICK)
+    x_h, x_v, r_v = co["hood_L"], f["vent_x"], 0.5 * f["vent_D"]
+    box("casing_roof_1", x_h, x_v - r_v, -w2, w2, H, H + tc, BRICK)
+    box("casing_roof_2", x_v + r_v, Lt, -w2, w2, H, H + tc, BRICK)
+    box("casing_roof_3", x_v - r_v, x_v + r_v, -w2, -r_v, H, H + tc, BRICK)
+    box("casing_roof_4", x_v - r_v, x_v + r_v, r_v, w2, H, H + tc, BRICK)
+    # the casing's end wall past the HRB deck, ground to roof
+    box("casing_end", Lt, Lt + tc, -yo, yo, zg, H + tc, BRICK)
+    # the undergrate: air distribution plates under the grate line, the
+    # housing's side walls and the partitions between the compartments
+    box("grate_plates", 0.0, L, -w2, w2, -tg, 0.0, GREY)
+    for nm, sy in (("m", -1.0), ("p", 1.0)):
+        y0, y1 = sorted((sy * (yo - tu), sy * yo))
+        box(f"undergrate_side_{nm}", 0.0, Lt, y0, y1, zg, 0.0, STEEL)     # on past the grate: the chute's sides
+    for i in range(1, n + 1):                          # the last one: the chute's back wall
+        box(f"partition_{i:02d}", i * seg - 0.5 * tp, i * seg + 0.5 * tp, -(yo - tu), yo - tu, zg, -tg, STEEL)
+    # cross bar lanes' hydraulic cylinders (the brochure's 2 per line)
+    n_l = max(1, round(w / (v(b["lane_unit_width"]) / v(b["frames_per_unit"]))))
+    wl = w / n_l
+    r_c, L_c, z_c = 0.5 * v(b["cylinder_D"]), v(b["cylinder_L"]), v(b["cylinder_z"])
+    chambers = [int(v(b["cylinder_chamber_a"])), int(v(b["cylinder_chamber_b"]))][: int(v(b["cylinders_per_lane"]))]
+    for k in range(n_l):
+        y = -w2 + (k + 0.5) * wl
+        for c in chambers:
+            if not 2 <= c <= n:
+                raise ValueError(f"cooler_body: a cylinder in chamber {c} (none in the first, {n} in all)")
+            cyl(f"cylinder_{k + 1}_{c:02d}", ((c - 0.5) * seg - 0.5 * L_c, y, z_c), (1.0, 0.0, 0.0), r_c, L_c, BLUE)
+    # a fan per segment on alternate sides, its axis along x: inlet cone
+    # (hot end side), volute, shaft, motor; a duct from the volute across
+    # into the compartment
+    fans = cooler_fans(g)
+    gap = v(b["fan_gap"])
+    for i, fn in enumerate(fans):
+        sy = -1.0 if i % 2 == 0 else 1.0
+        nm = f"{i + 1:02d}"
+        r_v_ = v(b["fan_volute_ratio"]) * 0.5 * fn["D2"]
+        B = v(g["id_fan"]["volute_width_ratio"]) * fn["b2"]
+        xc = (i + 0.5) * seg
+        zc = zg + r_v_
+        yc = sy * (yo + gap + r_v_)
+        cyl(f"fan_volute_{nm}", (xc - 0.5 * B, yc, zc), (1.0, 0.0, 0.0), r_v_, B, BLUE)
+        r_in = 0.5 * v(g["id_fan"]["cone_inlet_ratio"]) * fn["D1"]
+        L_in = 0.5 * fn["D1"]
+        cyl(f"fan_inlet_{nm}", (xc - 0.5 * B - L_in, yc, zc), (1.0, 0.0, 0.0), r_in, L_in, GREY)
+        a_m = v(b["motor_side_ref"]) * (fn["P"] / 1.0e5) ** (1.0 / 3.0)
+        L_m = v(b["motor_length_ratio"]) * a_m
+        x_m = xc + 0.5 * B + 0.3
+        cyl(f"fan_shaft_{nm}", (xc + 0.5 * B, yc, zc), (1.0, 0.0, 0.0), 0.06, 0.3, GREY)
+        box(f"fan_motor_{nm}", x_m, x_m + L_m, yc - 0.5 * a_m, yc + 0.5 * a_m, zg, zg + a_m, GREY)
+        a_d = math.sqrt(fn["q"] / v(b["fan_duct_velocity"]))
+        if a_d > min(seg - tp, h_u - tg):
+            raise ValueError(f"cooler_body: fan {i + 1}'s duct ({a_d:.2f} m) does not fit its compartment")
+        zd = min(max(zc, zg + 0.5 * a_d), -tg - 0.5 * a_d)
+        y0, y1 = sorted((sy * yo, yc))
+        box(f"fan_duct_{nm}", xc - 0.5 * a_d, xc + 0.5 * a_d, y0, y1, zd - 0.5 * a_d, zd + 0.5 * a_d, STEEL)
+        if x_m + L_m > (i + 1.5) * seg or xc - 0.5 * B - L_in < (i - 0.5) * seg:
+            raise ValueError(f"cooler_body: fan {i + 1} runs into its neighbour on that side")
+    # the clinker outlet: the HRB deck's rollers in line with the grate
+    # (tops at z = 0, the last one hrb_drop lower), their geared motors off
+    # the +y side; the chute under them between the undergrate's walls
+    r_h, p_h, n_h = 0.5 * v(gc["hrb_roller_D"]), v(gc["hrb_pitch"]), int(v(gc["hrb_rollers"]))
+    a_hm, L_hm = v(b["hrb_motor_side"]), v(b["hrb_motor_L"])
+    for k in range(n_h):
+        xr = L + (k + 0.5) * p_h
+        zr = -r_h - (v(gc["hrb_drop"]) if k == n_h - 1 else 0.0)
+        if zr - r_h < zg + 0.3:
+            raise ValueError("cooler_body: the HRB's rollers reach the ground")
+        cyl(f"hrb_roller_{k + 1}", (xr, -(yo - tu), zr), (0.0, 1.0, 0.0), r_h, 2.0 * (yo - tu), STEEL)
+        cyl(f"hrb_shaft_{k + 1}", (xr, yo - tu, zr), (0.0, 1.0, 0.0), 0.12, tu + 0.4, GREY)
+        box(f"hrb_motor_{k + 1}", xr - 0.5 * a_hm, xr + 0.5 * a_hm, yo + 0.4, yo + 0.4 + L_hm,
+            zr - 0.5 * a_hm, zr + 0.5 * a_hm, BLUE)
+    # the ground slab, open under the chute (the clinker falls through it to
+    # the conveyor below; user, 23 Nov 2026)
+    ys = yo + gap + 2.0 * max(v(b["fan_volute_ratio"]) * 0.5 * fn["D2"] for fn in fans) + 0.5
+    yc_ = yo - tu                                      # the chute's inner sides
+    box("ground_slab", -tc, L, -ys, ys, zg - 0.3, zg, CONCRETE)
+    box("ground_slab_end", Lt, Lt + tc, -ys, ys, zg - 0.3, zg, CONCRETE)
+    box("ground_slab_m", L, Lt, -ys, -yc_, zg - 0.3, zg, CONCRETE)
+    box("ground_slab_p", L, Lt, yc_, ys, zg - 0.3, zg, CONCRETE)
+    solid = bodies
+    box_all = tuple(min(q["box"][i] for q in solid) for i in range(3)) + tuple(max(q["box"][i] for q in solid) for i in range(3, 6))
+    return {"bodies": bodies, "box": box_all, "h_undergrate": h_u, "z_ground": zg, "lanes": n_l,
+            "lane_w": wl, "fans": fans, "hrb_L": L_h,
+            "h_undergrate_holderbank": 0.56 * w}
 
 
 def _air_h(T, T_ref=298.15):
@@ -2062,8 +2531,6 @@ def kiln_flame_boundaries(g):
                              "note": "to the calciner: the calciner's tertiary air inlet flow"},
         "kiln_gas_out": {"kind": "pressure_outlet", "m": None, "T": None, "gas": None, "particles": None,
                          "note": "0 Pa gauge (reference); carries the rest"},
-        "bed": {"kind": "wall", "m": None, "T": None, "gas": None, "particles": None,
-                "note": "clinker bed surface (kiln_bed()); its temperature from the twin's burning zone, set in the CFD"},
         "coal_in": {"kind": "mass_flow_inlet", "m": ch["m_transport"], "T": T0, "gas": "air",
                     "particles": {"m": fuel, "T": T0, "size": {
                         "dist": "rosin_rammler", "d_mean": v(b["fuel_rr_mean"]), "n": v(b["fuel_rr_n"]),

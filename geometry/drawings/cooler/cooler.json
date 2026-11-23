@@ -130,47 +130,184 @@
       "short": "hood"
     },
     {
-      "key": "cooler.volume",
-      "label": "Volume (box, bed included)",
-      "value": 358.79999999999995,
+      "key": "cooler.cis_angle",
+      "label": "Inlet grate (CIS): slope",
+      "value": 12.0,
+      "unit": "deg",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.cis_angle"
+      ],
+      "short": "cis_angle"
+    },
+    {
+      "key": "cooler.cis_rise",
+      "label": "Inlet grate: height at the hot end (one segment long)",
+      "value": 0.6355441193933661,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.cis_angle",
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments"
+      ],
+      "value_mm": 635.544119,
+      "short": "cis_rise"
+    },
+    {
+      "key": "cooler.bed_h",
+      "label": "Clinker bed depth (the FLS design bed)",
+      "value": 0.40921655005614577,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.width"
+      ],
+      "value_mm": 409.21655,
+      "short": "bed_h"
+    },
+    {
+      "key": "cooler.vent_D",
+      "label": "Vent duct bore (vent air at 250 degC, 13 m/s)",
+      "value": 2.797400667337158,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.vent_velocity"
+      ],
+      "value_mm": 2797.400667,
+      "short": "vent_D"
+    },
+    {
+      "key": "cooler.vent_x",
+      "label": "Vent duct axis from the hot end",
+      "value": 17.939999999999998,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.vent_velocity"
+      ],
+      "value_mm": 17940.0,
+      "short": "vent_x"
+    },
+    {
+      "key": "cooler.vent_L",
+      "label": "Vent duct run off the roof (3 D)",
+      "value": 8.392202002011475,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.vent_velocity"
+      ],
+      "value_mm": 8392.202002,
+      "short": "vent_L"
+    },
+    {
+      "key": "cooler.hrb_rollers",
+      "label": "Clinker outlet: roller breaker (HRB) rollers",
+      "value": 4,
+      "unit": "-",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.hrb_rollers"
+      ],
+      "short": "hrb_rollers"
+    },
+    {
+      "key": "cooler.hrb_pitch",
+      "label": "HRB roller pitch",
+      "value": 1.0,
+      "unit": "m",
+      "source": "schematic",
+      "status": "Schematic",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.hrb_pitch"
+      ],
+      "value_mm": 1000.0,
+      "short": "hrb_pitch"
+    },
+    {
+      "key": "cooler.hrb_L",
+      "label": "HRB deck past the grate's end (freeboard over it)",
+      "value": 4.0,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.hrb_rollers",
+        "cooler.hrb_pitch"
+      ],
+      "value_mm": 4000.0,
+      "short": "hrb_L"
+    },
+    {
+      "key": "cooler.bed_volume",
+      "label": "Bed body (porous zone)",
+      "value": 48.94229938671503,
       "unit": "m3",
       "source": "derived",
       "status": "Estimated",
       "doc": "cooler/cooler.md",
       "inputs": [
         "cooler.grate_area",
-        "cooler.width",
-        "cooler.casing_height"
+        "cooler.width"
       ],
-      "short": "volume"
+      "short": "volume_bed"
     },
     {
-      "key": "cooler.wall_area",
-      "label": "Wall area (sides, ends, roof but the hood)",
-      "value": 299.08,
-      "unit": "m2",
+      "key": "cooler.freeboard_volume",
+      "label": "Freeboard body (vent duct included)",
+      "value": 405.63641288893217,
+      "unit": "m3",
       "source": "derived",
-      "status": "Estimated",
+      "status": "Schematic",
       "doc": "cooler/cooler.md",
       "inputs": [
         "cooler.grate_area",
         "cooler.width",
         "cooler.casing_height",
-        "cooler.segments",
-        "cooler.hood_segments"
+        "cooler.vent_velocity",
+        "cooler.hrb_rollers",
+        "cooler.hrb_pitch"
       ],
-      "short": "wall_area"
+      "short": "volume_fb"
     },
     {
-      "key": "cooler.vent",
-      "label": "Vent outlet (cold end): place and size",
-      "value": null,
-      "unit": "",
-      "source": "unknown",
-      "status": "Unknown",
-      "doc": "cooler/cooler.md: no source, not made",
-      "inputs": [],
-      "short": "u_vent"
+      "key": "cooler.volume",
+      "label": "CFD volume (bed + freeboard)",
+      "value": 454.5787122756472,
+      "unit": "m3",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.casing_height",
+        "cooler.vent_velocity",
+        "cooler.hrb_rollers",
+        "cooler.hrb_pitch"
+      ],
+      "short": "volume"
     },
     {
       "key": "cooler.plates",
@@ -182,17 +319,6 @@
       "doc": "cooler/cooler.md: not modelled",
       "inputs": [],
       "short": "u_plate"
-    },
-    {
-      "key": "cooler.crusher",
-      "label": "Clinker crusher",
-      "value": null,
-      "unit": "",
-      "source": "unknown",
-      "status": "Unknown",
-      "doc": "cooler/cooler.md: not modelled",
-      "inputs": [],
-      "short": "u_crusher"
     },
     {
       "key": "cooler.chute",
@@ -233,7 +359,10 @@
     "w_cool",
     "H_cool",
     "segment",
-    "hood"
+    "hood",
+    "bed_h",
+    "vent_D",
+    "vent_L"
   ],
   "also_the_sheet_of": []
 }

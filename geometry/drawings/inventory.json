@@ -2136,6 +2136,14 @@
           "doc": "kiln/kiln_hood.md"
         },
         {
+          "key": "kiln_hood.hopper_angle",
+          "value": 60.0,
+          "unit": "deg",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
           "key": "kiln_hood.burner_insertion",
           "value": 0.25,
           "unit": "m",
@@ -2166,14 +2174,6 @@
           "source": "literature",
           "status": "Estimated",
           "doc": "kiln/kiln_burner.md"
-        },
-        {
-          "key": "kiln_hood.flame_stub_L",
-          "value": 0.25,
-          "unit": "m",
-          "source": "model",
-          "status": "Estimated",
-          "doc": "kiln/kiln_hood.md"
         },
         {
           "key": "kiln_hood.tertiary_outlet_L_over_D",
@@ -2984,11 +2984,164 @@
           "source": "literature",
           "status": "Estimated",
           "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.air_rate",
+          "value": 2.2,
+          "unit": "kg/kg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.fls_air_seg1",
+          "value": 40.89,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.fls_air_seg2",
+          "value": 18.56,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.fls_air_seg_rest",
+          "value": 16.24,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.cis_angle",
+          "value": 12.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.cis_segments",
+          "value": 1,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.fls_clinker_flow",
+          "value": 53.06,
+          "unit": "kg/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.fls_grate_speed",
+          "value": 0.017,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.bed_porosity",
+          "value": 0.4,
+          "unit": "-",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.solid_density",
+          "value": 3178.0,
+          "unit": "kg/m3",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.particle_d",
+          "value": 0.015,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.vent_T",
+          "value": 523.15,
+          "unit": "K",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.vent_velocity",
+          "value": 13.0,
+          "unit": "m/s",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.vent_L_over_D",
+          "value": 3.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.vent_offset_segments",
+          "value": 1.0,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.hrb_rollers",
+          "value": 4,
+          "unit": "-",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.hrb_roller_D",
+          "value": 0.9,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.hrb_pitch",
+          "value": 1.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "cooler/cooler.md"
+        },
+        {
+          "key": "cooler.hrb_drop",
+          "value": 0.1,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "cooler/cooler.md"
         }
       ],
       "status_counts": {
         "Verified": 1,
-        "Estimated": 4
+        "Estimated": 20,
+        "Schematic": 3
       },
       "missing": [
         "cooler/cooler.md: vent outlet TBD"

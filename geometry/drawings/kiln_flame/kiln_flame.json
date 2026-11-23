@@ -32,8 +32,8 @@
     },
     {
       "key": "kiln_flame.area",
-      "label": "Hood section, width x height",
-      "value": 54.71999999999999,
+      "label": "Hood section, width x height less the hopper",
+      "value": 49.108155383476834,
       "unit": "m2",
       "source": "derived",
       "status": "Schematic",
@@ -42,7 +42,8 @@
         "kiln_rotax.outlet_seal_depth",
         "kiln.D",
         "kiln_hood.seal_clearance",
-        "layout.cooler_drop"
+        "layout.cooler_drop",
+        "kiln_hood.hopper_angle"
       ],
       "short": "area"
     },
@@ -67,7 +68,7 @@
     {
       "key": "kiln_flame.u",
       "label": "Hood air velocity at the tertiary air T (4-10 m/s)",
-      "value": 4.094527689846207,
+      "value": 4.562430688727726,
       "unit": "m/s",
       "source": "derived",
       "status": "Schematic",
@@ -82,6 +83,7 @@
         "kiln.D",
         "kiln_hood.seal_clearance",
         "layout.cooler_drop",
+        "kiln_hood.hopper_angle",
         "kiln_hood.air_velocity_min",
         "kiln_hood.air_velocity_max"
       ],
@@ -90,7 +92,7 @@
     {
       "key": "kiln_flame.u_hot",
       "label": "Hood air velocity at the secondary air T",
-      "value": 4.769286318136102,
+      "value": 5.314297498867499,
       "unit": "m/s",
       "source": "derived",
       "status": "Schematic",
@@ -105,6 +107,7 @@
         "kiln.D",
         "kiln_hood.seal_clearance",
         "layout.cooler_drop",
+        "kiln_hood.hopper_angle",
         "kiln_hood.air_velocity_min",
         "kiln_hood.air_velocity_max"
       ],
@@ -173,6 +176,36 @@
       "short": "hood_H"
     },
     {
+      "key": "kiln_hood.hopper_angle",
+      "label": "Hopper walls beside the cooler (Fuller ABC Inlet)",
+      "value": 60.0,
+      "unit": "deg",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.hopper_angle"
+      ],
+      "short": "hopper_angle"
+    },
+    {
+      "key": "kiln_flame.hopper_rise",
+      "label": "Hopper wall height (cooler edge to hood wall)",
+      "value": 3.1176914536239777,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance",
+        "kiln_hood.hopper_angle"
+      ],
+      "value_mm": 3117.691454,
+      "short": "hopper_rise"
+    },
+    {
       "key": "kiln_flame.hood_depth",
       "label": "Hood depth (the cooler's two hood segments)",
       "value": 5.9799999999999995,
@@ -205,20 +238,6 @@
       ],
       "value_mm": 2990.0,
       "short": "segment_L"
-    },
-    {
-      "key": "kiln_hood.flame_stub_L",
-      "label": "Inlet / outlet stubs (segment 2: twice)",
-      "value": 0.25,
-      "unit": "m",
-      "source": "model",
-      "status": "Estimated",
-      "doc": "kiln/kiln_hood.md",
-      "inputs": [
-        "kiln_hood.flame_stub_L"
-      ],
-      "value_mm": 250.0,
-      "short": "flame_stub_L"
     },
     {
       "key": "kiln_flame.D_ta",
@@ -442,6 +461,25 @@
       "short": "bed_chord"
     },
     {
+      "key": "kiln_flame.bed_strip",
+      "label": "Bore wall under the bed (a CFD region, not a face)",
+      "value": 115.0279276336726,
+      "unit": "m2",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.clinker_flow",
+        "kiln.rpm",
+        "kiln.repose_angle",
+        "kiln.clinker_bulk_density",
+        "kiln.D",
+        "kiln.L",
+        "kiln.transition_L"
+      ],
+      "short": "bed_strip"
+    },
+    {
       "key": "kiln_flame.bed",
       "label": "Clinker bed in the kiln and on the grate",
       "value": null,
@@ -466,7 +504,6 @@
   ],
   "dimensioned": [
     "hood_depth",
-    "segment_L",
     "D_bore",
     "D_ta",
     "L_ta",

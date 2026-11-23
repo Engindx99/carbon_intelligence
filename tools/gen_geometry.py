@@ -680,12 +680,12 @@ def _kiln_flame_sheet_consts(g):
         return [der(f"{name}_{c}", p[i], f"{what}, {c.lower()}") for i, c in enumerate("XYZ")]
 
     d, W, above, below = hd["depth"], hd["W"], hd["above"], hd["below"]
-    st, seg, cw = pg.v(g["kiln_hood"]["flame_stub_L"]), co["segment_L"], co["width"]
+    seg, cw = co["segment_L"], co["width"]
     R, r_ta, z_cut, tip = 0.5 * kl["D"], f["r_ta"], f["z_cut"], f["tip"]
     c_ta = at(f["h_ta"], above + f["L_ta"])
     bx = f["box"]
     out = [
-        der("KFD_X0", bx[0], "the part's x min"), der("KFD_Y0", bx[1], "the part's y min (segment 2's stub)"),
+        der("KFD_X0", bx[0], "the part's x min"), der("KFD_Y0", bx[1], "the part's y min (the hood's floor)"),
         der("KFD_Z0", bx[2], "the part's z min (the kiln gas outlet)"),
         der("KFD_X1", bx[3], "the part's x max"), der("KFD_Y1", bx[4], "the part's y max (the tertiary air mouth)"),
         der("KFD_Z1", bx[5], "the part's z max (the hood's front wall)"),
@@ -699,8 +699,6 @@ def _kiln_flame_sheet_consts(g):
     xs = -0.5 * W                                     # the side view looks from -x
     out += pt("KFD_BACK", at(0.0, 0.5 * (above + 0.5 * kl["D"]), xs), "back wall's edge, side view")
     out += pt("KFD_FRONT", at(d, 0.5 * (above + 0.5 * kl["D"]), xs), "front wall's edge, side view")
-    out += pt("KFD_SEGA", at(seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's back edge, side view")
-    out += pt("KFD_SEGB", at(2.0 * seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's front edge, side view")
     out += pt("KFD_ROOF", at(0.5 * f["h_ta"] - 0.5 * r_ta, above, xs), "roof's edge, side view")
     out += [der("KFD_L_TA", f["L_ta"], "tertiary outlet run off the roof")]
     out += pt("KFD_TAT", tuple(c_ta[i] + r_ta * 0.7071 * ((-1.0, 0.0, 0.0)[i] + Hd[i]) for i in range(3)),
@@ -712,7 +710,7 @@ def _kiln_flame_sheet_consts(g):
     out += pt("KFD_TIPL", (0.0, r_tipline, tip[2]), "burner tip face's cut edge, A-A")
     out += pt("KFD_CUTL", (0.0, -0.5 * R, z_cut), "kiln gas outlet's cut edge, A-A")
     out += pt("KFD_SEC_T", at(d, above + f["L_ta"] + 1.5), "A-A's cutting line, top (front view; over the tertiary outlet)")
-    out += pt("KFD_SEC_B", at(d, -below - 2.0 * st - 0.3), "A-A's cutting line, bottom (front view)")
+    out += pt("KFD_SEC_B", at(d, -below - 0.8), "A-A's cutting line, bottom (front view)")
     out += _table_consts("kiln_flame", dkf.params(g), dkf.ORDER)
     return out
 
@@ -781,7 +779,7 @@ def _cooler_sheet_consts(g):
     and its table."""
     from tools.drawings import cooler as dco
 
-    c = pg.cooler(g)
+    c, f = pg.cooler(g), pg.cooler_cfd(g)
     out = [
         der("COO_L", c["length"], "grate length, hot end x = 0 to the cold end"),
         der("COO_W", c["width"], "grate width"),
@@ -789,6 +787,13 @@ def _cooler_sheet_consts(g):
         der("COO_SEG_L", c["segment_L"], "one segment's length"),
         der("COO_HOOD_L", c["hood_L"], "the hood opening's length from x = 0"),
         der("COO_SEGMENTS", float(c["segments"]), "undergrate air segments"),
+        der("COO_CIS_L", c["cis_L"], "the inclined inlet grate's length along x"),
+        der("COO_CIS_RISE", c["cis_rise"], "the inlet grate's height at x = 0"),
+        der("COO_BED_H", c["bed_h"], "the clinker bed's depth"),
+        der("COO_VENT_D", f["vent_D"], "the vent duct's bore"),
+        der("COO_VENT_X", f["vent_x"], "the vent duct's axis, x"),
+        der("COO_HRB_L", f["hrb_L"], "the HRB deck past the grate's end (the clinker outlet)"),
+        der("COO_VENT_L", f["vent_L"], "the vent duct's run off the roof"),
     ]
     out += _table_consts("cooler", dco.params(g), dco.ORDER)
     return out
@@ -866,7 +871,7 @@ def c1_twin_bas(g):
 # kiln.bas
 # ======================================================================
 def cooler_bas(g):
-    c, cc = g["cooler"], pg.cooler(g)
+    c, cc, f = g["cooler"], pg.cooler(g), pg.cooler_cfd(g)
     return [
         src("COOLER_W", c["width"], "grate width"),
         src("COOLER_H", c["casing_height"], "grate to roof"),
@@ -875,6 +880,22 @@ def cooler_bas(g):
         der("COOLER_L", cc["length"], "grate area / width, hot end x = 0 to the cold end"),
         der("COOLER_SEG_L", cc["segment_L"], "one segment's length"),
         der("COOLER_HOOD_L", cc["hood_L"], "the hood opening's length from x = 0"),
+        src("COOLER_CIS_SEGMENTS", c["cis_segments"], "segments under the inclined inlet grate (grate_air_1)"),
+        der("COOLER_CIS_L", cc["cis_L"], "the inclined inlet's length along x"),
+        der("COOLER_CIS_RISE", cc["cis_rise"], "the inlet grate's height at x = 0 over the flat grate"),
+        der("COOLER_CIS_AREA", cc["cis_area"], "the inclined inlet face (grate_air_1)"),
+        der("COOLER_BED_H", cc["bed_h"], "the clinker bed's depth over the floor, along z"),
+        der("COOLER_VENT_D", f["vent_D"], "the vent duct's bore: the vent air at vent_T and vent_velocity"),
+        der("COOLER_VENT_X", f["vent_x"], "the vent duct's axis, x"),
+        der("COOLER_VENT_L", f["vent_L"], "the vent duct's run up off the roof to vent_out"),
+        der("COOLER_BED_V", f["bed_volume"], "the bed body's volume"),
+        der("COOLER_FB_V", f["freeboard_volume"], "the freeboard body's volume (the vent duct included)"),
+        der("COOLER_BED_TOP_A", f["faces"]["bed_top"], "the bed's top (the two bodies' shared faces)"),
+        der("COOLER_BED_WALL_A", f["walls"]["bed"], "the bed body's walls"),
+        der("COOLER_FB_WALL_A", f["walls"]["freeboard"], "the freeboard body's walls (the duct's included)"),
+        der("COOLER_HRB_L", f["hrb_L"], "the HRB deck past the grate's end (the clinker outlet)"),
+        der("COOLER_CLINKER_OUT_A", f["faces"]["clinker_out"], "the bed's end at x = L (clinker_out)"),
+        der("COOLER_HRB_DECK_A", f["faces"]["hrb_deck"], "the HRB deck's top (hrb_deck)"),
     ]
 
 
@@ -943,7 +964,8 @@ def kiln_bas(g):
     return [
         src("KILN_D", k["D"], "effective inner diameter"),
         src("KILN_L", k["L"], "back end (z = 0) to hood end"),
-        der("KILN_Z0", pg.kiln(g)["z_cfd0"], "the solid's back face: the kiln inlet chamber's stub ends here (stub + solid = KILN_L)"),
+        der("KILN_Z0", pg.kiln(g)["z_cfd0"], "the solid's back face: the kiln inlet chamber's stub ends here"),
+        der("KILN_Z1", pg.kiln(g)["z_cfd1"], "the solid's front face: the flame volume's bore (kiln_flame) starts here"),
         src("KILN_SLOPE", k["slope"], "%: the installed slope, not built into the solid"),
         src("KILN_TRANSITION_L", k["transition_L"], "the transition zone from the back end (model split)"),
     ]
@@ -1001,6 +1023,59 @@ def kiln_rotax_bas(g):
     out = [der("N_BODIES", len(recs), "bodies in the part")]
     out += [Const(f"KRX_{i + 1}", c, "plant_geometry.kiln_rotax() bodies", kind="String")
             for i, c in enumerate(chunks)]
+    return out
+
+
+CBD_CHUNKS = 20
+
+
+def cooler_body_bas(g):
+    """cooler_body.bas: the cooler's mechanical envelope bodies
+    (plant_geometry.cooler_body()) as kiln_rotax_bas: name|kind|params|V|
+    box|rgb, joined by the macro from CBD_1 .. CBD_20."""
+    r = pg.cooler_body(g)
+    recs = ["|".join([b["name"], b["kind"]] + [_fixed(q) for q in list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])]) + ";"
+            for b in r["bodies"]]
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > CBD_CHUNKS:
+        raise ValueError(f"cooler_body: {len(chunks)} chunks, the macro joins {CBD_CHUNKS}")
+    chunks += [""] * (CBD_CHUNKS - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    out += [Const(f"CBD_{i + 1}", c, "plant_geometry.cooler_body() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    return out
+
+
+def plant_assembly_bas(g):
+    """plant_assembly.bas: the tower's parts and where each goes
+    (plant_geometry.tower_placement()): name|file|R (9, rows)|o (3);
+    TWR_1 .. TWR_4 joined by the macro."""
+    t = pg.tower_placement(g)
+
+    def yup(v):        # the plant frame (z up) in SolidWorks' (y up): (x, z, -y)
+        return (v[0], v[2], -v[1])
+
+    recs = ["|".join([q["name"], q["file"]] + [_fixed(x) for row in q["R"] for x in yup(row)]
+                     + [_fixed(x) for x in yup(q["o"])]) + ";"
+            for q in t["parts"]]
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > 4:
+        raise ValueError(f"plant_assembly: {len(chunks)} chunks, the macro joins 4")
+    chunks += [""] * (4 - len(chunks))
+    out = [der("N_PARTS", len(recs), "the tower's components")]
+    out += [Const(f"TWR_{i + 1}", c, "plant_geometry.tower_placement() parts", kind="String") for i, c in enumerate(chunks)]
     return out
 
 
@@ -1126,6 +1201,24 @@ def kiln_flame_bas(g):
         out.append(der(f"KFL_COAL_{nm}", coal[i], "the copied coal channel's extent, kiln frame"))
     for i, nm in enumerate(("X0", "Y0", "Z0", "X1", "Y1", "Z1")):
         out.append(der(f"KFL_BRN_{nm}", whole[i], "the placed whole burner's extent, kiln frame"))
+    cp = pg.cooler_placement(g)
+    for i in range(3):
+        for k in range(3):
+            out.append(der(f"KFL_COO_R{i + 1}{k + 1}", cp["R"][i][k], f"the cooler's {'xyz'[i]} axis, kiln {'xyz'[k]}", digits=9))
+    for i in range(3):
+        out.append(der(f"KFL_COO_T{'XYZ'[i]}", cp["o"][i], f"the cooler's origin, kiln {'xyz'[i]}"))
+    for i, nm in enumerate(("X0", "Y0", "Z0", "X1", "Y1", "Z1")):
+        out.append(der(f"KFL_COO_{nm}", cp["box"][i], "the placed cooler's extent, kiln frame"))
+    # the cooler's mechanical parts (cooler_body.SLDPRT), placed as the cooler: their extent
+    bb = pg.cooler_body(g)["box"]
+    pts = [cp["to_kiln"]((x, y, z)) for x in (bb[0], bb[3]) for y in (bb[1], bb[4]) for z in (bb[2], bb[5])]
+    for i, nm in enumerate(("X0", "Y0", "Z0", "X1", "Y1", "Z1")):
+        q = (min if i < 3 else max)(p[i % 3] for p in pts)
+        out.append(der(f"KFL_CBD_{nm}", q, "the placed cooler_body's extent, kiln frame"))
+    # the hood floor's split line: hood_1 | hood_2 (secondary_air_in | tertiary_supply_in)
+    for e, p in zip("AB", pg.kiln_flame(g)["floor_split"]):
+        for i in range(3):
+            out.append(der(f"KFL_SPLIT_{e}{'XYZ'[i]}", p[i], f"the hood floor's split line, end {e}, {'xyz'[i]}"))
     return out
 
 
@@ -1141,6 +1234,8 @@ TARGETS = {
     "kiln.bas": kiln_bas,
     "kiln_wall.bas": kiln_wall_bas,
     "kiln_rotax.bas": kiln_rotax_bas,
+    "cooler_body.bas": cooler_body_bas,
+    "plant_assembly.bas": plant_assembly_bas,
     "kiln_burner.bas": kiln_burner_bas,
     "kiln_burner_body.bas": kiln_burner_body_bas,
     "kiln_flame.bas": kiln_flame_bas,
@@ -1391,7 +1486,7 @@ def _kiln_rows(g):
 
 
 def _cooler_rows(g):
-    c, cc = g["cooler"], pg.cooler(g)
+    c, cc, f = g["cooler"], pg.cooler(g), pg.cooler_cfd(g)
     return [
         row_src("Izgara alanı", c["grate_area"]),
         row_src("Izgara genişliği w", c["width"]),
@@ -1401,9 +1496,52 @@ def _cooler_rows(g):
         row_src("Hood açıklığı (sıcak uçtan, segment)", c["hood_segments"]),
         row_der("Segment boyu L/n", cc["segment_L"], "m", 2, "boy / segment sayısı"),
         row_der("Hood açıklığı boyu", cc["hood_L"], "m", 2, "hood segmentleri × segment boyu"),
-        row_der("**Gövde hacmi**", cc["box_volume"], "m³", 2),
-        row_der("Duvar alanı (yanlar, uçlar, hood dışı tavan)", cc["wall_area"], "m²", 2),
+        row_src("Giriş ızgarası (CIS) eğimi", c["cis_angle"]),
+        row_src("Giriş ızgarası boyu (segment)", c["cis_segments"]),
+        row_der("Giriş ızgarasının sıcak uçtaki yüksekliği", cc["cis_rise"], "m", 3),
+        row_der("Yatak derinliği (FLS tasarım yatağı)", cc["bed_h"], "m", 3, "FLS debisi / (ρ_yığın · w · hız)"),
+        row_der("Vent kanalı çapı", f["vent_D"], "m", 3, "vent debisi / hız, vent sıcaklığında"),
+        row_der("Vent kanalının ekseni, x", f["vent_x"], "m", 2),
+        row_der("Vent kanalı boyu (tavandan)", f["vent_L"], "m", 2),
+        row_der("Yatak gövdesi hacmi", f["bed_volume"], "m³", 2),
+        row_der("Üst boşluk hacmi (vent kanalı dahil)", f["freeboard_volume"], "m³", 2),
+        row_der("**CFD hacmi**", f["volume"], "m³", 2),
     ]
+
+
+def _cooler_cfd_rows(g):
+    """cooler/cooler_cfd.md: the cooler volume's every boundary value, the
+    bed's porous zone and the mass balance (cooler_cfd(), cooler_boundaries())."""
+    c, f, cb = g["cooler"], pg.cooler_cfd(g), pg.cooler_boundaries(g)
+    kinds = {"mass_flow_inlet": "kütle debisi girişi", "mass_flow_outlet": "kütle debisi çıkışı",
+             "pressure_outlet": "basınç çıkışı", "wall": "duvar", "interior": "iç yüz (iki gövdenin ortak yüzü)"}
+    rows = [
+        row_src("Soğutma havası (kg/kg klinker)", c["air_rate"]),
+        row_der("Soğutma havası toplamı", cb["air"]["total"], "kg/s", 3),
+        row_der("FLS referansının hava oranı (yalnız biçim kullanılır)", cb["air"]["fls_rate"], "kg/kg", 3),
+    ]
+    for name, area in f["faces"].items():
+        bc = cb["bc"][name]
+        val = kinds[bc["kind"]]
+        if bc["m"] is not None:
+            val += f", {bc['m']:.3f} kg/s"
+        if bc["T"] is not None:
+            val += f", {bc['T']:.1f} K"
+        rows.append((f"`{name}` ({area:.3f} m²)", val, bc["note"].replace("|", "/")))
+    bed = cb["bed"]
+    rows += [
+        row_src("Yatak gözenekliliği", c["bed_porosity"]),
+        row_src("Nodül çapı", c["particle_d"], scale=1e3, unit="mm", digits=1),
+        row_der("Viskoz direnç 1/α (Ergun)", bed["viscous_resistance"], "1/m²", 0),
+        row_der("Atalet direnci C₂ (Ergun)", bed["inertial_resistance"], "1/m", 1),
+        row_der("Klinker debisi (yatakta)", bed["clinker_flow"], "kg/s", 3),
+        row_der("Klinkerin hızı (ızgara hızı)", bed["clinker_velocity"], "m/s", 5),
+        row_src("Vent havası sıcaklığı (boyutlandırma)", c["vent_T"]),
+        row_src("Vent kanalı hızı", c["vent_velocity"]),
+        row_der("Vent hacimsel debisi", f["vent_q"], "m³/s", 2),
+        row_der("Vent havası (kütle dengesi)", cb["balance"]["vent"], "kg/s", 3),
+    ]
+    return rows
 
 
 def _id_fan_rows(g):
@@ -1576,7 +1714,9 @@ def _kiln_hood_rows(g):
         row_der("Başlık genişliği (2 × (conta + pay))", hd["W"], "m", 2),
         row_der("Başlık yüksekliği (soğutucu tavanından contanın üstüne)", hd["H"], "m", 2),
         row_der("Başlık derinliği (soğutucunun başlık açıklığı)", hd["depth"], "m", 2),
-        row_der("Kesit alanı (genişlik × yükseklik)", hd["area"], "m²", 2),
+        row_src("Huni duvarlarının eğimi (soğutucunun kenarından hood duvarına)", h["hopper_angle"]),
+        row_der("Huni duvarının yüksekliği", hd["hopper_rise"], "m", 2),
+        row_der("Kesit alanı (genişlik × yükseklik, huni düşülmüş)", hd["area"], "m²", 2),
         row_der("Hız (1073 K)", hd["u"], "m/s", 2),
         row_der("Hız (ikincil havanın sıcaklığında)", hd["u_hot"], "m/s", 2),
         row_der("Ölçütün izin verdiği en küçük kesit", hd["area_min"], "m²", 2),
@@ -1599,6 +1739,11 @@ def _kiln_flame_rows(g):
         row_der("Yatak doluluğu (süreklilik)", 100.0 * bd["fill"], "%", 2),
         row_der("Yatak yüzeyi genişliği", 2.0 * bd["c"], "m", 2),
         row_der("Yatakta geçiş süresi (yanma bölgesi)", bd["tau_bz"] / 60.0, "dk", 2),
+        row_der("Yatak şeridi: yatağın altındaki delik duvarı (CFD bölgesi, katıda yüz değil)", f["bed_strip"]["area"], "m²", 2),
+        row_der("Yatak şeridi: yay boyu", f["bed_strip"]["arc"], "m", 3),
+        row_der("Yatak şeridi: eksenden kiriş mesafesi d_c (−n yönünde, n = yatak yüzeyinin normali)", f["bed_strip"]["d_c"], "m", 3),
+        ("Yatak şeridi: n (fırın çerçevesi); duvar noktası p şeritte ⇔ −n·p > d_c",
+         "(" + ", ".join(f"{q:.4f}" for q in f["bed_strip"]["n"]) + ")", "türetilmiş"),
     ]
     for name, x in faces.items():
         bc = fb["bc"][name]
@@ -1859,6 +2004,7 @@ DOCS = {
     **{f"preheater/meal_pipe_C{s_}.md": (lambda g, s_=s_: _meal_pipe_rows(g, s_)) for s_ in range(1, 6)},
     "kiln/kiln_hood.md": _kiln_hood_rows,
     "kiln/kiln_flame.md": _kiln_flame_rows,
+    "cooler/cooler_cfd.md": _cooler_cfd_rows,
     "kiln/kiln_inlet_chamber.md": _kiln_chamber_rows,
     "fan/id_fan.md": _id_fan_rows,
     "cooler/cooler.md": _cooler_rows,

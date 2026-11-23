@@ -435,10 +435,11 @@ End Function
 
 
 Private Function BodiesVolume() As Double
-    Dim bodies As Variant, i As Long, t As Double
+    Dim bodies As Variant, i As Long, t As Double, b As SldWorks.Body2
     bodies = swPart.GetBodies2(swSolidBody, True)
     For i = 0 To UBound(bodies)
-        t = t + Volume(bodies(i))
+        Set b = bodies(i)                ' a Body2 variable: a Variant element is a ByRef type mismatch
+        t = t + Volume(b)
     Next i
     BodiesVolume = t
 End Function

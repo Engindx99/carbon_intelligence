@@ -3,9 +3,9 @@
 Tesis: 5000 t/d, tek fırın, Ø4,8 × 60 m. Bu hacim fırın çıkışını ve brülörü birlikte modellemek için kuruldu (kullanıcı kararı, 23 Kasım 2026: yerleşim + hood + alev bölgesi CFD hacmi; CFD koşuları sonra). Katı `geometry/macros/kiln_flame.bas` → `kiln_flame.SLDPRT` / `.step`. Yerleşim `plant_geometry.kiln_flame()`, sınır değerleri `plant_geometry.kiln_flame_boundaries()`. Pafta `geometry/drawings/kiln_flame/`.
 
 Hacmin parçaları:
-- **Hood:** contayı saran kutu ([kiln_hood.md](kiln_hood.md)).
-- **Fırın deliği:** yanma bölgesi boyunca; klinker yatağı kesilmiş.
-- **Soğutucu ağızları:** soğutucunun iki segment ağzı.
+- **Hood:** contayı saran kutu ([kiln_hood.md](kiln_hood.md)). Soğutucunun genişliği dışında kalan taban bir huni: yan duvarlar 60° eğimle soğutucunun kenarından hood duvarına çıkar (Fuller Cross-Bar ABC giriş görseli; açı model).
+- **Fırın deliği:** yanma bölgesi boyunca, tam silindir; klinker yatağı geometride yok (kullanıcı kararı, 23 Kasım 2026). Yatağın altındaki duvar şeridi CFD'de bir bölge olarak tanımlanır (aşağıdaki tablo: n, d_c).
+- **Soğutucu ağızları:** hood'un düz tabanı, split line ile soğutucunun iki segmentine bölünmüş iki yüz (çıkıntı yok; kullanıcı, 23 Kasım 2026).
 - **Tersiyer hava çıkışı:** tavanda; çıkış yüzü tavandan 3 D yukarıda.
 - **Brülör:** JETFLEX 2.0'ın üç kanalı ([kiln_burner.md](kiln_burner.md)), ucu fırının 0,25 m içinde, eksende; brülörün kendi hacmi çıkarılmış.
 
@@ -21,11 +21,14 @@ Hacmin parçaları:
 | Yatak doluluğu (süreklilik) | 6.20 % | türetilmiş |
 | Yatak yüzeyi genişliği | 3.04 m | türetilmiş |
 | Yatakta geçiş süresi (yanma bölgesi) | 15.83 dk | türetilmiş |
+| Yatak şeridi: yatağın altındaki delik duvarı (CFD bölgesi, katıda yüz değil) | 115.03 m² | türetilmiş |
+| Yatak şeridi: yay boyu | 3.287 m | türetilmiş |
+| Yatak şeridi: eksenden kiriş mesafesi d_c (−n yönünde, n = yatak yüzeyinin normali) | 1.859 m | türetilmiş |
+| Yatak şeridi: n (fırın çerçevesi); duvar noktası p şeritte ⇔ −n·p > d_c | (-0.6428, 0.7660, 0.0000) | türetilmiş |
 | `secondary_air_in` (11.960 m²) | kütle debisi girişi, 23.759 kg/s, 1052.0 K | secondary air + the outlet seal's leak (no face of its own), mixed |
 | `tertiary_supply_in` (11.960 m²) | kütle debisi girişi, 54.925 kg/s, 1073.2 K | cooler segment 2: the tertiary air's supply |
 | `tertiary_air_out` (4.673 m²) | kütle debisi çıkışı, 54.925 kg/s | to the calciner: the calciner's tertiary air inlet flow |
-| `kiln_gas_out` (16.974 m²) | basınç çıkışı | 0 Pa gauge (reference); carries the rest |
-| `bed` (106.249 m²) | duvar | clinker bed surface (kiln_bed()); its temperature from the twin's burning zone, set in the CFD |
+| `kiln_gas_out` (18.096 m²) | basınç çıkışı | 0 Pa gauge (reference); carries the rest |
 | `coal_in` (0.034 m²) | kütle debisi girişi, 1.254 kg/s, 293.1 K | conveying air (not in the twin) + the petcoke |
 | `axial_in` (0.036 m²) | kütle debisi girişi, 1.938 kg/s, 293.1 K | the twin's primary air, axial share |
 | `swirl_in` (0.027 m²) | kütle debisi girişi, 0.702 kg/s, 293.1 K | the twin's primary air, swirl share |
@@ -44,7 +47,7 @@ Hacmin parçaları:
 |---|---|---|---|
 | Brülör kanallarının akışı (eksenel yarıklar, swirl delikleri, petrokok borusu) | Dahil, kanallar hacmin parçası | Jetlerin momentumu ve swirl alevi biçimlendirir | — |
 | Hood'daki ikincil hava akışı, tersiyer hava ayrılması | Dahil | Alevin hava beslemesi ve hood içindeki geri dönüş bunlardan gelir | — |
-| Klinker yatağı | Yüzey olarak dahil (süreklilikten doluluk, 40° yığılma açısı); yatağın içi yok | Gaz tarafı için yatak bir duvar; yaygın yaklaşım (Alcaide-Moreno 2023: sıcaklık profilli hareketli duvar) | Yatağa ısı akısı, yatağın sıcaklık profili verilmelidir |
+| Klinker yatağı | Geometride yok: delik tam silindir. Yatağın değdiği duvar şeridi (−n·p > d_c) CFD'de bölge olarak yatağın sıcaklığını alır (konuma bağlı duvar sıcaklığı ifadesi ya da hücre işaretiyle ayrılan yüz) | CEMCAP/SINTEF fırın CFD'si de deliği tam alıp duvara sıcaklık profili veriyor. SolidWorks'te kesip geri doldurarak bölme denendi, yüzler birleşti (23 Kasım 2026) | Gaz kesiti %6,2 büyük (hız %6 düşük); yatak yüzeyi eğri duvar, gerçekte düz ve 40° eğik; yatağa giden ısı akısı şerit üzerinden okunur |
 | Yatağın dönme hareketi | Yok (sabit duvar) | Yatak hızı yaklaşık 0,02 m/s; gaz hızının yanında ihmal edilebilir | Yatak yüzeyindeki sınır tabaka |
 | Çıkış contası kaçağı | Ayrı yüz yok; ikincil havayla segment 1'den, karışım sıcaklığında (kullanıcı kararı) | Kütle ve enerji twin ile tutar | Contadaki yerel soğuk hava jeti |
 | Petrokok taşıma havası | Dahil (`coal_in`) | Gerçek debi; twin'de yok (açık bulgu) | Twin ile karşılaştırma |
@@ -70,7 +73,7 @@ Uygulama notları:
 - **Ağ:** brülör ucunda kanallar ve uç halkası en az 1–2 mm, alev bölgesinde 20–50 mm, uzak hacimde 0,2–0,3 m. Kaynaktaki iki model 1,6–2,3 M hücre.
 - **Brülör kanalları:** iç yarıkları ve delikleri birlikte ağlamak pahalıysa önce yalnız brülör koşulur, çıkış profili alev hacmine taşınır (Alcaide-Moreno 2023'ün yolu). Kanallar hacmin parçası olduğu için her iki yol açık.
 - **Yatak sıcaklığı:** twin'in yanma bölgesi yatak profilinden verilir (twin "geometri hazır" denince koşulacak).
-- **Yatak sınırı:** Alcaide-Moreno 2023, yatağı fırın girişine doğru hareket eden, ölçülmüş sıcaklık profilli bir duvar olarak modelliyor (emisivite 0,8).
+- **Yatak sınırı:** Alcaide-Moreno 2023 yatağı fırın girişine doğru hareket eden, ölçülmüş sıcaklık profilli bir duvar olarak modelliyor (emisivite 0,8). Burada aynı değerler yatak şeridine verilir. Fluent'te iki yol var: duvar sıcaklığını konuma bağlı bir ifadeyle vermek, ya da Adapt → Region ile işaretlenen hücrelerden yüzü ayırmak (Separate → Faces → Mark).
 - **Kabul (kural 9):** residuallar, kütle ve enerji dengeleri, çıkış O₂/CO ve alev boyu raporlanmadan çözüm kabul edilmez.
 
 ## Açık konular
