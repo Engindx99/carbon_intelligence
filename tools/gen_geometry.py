@@ -321,6 +321,9 @@ def drawing_bas(g):
         src("KIC_RAMP_FOOT", g["kiln_inlet_chamber"]["ramp_foot"], "KIC ramp's level foot, toe to the kiln mouth"),
         der("KIC_TOP", pg.chamber_section(g)["height"], "KIC floor level to its top = the calciner's throat foot (the roof's highest point under the throat)"),
         src("COOLER_DROP", lay["cooler_drop"]),
+        der("HOOD_L", pg.kiln_hood(g)["depth"], "kiln hood: depth along x from the kiln's end (the cooler's hood opening)"),
+        der("HOOD_H", pg.kiln_hood(g)["H"], "kiln hood: height, the cooler's roof to the seal's top + clearance"),
+        der("HOOD_TA_X", pg.kiln_flame(g)["h_ta"], "kiln hood: the tertiary air mouth's axis from the kiln's end, x"),
     ]
     return out
 
@@ -403,6 +406,7 @@ def drawings_bas(g):
     out += _kiln_rotax_sheet_consts(g)
     out += _kiln_burner_sheet_consts(g)
     out += _kiln_burner_body_sheet_consts(g)
+    out += _kiln_flame_sheet_consts(g)
     out += _cooler_sheet_consts(g)
     out += _kic_sheet_consts(g)
     out += _idf_sheet_consts(g)
@@ -655,6 +659,57 @@ def _kiln_burner_body_sheet_consts(g):
         der("KBD_R_CORE", pg.kiln_burner(g)["swirl_plenum"][0], "core tube's outer radius (= swirl plenum's inner)"),
     ]
     out += _table_consts("kiln_burner_body", dkd.params(g), dkd.ORDER)
+    return out
+
+
+def _kiln_flame_sheet_consts(g):
+    """What drawings.bas needs for the kiln_flame sheet (the flame zone's
+    CFD volume, kiln_flame.SLDPRT, kiln frame), under a KFD_ prefix: the
+    part's box and the model points the dimensions pick, and its table."""
+    from tools.drawings import kiln_flame as dkf
+
+    f, hd, co, kl = pg.kiln_flame(g), pg.kiln_hood(g), pg.cooler(g), pg.kiln(g)
+    ch = pg.kiln_burner(g)
+    Hd, U = f["Hd"], f["U"]
+    K = (0.0, 0.0, kl["L"])
+
+    def at(h, u, x=0.0):
+        return (K[0] + x, K[1] + h * Hd[1] + u * U[1], K[2] + h * Hd[2] + u * U[2])
+
+    def pt(name, p, what):
+        return [der(f"{name}_{c}", p[i], f"{what}, {c.lower()}") for i, c in enumerate("XYZ")]
+
+    d, W, above, below = hd["depth"], hd["W"], hd["above"], hd["below"]
+    st, seg, cw = pg.v(g["kiln_hood"]["flame_stub_L"]), co["segment_L"], co["width"]
+    R, r_ta, z_cut, tip = 0.5 * kl["D"], f["r_ta"], f["z_cut"], f["tip"]
+    c_ta = at(f["h_ta"], above + st)
+    bx = f["box"]
+    out = [
+        der("KFD_X0", bx[0], "the part's x min"), der("KFD_Y0", bx[1], "the part's y min (segment 2's stub)"),
+        der("KFD_Z0", bx[2], "the part's z min (the kiln gas outlet)"),
+        der("KFD_X1", bx[3], "the part's x max"), der("KFD_Y1", bx[4], "the part's y max (the tertiary air mouth)"),
+        der("KFD_Z1", bx[5], "the part's z max (the hood's front wall)"),
+        der("KFD_W", W, "hood inner width"), der("KFD_DEPTH", d, "hood depth"),
+        der("KFD_SEG", seg, "cooler segment under the hood"),
+        der("KFD_R", R, "kiln bore radius"), der("KFD_Z_CUT", z_cut, "kiln gas outlet, z"),
+        der("KFD_R_TA", r_ta, "tertiary air mouth radius"), der("KFD_Z_TA", c_ta[2], "its top face's centre, z"),
+        der("KFD_Z_TIP", tip[2], "burner tip, z"), der("KFD_TIP_TO_CUT", tip[2] - z_cut, "burner tip to the gas outlet"),
+        der("KFD_Z_FRONT", at(d, 0.0)[2], "hood front wall at the kiln axis, z"),
+    ]
+    xs = -0.5 * W                                     # the side view looks from -x
+    out += pt("KFD_BACK", at(0.0, 0.5 * (above + 0.5 * kl["D"]), xs), "back wall's edge, side view")
+    out += pt("KFD_FRONT", at(d, 0.5 * (above + 0.5 * kl["D"]), xs), "front wall's edge, side view")
+    out += pt("KFD_SEGA", at(seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's back edge, side view")
+    out += pt("KFD_SEGB", at(2.0 * seg, -below - 1.5 * st, -0.5 * cw), "segment 2 stub's front edge, side view")
+    out += pt("KFD_BORE", (-0.7071 * R, 0.7071 * R, z_cut), "kiln gas outlet circle, a point on it")
+    out += pt("KFD_TA", tuple(c_ta[i] + r_ta * 0.7071 * ((1.0, 0.0, 0.0)[i] + Hd[i]) for i in range(3)),
+              "tertiary air mouth circle, a point on it")
+    r_tipline = -0.5 * (ch["axial_plenum"][1] + 0.5 * pg.kiln_burner_body(g)["D_tip"])
+    out += pt("KFD_TIPL", (0.0, r_tipline, tip[2]), "burner tip face's cut edge, A-A")
+    out += pt("KFD_CUTL", (0.0, -0.5 * R, z_cut), "kiln gas outlet's cut edge, A-A")
+    out += pt("KFD_SEC_T", at(d, above + 0.3), "A-A's cutting line, top (front view)")
+    out += pt("KFD_SEC_B", at(d, -below - 2.0 * st - 0.3), "A-A's cutting line, bottom (front view)")
+    out += _table_consts("kiln_flame", dkf.params(g), dkf.ORDER)
     return out
 
 
@@ -1016,6 +1071,60 @@ def kiln_burner_bas(g):
     return out
 
 
+KFL_CHUNKS = 4
+
+
+def kiln_flame_bas(g):
+    """kiln_flame.bas: the flame zone's CFD volume (plant_geometry.kiln_flame()):
+    its bodies as KFL_1.., its boundary faces as KFL_FACES
+    (name|point|normal|area|rgb), the burner's placement (the channels
+    copied in from kiln_burner.SLDPRT: rows R, tip T) and, to check it,
+    where the coal pipe and the whole burner land in the kiln frame."""
+    r = pg.kiln_flame(g)
+    pl = pg.kiln_burner_placement(g)
+    recs = []
+    for b in r["bodies"]:
+        nums = list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])
+        recs.append("|".join([b["name"], b["group"], b["kind"]] + [_fixed(q) for q in nums]) + ";")
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > KFL_CHUNKS:
+        raise ValueError(f"kiln_flame: {len(chunks)} chunks, the macro joins {KFL_CHUNKS}")
+    chunks += [""] * (KFL_CHUNKS - len(chunks))
+    faces = "".join("|".join([n] + [_fixed(q) for q in list(pt) + list(nv) + [a] + list(rgb)]) + ";"
+                    for n, pt, nv, a, rgb in r["faces"])
+    if len(faces) > 1000:
+        raise ValueError("kiln_flame: the face list is too long for one VBA string")
+
+    def kbox(box):          # a box in the burner's frame -> its extent in the kiln frame
+        pts = [pl["to_kiln"]((x, y, z)) for x in (box[0], box[3]) for y in (box[1], box[4]) for z in (box[2], box[5])]
+        return [min(q[i] for q in pts) for i in range(3)] + [max(q[i] for q in pts) for i in range(3)]
+
+    coal = kbox(pg.kiln_burner(g)["groups"]["coal"]["box"])
+    whole = kbox(pg.kiln_burner_body(g)["box"])
+    out = [der("N_BODIES", len(recs), "bodies before joining"), der("N_GROUPS", 1, "bodies in the part"),
+           der("N_FACES", len(r["faces"]), "boundary faces")]
+    out += [Const(f"KFL_{i + 1}", c, "plant_geometry.kiln_flame() bodies", kind="String") for i, c in enumerate(chunks)]
+    out.append(Const("KFL_GROUPS", f"flame|-1|{len(recs)};", "the part's body: name|V (-1: parts overlap)|parts",
+                     kind="String"))
+    out.append(Const("KFL_FACES", faces, "boundaries: name|point|outward normal|area|rgb", kind="String"))
+    for i in range(3):
+        for k in range(3):
+            out.append(der(f"KFL_R{i + 1}{k + 1}", pl["R"][i][k], f"the burner's {'xyz'[i]} axis, kiln {'xyz'[k]}"))
+    for i in range(3):
+        out.append(der(f"KFL_T{'XYZ'[i]}", pl["tip"][i], f"the burner's tip, kiln {'xyz'[i]}"))
+    for i, nm in enumerate(("X0", "Y0", "Z0", "X1", "Y1", "Z1")):
+        out.append(der(f"KFL_COAL_{nm}", coal[i], "the copied coal channel's extent, kiln frame"))
+    for i, nm in enumerate(("X0", "Y0", "Z0", "X1", "Y1", "Z1")):
+        out.append(der(f"KFL_BRN_{nm}", whole[i], "the placed whole burner's extent, kiln frame"))
+    return out
+
+
 def pid_bas(g):
     """The P&ID macro's records (geometry/pid/pid.yaml; tools/pid/)."""
     from tools.pid import encode, model
@@ -1030,6 +1139,7 @@ TARGETS = {
     "kiln_rotax.bas": kiln_rotax_bas,
     "kiln_burner.bas": kiln_burner_bas,
     "kiln_burner_body.bas": kiln_burner_body_bas,
+    "kiln_flame.bas": kiln_flame_bas,
     "kiln_inlet_chamber.bas": kiln_inlet_chamber_bas,
     "id_fan.bas": id_fan_bas,
     "cyclone.bas": cyclone_bas,
@@ -1444,11 +1554,15 @@ def _kiln_hood_rows(g):
         row_src("Hız ölçütü, üst", h["air_velocity_max"]),
         row_der("Başlıktan geçen hava (ikincil + tersiyer)", hd["m"], "kg/s", 2),
         row_der("Hacimsel debi (1073 K)", hd["q"], "m³/s", 1),
-        row_der("Başlık kesiti (kare, kenar 2a)", hd["side"], "m", 2),
-        row_der("Kesit alanı", hd["area"], "m²", 2),
+        row_der("Çıkış contasının dış yarıçapı (ROTAX)", hd["R_seal"], "m", 2),
+        row_src("Conta çevresindeki pay", h["seal_clearance"]),
+        row_der("Başlık genişliği (2 × (conta + pay))", hd["W"], "m", 2),
+        row_der("Başlık yüksekliği (soğutucu tavanından contanın üstüne)", hd["H"], "m", 2),
+        row_der("Başlık derinliği (soğutucunun başlık açıklığı)", hd["depth"], "m", 2),
+        row_der("Kesit alanı (genişlik × yükseklik)", hd["area"], "m²", 2),
         row_der("Hız (1073 K)", hd["u"], "m/s", 2),
         row_der("Hız (1250 K)", hd["u_hot"], "m/s", 2),
-        row_der("Ölçütün izin verdiği en küçük kenar", hd["side_min"], "m", 2),
+        row_der("Ölçütün izin verdiği en küçük kesit", hd["area_min"], "m²", 2),
     ]
 
 

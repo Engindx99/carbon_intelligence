@@ -325,6 +325,60 @@ Const kiln_burner_body_TAB_5       As String  = ""           ' parameter table r
 Const kiln_burner_body_TAB_6       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_7       As String  = ""           ' parameter table rows
 Const kiln_burner_body_TAB_8       As String  = ""           ' parameter table rows
+Const KFD_X0                       As Double  = -3.8         ' the part's x min [derived]
+Const KFD_Y0                       As Double  = -3.808587    ' the part's y min (segment 2's stub) [derived]
+Const KFD_Z0                       As Double  = 30.83        ' the part's z min (the kiln gas outlet) [derived]
+Const KFD_X1                       As Double  = 3.8          ' the part's x max [derived]
+Const KFD_Y1                       As Double  = 4.219241     ' the part's y max (the tertiary air mouth) [derived]
+Const KFD_Z1                       As Double  = 80.094258    ' the part's z max (the hood's front wall) [derived]
+Const KFD_W                        As Double  = 7.6          ' hood inner width [derived]
+Const KFD_DEPTH                    As Double  = 5.98         ' hood depth [derived]
+Const KFD_SEG                      As Double  = 2.99         ' cooler segment under the hood [derived]
+Const KFD_R                        As Double  = 2.4          ' kiln bore radius [derived]
+Const KFD_Z_CUT                    As Double  = 30.83        ' kiln gas outlet, z [derived]
+Const KFD_R_TA                     As Double  = 1.21965      ' tertiary air mouth radius [derived]
+Const KFD_Z_TA                     As Double  = 78.361538    ' its top face's centre, z [derived]
+Const KFD_Z_TIP                    As Double  = 73.75        ' burner tip, z [derived]
+Const KFD_TIP_TO_CUT               As Double  = 42.92        ' burner tip to the gas outlet [derived]
+Const KFD_Z_FRONT                  As Double  = 79.977311    ' hood front wall at the kiln axis, z [derived]
+Const KFD_BACK_X                   As Double  = -3.8         ' back wall's edge, side view, x [derived]
+Const KFD_BACK_Y                   As Double  = 3.098606     ' back wall's edge, side view, y [derived]
+Const KFD_BACK_Z                   As Double  = 73.907042    ' back wall's edge, side view, z [derived]
+Const KFD_FRONT_X                  As Double  = -3.8         ' front wall's edge, side view, x [derived]
+Const KFD_FRONT_Y                  As Double  = 3.277925     ' front wall's edge, side view, y [derived]
+Const KFD_FRONT_Z                  As Double  = 79.884353    ' front wall's edge, side view, z [derived]
+Const KFD_SEGA_X                   As Double  = -2#          ' segment 2 stub's back edge, side view, x [derived]
+Const KFD_SEGA_Y                   As Double  = -3.683643    ' segment 2 stub's back edge, side view, y [derived]
+Const KFD_SEGA_Z                   As Double  = 77.101854    ' segment 2 stub's back edge, side view, z [derived]
+Const KFD_SEGB_X                   As Double  = -2#          ' segment 2 stub's front edge, side view, x [derived]
+Const KFD_SEGB_Y                   As Double  = -3.593983    ' segment 2 stub's front edge, side view, y [derived]
+Const KFD_SEGB_Z                   As Double  = 80.09051     ' segment 2 stub's front edge, side view, z [derived]
+Const KFD_BORE_X                   As Double  = -1.69704     ' kiln gas outlet circle, a point on it, x [derived]
+Const KFD_BORE_Y                   As Double  = 1.69704      ' kiln gas outlet circle, a point on it, y [derived]
+Const KFD_BORE_Z                   As Double  = 30.83        ' kiln gas outlet circle, a point on it, z [derived]
+Const KFD_TA_X                     As Double  = 0.862415     ' tertiary air mouth circle, a point on it, x [derived]
+Const KFD_TA_Y                     As Double  = 4.208529     ' tertiary air mouth circle, a point on it, y [derived]
+Const KFD_TA_Z                     As Double  = 79.223564    ' tertiary air mouth circle, a point on it, z [derived]
+Const KFD_TIPL_X                   As Double  = 0#           ' burner tip face's cut edge, A-A, x [derived]
+Const KFD_TIPL_Y                   As Double  = -0.271867    ' burner tip face's cut edge, A-A, y [derived]
+Const KFD_TIPL_Z                   As Double  = 73.75        ' burner tip face's cut edge, A-A, z [derived]
+Const KFD_CUTL_X                   As Double  = 0#           ' kiln gas outlet's cut edge, A-A, x [derived]
+Const KFD_CUTL_Y                   As Double  = -1.2         ' kiln gas outlet's cut edge, A-A, y [derived]
+Const KFD_CUTL_Z                   As Double  = 30.83        ' kiln gas outlet's cut edge, A-A, z [derived]
+Const KFD_SEC_T_X                  As Double  = 0#           ' A-A's cutting line, top (front view), x [derived]
+Const KFD_SEC_T_Y                  As Double  = 4.277476     ' A-A's cutting line, top (front view), y [derived]
+Const KFD_SEC_T_Z                  As Double  = 79.854366    ' A-A's cutting line, top (front view), z [derived]
+Const KFD_SEC_B_X                  As Double  = 0#           ' A-A's cutting line, bottom (front view), x [derived]
+Const KFD_SEC_B_Y                  As Double  = -4.018792    ' A-A's cutting line, bottom (front view), y [derived]
+Const KFD_SEC_B_Z                  As Double  = 80.103254    ' A-A's cutting line, bottom (front view), z [derived]
+Const kiln_flame_TAB_1             As String  = "m_air~Air through the hood (secondary + tertiary)~81.171~kg/s~derived~Estimated;area~Hood section, width x height~54.72~m2~derived~Schematic;area_min~Section the velocity limit needs~24.78~m2~derived~Estimated;u~Hood air velocity at the tertiary air T (4-10 m/s)~4.52775~m/s~derived~Schematic;u_hot~Hood air velocity at 1250 K~5.2739~m/s~derived~Schematic;R_seal~Outlet seal's outer radius (kiln_rotax)~3550~mm~derived~Schematic;seal_clearance~Back wall round the seal, clearance~250~mm~model parameter~Estimated;hood_W~Hood inner width (seal + clearance, both sides)~7600~mm~derived~Schematic;hood_H~Hood inner height (cooler roof to the roof)~7200~mm~derived~Schematic;" ' parameter table rows
+Const kiln_flame_TAB_2             As String  = "hood_depth~Hood depth (the cooler's two hood segments)~5980~mm~derived~Estimated;segment_L~Cooler segment under the hood, long~2990~mm~derived~Estimated;flame_stub_L~Inlet / outlet stubs (segment 2: twice)~250~mm~model parameter~Estimated;D_ta~Tertiary air mouth on the roof (the duct's D)~2439~mm~derived~Estimated;h_ta~Its axis from the back wall (over segment 2)~4485~mm~derived~Estimated;D_bore~Kiln bore D (the kiln sheet)~4800~mm~published~Verified;L_flame~Bore in the volume (the twin's burning zone)~43170~mm~derived~Estimated;burner_insertion~Burner tip inside the kiln mouth~250~mm~literature~Estimated;burner_offset_x~Burner off the kiln axis, across~0~mm~literature~Estimated;" ' parameter table rows
+Const kiln_flame_TAB_3             As String  = "burner_offset_y~Burner off the kiln axis, up~0~mm~literature~Estimated;burner_tilt_deg~Burner off the kiln axis, tilt~0~deg~literature~Estimated;tip_to_cut~Burner tip to the kiln gas outlet~42920~mm~derived~Estimated;castable_past_front~Burner castable past the hood's front wall (> 0: no bare steel)~313~mm~derived~Estimated;u_bed~Clinker bed in the kiln and on the grate~-~~no source~Unknown;u_doors~Hood doors, seal leaks, refractory detail~-~~no source~Unknown;" ' parameter table rows
+Const kiln_flame_TAB_4             As String  = ""           ' parameter table rows
+Const kiln_flame_TAB_5             As String  = ""           ' parameter table rows
+Const kiln_flame_TAB_6             As String  = ""           ' parameter table rows
+Const kiln_flame_TAB_7             As String  = ""           ' parameter table rows
+Const kiln_flame_TAB_8             As String  = ""           ' parameter table rows
 Const COO_L                        As Double  = 29.9         ' grate length, hot end x = 0 to the cold end [derived]
 Const COO_W                        As Double  = 4#           ' grate width [derived]
 Const COO_H                        As Double  = 3#           ' grate to roof [derived]
@@ -492,6 +546,17 @@ Const BDL_END_D   As Double = 10#
 Const BDL_SEC_X   As Double = 0.34      ' section B-B through the head (1:10, as the end view)
 Const BDL_SEC_Y   As Double = 0.15
 
+' kiln_flame (1:200): the side view (z right: the hood on the right), A-A
+' along the axis under it, the plan under that; the hood seen from the
+' burner's side (1:100) at the bottom left, A-A's cutting line on it
+Const KFS_X       As Double = 0.33
+Const KFS_SIDE_Y  As Double = 0.5
+Const KFS_SEC_Y   As Double = 0.4
+Const KFS_PLAN_Y  As Double = 0.3
+Const KFS_END_X   As Double = 0.13
+Const KFS_END_Y   As Double = 0.14
+Const KFS_END_D   As Double = 100#
+
 ' cooler (1:100): side view, plan under it, floor view under that, the end
 ' view (1:50) at the bottom left
 Const COO_X       As Double = 0.33
@@ -635,6 +700,13 @@ Sub kiln_burner_body()
 End Sub
 
 
+' The flame zone's CFD volume (kiln_flame.bas): hood, the kiln's bore over
+' the burning zone, the burner's channels placed, the burner cut out.
+Sub kiln_flame()
+    Build "kiln_flame"
+End Sub
+
+
 Sub cooler()
     Build "cooler"
 End Sub
@@ -674,6 +746,8 @@ Private Sub Build(ByVal which As String)
         scaleD = 20#: detailD = BDL_END_D: detX = BDL_END_X: detY = BDL_END_Y
     ElseIf equip = "kiln_burner" Then
         scaleD = 5#: detailD = 1#: detX = BRL_DET_X: detY = BRL_DET_Y
+    ElseIf equip = "kiln_flame" Then
+        scaleD = 200#: detailD = KFS_END_D: detX = KFS_END_X: detY = KFS_END_Y
     ElseIf equip = "cooler" Then
         scaleD = 100#: detailD = 50#: detX = 0.63: detY = DET_Y
     ElseIf equip = "id_fan" Then
@@ -804,6 +878,9 @@ Private Sub ParseTable()
     ElseIf equip = "kiln_burner_body" Then
         all = kiln_burner_body_TAB_1 & kiln_burner_body_TAB_2 & kiln_burner_body_TAB_3 & kiln_burner_body_TAB_4 & _
               kiln_burner_body_TAB_5 & kiln_burner_body_TAB_6 & kiln_burner_body_TAB_7 & kiln_burner_body_TAB_8
+    ElseIf equip = "kiln_flame" Then
+        all = kiln_flame_TAB_1 & kiln_flame_TAB_2 & kiln_flame_TAB_3 & kiln_flame_TAB_4 & _
+              kiln_flame_TAB_5 & kiln_flame_TAB_6 & kiln_flame_TAB_7 & kiln_flame_TAB_8
     ElseIf equip = "kiln_burner" Then
         all = kiln_burner_TAB_1 & kiln_burner_TAB_2 & kiln_burner_TAB_3 & kiln_burner_TAB_4 & _
               kiln_burner_TAB_5 & kiln_burner_TAB_6 & kiln_burner_TAB_7 & kiln_burner_TAB_8
@@ -1190,6 +1267,9 @@ Private Sub CheckPartBox(doc As SldWorks.ModelDoc2)
     ElseIf equip = "kiln_burner_body" Then
         CheckBurnerBodyBox doc
         Exit Sub
+    ElseIf equip = "kiln_flame" Then
+        CheckFlameBox doc
+        Exit Sub
     ElseIf equip = "C1_twin" Then
         CheckTwinBox doc
         Exit Sub
@@ -1324,6 +1404,8 @@ Private Sub MakeViews()
         MakeViewsBurner
     ElseIf equip = "kiln_burner_body" Then
         MakeViewsBurnerBody
+    ElseIf equip = "kiln_flame" Then
+        MakeViewsFlame
     ElseIf equip = "cooler" Then
         MakeViewsCooler
     ElseIf equip = "id_fan" Then
@@ -1973,6 +2055,8 @@ Private Sub DimensionAll()
         DimensionBurner
     ElseIf equip = "kiln_burner_body" Then
         DimensionBurnerBody
+    ElseIf equip = "kiln_flame" Then
+        DimensionFlame
     ElseIf equip = "cooler" Then
         DimensionCooler
     ElseIf equip = "id_fan" Then
@@ -2955,7 +3039,8 @@ Private Sub DrawTitle()
         "Gas bore (CFD), wall as the twin models it - not a fabrication drawing", _
         IIf(equip = "kiln_rotax", "FLS ROTAX-2 parts, envelopes - not a fabrication drawing", _
         IIf(equip = "kiln_burner_body", "JETFLEX 2.0 burner, envelopes - not a fabrication drawing", _
-        "Inner (fluid) geometry, dimensioned - not a fabrication drawing"))), TEXT_H
+        IIf(equip = "kiln_flame", "Flame zone CFD volume (hood, bore, burner placed) - not a fabrication drawing", _
+        "Inner (fluid) geometry, dimensioned - not a fabrication drawing")))), TEXT_H
     ' CI-<area>-<equipment>-001; the calciner is its own area, CA (16 Nov
     ' sheet review, item 9: it was numbered in the preheater's, PH)
     Cell 0.771, 0.037, "Identification number", "CI-" & AreaCode() & "-" & equip & "-001"
@@ -2967,6 +3052,8 @@ Private Sub DrawTitle()
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (C 1:50, B 1:" & Fmt(detailD) & ", D 1:" & Fmt(KLN_DETD_D) & ")"
     ElseIf equip = "kiln_burner_body" Then
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (end view 1:" & Fmt(BDL_END_D) & ")"
+    ElseIf equip = "kiln_flame" Then
+        Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (hood view 1:" & Fmt(KFS_END_D) & ")"
     ElseIf equip = "kiln_burner" Then
         Cell COL_X0, 0.019, "Scale", "1:" & Fmt(scaleD) & " (tip 1:" & Fmt(BRL_FRONT_D) & ", B 1:" & Fmt(detailD) & ")"
     ElseIf equip = "kiln_rotax" Then
@@ -2985,7 +3072,7 @@ End Sub
 Private Function AreaCode() As String
     Select Case equip
     Case "calciner": AreaCode = "CA"
-    Case "kiln", "kiln_inlet_chamber", "kiln_rotax", "kiln_burner", "kiln_burner_body": AreaCode = "RK"
+    Case "kiln", "kiln_inlet_chamber", "kiln_rotax", "kiln_burner", "kiln_burner_body", "kiln_flame": AreaCode = "RK"
     Case "cooler": AreaCode = "CL"
     Case Else: AreaCode = "PH"
     End Select
@@ -3062,6 +3149,7 @@ Private Function TitleText() As String
     Case "kiln_rotax": TitleText = "KILN: ROTAX-2 PARTS"
     Case "kiln_burner": TitleText = "KILN BURNER JETFLEX 2.0"
     Case "kiln_burner_body": TitleText = "KILN BURNER: WHOLE (ENVELOPE)"
+    Case "kiln_flame": TitleText = "KILN OUTLET: HOOD + FLAME ZONE"
     Case "cooler": TitleText = "GRATE COOLER (FLUID BOX)"
     Case "kiln_inlet_chamber": TitleText = "KILN INLET CHAMBER"
     Case "id_fan": TitleText = "PREHEATER ID FAN (1 PER STRING)"
@@ -3077,6 +3165,9 @@ Private Sub DrawNotes()
     If equip = "kiln" Then
         LabelPH COL_X0, y + 0.032, "1. Bore = the gas volume; wall as the twin models it (physics/shell.py). CFD solid:", TEXT_H
         LabelPH COL_X0, y + 0.027, "   kiln.SLDPRT, the bore from z0 (the KIC's stub before it). Not a fabrication drawing.", TEXT_H
+    ElseIf equip = "kiln_flame" Then
+        LabelPH COL_X0, y + 0.032, "1. Flame zone CFD volume (kiln_flame.SLDPRT): hood + kiln bore over the burning zone +", TEXT_H
+        LabelPH COL_X0, y + 0.027, "   the burner's channels placed, the burner cut out. Not a fabrication drawing.", TEXT_H
     ElseIf equip = "kiln_burner_body" Then
         LabelPH COL_X0, y + 0.032, "1. The whole burner as simple envelopes (kiln_burner_body.SLDPRT); not a CFD input, not a", TEXT_H
         LabelPH COL_X0, y + 0.027, "   fabrication drawing. Its channels at the tip (the CFD solid): see the kiln_burner sheet.", TEXT_H
@@ -3106,6 +3197,13 @@ Private Sub DrawNotes()
         LabelPH COL_X0, y - 0.003, "5. Inside: core + swirl tubes meet the channels' plenums, the fuel pipe their coal pipe (B-B).", TEXT_H
         LabelPH COL_X0, y - 0.008, "   Head partition: inlet 1 axial air, inlet 2 swirl air -- assumed (the brochure shows neither).", TEXT_H
         LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_burner body_), plant_geometry.kiln_burner_body()", TEXT_H
+    ElseIf equip = "kiln_flame" Then
+        LabelPH COL_X0, y + 0.012, "3. Kiln frame: z along the kiln axis, z = 0 at the back end, y up; the hood stands on the", TEXT_H
+        LabelPH COL_X0, y + 0.007, "   plant's level, turned by the kiln's 3 % (1.72 deg); the kiln's slope is not built in.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "4. Boundaries: segment 1 secondary air in, segment 2 tertiary supply in, roof mouth out, kiln", TEXT_H
+        LabelPH COL_X0, y - 0.003, "   gas out at the burning zone's start; coal, axial, swirl in. No clinker bed (as kiln.SLDPRT).", TEXT_H
+        LabelPH COL_X0, y - 0.008, "5. Hood W, H rest on schematic values (seal depth, cooler drop): listed, not dimensioned.", TEXT_H
+        LabelPH COL_X0, y - 0.013, "6. Source: geometry/plant_geometry.yaml (kiln_hood), plant_geometry.kiln_flame()", TEXT_H
     ElseIf equip = "kiln_burner" Then
         LabelPH COL_X0, y + 0.012, "3. Axis z along the burner, z = 0 the tip, flow towards +z (into the kiln); y up.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. FLS gives no size: the tip is the Fuller JETFLEX 2.0 brochure's (image ratios), scaled", TEXT_H
@@ -3176,6 +3274,8 @@ Private Sub DrawFlows()
         DrawLabelsBurner
     ElseIf equip = "kiln_burner_body" Then
         DrawLabelsBurnerBody
+    ElseIf equip = "kiln_flame" Then
+        DrawLabelsFlame
     ElseIf equip = "cooler" Then
         DrawFlowsCooler
     ElseIf equip = "id_fan" Then
@@ -3492,6 +3592,8 @@ Private Sub DrawAxes()
         DrawAxesBurner
     ElseIf equip = "kiln_burner_body" Then
         DrawAxesBurnerBody
+    ElseIf equip = "kiln_flame" Then
+        DrawAxesFlame
     ElseIf equip = "cooler" Then
         DrawAxesCooler
     ElseIf equip = "id_fan" Then
@@ -4090,6 +4192,145 @@ Private Sub DrawAxesBurnerBody()
     AxisM vPlan, 0#, 0#, KBD_Z_COAL - 0.2, 0#, 0#, 0.2
     AxisM vSide, KBD_X_IN - 0.08, 0#, KBD_Z_COAL, KBD_R_TIP + 0.08, 0#, KBD_Z_COAL
     AxisM vSide, 0#, -KBD_R_TIP - 0.08, KBD_Z_COAL, 0#, KBD_Y_BEAM, KBD_Z_COAL
+End Sub
+
+
+
+'==================================================================
+' kiln_flame: the flame zone's CFD volume (kiln_flame.SLDPRT,
+' plant_geometry.kiln_flame(); kiln frame)
+'==================================================================
+
+' One body, its box today's source.
+Private Sub CheckFlameBox(doc As SldWorks.ModelDoc2)
+    Dim pd As SldWorks.PartDoc, bodies As Variant, box As Variant, b As SldWorks.Body2
+    Dim want(5) As Double, k As Long, nm As Variant
+    Set pd = doc
+    bodies = pd.GetBodies2(swSolidBody, True)
+    If IsEmpty(bodies) Then Fail partPath & " has no solid body."
+    If UBound(bodies) <> 0 Then Fail partPath & " has " & (UBound(bodies) + 1) & " bodies, not 1 -- rebuild it with kiln_flame.bas."
+    Set b = bodies(0)
+    box = ExactBox(b)
+    nm = Array("x min", "y min", "z min", "x max", "y max", "z max")
+    want(0) = KFD_X0: want(1) = KFD_Y0: want(2) = KFD_Z0: want(3) = KFD_X1: want(4) = KFD_Y1: want(5) = KFD_Z1
+    For k = 0 To 5
+        If Abs(box(k) - want(k)) > 0.001 Then Fail partPath & ": " & nm(k) & " is " & Num(box(k), 4) & _
+            " m, today's volume has " & Num(want(k), 4) & " -- rebuild it with kiln_flame.bas."
+    Next k
+    Note "part box: x " & Num(box(0), 3) & " .. " & Num(box(3), 3) & ", y " & Num(box(1), 3) & " .. " & Num(box(4), 3) & _
+         ", z " & Num(box(2), 3) & " .. " & Num(box(5), 3) & " m, 1 body"
+End Sub
+
+
+' The side view from -x (z right, y up) and the plan from above (z right,
+' +x up), 1:200; the hood from the burner's side (x right, y up), 1:100,
+' bottom left; A-A along x = 0 from it (z right, y up), 1:200, between
+' the side view and the plan: the burner inside the hood and the kiln.
+Private Sub MakeViewsFlame()
+    Dim tries As Long, ax As Double, ay As Double, qx As Double, qy As Double
+    Dim nSeen As Long, nFit As Long
+    Set vFront = OrientedView(0, 0, 1, 0, 1, 0, KFS_X, KFS_SIDE_Y, "side")
+    LogMap vFront, "side", scaleD
+    swDraw.EditSheet
+    Set vPlan = OrientedView(0, 0, 1, 1, 0, 0, KFS_X, KFS_PLAN_Y, "plan")
+    LogMap vPlan, "plan", scaleD
+    swDraw.EditSheet
+    Set vSide = OrientedView(1, 0, 0, 0, 1, 0, KFS_END_X, KFS_END_Y, "hood")
+    vSide.ScaleDecimal = 1# / KFS_END_D
+    PlaceOutlineAt vSide, KFS_END_X, KFS_END_Y
+    LogMap vSide, "hood", KFS_END_D
+    swDraw.EditSheet
+    For tries = 0 To 1
+        If tries = 0 Then
+            ToSheet vSide, KFD_SEC_T_X, KFD_SEC_T_Y, KFD_SEC_T_Z, ax, ay
+            ToSheet vSide, KFD_SEC_B_X, KFD_SEC_B_Y, KFD_SEC_B_Z, qx, qy
+        Else
+            ToSheet vSide, KFD_SEC_B_X, KFD_SEC_B_Y, KFD_SEC_B_Z, ax, ay
+            ToSheet vSide, KFD_SEC_T_X, KFD_SEC_T_Y, KFD_SEC_T_Z, qx, qy
+        End If
+        Set vSec = SectionFrom(vSide, ax, ay, qx, qy, "A", KFS_X, KFS_SEC_Y)
+        If Maps(vSec, 0, 0, 1, 0, 1, 0) Then Exit For
+        Note "section A-A, line drawn " & IIf(tries = 0, "top down", "bottom up") & " looks wrong: " & MapText(vSec)
+        If tries = 1 Then Fail "section A-A shows z right, y up in neither direction: " & MapText(vSec)
+        DeleteView vSec
+    Next tries
+    vSec.RemoveAlignment
+    vSec.ScaleDecimal = 1# / scaleD
+    PlaceOutlineAt vSec, KFS_X, KFS_SEC_Y
+    swModel.ForceRebuild3 False
+    LogMap vSec, "A-A", scaleD
+    If FindEdge(vSec, "line", KFD_TIPL_X, KFD_TIPL_Y, KFD_TIPL_Z, 0#, 0#, nSeen, nFit) Is Nothing Then
+        Note "section A-A: no edge at the burner's tip among its " & nSeen & " edges"
+    End If
+    Note "views: side " & vFront.Name & ", plan " & vPlan.Name & ", hood " & vSide.Name & ", A-A " & vSec.Name
+End Sub
+
+
+' Five dimensions between edges the solid has: in the side view the hood's
+' depth (its back and front walls' edges, both along the plant's up), the
+' cooler segment (segment 2's stub's edges) and the kiln bore (the gas
+' outlet's circle seen edge-on); in A-A the burner tip to the gas outlet;
+' in the plan the tertiary air mouth. The hood's width and height rest on
+' schematic values: listed, not dimensioned.
+Private Sub DimensionFlame()
+    swDraw.EditSheet
+    If swApp.GetApplySelectionFilter Then
+        swApp.SetApplySelectionFilter False
+        Note "selection: a selection filter was on; turned off for this run"
+    End If
+    swModel.ViewZoomtofit2
+    swModel.GraphicsRedraw2
+    swModel.ClearSelection2 True
+
+    DimEdges "hood_depth", KFD_DEPTH, vFront, _
+        "line", KFD_BACK_X, KFD_BACK_Y, KFD_BACK_Z, 0, 0, _
+        "line", KFD_FRONT_X, KFD_FRONT_Y, KFD_FRONT_Z, 0, 0, _
+        KFD_BACK_X, KFD_BACK_Y + 2.5, 0.5 * (KFD_BACK_Z + KFD_FRONT_Z)
+    DimEdges "segment_L", KFD_SEG, vFront, _
+        "line", KFD_SEGA_X, KFD_SEGA_Y, KFD_SEGA_Z, 0, 0, _
+        "line", KFD_SEGB_X, KFD_SEGB_Y, KFD_SEGB_Z, 0, 0, _
+        KFD_SEGA_X, KFD_SEGA_Y - 1.5, 0.5 * (KFD_SEGA_Z + KFD_SEGB_Z)
+    DimEdges "D_bore", 2# * KFD_R, vFront, _
+        "circle", KFD_BORE_X, KFD_BORE_Y, KFD_BORE_Z, KFD_R, KFD_Z_CUT, _
+        "", 0, 0, 0, 0, 0, _
+        0, 0, KFD_Z_CUT - 2#
+    DimEdges "tip_to_cut", KFD_TIP_TO_CUT, vSec, _
+        "line", KFD_CUTL_X, KFD_CUTL_Y, KFD_CUTL_Z, 0, 0, _
+        "line", KFD_TIPL_X, KFD_TIPL_Y, KFD_TIPL_Z, 0, 0, _
+        0, -KFD_R - 1.2, 0.5 * (KFD_Z_CUT + KFD_Z_TIP)
+    DimEdges "D_ta", 2# * KFD_R_TA, vPlan, _
+        "circle", KFD_TA_X, KFD_TA_Y, KFD_TA_Z, KFD_R_TA, KFD_Z_TA, _
+        "", 0, 0, 0, 0, 0, _
+        KFD_X0 - 1.5, KFD_Y1, KFD_Z_TA + 3#
+
+    Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
+End Sub
+
+
+Private Sub DrawLabelsFlame()
+    UseLayer L_TEXT
+    LabelM3 vFront, 0#, KFD_R + 1#, KFD_Z_CUT + 8#, "Kiln bore, burning zone (no clinker bed)"
+    LabelM3 vFront, 0#, KFD_Y1 + 1.2, KFD_Z_FRONT - 0.5 * KFD_DEPTH, "Hood"
+    LabelM3 vSec, 0#, KFD_Y1 + 1.2, KFD_Z_TIP - 14#, "Burner tip 0.25 m inside the kiln, on its axis"
+    LabelM3 vSec, 0#, KFD_Y0 - 1.6, KFD_Z_FRONT - 12#, "Secondary air in | tertiary supply in"
+    LabelM3 vPlan, 0#, 0#, KFD_Z_CUT + 2#, "Kiln gas out"
+    LabelM3 vPlan, KFD_X1 + 0.8, 0#, KFD_Z_TA - 6#, "Tertiary air out (to the calciner)"
+    UseLayer L_FLOW
+    ArrowM3 vSec, 0#, 0#, KFD_Z_CUT + 3#, 0#, 0#, KFD_Z_CUT - 1#
+    UseLayer L_TEXT
+    ViewTitle vFront, "SIDE VIEW - hood right", "above", 0.012, TEXT_H
+    ViewTitle vPlan, "PLAN - from above, +x up", "above", 0.004, TEXT_H
+    ViewTitle vSide, "HOOD FROM THE BURNER'S SIDE (1:" & Fmt(KFS_END_D) & ")", "above", 0.004, TEXT_H
+End Sub
+
+
+Private Sub DrawAxesFlame()
+    UseLayer L_AXIS
+    AxisM vFront, 0#, 0#, KFD_Z_CUT - 1.5, 0#, 0#, KFD_Z1 + 1.5
+    AxisM vSec, 0#, 0#, KFD_Z_CUT - 1.5, 0#, 0#, KFD_Z1 + 1.5
+    AxisM vPlan, 0#, 0#, KFD_Z_CUT - 1.5, 0#, 0#, KFD_Z1 + 1.5
+    AxisM vSide, -KFD_X1 - 0.5, 0#, KFD_Z_FRONT, KFD_X1 + 0.5, 0#, KFD_Z_FRONT
+    AxisM vSide, 0#, KFD_Y0 - 0.5, KFD_Z_FRONT, 0#, KFD_Y1 + 0.5, KFD_Z_FRONT
 End Sub
 
 

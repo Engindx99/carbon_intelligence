@@ -2080,21 +2080,70 @@
           "doc": "kiln/kiln_hood.md"
         },
         {
-          "key": "layout.chamber_margin",
-          "value": 1.0,
+          "key": "kiln_hood.seal_clearance",
+          "value": 0.25,
           "unit": "m",
           "source": "model",
           "status": "Estimated",
-          "doc": "kiln/kiln_inlet_chamber.md"
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "kiln_hood.burner_insertion",
+          "value": 0.25,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.burner_offset_x",
+          "value": 0.0,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.burner_offset_y",
+          "value": 0.0,
+          "unit": "m",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.burner_tilt_deg",
+          "value": 0.0,
+          "unit": "deg",
+          "source": "literature",
+          "status": "Estimated",
+          "doc": "kiln/kiln_burner.md"
+        },
+        {
+          "key": "kiln_hood.flame_stub_L",
+          "value": 0.25,
+          "unit": "m",
+          "source": "model",
+          "status": "Estimated",
+          "doc": "kiln/kiln_hood.md"
+        },
+        {
+          "key": "layout.cooler_drop",
+          "value": 1.0,
+          "unit": "m",
+          "source": "schematic",
+          "status": "Schematic",
+          "doc": "plant_topology.md"
         }
       ],
       "status_counts": {
-        "Estimated": 4
+        "Estimated": 9,
+        "Schematic": 1
       },
       "missing": [
-        "kiln/kiln_hood.md: only a velocity check of the layout square (no published size); depth, burner entry, doors, tertiary take-off unknown; no CFD solid"
+        "kiln/kiln_hood.md: no published size; a box round the kiln's outlet seal (seal + clearance), depth = the cooler's two hood segments, velocity checked; W and H rest on schematic values (seal depth, cooler drop); doors and seal leaks not modelled"
       ],
-      "cfd_solid": "",
+      "cfd_solid": "kiln_flame.SLDPRT (flame zone: hood + kiln bore over the burning zone + the burner's channels placed), sheet kiln_flame; kiln_outlet_assembly.SLDASM",
       "pid_sheets": [
         "3 KI"
       ],
@@ -2769,7 +2818,7 @@
         "Schematic": 19
       },
       "missing": [
-        "kiln/kiln_burner.md: no published size; JETFLEX 2.0 tip from the brochure (image ratios) scaled so the slots pass the twin's axial air at the manual's pressure; conveying air not in the twin; fuel lance, nozzle angle, swirl sense, position in the kiln unknown"
+        "kiln/kiln_burner.md: no published size; JETFLEX 2.0 tip from the brochure (image ratios) scaled so the slots pass the twin's axial air at the manual's pressure; conveying air not in the twin; fuel lance, nozzle angle, swirl sense unknown; placed in the kiln (literature: tip 0.25 m inside, on the axis) in kiln_flame.SLDPRT"
       ],
       "cfd_solid": "kiln_burner.SLDPRT (channels to the tip); the whole burner as envelopes: kiln_burner_body.SLDPRT, sheet kiln_burner_body (not a CFD input)",
       "pid_sheets": [

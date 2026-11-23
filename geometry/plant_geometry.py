@@ -1731,17 +1731,27 @@ def kiln_burner_body(g):
 # The kiln hood and the kiln inlet chamber: gas velocity checks
 # ======================================================================
 def kiln_hood(g):
-    """The hood is the layout's square round the kiln end (side 2 a). The
-    air through it is the secondary air and the tertiary air; at the
-    tertiary air's temperature (the hotter secondary air makes it faster:
-    checked at 1250 K too) the velocity over the square is held to the
-    literature's range."""
+    """The hood as a box on the cooler round the kiln's end (user decision,
+    23 Nov 2026: sized from the kiln's outlet seal). Its back wall, the
+    vertical plane through the kiln's end, closes round the ROTAX outlet
+    seal (its outer radius plus seal_clearance either side and over it;
+    under the kiln the cooler's back wall closes it); it stands on the
+    cooler's roof (cooler_drop under the kiln's bore) and runs over the
+    cooler's hood opening (its depth). The air through it is the
+    secondary air and the tertiary air; at the tertiary air's temperature
+    (and at 1250 K, the hotter secondary air) the velocity over its
+    section (width x height) is held to the literature's range."""
 
     h = g["kiln_hood"]
+    kl, co = kiln(g), cooler(g)
+    seal = next(b for b in kiln_rotax(g)["bodies"] if b["name"] == "outlet_seal")
+    R_seal = seal["p"][1]
+    half_w = R_seal + v(h["seal_clearance"])
+    below = 0.5 * kl["D"] + v(g["layout"]["cooler_drop"])      # the kiln's axis over the cooler's roof
+    W, H, depth = 2.0 * half_w, below + half_w, co["hood_L"]
     bnd = calciner_boundaries(g)["tertiary_air_inlet"]
     m = bnd["flow"] + v(h["secondary_air_flow"])
-    side = 2.0 * layout(g)["a_chamber"]
-    area = side * side
+    area = W * H
 
     def vel(T):
         rho = 101325.0 * bnd["M"] / (R_GAS * T)
@@ -1753,13 +1763,156 @@ def kiln_hood(g):
         "m": m,
         "rho": rho,
         "q": m / rho,
-        "side": side,
+        "R_seal": R_seal,
+        "W": W, "H": H, "depth": depth,
+        "above": half_w, "below": below,     # the roof over, the floor under the kiln's axis
         "area": area,
         "u": vel(bnd["T"]),
         "u_hot": vel(1250.0),
-        "side_min": math.sqrt(m / rho / vmax),
+        "area_min": m / rho / vmax,
         "u_min": v(h["air_velocity_min"]),
         "u_max": vmax,
+    }
+
+
+def kiln_burner_placement(g):
+    """The burner in the kiln's mouth (literature, kiln_hood.burner_*): its
+    tip burner_insertion inside the kiln's end, on (offset from) the
+    kiln's axis, parallel to it (tilted down towards the load by
+    burner_tilt_deg). Kiln frame (kiln()): axis z, the hood end at z = L,
+    y up. The burner's own frame (kiln_burner()): tip at z = 0, the burner
+    back along -z, firing towards +z, y up.
+
+    "R" (rows: the burner's x, y, z axes in the kiln frame) and "t" (the
+    tip): p_kiln = t + R^T p_burner. It fires up the kiln (-z): the
+    burner's +z goes to -z, so its x to -x (a turn about y), then the tilt
+    about x.
+
+    Checked: the castable (refractory) covers the burner pipe all through
+    the hood, so no bare steel stands in the hot gas (the castable's back
+    end past the hood's front wall along the burner's axis)."""
+    h = g["kiln_hood"]
+    kl, hd, body = kiln(g), kiln_hood(g), kiln_burner_body(g)
+    th = math.radians(v(h["burner_tilt_deg"]))
+    c, s = math.cos(th), math.sin(th)
+    R = ((-1.0, 0.0, 0.0), (0.0, c, -s), (0.0, -s, -c))
+    tip = (v(h["burner_offset_x"]), v(h["burner_offset_y"]), kl["L"] - v(h["burner_insertion"]))
+
+    def to_kiln(p):
+        return tuple(tip[i] + sum(R[k][i] * p[k] for k in range(3)) for i in range(3))
+
+    alpha = math.atan(0.01 * kl["slope"])
+    # the hood's front wall (vertical, depth on from the kiln's end) on the burner's axis
+    z_front = kl["L"] + hd["depth"] / math.cos(alpha)
+    z_cast_end = to_kiln((0.0, 0.0, body["z_castable"]))[2]
+    if z_cast_end <= z_front:
+        raise ValueError(f"kiln_burner_placement: the castable ends at z {z_cast_end:.3f}, inside the hood "
+                         f"(its front wall at {z_front:.3f}): bare steel in the hot gas")
+    if math.hypot(tip[0], tip[1]) + 0.5 * body["D_tip"] >= 0.5 * kl["D"]:
+        raise ValueError("kiln_burner_placement: the burner's tip touches the kiln's lining")
+    return {"R": R, "tip": tip, "tilt": th, "to_kiln": to_kiln, "z_front": z_front,
+            "z_castable_end": z_cast_end, "castable_past_front": z_cast_end - z_front}
+
+
+def kiln_flame(g):
+    """The flame zone's CFD fluid volume (user decision, 23 Nov 2026): the
+    hood's inside, the kiln's bore from its end back over the burning zone
+    (kiln.burning_L: where the twin releases the fuel's heat, so the
+    flame ends inside it; no literature flame length was found), and the
+    burner's channels (kiln_burner.SLDPRT, placed by
+    kiln_burner_placement; the macro copies them in), less the burner
+    itself (its tip ring and castable) in the hood and the kiln.
+
+    Kiln frame (kiln()). The hood is level and the kiln falls at its
+    slope towards its end: in the kiln frame the plant's horizontal
+    (towards the cooler) is (0, sin a, cos a) and its up (0, cos a, -sin a).
+    The bore runs on R tan a past the kiln's end so it meets the hood's
+    vertical back wall all round.
+
+    Not modelled (CLAUDE.md rule 10, kiln_hood.md): the clinker bed (as
+    kiln.bas: the bore is all gas; it shades the lower wall and takes the
+    flame's radiation, so wall heat fluxes there read high), doors,
+    refractory detail, the seal's leak air.
+
+    "bodies" as kiln_burner_body(): kinds cyl/fbox; void_* cut from the
+    group once joined. "faces": the boundaries, each a point inside it,
+    its outward normal and its area (the macro names and paints them;
+    every other face is wall)."""
+    kl, hd, co = kiln(g), kiln_hood(g), cooler(g)
+    ch, body, pl = kiln_burner(g), kiln_burner_body(g), kiln_burner_placement(g)
+    st = v(g["kiln_hood"]["flame_stub_L"])
+    alpha = math.atan(0.01 * kl["slope"])
+    sa, ca = math.sin(alpha), math.cos(alpha)
+    Hd, U, X = (0.0, sa, ca), (0.0, ca, -sa), (1.0, 0.0, 0.0)
+    L, R = kl["L"], 0.5 * kl["D"]
+    K = (0.0, 0.0, L)
+
+    def at(h, u, x=0.0):           # the plant's horizontal h, up u, across x from the kiln's end
+        return tuple(K[i] + h * Hd[i] + u * U[i] + x * X[i] for i in range(3))
+
+    bodies = []
+
+    def add(name, kind, p, pts, V, rgb=(0.85, 0.35, 0.1)):
+        xs, ys, zs = zip(*pts)
+        bodies.append({"name": name, "group": "flame", "kind": kind, "p": tuple(p), "V": V,
+                       "box": (min(xs), min(ys), min(zs), max(xs), max(ys), max(zs)), "rgb": rgb})
+
+    def fbox(name, c, e1, e2, e3, a, b, cc):
+        pts = [tuple(c[i] + s1 * 0.5 * a * e1[i] + s2 * 0.5 * b * e2[i] + s3 * 0.5 * cc * e3[i] for i in range(3))
+               for s1 in (-1, 1) for s2 in (-1, 1) for s3 in (-1, 1)]
+        add(name, "fbox", tuple(c) + tuple(e1) + tuple(e2) + tuple(e3) + (a, b, cc), pts, a * b * cc)
+
+    def cyl(name, base, ax, r, Lc):
+        ext = [r * math.sqrt(max(0.0, 1.0 - a * a)) for a in ax]
+        top = tuple(base[i] + Lc * ax[i] for i in range(3))
+        pts = [tuple(cc[i] + sg * ext[i] for i in range(3)) for cc in (base, top) for sg in (-1, 1)]
+        add(name, "cyl", tuple(base) + tuple(ax) + (r, Lc), pts, math.pi * r * r * Lc)
+
+    W, H, depth, above, below = hd["W"], hd["H"], hd["depth"], hd["above"], hd["below"]
+    fbox("hood", at(0.5 * depth, 0.5 * (above - below)), Hd, U, X, depth, H, W)
+    # the kiln's bore over the burning zone, on past its end to the back wall
+    z_cut = L - kl["burning_L"]
+    cyl("kiln_bore", (0.0, 0.0, z_cut), (0.0, 0.0, 1.0), R, kl["burning_L"] + R * math.tan(alpha) * 1.001)
+    # the cooler's two hood segments under the floor (segment 2 twice as deep)
+    seg, cw = co["segment_L"], co["width"]
+    faces = []
+    for k in (1, 2):
+        d = k * st
+        fbox(f"cooler_seg_{k}", at((k - 0.5) * seg, -below - 0.5 * d + 0.0005), Hd, U, X, seg, d + 0.001, cw)
+        faces.append((("secondary_air_in", "tertiary_supply_in")[k - 1], at((k - 0.5) * seg, -below - d), tuple(-u for u in U),
+                      seg * cw, ((1.0, 0.55, 0.0), (0.95, 0.8, 0.1))[k - 1]))
+    # the tertiary air duct's mouth on the roof, over segment 2
+    r_ta = 0.5 * calciner_inlets(g)["tertiary_air"]["D"]
+    h_ta = co["hood_L"] - 0.5 * seg
+    if h_ta + r_ta > depth or h_ta - r_ta < 0.0:
+        raise ValueError("kiln_flame: the tertiary air mouth does not fit on the hood's roof")
+    cyl("tertiary_air_mouth", at(h_ta, above - 0.001), U, r_ta, st + 0.001)
+    faces.append(("tertiary_air_out", at(h_ta, above + st), U, math.pi * r_ta * r_ta, (0.6, 0.2, 0.8)))
+    faces.append(("kiln_gas_out", (0.0, 0.0, z_cut), (0.0, 0.0, -1.0), math.pi * R * R, (0.2, 0.2, 0.9)))
+
+    # the burner out of it: its tip ring, then its castable on through the front wall
+    to_k = pl["to_kiln"]
+    tip = pl["tip"]
+    back = tuple(-pl["R"][2][i] for i in range(3))     # back along the burner (its -z) in the kiln: toward the hood
+    L_ring, L_cast = -body["z_ring"], pl["z_castable_end"] - pl["tip"][2] + 1.0
+    # from the tip face itself: the channels' outlets then share it with the flame volume
+    cyl("void_burner_tip_ring", tip, back, 0.5 * body["D_tip"], L_ring + 0.001)
+    cyl("void_burner_castable", tuple(tip[i] + L_ring * back[i] for i in range(3)), back, body["R_castable"], L_cast)
+    # the channels' inlets (kiln_burner.bas's inlet faces), placed
+    T, LP = ch["plate_t"], ch["plenum_L"]
+    sw0, sw1 = ch["swirl_plenum"]
+    ax0, ax1 = ch["axial_plenum"]
+    nb = tuple(-pl["R"][2][i] for i in range(3))        # the burner's -z (an inlet's outward normal) in the kiln
+    faces.append(("coal_in", to_k((0.0, ch["y_coal"], -ch["L_coal"])), nb, ch["groups"]["coal"]["a_in"], (0.55, 0.0, 0.0)))
+    faces.append(("axial_in", to_k((0.0, 0.5 * (ax0 + ax1), -T - LP)), nb, ch["groups"]["axial"]["a_in"], (0.9, 0.0, 0.0)))
+    faces.append(("swirl_in", to_k((0.0, 0.5 * (sw0 + sw1), -T - LP)), nb, ch["groups"]["swirl"]["a_in"], (1.0, 0.45, 0.45)))
+
+    solid = [b for b in bodies if not b["name"].startswith("void_")]
+    box = tuple(min(b["box"][i] for b in solid) for i in range(3)) + tuple(max(b["box"][i] for b in solid) for i in range(3, 6))
+    return {
+        "bodies": bodies, "faces": faces, "box": box, "z_cut": z_cut, "L_flame": kl["burning_L"],
+        "alpha": alpha, "Hd": Hd, "U": U, "tip": tip, "h_ta": h_ta, "r_ta": r_ta,
+        "groups": {"flame": {"box": box, "V": None, "n": len(bodies)}},
     }
 
 
@@ -2409,7 +2562,8 @@ def layout(g):
     z_kiln_end = v(L["kiln_axis_z"]) - kl["L"] * math.sin(alpha)
     co = cooler(g)
     z_cooler = z_kiln_end - 0.5 * kl["D"] - v(L["cooler_drop"]) - co["casing_height"]
-    z_hood = z_kiln_end - a_ch
+    hd = kiln_hood(g)
+    z_hood = z_kiln_end - hd["below"]               # on the cooler's roof
     # The chamber's section (user sketch, 21 Nov 2026): chamber_section
     x_toe, z_toe = sec["toe"][0], z_ch0 + sec["toe"][1]
     z_ramp_top = z_ch0 + sec["ramp_top"][1]
@@ -2447,8 +2601,8 @@ def layout(g):
         "kiln_end": (x_kiln_end, z_kiln_end),
         "cooler_x": (x_kiln_end, x_kiln_end + co["length"]),
         "cooler_z": (z_cooler, z_cooler + co["casing_height"]),
-        "hood_x": (x_kiln_end, x_kiln_end + 2.0 * a_ch),
-        "hood_z": (z_hood, z_hood + 2.0 * a_ch),
+        "hood_x": (x_kiln_end, x_kiln_end + hd["depth"]),
+        "hood_z": (z_hood, z_hood + hd["H"]),
     }
 
 

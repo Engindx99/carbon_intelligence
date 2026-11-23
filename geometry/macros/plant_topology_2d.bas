@@ -131,6 +131,9 @@ Const KIC_RAMP_DEG                 As Double  = 50#          ' KIC ramp, to the 
 Const KIC_RAMP_FOOT                As Double  = 1.5          ' KIC ramp's level foot, toe to the kiln mouth [model, kiln/kiln_inlet_chamber.md]
 Const KIC_TOP                      As Double  = 5.950031     ' KIC floor level to its top = the calciner's throat foot (the roof's highest point under the throat) [derived]
 Const COOLER_DROP                  As Double  = 1#           ' [schematic, plant_topology.md]
+Const HOOD_L                       As Double  = 5.98         ' kiln hood: depth along x from the kiln's end (the cooler's hood opening) [derived]
+Const HOOD_H                       As Double  = 7.2          ' kiln hood: height, the cooler's roof to the seal's top + clearance [derived]
+Const HOOD_TA_X                    As Double  = 4.485        ' kiln hood: the tertiary air mouth's axis from the kiln's end, x [derived]
 ' END GENERATED
 
 ' Cyclones [m]: D, barrel, cone, vortex finder D, dust outlet D --
@@ -301,7 +304,7 @@ Dim swSkMgr As SldWorks.SketchManager
 
 ' (b) derived layout -- every one computed, none typed in
 Dim kBranch As Double                     ' R1's branch to one twin C1, half its area: 1/sqrt 2 of its D
-Dim aCh As Double, zCh0 As Double         ' chamber: |x| <= aCh, z from zCh0, 2 aCh tall; the hood the same square
+Dim aCh As Double, zCh0 As Double         ' chamber: |x| <= aCh, z from zCh0, 2 aCh tall (the hood: HOOD_L x HOOD_H)
 Dim rampTan As Double                     ' slope of the chamber's ramp, KIC_RAMP_DEG
 Dim zLip As Double, xToe As Double        ' the kiln mouth's lower lip; the ramp's toe, KIC_RAMP_FOOT in from the mouth
 Dim zToe As Double                        ' the toe's height: the foot falls at KILN_SLOPE to the lip
@@ -502,11 +505,12 @@ Private Sub Derive()
     dR1 = 0#                                   ' R1 on C2's axis (17 Nov 2026; it stood over C2's outlet leg)
     zTower = zTop(1) + C1_OUT_R + 0.5 * C1_VD
 
-    ' Cooler under the kiln's discharge, running on in +x; the hood,
-    ' a mirror of the chamber, on it round the kiln's end.
+    ' Cooler under the kiln's discharge, running on in +x; the hood on
+    ' it round the kiln's end (a box sized from the outlet seal, HOOD_L
+    ' deep, HOOD_H tall: kiln_hood(), 23 Nov 2026).
     coolL = COOLER_AREA / COOLER_W
     zCool0 = kBz - 0.5 * KILN_D - COOLER_DROP - COOLER_H
-    zHood0 = kBz - aCh
+    zHood0 = zCool0 + COOLER_H
 
 End Sub
 
@@ -950,7 +954,7 @@ Private Sub DrawPlant()
     UseLayer L_EQUIP
     kSh = 0.5 * KILN_D / Cos(kAlpha)           ' kiln shell above / below its axis, on a vertical
     zTopCh = zCh0 + KIC_TOP
-    zTopHd = zHood0 + 2# * aCh
+    zTopHd = zHood0 + HOOD_H
 
     ' kiln inlet chamber (user sketch, 21 Nov 2026): no roof ledges. The
     ' throat's right wall runs down to the kiln's roof line, then along it
@@ -974,11 +978,11 @@ Private Sub DrawPlant()
     ' in its roof, and to the cooler under it
     Seg kBx, zHood0, kBx, kBz - kSh
     Seg kBx, kBz + kSh, kBx, zTopHd
-    Seg kBx, zTopHd, kBx + aCh - 0.5 * TA_D, zTopHd
-    Seg kBx + aCh + 0.5 * TA_D, zTopHd, kBx + 2# * aCh, zTopHd
-    LineM kBx + 2# * aCh, zTopHd, kBx + 2# * aCh, zHood0
+    Seg kBx, zTopHd, kBx + HOOD_TA_X - 0.5 * TA_D, zTopHd
+    Seg kBx + HOOD_TA_X + 0.5 * TA_D, zTopHd, kBx + HOOD_L, zTopHd
+    LineM kBx + HOOD_L, zTopHd, kBx + HOOD_L, zHood0
     ' cooler: its roof only past the hood
-    PolyM Array(kBx + 2# * aCh, zCool0 + COOLER_H, kBx + coolL, zCool0 + COOLER_H, kBx + coolL, zCool0, _
+    PolyM Array(kBx + HOOD_L, zCool0 + COOLER_H, kBx + coolL, zCool0 + COOLER_H, kBx + coolL, zCool0, _
                 kBx, zCool0, kBx, zCool0 + COOLER_H)
 
     For k = 0 To 1
@@ -1025,17 +1029,17 @@ Private Sub DrawPlant()
     ' The tertiary air rises straight out of the cooler through the hood,
     ' marked as the secondary air is, into its duct on the hood's top;
     ' hot, so on the gas layer as the secondary air.
-    zc = zCool0 + 0.5 * COOLER_H + TA_ARROW_LONG * (zHood0 + 2# * aCh - zCool0 - 0.5 * COOLER_H)
+    zc = zCool0 + 0.5 * COOLER_H + TA_ARROW_LONG * (zHood0 + HOOD_H - zCool0 - 0.5 * COOLER_H)
     If zc >= zTA - TA_BEND_R_OVER_D * TA_D Then Fail "the tertiary air arrow runs up into its duct's bend. Lower TA_ARROW_LONG."
-    PathOut "gas: cooler -> hood (tertiary air)", Array(kBx + aCh, zCool0 + 0.5 * COOLER_H, kBx + aCh, zc)
+    PathOut "gas: cooler -> hood (tertiary air)", Array(kBx + HOOD_TA_X, zCool0 + 0.5 * COOLER_H, kBx + HOOD_TA_X, zc)
     ' up out of the hood, a long-radius bend (its walls arcs), over to the calciner
     zx = TA_BEND_R_OVER_D * TA_D
-    If zHood0 + 2# * aCh >= zTA - zx Then Fail "the tertiary air duct's bend does not fit over the hood."
-    Duct "gas: hood -> tertiary air duct", Array(kBx + aCh, zHood0 + 2# * aCh, kBx + aCh, zTA - zx), TA_D, False, True
-    ArcM kBx + aCh - zx, zTA - zx, zx + rTA, 0#, 0.5 * PI
-    ArcM kBx + aCh - zx, zTA - zx, zx - rTA, 0#, 0.5 * PI
-    Duct "gas: tertiary air duct -> calciner", Array(kBx + aCh - zx, zTA, rCalc, zTA), TA_D, False
-    BodyM Array(rCalc, zTA - rTA, kBx + aCh + rTA, zTA - rTA, kBx + aCh + rTA, zTA + rTA, rCalc, zTA + rTA)
+    If zHood0 + HOOD_H >= zTA - zx Then Fail "the tertiary air duct's bend does not fit over the hood."
+    Duct "gas: hood -> tertiary air duct", Array(kBx + HOOD_TA_X, zHood0 + HOOD_H, kBx + HOOD_TA_X, zTA - zx), TA_D, False, True
+    ArcM kBx + HOOD_TA_X - zx, zTA - zx, zx + rTA, 0#, 0.5 * PI
+    ArcM kBx + HOOD_TA_X - zx, zTA - zx, zx - rTA, 0#, 0.5 * PI
+    Duct "gas: tertiary air duct -> calciner", Array(kBx + HOOD_TA_X - zx, zTA, rCalc, zTA), TA_D, False
+    BodyM Array(rCalc, zTA - rTA, kBx + HOOD_TA_X + rTA, zTA - rTA, kBx + HOOD_TA_X + rTA, zTA + rTA, rCalc, zTA + rTA)
 
     For k = 0 To 1
         sd = 1# - 2# * k
@@ -1127,8 +1131,8 @@ Private Sub DrawPlant()
     ' front wall, level with where the kiln gas starts. The secondary
     ' air rises from the cooler under the hood into the kiln on the gas
     ' layer: it is the stream that runs on through the kiln as its gas.
-    PathOut "air: primary air -> main burner", Array(kBx + 2# * aCh + PRIMARY_AIR_L, kBz + kOff, _
-            kBx + 2# * aCh, kBz + kOff)
+    PathOut "air: primary air -> main burner", Array(kBx + HOOD_L + PRIMARY_AIR_L, kBz + kOff, _
+            kBx + HOOD_L, kBz + kOff)
     UseLayer L_GAS
     PathL "gas: cooler -> hood (secondary air) -> kiln", Array(kBx + SEC_AIR_DX, zCool0 + 0.5 * COOLER_H, _
           kBx + SEC_AIR_DX, kBz + kOff, kBx, kBz + kOff)
@@ -1149,8 +1153,8 @@ Private Sub DrawPlant()
     LabelM kBx + coolL - VENT_IN - 0.3 * TEXT_H * 14 * SHEET_SCALE, zCool0 + COOLER_H + VENT_UP + 1.1, _
            "to cooler vent", 0#
     LabelM kBx + coolL - 1.5 - 0.6 * TEXT_H * 20 * SHEET_SCALE, -CLINKER_OUT_Z + 2#, "to clinker transport", 0#
-    LabelM kBx + 2# * aCh + 1#, zHood0 + 2# * aCh, "HOOD kiln hood", 0#
-    LabelM kBx + 2# * aCh + 0.5, kBz + kOff - 0.3, "primary air", 0#
+    LabelM kBx + HOOD_L + 1#, zHood0 + HOOD_H, "HOOD kiln hood", 0#
+    LabelM kBx + HOOD_L + 1#, kBz + kOff - 0.6, "primary air", 0#
     ' inside the kiln, between its gas and its clinker: the kiln gas
     ' there is the secondary air the burner has fired
     LabelM kBx - 8#, kBz + 0.75, "secondary air", 0#

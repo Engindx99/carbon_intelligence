@@ -594,6 +594,31 @@ kiln_hood:
   secondary_air_flow:  {value: 26.246, unit: kg/s,   source: model,       doc: kiln/kiln_hood.md}
   air_velocity_min:    {value: 4.0,    unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
   air_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_hood.md}
+  # The hood as a box (user decision, 23 Nov 2026: size it from the
+  # kiln's outlet seal): its back wall round the seal, the seal's outer
+  # radius plus this clearance either side and over it (below the kiln
+  # the cooler's back wall closes it); its depth the cooler's hood
+  # opening. No source for the clearance: model (the velocity band's
+  # lower end, 4 m/s, allows at most ~0.33 m).
+  seal_clearance:      {value: 0.25,   unit: m,      source: model,       doc: kiln/kiln_hood.md}
+  # The burner in the kiln mouth (literature, 23 Nov 2026):
+  # - tip inside the hot kiln, grate cooler: FLSmidth JETFLEX installation
+  #   manual (IOM, quoted in search results; ~0.25 m in, adjustable
+  #   +-0.75 m; the full text not read); cemnet practice 0-1 m; "in the
+  #   plane of the kiln nose (hot) or slightly inside" for grate coolers.
+  # - on the kiln axis, parallel to it: "high momentum burners should be
+  #   placed parallel to kiln axis ... basic position on the kiln axis"
+  #   (cemnet forum consensus); tilting into the load gives reducing
+  #   conditions (kiln burning notes). Offsets and tilt 0.
+  burner_insertion:    {value: 0.25,   unit: m,      source: literature,  doc: kiln/kiln_burner.md}
+  burner_offset_x:     {value: 0.0,    unit: m,      source: literature,  doc: kiln/kiln_burner.md}
+  burner_offset_y:     {value: 0.0,    unit: m,      source: literature,  doc: kiln/kiln_burner.md}
+  burner_tilt_deg:     {value: 0.0,    unit: deg,    source: literature,  doc: kiln/kiln_burner.md}
+  # The flame zone's CFD volume: short stubs carry its inlet/outlet faces
+  # off the hood (the cooler's two hood segments under it, segment 2's
+  # twice as deep so the two faces stay apart; the tertiary air duct's
+  # mouth on the roof). No source: model.
+  flame_stub_L:        {value: 0.25,   unit: m,      source: model,       doc: kiln/kiln_hood.md}
 kiln_inlet_chamber:
   gas_velocity_max:    {value: 10.0,   unit: m/s,    source: literature,  doc: kiln/kiln_inlet_chamber.md}
   # The CFD solid's kiln mouth (user decision, 22 Nov 2026): a short

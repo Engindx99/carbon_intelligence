@@ -1096,8 +1096,9 @@ class TheWholeBurnerSolidIsTheSourcesTest(unittest.TestCase):
 
 class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
     """Hood and inlet chamber have no published size (user decision,
-    16 Nov 2026: size by gas velocity): the layout square round the kiln
-    stays because it passes the literature's velocities."""
+    16 Nov 2026: size by gas velocity). The inlet chamber keeps the layout
+    square; the hood is a box round the kiln's outlet seal (user decision,
+    23 Nov 2026) and must still pass the literature's velocities."""
 
     @classmethod
     def setUpClass(cls):
@@ -1108,7 +1109,23 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
         h = self.hood
         self.assertTrue(h["u_min"] <= h["u"] <= h["u_max"], h["u"])
         self.assertTrue(h["u_min"] <= h["u_hot"] <= h["u_max"], h["u_hot"])      # the hotter secondary air too
-        self.assertGreaterEqual(h["side"], h["side_min"])
+        self.assertGreaterEqual(h["area"], h["area_min"])
+        self.assertAlmostEqual(h["area"], h["W"] * h["H"])
+
+    def test_the_hood_holds_the_outlet_seal(self):
+        h = self.hood
+        c = pg.v(self.g["kiln_hood"]["seal_clearance"])
+        self.assertGreaterEqual(0.5 * h["W"], h["R_seal"] + c - 1e-9)
+        self.assertGreaterEqual(h["above"], h["R_seal"] + c - 1e-9)
+        self.assertAlmostEqual(h["above"] + h["below"], h["H"])
+        self.assertEqual(self.g["kiln_hood"]["seal_clearance"]["source"], "model")
+
+    def test_the_hood_stands_on_the_cooler_roof_over_its_two_segments(self):
+        L, co = pg.layout(self.g), pg.cooler(self.g)
+        self.assertAlmostEqual(L["hood_z"][0], L["cooler_z"][1])
+        self.assertAlmostEqual(L["hood_z"][1] - L["hood_z"][0], self.hood["H"])
+        self.assertAlmostEqual(L["hood_x"][0], L["kiln_end"][0])
+        self.assertAlmostEqual(L["hood_x"][1] - L["hood_x"][0], co["hood_L"])
 
     def test_the_chamber_gas_is_under_the_limit_and_above_the_updraft_minimum(self):
         c = self.ch
@@ -1118,7 +1135,6 @@ class TheKilnHoodAndChamberPassTheVelocityChecksTest(unittest.TestCase):
 
     def test_the_square_is_the_layouts_and_a_model_value(self):
         a = pg.layout(self.g)["a_chamber"]
-        self.assertAlmostEqual(self.hood["side"], 2.0 * a)
         self.assertAlmostEqual(self.ch["side"], 2.0 * a)
         self.assertEqual(self.g["layout"]["chamber_margin"]["source"], "model")
 
@@ -1218,3 +1234,106 @@ class TheMealPipesAreTheCalcinersPipeScaledByFluxTest(unittest.TestCase):
         for s in (2, 3, 4):
             with self.subTest(stage=s):
                 self.assertLess(abs(self.mp[s]["dust_over_pipe"] - 1.0), 0.10)
+
+
+class TheBurnerSitsInTheKilnAsTheLiteratureSaysTest(unittest.TestCase):
+    """plant_geometry.kiln_burner_placement(): the burner on the kiln's axis,
+    parallel to it, its tip 0.25 m inside the kiln (literature; user
+    decision, 23 Nov 2026), its castable on past the hood's front wall."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.p, cls.k = pg.kiln_burner_placement(cls.g), pg.kiln(cls.g)
+
+    def test_the_tip_is_inside_the_kiln_on_its_axis(self):
+        h = self.g["kiln_hood"]
+        tip = self.p["tip"]
+        self.assertAlmostEqual(tip[2], self.k["L"] - pg.v(h["burner_insertion"]))
+        self.assertAlmostEqual(tip[0], pg.v(h["burner_offset_x"]))
+        self.assertAlmostEqual(tip[1], pg.v(h["burner_offset_y"]))
+        for key in ("burner_insertion", "burner_offset_x", "burner_offset_y", "burner_tilt_deg"):
+            with self.subTest(key):
+                self.assertEqual(h[key]["source"], "literature")
+
+    def test_the_rotation_is_proper_and_maps_the_burners_back_out_of_the_kiln(self):
+        R = self.p["R"]
+        for i in range(3):
+            for j in range(3):
+                self.assertAlmostEqual(sum(R[i][k] * R[j][k] for k in range(3)), 1.0 if i == j else 0.0)
+        back = self.p["to_kiln"]((0.0, 0.0, -1.0))
+        self.assertGreater(back[2], self.p["tip"][2])        # the burner's back runs out toward the hood
+
+    def test_no_bare_steel_in_the_hood(self):
+        self.assertGreater(self.p["castable_past_front"], 0.0)
+        self.assertGreater(self.p["z_castable_end"], self.p["z_front"])
+
+    def test_the_tip_clears_the_lining(self):
+        body = pg.kiln_burner_body(self.g)
+        r = math.hypot(self.p["tip"][0], self.p["tip"][1]) + body["R_castable"]
+        self.assertLess(r, 0.5 * self.k["D"])
+
+
+class TheFlameVolumeIsHoodBoreAndPlacedChannelsTest(unittest.TestCase):
+    """plant_geometry.kiln_flame(): the flame zone's CFD volume (hood, the
+    kiln's bore over the burning zone, the burner's channels placed) and
+    its seven boundaries."""
+
+    @classmethod
+    def setUpClass(cls):
+        cls.g = pg.load()
+        cls.f, cls.k, cls.hd = pg.kiln_flame(cls.g), pg.kiln(cls.g), pg.kiln_hood(cls.g)
+        cls.faces = {f[0]: f for f in cls.f["faces"]}
+
+    def test_the_seven_boundaries(self):
+        self.assertEqual(set(self.faces), {"secondary_air_in", "tertiary_supply_in", "tertiary_air_out",
+                                           "kiln_gas_out", "coal_in", "axial_in", "swirl_in"})
+        for name, p, n, a, rgb in self.f["faces"]:
+            with self.subTest(name):
+                self.assertAlmostEqual(math.sqrt(sum(c * c for c in n)), 1.0)
+                self.assertGreater(a, 0.0)
+
+    def test_the_inlet_areas_are_the_channel_solids(self):
+        ch = pg.kiln_burner(self.g)["groups"]
+        for name in ("coal", "axial", "swirl"):
+            with self.subTest(name):
+                self.assertAlmostEqual(self.faces[f"{name}_in"][3], ch[name]["a_in"])
+
+    def test_the_kiln_outlet_is_the_bore_at_the_burning_zones_start(self):
+        _, p, n, a, _ = self.faces["kiln_gas_out"]
+        self.assertAlmostEqual(p[2], self.k["L"] - self.k["burning_L"])
+        self.assertAlmostEqual(a, math.pi * 0.25 * self.k["D"] ** 2)
+        self.assertEqual(n, (0.0, 0.0, -1.0))
+
+    def test_the_cooler_openings_are_its_two_hood_segments(self):
+        co = pg.cooler(self.g)
+        for name in ("secondary_air_in", "tertiary_supply_in"):
+            with self.subTest(name):
+                self.assertAlmostEqual(self.faces[name][3], co["segment_L"] * co["width"])
+
+    def test_the_volume_spans_the_bore_and_the_hood(self):
+        x0, y0, z0, x1, y1, z1 = self.f["box"]
+        self.assertAlmostEqual(z0, self.f["z_cut"])
+        self.assertAlmostEqual(x1 - x0, self.hd["W"])
+        self.assertGreater(z1, self.k["L"] + self.hd["depth"] * math.cos(self.f["alpha"]) - 1e-6)
+
+
+@unittest.skipUnless(
+    (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_flame_build.log").is_file(),
+    "no SolidWorks build log here",
+)
+class TheFlameSolidIsTheSourcesTest(unittest.TestCase):
+    """kiln_flame.bas logs the joined body and each boundary face's area."""
+
+    def test_the_build_log(self):
+        log = (REPO_ROOT / "geometry" / "output" / "2500" / "kiln_flame_build.log").read_text(encoding="latin-1")
+        self.assertTrue(log.startswith("kiln_flame built"), log.splitlines()[0])
+        f = pg.kiln_flame(pg.load())
+        m = re.search(r"body flame \((\d+) parts\)", log)
+        self.assertIsNotNone(m)
+        self.assertEqual(int(m.group(1)), f["groups"]["flame"]["n"])
+        for name, p, n, a, rgb in f["faces"]:
+            with self.subTest(name):
+                m = re.search(rf"boundary {name}: 1 face, ([\d.,]+) m2", log)
+                self.assertIsNotNone(m)
+                self.assertAlmostEqual(float(m.group(1).replace(",", ".")), a, delta=1e-5 * max(1.0, a))

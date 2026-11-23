@@ -251,6 +251,9 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `KIC_RAMP_FOOT` | 1.5 | plant_geometry.yaml |
 | `KIC_TOP` | 5.950031 | plant_geometry.yaml |
 | `COOLER_DROP` | 1 | plant_geometry.yaml |
+| `HOOD_L` | 5.98 | plant_geometry.yaml |
+| `HOOD_H` | 7.2 | plant_geometry.yaml |
+| `HOOD_TA_X` | 4.485 | plant_geometry.yaml |
 | `TA_BEND_R_OVER_D` | 1.5 | çizimin kendi Const'u |
 | `ID_FAN_L` | 2.5 | çizimin kendi Const'u |
 | `RM_L` | 0.8 | çizimin kendi Const'u |
@@ -315,7 +318,7 @@ Konumlar ve kotlar (z zeminden, x kalsinatör ekseninden, sağ hat):
 | Kule tepesi (C1 çıkış dirseklerinin tepesi) | z 107.937 |
 | Fırın | (3.400, 10.000) → (77.367, 7.781) |
 | Soğutucu | x 77.367 .. 107.267, z 1.381 .. 4.381 |
-| Fırın başlığı | x 77.367 .. 84.167, z 4.381 .. 11.181 |
+| Fırın başlığı | x 77.367 .. 83.347, z 4.381 .. 11.581 |
 <!-- END GENERATED -->
 
 Fırın giriş odasının düz tabanı yoktur: tabanı fırının alt dudağından odanın sol üst köşesine çıkan bir rampadır. Y kaz boynunun kolları boynun içinden başlar, dirsekle döner, C5'in giriş kotuna iner ve yatay olarak C5 gövdesine girer. R4, R3 ve R2 C5, C4 ve C3'ün çıkış borusudur; R1 C2'nin çıkış borusundan, C2'nin ekseninde dik çıkar. İkiz C1'ler R1'in iki yanında, C2'nin üstünde, birbirinin aynasıdır.

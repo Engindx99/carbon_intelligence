@@ -1,0 +1,396 @@
+{
+  "equipment": "kiln_flame",
+  "drawing": {
+    "macro": "geometry/macros/drawings.bas",
+    "files": [
+      "geometry/drawings/kiln_flame/kiln_flame.pdf",
+      "geometry/drawings/kiln_flame/kiln_flame.dxf"
+    ],
+    "build_log": "geometry/output/2500/drawings_kiln_flame_build.log",
+    "sheet": "A1, ISO 5457 frame, ISO 7200 title block",
+    "projection": "first angle (ISO 5456-2)",
+    "units": "mm"
+  },
+  "source": "geometry/plant_geometry.yaml",
+  "status_rule": "published -> Verified; derived_from_reference, literature, cfd_decision, model -> Estimated; schematic -> not dimensioned; absent -> Unknown (not drawn). A derived value takes the weakest status of its inputs.",
+  "params": [
+    {
+      "key": "kiln_flame.m_air",
+      "label": "Air through the hood (secondary + tertiary)",
+      "value": 81.17099999999999,
+      "unit": "kg/s",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.secondary_air_flow",
+        "calciner.tertiary_air_flow"
+      ],
+      "short": "m_air"
+    },
+    {
+      "key": "kiln_flame.area",
+      "label": "Hood section, width x height",
+      "value": 54.71999999999999,
+      "unit": "m2",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance",
+        "layout.cooler_drop"
+      ],
+      "short": "area"
+    },
+    {
+      "key": "kiln_flame.area_min",
+      "label": "Section the velocity limit needs",
+      "value": 24.77582093688297,
+      "unit": "m2",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.secondary_air_flow",
+        "calciner.tertiary_air_flow",
+        "calciner.tertiary_air_T",
+        "kiln_hood.air_velocity_max"
+      ],
+      "short": "area_min"
+    },
+    {
+      "key": "kiln_flame.u",
+      "label": "Hood air velocity at the tertiary air T (4-10 m/s)",
+      "value": 4.527745054254929,
+      "unit": "m/s",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.secondary_air_flow",
+        "calciner.tertiary_air_flow",
+        "calciner.tertiary_air_T",
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance",
+        "layout.cooler_drop",
+        "kiln_hood.air_velocity_min",
+        "kiln_hood.air_velocity_max"
+      ],
+      "short": "u"
+    },
+    {
+      "key": "kiln_flame.u_hot",
+      "label": "Hood air velocity at 1250 K",
+      "value": 5.273895837318792,
+      "unit": "m/s",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.secondary_air_flow",
+        "calciner.tertiary_air_flow",
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance",
+        "layout.cooler_drop",
+        "kiln_hood.air_velocity_min",
+        "kiln_hood.air_velocity_max"
+      ],
+      "short": "u_hot"
+    },
+    {
+      "key": "kiln_flame.R_seal",
+      "label": "Outlet seal's outer radius (kiln_rotax)",
+      "value": 3.55,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D"
+      ],
+      "value_mm": 3550.0,
+      "short": "R_seal"
+    },
+    {
+      "key": "kiln_hood.seal_clearance",
+      "label": "Back wall round the seal, clearance",
+      "value": 0.25,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.seal_clearance"
+      ],
+      "value_mm": 250.0,
+      "short": "seal_clearance"
+    },
+    {
+      "key": "kiln_flame.hood_W",
+      "label": "Hood inner width (seal + clearance, both sides)",
+      "value": 7.6,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance"
+      ],
+      "value_mm": 7600.0,
+      "short": "hood_W"
+    },
+    {
+      "key": "kiln_flame.hood_H",
+      "label": "Hood inner height (cooler roof to the roof)",
+      "value": 7.199999999999999,
+      "unit": "m",
+      "source": "derived",
+      "status": "Schematic",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln_rotax.outlet_seal_depth",
+        "kiln.D",
+        "kiln_hood.seal_clearance",
+        "layout.cooler_drop"
+      ],
+      "value_mm": 7200.0,
+      "short": "hood_H"
+    },
+    {
+      "key": "kiln_flame.hood_depth",
+      "label": "Hood depth (the cooler's two hood segments)",
+      "value": 5.9799999999999995,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "value_mm": 5980.0,
+      "short": "hood_depth"
+    },
+    {
+      "key": "kiln_flame.segment_L",
+      "label": "Cooler segment under the hood, long",
+      "value": 2.9899999999999998,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "value_mm": 2990.0,
+      "short": "segment_L"
+    },
+    {
+      "key": "kiln_hood.flame_stub_L",
+      "label": "Inlet / outlet stubs (segment 2: twice)",
+      "value": 0.25,
+      "unit": "m",
+      "source": "model",
+      "status": "Estimated",
+      "doc": "kiln/kiln_hood.md",
+      "inputs": [
+        "kiln_hood.flame_stub_L"
+      ],
+      "value_mm": 250.0,
+      "short": "flame_stub_L"
+    },
+    {
+      "key": "kiln_flame.D_ta",
+      "label": "Tertiary air mouth on the roof (the duct's D)",
+      "value": 2.4393,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "calciner/calciner.md",
+      "inputs": [
+        "calciner.D_tertiary_air"
+      ],
+      "value_mm": 2439.3,
+      "short": "D_ta"
+    },
+    {
+      "key": "kiln_flame.h_ta",
+      "label": "Its axis from the back wall (over segment 2)",
+      "value": 4.484999999999999,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "cooler/cooler.md",
+      "inputs": [
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "value_mm": 4485.0,
+      "short": "h_ta"
+    },
+    {
+      "key": "kiln.D",
+      "label": "Kiln bore D (the kiln sheet)",
+      "value": 4.8,
+      "unit": "m",
+      "source": "published",
+      "status": "Verified",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.D"
+      ],
+      "value_mm": 4800.0,
+      "short": "D_bore"
+    },
+    {
+      "key": "kiln_flame.L_flame",
+      "label": "Bore in the volume (the twin's burning zone)",
+      "value": 43.17,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.L",
+        "kiln.transition_L"
+      ],
+      "value_mm": 43170.0,
+      "short": "L_flame"
+    },
+    {
+      "key": "kiln_hood.burner_insertion",
+      "label": "Burner tip inside the kiln mouth",
+      "value": 0.25,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_hood.burner_insertion"
+      ],
+      "value_mm": 250.0,
+      "short": "burner_insertion"
+    },
+    {
+      "key": "kiln_hood.burner_offset_x",
+      "label": "Burner off the kiln axis, across",
+      "value": 0.0,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_hood.burner_offset_x"
+      ],
+      "value_mm": 0.0,
+      "short": "burner_offset_x"
+    },
+    {
+      "key": "kiln_hood.burner_offset_y",
+      "label": "Burner off the kiln axis, up",
+      "value": 0.0,
+      "unit": "m",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_hood.burner_offset_y"
+      ],
+      "value_mm": 0.0,
+      "short": "burner_offset_y"
+    },
+    {
+      "key": "kiln_hood.burner_tilt_deg",
+      "label": "Burner off the kiln axis, tilt",
+      "value": 0.0,
+      "unit": "deg",
+      "source": "literature",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_hood.burner_tilt_deg"
+      ],
+      "short": "burner_tilt_deg"
+    },
+    {
+      "key": "kiln_flame.tip_to_cut",
+      "label": "Burner tip to the kiln gas outlet",
+      "value": 42.92,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln.md",
+      "inputs": [
+        "kiln.L",
+        "kiln.transition_L",
+        "kiln_hood.burner_insertion"
+      ],
+      "value_mm": 42920.0,
+      "short": "tip_to_cut"
+    },
+    {
+      "key": "kiln_flame.castable_past_front",
+      "label": "Burner castable past the hood's front wall (> 0: no bare steel)",
+      "value": 0.3126838463104207,
+      "unit": "m",
+      "source": "derived",
+      "status": "Estimated",
+      "doc": "kiln/kiln_burner.md",
+      "inputs": [
+        "kiln_burner.body_castable_L",
+        "kiln_burner.body_tip_ring_L",
+        "kiln_hood.burner_insertion",
+        "cooler.grate_area",
+        "cooler.width",
+        "cooler.segments",
+        "cooler.hood_segments"
+      ],
+      "value_mm": 312.683846,
+      "short": "castable_past_front"
+    },
+    {
+      "key": "kiln_flame.bed",
+      "label": "Clinker bed in the kiln and on the grate",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_hood.md: not in the volume (as kiln.SLDPRT)",
+      "inputs": [],
+      "short": "u_bed"
+    },
+    {
+      "key": "kiln_flame.doors",
+      "label": "Hood doors, seal leaks, refractory detail",
+      "value": null,
+      "unit": "",
+      "source": "unknown",
+      "status": "Unknown",
+      "doc": "kiln/kiln_hood.md: not modelled",
+      "inputs": [],
+      "short": "u_doors"
+    }
+  ],
+  "dimensioned": [
+    "hood_depth",
+    "segment_L",
+    "D_bore",
+    "D_ta",
+    "tip_to_cut"
+  ],
+  "also_the_sheet_of": []
+}

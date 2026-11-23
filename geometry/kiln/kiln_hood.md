@@ -14,11 +14,15 @@ Başlık için yayınlanmış bir ölçü ya da ölçü kuralı bulunamadı (16 
 | Hız ölçütü, üst | 10 m/s | literatür |
 | Başlıktan geçen hava (ikincil + tersiyer) | 81.17 kg/s | türetilmiş |
 | Hacimsel debi (1073 K) | 247.8 m³/s | türetilmiş |
-| Başlık kesiti (kare, kenar 2a) | 6.80 m | türetilmiş |
-| Kesit alanı | 46.24 m² | türetilmiş |
-| Hız (1073 K) | 5.36 m/s | türetilmiş |
-| Hız (1250 K) | 6.24 m/s | türetilmiş |
-| Ölçütün izin verdiği en küçük kenar | 4.98 m | türetilmiş |
+| Çıkış contasının dış yarıçapı (ROTAX) | 3.55 m | türetilmiş |
+| Conta çevresindeki pay | 0.25 m | modelleme |
+| Başlık genişliği (2 × (conta + pay)) | 7.60 m | türetilmiş |
+| Başlık yüksekliği (soğutucu tavanından contanın üstüne) | 7.20 m | türetilmiş |
+| Başlık derinliği (soğutucunun başlık açıklığı) | 5.98 m | türetilmiş |
+| Kesit alanı (genişlik × yükseklik) | 54.72 m² | türetilmiş |
+| Hız (1073 K) | 4.53 m/s | türetilmiş |
+| Hız (1250 K) | 5.27 m/s | türetilmiş |
+| Ölçütün izin verdiği en küçük kesit | 24.78 m² | türetilmiş |
 <!-- END GENERATED -->
 
 ## Dayanak
