@@ -287,21 +287,23 @@ def calciner_inlets(g):
 
 def dispersion_box(g, wall_R, D, z_bottom):
     """The dispersion box on a vessel wall of radius wall_R (yaml
-    dispersion_box), for a meal pipe of bore D: a wedge. Its section in the
-    inlet's plane (rho radial out from the vessel axis, z): the top level
-    at z_top, the back face vertical at rho_out = R + depth, back_h high,
-    the floor a ramp falling at floor_slope_deg from the back face's foot
-    down to the chord plane rho_in = sqrt(R^2 - (w/2)^2) (the open face, H
-    high, its bottom at z_bottom); across the wall it is w wide, so its
-    corners meet the cylinder and what is inside the cylinder dissolves in
-    the merge. A vertical pipe of bore D stands on the top face at
-    rho_pipe = rho_out - depth/2 (D clear of the wall), pipe_rise high; the
-    meal enters at its top face (normal +z).
+    dispersion_box), for a meal pipe of bore D: a wedge cut flat. Its section
+    in the inlet's plane (rho radial out from the vessel axis, z): the open
+    face is a flat window in the tangent plane rho = R, H high; the floor
+    is level from the chord plane rho_in = sqrt(R^2 - (w/2)^2) (inside the
+    wall's thickness, where the cylinder's curve is hidden) to the tangent
+    plane, then a ramp at floor_slope_deg up to the back face at rho_out =
+    R + depth, back_h under the top, which is level at z_top. Across the wall it
+    is w wide, its sides planes: seen from outside, the box ends on the tangent
+    plane in straight edges; the flat lead-in meets the cylinder in the sliver
+    between the tangent plane and the wall, which the vessel's thickness hides.
+    A vertical pipe of bore D stands on the top face at rho_pipe = rho_out -
+    depth/2 (D clear of the wall), pipe_rise high; the meal enters at its top
+    face (normal +z).
 
-    Volumes outside the vessel, closed form: with L(y) = rho_out -
-    sqrt(R^2 - y^2) the box's length at y, its height at rho is back_h +
-    (rho_out - rho) tan, so the volume is the integral over the width of
-    back_h L + tan L^2 / 2, and the pipe's pi r^2 L."""
+    Volumes outside the vessel, closed form: with S1 = the integral of
+    sqrt(R^2 - y^2) over the width, the lead-in's H (w R - S1) plus the ramp
+    part (back_h depth + tan depth^2 / 2) w, and the pipe's pi r^2 L."""
     b = g["dispersion_box"]
     w = v(b["width_over_D_feed"]) * D
     depth = v(b["depth_over_D_feed"]) * D
@@ -313,20 +315,18 @@ def dispersion_box(g, wall_R, D, z_bottom):
         raise ValueError(f"dispersion box width {w:.3f} m does not fit a vessel of radius {wall_R:.3f} m")
     rho_in = math.sqrt(wall_R * wall_R - h * h)
     rho_out = wall_R + depth
-    H = back_h + (rho_out - rho_in) * tan
+    H = back_h + depth * tan
     rho_p = rho_out - 0.5 * depth                              # the pipe's axis, over the box's outer half
     r = 0.5 * D
     if rho_p - r <= wall_R:
         raise ValueError("the dispersion box's pipe reaches into the vessel")
     s1 = h * rho_in + wall_R * wall_R * math.asin(h / wall_R)  # integral of sqrt(R^2 - y^2) over -h..h
-    i_l = w * rho_out - s1                                     # integral of L dy
-    i_l2 = w * rho_out ** 2 - 2.0 * rho_out * s1 + (2.0 * wall_R ** 2 * h - 2.0 * h ** 3 / 3.0)   # of L^2 dy
-    v_box = back_h * i_l + 0.5 * tan * i_l2
+    v_box = H * (w * wall_R - s1) + w * (back_h * depth + 0.5 * tan * depth * depth)
     v_pipe = math.pi * r * r * rise
     z_top = z_bottom + H
     return {
         "D": D, "width": w, "depth": depth, "back_h": back_h, "slope_deg": v(b["floor_slope_deg"]),
-        "height": H, "rho_in": rho_in, "rho_out": rho_out, "rho_pipe": rho_p,
+        "height": H, "rho_in": rho_in, "rho_flat": wall_R, "rho_out": rho_out, "rho_pipe": rho_p,
         "z_bottom": z_bottom, "z_top": z_top, "z_centre": z_bottom + 0.5 * H,
         "z_back_foot": z_top - back_h,
         "pipe_rise": rise, "z_pipe_top": z_top + rise,
@@ -2452,17 +2452,23 @@ def meal_routes(g):
     e = (cal_in["end"][0], 0.0, z0 + cal_in["end"][1])
     pipes.append({"name": "C4", "stage": 4, "to": "calciner dispersion box",
                   "pts": [p0, p1, (e[0], e[1], e[2] + 1.0), (e[0], e[1], e[2] - 0.1)]})
-    # C5 -> the calciner's throat: its wall at mid height, towards C5
+    # C5 -> the calciner's throat: a dispersion box on its wall at mid height, towards C5
+    # (user 28 Nov 2026: every meal inlet gets the box); the pipe ends in a vertical run onto it
     cal = calciner(g)
     p0 = cols[5] + (lay["z_dust"][5],)
     p1 = (p0[0], p0[1], p0[2] - v(mr["c5_drop"]))
     u = unit((0.0, 0.0), cols[5])
-    t = (cal["r_throat"] * u[0], cal["r_throat"] * u[1], z0 + 0.5 * cal["z_throat_top"])
     r5 = 0.5 * mp[5]["D"]
-    d = [t[k] - p1[k] for k in range(3)]
-    n_ = math.sqrt(sum(x * x for x in d))
-    pipes.append({"name": "C5", "stage": 5, "to": "calciner throat",
-                  "pts": [p0, p1, tuple(t[k] + r5 * d[k] / n_ for k in range(3))]})
+    z_mid = z0 + 0.5 * cal["z_throat_top"]
+    box = dispersion_box(g, cal["r_throat"], mp[5]["D"], 0.0)
+    box = dispersion_box(g, cal["r_throat"], mp[5]["D"], z_mid - 0.5 * box["height"])
+    P = (box["rho_pipe"] * u[0], box["rho_pipe"] * u[1])
+    p2 = (P[0], P[1], box["z_top"] + v(mr["c5_box_drop"]))
+    p3 = (P[0], P[1], box["z_top"] - 0.1)
+    if p2[2] >= p1[2]:
+        raise ValueError("meal_routes C5: no room to drop onto the throat's dispersion box")
+    pipes.append({"name": "C5", "stage": 5, "to": "calciner throat dispersion box", "pts": [p0, p1, p2, p3],
+                  "entry": {"box": box, "A": (0.0, 0.0), "away": u, "R": cal["r_throat"], "z_in": z_mid}})
 
     lo = v(mr["min_slope"])
     for q in pipes:
@@ -2573,11 +2579,12 @@ def tertiary_air_duct_bodies(g):
 
 def meal_dispersion_boxes(g):
     """The dispersion box (dispersion_box(): one design, the pipe's own
-    bore) at each meal pipe's entry into a riser, as meal_routes() lays
-    them (C1 -> R2, C2 -> R3, C3 -> R4, both strings): the cube, axis-
-    aligned (the pipes come in along x or y), from the chord plane out by
-    its edge. C4's and C5's meal goes into the calciner, whose CFD solid
-    carries its boxes."""
+    bore) at each meal pipe's entry onto a wall, as meal_routes() lays them
+    (C1 -> R2, C2 -> R3, C3 -> R4, C5 -> the calciner's throat, both strings).
+    C4's meal goes into the calciner, whose CFD solid carries its boxes.
+    Each: the oriented wedge's section frame (centre of its run on the floor,
+    the outward unit vector u, width, run, height, slope, level lead-in) and
+    the exact extents of its eight corners (the box as a polyhedron)."""
     out = []
     for q in meal_routes(g):
         e = q.get("entry")
@@ -2586,16 +2593,25 @@ def meal_dispersion_boxes(g):
         b = e["box"]
         ax, ay = e["A"]
         ux, uy = e["away"]
+        nx, ny = -uy, ux
         hw = 0.5 * b["width"]
-        lo, hi = b["rho_in"], b["rho_out"]
-        if abs(ux) > 0.5:
-            xs = sorted((ax + ux * lo, ax + ux * hi))
-            ys = (ay - hw, ay + hw)
-        else:
-            ys = sorted((ay + uy * lo, ay + uy * hi))
-            xs = (ax - hw, ax + hw)
-        out.append({"name": f"dbox_{q['name']}_{q['string']}", "box": (xs[0], ys[0], b["z_bottom"], xs[1], ys[1], b["z_top"]),
-                    "V": b["width"] * (b["rho_out"] - b["rho_in"]) * b["height"], "dims": b})
+        # the section polygon (s along u, z): floor level to the tangent plane, the ramp up to the back face's foot
+        pts = [(b["rho_in"], b["z_bottom"]), (b["rho_flat"], b["z_bottom"]), (b["rho_out"], b["z_back_foot"])]
+        if b["back_h"] > 1e-9:
+            pts.append((b["rho_out"], b["z_top"]))
+        pts.append((b["rho_in"], b["z_top"]))
+        if b["back_h"] > 1e-9:
+            raise NotImplementedError("a back face on the wedge body")
+        corners = [(ax + ux * sr + nx * t, ay + uy * sr + ny * t, z) for sr, z in pts for t in (-hw, hw)]
+        lo = tuple(min(c[k] for c in corners) for k in range(3))
+        hi = tuple(max(c[k] for c in corners) for k in range(3))
+        run = b["rho_out"] - b["rho_in"]
+        tan = math.tan(math.radians(b["slope_deg"]))
+        out.append({"name": f"dbox_{q['name']}_{q['string']}", "box": lo + hi, "away": (ux, uy), "dims": b,
+                    "centre": (ax + ux * (b["rho_in"] + 0.5 * run), ay + uy * (b["rho_in"] + 0.5 * run)),
+                    "run": run,
+                    # the wedge body: the lead-in (rho_in .. R) at full height, the ramp beyond
+                    "V": b["width"] * ((b["rho_flat"] - b["rho_in"]) * b["height"] + 0.5 * tan * b["depth"] ** 2)})
     return out
 
 
@@ -2607,11 +2623,15 @@ def meal_pipe_bodies(g):
     ORANGE = (0.93, 0.55, 0.13)
     for q in meal_routes(g):
         bodies += _polyline_bodies(f"meal_{q['name']}_{q['string']}", q["pts"], 0.5 * q["D"], ORANGE)
-    # a dispersion box at each riser entry (the cube; its open face on the riser's wall)
+    # a dispersion box at each wall entry: the wedge (level top, level lead-in, 60 deg floor ramp), kind "owedge"
     for b in meal_dispersion_boxes(g):
-        x0, y0, z0, x1, y1, z1 = b["box"]
-        bodies.append({"name": b["name"], "kind": "box", "p": (x0, x1, y0, y1, z0, z1), "V": b["V"],
-                       "box": b["box"], "rgb": (0.55, 0.55, 0.6)})
+        d = b["dims"]
+        cx, cy = b["centre"]
+        ux, uy = b["away"]
+        bodies.append({"name": b["name"], "kind": "owedge",
+                       "p": (cx, cy, d["z_bottom"], ux, uy, d["width"], b["run"], d["height"], d["slope_deg"],
+                             d["rho_flat"] - d["rho_in"]),
+                       "V": b["V"], "box": b["box"], "rgb": (0.55, 0.55, 0.6)})
     return bodies
 
 

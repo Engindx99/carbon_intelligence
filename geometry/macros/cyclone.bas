@@ -68,7 +68,7 @@ Const RISER_TAPER_DEG              As Double  = 15#          ' [cfd_decision, pr
 Const RISER_IN_CLEAR               As Double  = 0.3          ' [model, preheater/cyclone_C4.md]
 Const RISER_IN_STUB_OVER_D         As Double  = 1#           ' [model, preheater/cyclone_C4.md]
 Const D_RISER_SRC                  As Double  = 3.15         ' R1 inner D = C2's D_x [derived]
-Const BOX_WIDTH_OVER_D             As Double  = 2.7          ' dispersion box width, x the feed pipe's D [model, calciner/calciner.md]
+Const BOX_WIDTH_OVER_D             As Double  = 2.16         ' dispersion box width, x the feed pipe's D [model, calciner/calciner.md]
 Const BOX_DEPTH_OVER_D             As Double  = 1.25         ' its back face out past the wall, x D [model, calciner/calciner.md]
 Const BOX_BACK_H_OVER_D            As Double  = 0#           ' its back face's height, x D [model, calciner/calciner.md]
 Const BOX_SLOPE_DEG                As Double  = 60#          ' its floor ramp to the horizontal [model, calciner/calciner.md]
@@ -594,17 +594,17 @@ Dim wRefSet As Boolean
 Dim vEquip As Double, vDuctFree As Double, vPipe As Double, vWall As Double
 Dim vElbow As Double, vLeg As Double
 Dim vRiserBend As Double, vRiser As Double, vFeed As Double
-' C1's dispersion box (user decision, 28 Nov 2026) in place of the sloped chute: a wedge on the
-' riser's -x side at y = yMid: its section in the plane y = yMid (rho radial out from the riser
-' axis towards -x, z) a triangle (or, with a back face, a trapezoid) -- the top level at boxZ1, the
-' floor a ramp falling at BOX_SLOPE_DEG from the top's outer edge (rho = boxRout) to the open face
-' on the chord plane rho = boxRin -- boxW wide across (y); a vertical round meal pipe (D =
-' FEED_W) on its top face at rho = boxRp, its top face the meal_feed. As calciner.bas builds it.
+' C1's dispersion box (user decision, 28 Nov 2026) in place of the sloped chute: a wedge cut flat on
+' the riser's -x side at y = yMid. Its section in the plane y = yMid (rho radial out from the riser
+' axis towards -x, z): the top level at boxZ1, the floor level at boxZ0 from the chord plane
+' rho = boxRin (inside the wall's thickness) to the tangent plane rho = r, then a ramp at BOX_SLOPE_DEG
+' up to the back face at boxRout; boxW wide across (y); a vertical round meal pipe (D = FEED_W) on its
+' top face at rho = boxRp, its top face the meal_feed. As calciner.bas builds it.
 Dim boxW As Double, boxBackH As Double, boxH As Double, boxTan As Double
 Dim boxRin As Double, boxRout As Double, boxRp As Double
 Dim boxZ0 As Double, boxZ1 As Double, boxZFoot As Double, zPipeTop As Double, boxMidZ As Double
 Dim pipeLen As Double, pipeMidZ As Double, rFeedPipe As Double, vStage10 As Double
-Dim s1 As Double, iL As Double, iL2 As Double
+Dim s1 As Double
 Dim uSignB As Double, vSignB As Double, uSignP As Double, vSignP As Double
 
 Dim vTransLo As Double, vTransHi As Double, vTransMid As Double
@@ -1141,7 +1141,7 @@ Private Sub Derive()
     boxRin = Sqr(rRiser * rRiser - 0.25 * boxW * boxW)
     boxRout = rRiser + BOX_DEPTH_OVER_D * FEED_W
     boxRp = boxRout - 0.5 * BOX_DEPTH_OVER_D * FEED_W
-    boxH = boxBackH + (boxRout - boxRin) * boxTan
+    boxH = boxBackH + (boxRout - rRiser) * boxTan
     boxMidZ = zFeed
     boxZ0 = zFeed - 0.5 * boxH
     boxZ1 = zFeed + 0.5 * boxH
@@ -1170,13 +1170,12 @@ Private Sub Derive()
     ' The chute starts on the riser's axis and runs out through the
     ' wall. A line of it at (y, w) in its section leaves the riser
     ' where the horizontal reach s cos + w sin equals sqrt(r^2 - y^2);
-    ' what the merge keeps outside the riser: with L(y) = boxRout - sqrt(r^2 - y^2) the box's
-    ' length at y and its height boxBackH + boxTan (boxRout - rho) at rho, the integral over the
-    ' width of boxBackH L + boxTan L^2 / 2; plus the pipe
+    ' what the merge keeps outside the riser: the lead-in (rho_in .. r) at the full height over what is
+    ' outside the cylinder (w r less the integral of sqrt(r^2 - y^2) over the width), the ramp and
+    ' back face beyond r, the pipe on top
     s1 = 0.5 * boxW * boxRin + rRiser * rRiser * ASin(0.5 * boxW / rRiser)
-    iL = boxW * boxRout - s1
-    iL2 = boxW * boxRout * boxRout - 2# * boxRout * s1 + 2# * rRiser * rRiser * 0.5 * boxW - 2# * (0.5 * boxW) ^ 3 / 3#
-    vFeed = boxBackH * iL + 0.5 * boxTan * iL2 + PI * rFeedPipe * rFeedPipe * BOX_PIPE_RISE
+    vFeed = boxH * (boxW * rRiser - s1) + boxW * (boxBackH * (boxRout - rRiser) + 0.5 * boxTan * (boxRout - rRiser) ^ 2) + _
+            PI * rFeedPipe * rFeedPipe * BOX_PIPE_RISE
 
     vStage1 = vEquip                       ' barrel + cone
     vStage2 = vStage1 + vDuctFree          ' + inlet duct
@@ -3035,20 +3034,21 @@ Private Function AddFeedBox(planeBox As SldWorks.Feature, planePipe As SldWorks.
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
     Dim f As SldWorks.Feature
-    Dim cx(3) As Double, cz(3) As Double
-    Dim u(3) As Double, w(3) As Double
+    Dim cx(4) As Double, cz(4) As Double
+    Dim u(4) As Double, w(4) As Double
     Dim u0 As Double, w0 As Double
     Dim i As Long, j As Long, nP As Long
 
     cx(0) = xRiser - boxRin:  cz(0) = boxZ0
-    cx(1) = xRiser - boxRout: cz(1) = boxZFoot
+    cx(1) = xRiser - rRiser:  cz(1) = boxZ0
+    cx(2) = xRiser - boxRout: cz(2) = boxZFoot
     If boxBackH > 0.0001 Then
-        cx(2) = xRiser - boxRout: cz(2) = boxZ1
+        cx(3) = xRiser - boxRout: cz(3) = boxZ1
+        cx(4) = xRiser - boxRin:  cz(4) = boxZ1
+        nP = 5
+    Else
         cx(3) = xRiser - boxRin:  cz(3) = boxZ1
         nP = 4
-    Else
-        cx(2) = xRiser - boxRin:  cz(2) = boxZ1
-        nP = 3
     End If
     uSign = uSignB: vSign = vSignB
     swModel.ClearSelection2 True

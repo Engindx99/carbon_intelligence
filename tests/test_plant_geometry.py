@@ -326,11 +326,12 @@ class DispersionBoxGeometryTest(unittest.TestCase):
 
     def test_the_wedge_and_its_pipe(self):
         m, R, D = self.meal, self.cal["R"], self.meal["D"]
-        self.assertAlmostEqual(m["width"], 2.7 * D, places=12)
+        self.assertAlmostEqual(m["width"], pg.v(self.b["width_over_D_feed"]) * D, places=12)
         self.assertAlmostEqual(m["rho_out"], R + 1.25 * D, places=12)
         self.assertAlmostEqual(math.hypot(m["rho_in"], 0.5 * m["width"]), R, places=12)   # the open face's corners on the cylinder
-        # the ramp falls at its slope from the back face's foot to the open face
-        run = m["rho_out"] - m["rho_in"]
+        # the floor is level to the tangent plane, then the ramp rises at its slope to the back face's foot
+        run = m["rho_out"] - R
+        self.assertAlmostEqual(m["rho_flat"], R, places=12)
         self.assertAlmostEqual((m["z_back_foot"] - m["z_bottom"]) / run, math.tan(math.radians(60.0)), places=12)
         self.assertAlmostEqual(m["z_top"] - m["z_bottom"], m["back_h"] + run * math.tan(math.radians(60.0)), places=12)
         self.assertAlmostEqual(m["rho_pipe"], m["rho_out"] - 0.5 * 1.25 * D, places=12)   # on the top face, in its outer half
@@ -352,8 +353,9 @@ class DispersionBoxGeometryTest(unittest.TestCase):
         vol = 0.0
         for k in range(n):
             y = -h + (k + 0.5) * dy
-            L = m["rho_out"] - math.sqrt(R * R - y * y)
-            vol += (m["back_h"] * L + 0.5 * tan * L * L) * dy
+            cyl = math.sqrt(R * R - y * y)
+            L = m["rho_out"] - R
+            vol += (m["height"] * (R - cyl) + m["back_h"] * L + 0.5 * tan * L * L) * dy
         self.assertAlmostEqual(m["box_volume"], vol, delta=1e-6)
         self.assertAlmostEqual(m["volume"], m["box_volume"] + m["pipe_volume"], places=12)
 
@@ -363,7 +365,7 @@ class DispersionBoxGeometryTest(unittest.TestCase):
 
     def test_a_box_that_does_not_fit_is_refused(self):
         with self.assertRaises(ValueError):
-            pg.dispersion_box(self.g, 1.0, self.meal["D"], 0.0)
+            pg.dispersion_box(self.g, 0.8, self.meal["D"], 0.0)
 
 
 CALCINER_LOG = REPO_ROOT / "geometry" / "output" / "2500" / "calciner_build.log"
@@ -437,13 +439,13 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
             (z_ta, ta["z"], "tertiary air z"),
             (y_ta, ta["y_end"], "tertiary air face y"),
             (v_ta, ta["volume"], "tertiary air volume"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[0], meal["width"], "box width"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[1], meal["rho_out"], "box back rho"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[2], meal["back_h"], "box back height"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[4], meal["rho_in"], "box rho in"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[5], meal["height"], "box height"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[6], meal["z_bottom"], "box bottom z"),
-            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[7], meal["z_top"], "box top z"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[0], meal["width"], "box width"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[1], meal["rho_out"], "box back rho"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[2], meal["back_h"], "box back height"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[4], meal["rho_in"], "box rho in"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[5], meal["height"], "box height"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[6], meal["z_bottom"], "box bottom z"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the window in the tangent plane \(flat lead-in from rho # m\), # m high, z # \.\. # m")[7], meal["z_top"], "box top z"),
             (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[0], meal["end"][0], "meal end x"),
             (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[1], meal["end"][1], "meal end z"),
             (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[2], meal["volume"], "meal volume"),
@@ -1897,7 +1899,7 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
                 self.assertEqual(q["pts"][-1][:2], q["pts"][-2][:2], q["name"])
                 A = self.tl["cols"][b]
                 self.assertAlmostEqual(math.dist(q["pts"][-1][:2], A), box["rho_pipe"], places=9, msg=q["name"])
-                self.assertAlmostEqual(box["width"], 2.7 * q["D"], places=9, msg=q["name"])
+                self.assertAlmostEqual(box["width"], pg.v(self.g["dispersion_box"]["width_over_D_feed"]) * q["D"], places=9, msg=q["name"])
             if q["name"] in ("C2", "C3"):
                 self.assertGreater(q["riser_clearance"], 0.2, q["name"])
 
@@ -1908,7 +1910,7 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
         one = {q["name"]: q for q in self.r if q["string"] == 1}
         for k in ("width", "pipe_rise", "D"):
             self.assertAlmostEqual(one["C2"]["entry"]["box"][k], one["C3"]["entry"]["box"][k], places=9, msg=k)
-        self.assertEqual(len(pg.meal_dispersion_boxes(self.g)), 8)             # four entries a string, two strings
+        self.assertEqual(len(pg.meal_dispersion_boxes(self.g)), 10)            # C1 x2, C2, C3, C5 a string, two strings
 
     def test_c4_and_c5_end_in_their_targets(self):
         lay, sec = pg.layout(self.g), pg.chamber_section(self.g)
@@ -1918,13 +1920,16 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
         # C4 comes down vertically 0.1 m into the calciner's box pipe (its top face is `e`)
         self.assertAlmostEqual(math.dist(one["C4"]["pts"][-1], e), 0.1, places=9)
         self.assertEqual(one["C4"]["pts"][-1][:2], e[:2])
-        # C5 into the calciner's throat (user, 24 Nov 2026), its wall at mid height
+        # C5 onto a dispersion box on the calciner's throat wall (user, 28 Nov 2026), at mid height
         cal = pg.calciner(self.g)
-        p = one["C5"]["pts"][-1]
+        q = one["C5"]
+        box = q["entry"]["box"]
         z0 = lay["z_calciner_throat"]
-        self.assertLess(math.hypot(p[0], p[1]), cal["r_throat"])
-        self.assertGreater(p[2], z0)
-        self.assertLess(p[2], z0 + cal["z_throat_top"])
+        self.assertAlmostEqual(box["z_centre"], z0 + 0.5 * cal["z_throat_top"], places=9)
+        self.assertAlmostEqual(math.hypot(*q["pts"][-1][:2]), box["rho_pipe"], places=9)
+        self.assertAlmostEqual(q["pts"][-1][2], box["z_top"] - 0.1, places=9)
+        self.assertGreater(box["z_bottom"], z0)
+        self.assertLess(box["z_top"], z0 + cal["z_throat_top"])                    # the box stays in the straight throat
 
     def test_the_straight_runs_clear_the_calciner_and_c5(self):
         """the C4 and C5 runs, sampled, against the calciner's cylinder and

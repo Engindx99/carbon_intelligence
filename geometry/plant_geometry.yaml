@@ -218,7 +218,7 @@ calciner:
 #   floor_slope_deg     the ramp, to the horizontal; the open face's height
 #                       follows (back height + run x tan)
 dispersion_box:
-  width_over_D_feed:   {value: 2.7,  unit: "-",   source: model,        doc: calciner/calciner.md}
+  width_over_D_feed:   {value: 2.16,  unit: "-",   source: model,        doc: calciner/calciner.md}
   depth_over_D_feed:   {value: 1.25, unit: "-",   source: model,        doc: calciner/calciner.md}
   back_height_over_D_feed: {value: 0.0, unit: "-", source: model,       doc: calciner/calciner.md}
   floor_slope_deg:     {value: 60.0, unit: deg,   source: model,        doc: calciner/calciner.md}
@@ -875,6 +875,9 @@ meal_route:
   entry_up:            {value: 1.5,  unit: m,     source: schematic,    doc: plant_topology.md}
   c4_drop:             {value: 1.5,  unit: m,     source: model,        doc: plant_topology.md}
   c5_drop:             {value: 1.0,  unit: m,     source: schematic,    doc: plant_topology.md}
+  # C5's vertical run onto the throat's dispersion box (user 28 Nov 2026), short so the run above
+  # it stays at min_slope or steeper
+  c5_box_drop:         {value: 0.2,  unit: m,     source: model,        doc: plant_topology.md}
   # the least slope of a straight run (C4, C5): raw meal's angle of
   # repose (kiln.repose_angle, 40 deg) and a margin; the
   # pipes the slope rule lays run at meal_slope (60 deg)

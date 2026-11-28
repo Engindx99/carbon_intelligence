@@ -79,7 +79,7 @@ Const FEED_SLOPE_DEG               As Double  = 60#          ' below the horizon
 Const FEED_DEPTH                   As Double  = 1#           ' meal and fuel pipes past the wall [model, calciner/calciner.md]
 Const D_FUEL                       As Double  = 0.2828       ' [literature, calciner/calciner.md]
 Const FUEL_SLOPE_DEG               As Double  = 30#          ' below the horizontal [literature, calciner/calciner.md]
-Const BOX_WIDTH_OVER_D             As Double  = 2.7          ' dispersion box width, x D_FEED (the meal pipe's bore) [model, calciner/calciner.md]
+Const BOX_WIDTH_OVER_D             As Double  = 2.16         ' dispersion box width, x D_FEED (the meal pipe's bore) [model, calciner/calciner.md]
 Const BOX_DEPTH_OVER_D             As Double  = 1.25         ' its back face out past the wall, x D_FEED [model, calciner/calciner.md]
 Const BOX_BACK_H_OVER_D            As Double  = 0#           ' its back face's height, x D_FEED [model, calciner/calciner.md]
 Const BOX_SLOPE_DEG                As Double  = 60#          ' its floor ramp to the horizontal [model, calciner/calciner.md]
@@ -286,7 +286,7 @@ Dim yTAEnd As Double                        ' its face, the tertiary_air_inlet, 
 ' axis: it starts at rho0, one pipe diameter inside the wall, rises
 ' away from it at its slope (axis e = (c, s) in rho, z), meets the
 ' wall at zFeed and ends FEED_DEPTH past it.
-Dim rFeed As Double, s1 As Double, iL As Double, iL2 As Double
+Dim rFeed As Double, s1 As Double
 Dim xFeedEnd As Double, zFeedEnd As Double  ' centre of the end face, the meal_feed, at x = +-xFeedEnd
 Dim xFeedMax As Double                      ' |x| of the end faces' outer edges
 Dim zFeed As Double                         ' where each meal and fuel pipe's axis meets the wall
@@ -302,12 +302,12 @@ Dim uSignX As Double, vSignX As Double      ' the x = 0 plane, for the revolve p
 Dim uSignY As Double, vSignY As Double      ' the y = 0 plane, for the feed pipes
 Dim uSignO As Double, vSignO As Double      ' y = -gnYoff, the arms' plane
 
-' The dispersion boxes (user decision, 28 Nov 2026): a wedge on the wall at +-x. Its
-' section in the y = 0 plane (rho radial, z): the top level at boxZ1, the back face
-' vertical at boxRout, boxBackH high, the floor a ramp falling at BOX_SLOPE_DEG from the
-' back face's foot (boxZFoot) to the open face on the chord plane rho = boxRin, boxH high
-' with its bottom at boxZ0; boxW wide across. A vertical meal pipe stands on its top
-' face at rho = boxRp, its top face the meal_feed.
+' The dispersion boxes (user decision, 28 Nov 2026): a wedge cut flat, on the wall at +-x. Its
+' section in the y = 0 plane (rho radial, z): the top level at boxZ1; the floor level at boxZ0 from
+' the chord plane rho = boxRin (inside the wall's thickness, the cylinder's curve hidden) to the
+' tangent plane rho = R, then a ramp at BOX_SLOPE_DEG up to the back face at boxRout (boxBackH
+' under the top); boxH high at the open window in the tangent plane, boxW wide across. A vertical
+' meal pipe stands on its top face at rho = boxRp, its top face the meal_feed.
 Dim boxW As Double, boxBackH As Double, boxH As Double, boxTan As Double
 Dim boxRin As Double, boxRout As Double, boxRp As Double
 Dim boxZ0 As Double, boxZ1 As Double, boxZFoot As Double, zPipeTop As Double
@@ -496,7 +496,7 @@ Private Sub Derive()
     boxRin = Sqr(R * R - 0.25 * boxW * boxW)
     boxRout = R + BOX_DEPTH_OVER_D * D_FEED
     boxRp = boxRout - 0.5 * BOX_DEPTH_OVER_D * D_FEED
-    boxH = boxBackH + (boxRout - boxRin) * boxTan
+    boxH = boxBackH + (boxRout - R) * boxTan
     boxZ0 = zTA + rTA + FEED_ABOVE_TA
     boxZ1 = boxZ0 + boxH
     boxZFoot = boxZ1 - boxBackH
@@ -507,13 +507,12 @@ Private Sub Derive()
     xFeedEnd = boxRp
     zFeedEnd = zPipeTop
     xFeedMax = boxRout
-    ' what the merge keeps outside the vessel: with L(y) = boxRout - sqrt(R^2 - y^2) the
-    ' box's length at y and its height boxBackH + boxTan (boxRout - rho) at rho, the
-    ' integral over the width of boxBackH L + boxTan L^2 / 2; plus the pipe
+    ' what the merge keeps outside the vessel: the lead-in (rho_in .. R) at the full height over
+    ' what is outside the cylinder (w R less the integral of sqrt(R^2 - y^2) over the width),
+    ' the ramp and back face beyond R, the pipe on top
     s1 = 0.5 * boxW * boxRin + R * R * ArcSin(0.5 * boxW / R)
-    iL = boxW * boxRout - s1
-    iL2 = boxW * boxRout * boxRout - 2# * boxRout * s1 + 2# * R * R * 0.5 * boxW - 2# * (0.5 * boxW) ^ 3 / 3#
-    vFeed = boxBackH * iL + 0.5 * boxTan * iL2 + PI * rFeed * rFeed * BOX_PIPE_RISE
+    vFeed = boxH * (boxW * R - s1) + boxW * (boxBackH * (boxRout - R) + 0.5 * boxTan * (boxRout - R) ^ 2) + _
+            PI * rFeed * rFeed * BOX_PIPE_RISE
 
     ' Fuel pipes, at the meal pipes' height, the same way.
     rFuel = 0.5 * D_FUEL
@@ -686,8 +685,8 @@ Private Sub PreChecks()
          " m, z = " & Fmt(zTA) & " m, face at y = " & Fmt(yTAEnd) & " m, " & Fmt(vTA) & _
          " m3 outside the vessel"
     Note "meal feed: 2 dispersion boxes, wedge, width " & Fmt(boxW) & " m, back face rho " & Fmt(boxRout) & " m " & _
-         Fmt(boxBackH) & " m high, floor " & Fmt(BOX_SLOPE_DEG) & " deg down to the open face at rho " & Fmt(boxRin) & _
-         " m (" & Fmt(boxH) & " m high), z " & Fmt(boxZ0) & " .. " & Fmt(boxZ1) & " m; vertical pipe D " & Fmt(D_FEED) & _
+         Fmt(boxBackH) & " m high, floor " & Fmt(BOX_SLOPE_DEG) & " deg down to the window in the tangent plane (flat lead-in from rho " & Fmt(boxRin) & _
+         " m), " & Fmt(boxH) & " m high, z " & Fmt(boxZ0) & " .. " & Fmt(boxZ1) & " m; vertical pipe D " & Fmt(D_FEED) & _
          " m on its top, axis rho " & Fmt(boxRp) & " m, top face centred (+-" & Fmt(xFeedEnd) & ", 0, " & _
          Fmt(zFeedEnd) & "), " & Fmt(vFeed) & " m3 each outside the vessel"
     Note "fuel: 2 pipes D " & Fmt(D_FUEL) & " m at " & Fmt(FUEL_SLOPE_DEG) & _
@@ -1393,8 +1392,8 @@ End Function
 
 ' One meal inlet at side +1 (+x) or -1 (-x): the dispersion box and its vertical pipe,
 ' united with the body. The box: the wedge section (rho, z) on planeY0 -- the open face's
-' bottom (boxRin, boxZ0), the back face's foot (boxRout, boxZFoot), its top (boxRout, boxZ1),
-' the top's start (boxRin, boxZ1) -- extruded mid-plane by boxW, so there is no direction
+' bottom (boxRin, boxZ0), the tangent plane (R, boxZ0), the back face's foot (boxRout, boxZFoot),
+' its top (boxRout, boxZ1), the top's start (boxRin, boxZ1) -- extruded mid-plane by boxW, so there is no direction
 ' to get wrong. The pipe: a circle of radius rFeed at (side * boxRp, 0) on planePipe,
 ' extruded mid-plane by pipeLen (it starts 0.1 m inside the box so the two merge on
 ' volume, not on a shared face). planePipe was made while the part was empty, its sketch
@@ -1407,8 +1406,8 @@ Private Sub AddMealBox(planeBox As SldWorks.Feature, planePipe As SldWorks.Featu
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
     Dim f As SldWorks.Feature
-    Dim cr(3) As Double, cz(3) As Double
-    Dim u(3) As Double, w(3) As Double
+    Dim cr(4) As Double, cz(4) As Double
+    Dim u(4) As Double, w(4) As Double
     Dim u0 As Double, w0 As Double, gx As Double, gy As Double
     Dim nP As Long
     Dim before As Double, added As Double
@@ -1418,16 +1417,18 @@ Private Sub AddMealBox(planeBox As SldWorks.Feature, planePipe As SldWorks.Featu
     before = BodiesVolume()
 
     ' --- the wedge
-    ' with no back face (boxBackH = 0) the ramp runs from the top's outer edge: a triangle
+    ' the floor level from the chord plane to the tangent plane, the ramp up to the back face's
+    ' foot, the back face up to the top if it has one, the top back to the chord plane
     cr(0) = boxRin:  cz(0) = boxZ0
-    cr(1) = boxRout: cz(1) = boxZFoot
+    cr(1) = R:       cz(1) = boxZ0
+    cr(2) = boxRout: cz(2) = boxZFoot
     If boxBackH > 0.0001 Then
-        cr(2) = boxRout: cz(2) = boxZ1
+        cr(3) = boxRout: cz(3) = boxZ1
+        cr(4) = boxRin:  cz(4) = boxZ1
+        nP = 5
+    Else
         cr(3) = boxRin:  cz(3) = boxZ1
         nP = 4
-    Else
-        cr(2) = boxRin:  cz(2) = boxZ1
-        nP = 3
     End If
     uSign = uSignY: vSign = vSignY
     swModel.ClearSelection2 True

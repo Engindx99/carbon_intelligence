@@ -46,7 +46,7 @@ Const C1_R                         As Double  = 2.16         ' barrel radius [de
 Const C1_Y_FAR                     As Double  = 2.226723     ' the C1_riser solid's side away from its duct (C1 frame -y): the barrel, or the volute's scroll end [derived]
 Const C1_TOP                       As Double  = 18.46        ' the outlet bend's crown [derived]
 Const C1_X_MAX                     As Double  = 2.654055     ' the C1_riser solid's far side (C1 frame x): its outlet leg, or (outlet_side -1) the barrel / scroll [derived]
-Const C1_X_MIN                     As Double  = -8.600887    ' the C1_riser solid's near side (C1 frame x): its feed chute, or the outlet leg past it [derived]
+Const C1_X_MIN                     As Double  = -8.59108     ' the C1_riser solid's near side (C1 frame x): its feed chute, or the outlet leg past it [derived]
 Const OUT_Z_END                    As Double  = 11.44        ' the outlet legs' end faces [derived]
 Const OUT_Y                        As Double  = -6.48        ' the outlet legs' axes, twin y (C1 frame x; outlet_side) [derived]
 ' END GENERATED

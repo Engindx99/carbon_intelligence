@@ -509,7 +509,8 @@ def _calciner_sheet_consts(g):
         der("CAL_BOX_H", meal["height"], "its open face's height"),
         der("CAL_BOX_Z0", meal["z_bottom"], "its bottom, z"),
         der("CAL_BOX_ZFOOT", meal["z_back_foot"], "its back face's foot, z"),
-        der("CAL_BOX_RIN", meal["rho_in"], "its open face on the chord plane, x"),
+        der("CAL_BOX_RIN", meal["rho_in"], "its floor's start, the chord plane, x"),
+        der("CAL_BOX_RFLAT", meal["rho_flat"], "its window in the tangent plane, x"),
         der("CAL_BOX_ROUT", meal["rho_out"], "its back face, x"),
         der("CAL_BOX_RP", meal["rho_pipe"], "its meal pipe's axis, x"),
         der("CAL_BOX_SLOPE", meal["slope_deg"], "its floor ramp, deg"),
@@ -846,10 +847,9 @@ def c1_twin_bas(g):
     c1, br, tw = pg.cyclone(g, "C1"), pg.c1_branch(g), pg.c1_twin(g)
     o = pg.cyclone_outlet(g, "C1")
     L = pg.layout(g)
-    th = math.radians(pg.v(d["meal_slope"]))
     rb = 0.5 * br["D"]
-    # the feed chute's far corner, out along -x of the C1 frame
-    tip = -(br["x"] + rb + pg.v(d["c1_feed_depth"]) * math.cos(th) + 0.5 * pg.v(d["c1_feed_width"]) * math.sin(th))
+    # the dispersion box's back face, out along -x of the C1 frame (cyclone.bas: its width is D = c1_feed_width)
+    tip = -(br["x"] + pg.dispersion_box(g, rb, pg.v(d["c1_feed_width"]), 0.0)["rho_out"])
     return [
         der("R1_D", pg.r1_D(g), "R1 bore = C2's D_x"),
         src("TWIN_GAP", lay["c1_twin_gap"], "the branches' walls apart"),
@@ -1498,7 +1498,7 @@ def _calciner_rows(g):
         row_src("Tersiyer hava kanalı çapı", c["D_tertiary_air"]),
         row_src("Farin besleme borusu çapı", c["D_feed"], note="Fidaros 2007 × √2"),
         row_src("Yakıt borusu çapı", c["D_fuel"], note="Fidaros 2007 × √2"),
-        row_der("Dağıtma kutusu genişliği (duvar boyunca)", m["width"], "m", 3, "2.7 × farin borusu çapı (model; görsel oranı)"),
+        row_der("Dağıtma kutusu genişliği (duvar boyunca)", m["width"], "m", 3, "2.16 × farin borusu çapı (model; görsel oranı, 2.7 değerinden %20 az)"),
         row_der("Dağıtma kutusu arka yüz yüksekliği", m["back_h"], "m", 3, "1.0 × farin borusu çapı (model)"),
         row_der("Dağıtma kutusu açık yüz yüksekliği", m["height"], "m", 3, "arka yükseklik + eğim × koşu"),
         row_src("Dağıtma kutusu taban rampası (yatayla)", g["dispersion_box"]["floor_slope_deg"], note="model; görsel"),
@@ -1992,7 +1992,7 @@ def _calciner_cfd(g):
         ("3b + kol −x", f"kanalla ortak {gn['overlap_neck_arm']:.3f}, kolların ortak hacmi {gn['overlap_arms']:.3f}, üçünün {gn['overlap_all']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta) → gas_outlet_2",
          f"{steps[3]:.3f}"),
         ("5a / 5b + farin dağıtma kutusu ve dikey borusu ±x", f"Ø{meal['D']:g} dikey boru, {meal['pipe_rise']:g} m, kutunun üst yüzünde; kutu kama: genişlik {f(meal['width'])}, "
-         f"arka yüz ρ {f(meal['rho_out'])}, yüksekliği {f(meal['back_h'])}; taban {meal['slope_deg']:g}° rampayla ρ {f(meal['rho_in'])}'e iner (açık yüz {f(meal['height'])} yüksek, gövdeye açık), "
+         f"arka yüz ρ {f(meal['rho_out'])}, yüksekliği {f(meal['back_h'])}; taban ρ {f(meal['rho_in'])}'den teğet düzleme (ρ {f(meal['rho_flat'])}) düz, sonra {meal['slope_deg']:g}° rampa (teğet düzlemdeki pencere {f(meal['height'])} yüksek, gövdeye açık), "
          f"z {f(meal['z_bottom'])} .. {f(meal['z_top'])}; boru ekseni ρ {f(meal['rho_pipe'])}, üst yüzü (meal_feed) (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
          f"{steps[4]:.3f} / {steps[5]:.3f} (+{meal['volume']:.4f} her biri: kutu {meal['box_volume']:.4f}, boru {meal['pipe_volume']:.4f})"),
         ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, ekseni y boyunca, x {f(ta['x'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
