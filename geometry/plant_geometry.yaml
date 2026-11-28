@@ -197,23 +197,32 @@ calciner:
   # directions)
   D_fuel:              {value: 0.2828, unit: m,   source: literature,   doc: calciner/calciner.md}
   fuel_slope:          {value: 30.0, unit: deg,   source: literature,   doc: calciner/calciner.md}
-  # Dispersion plate under each meal pipe's hole (user decision, 16 Nov
-  # 2026). Type: a curved (ski-jump) plate at the meal inlet's lower lip,
-  # sticking out past the wall, throwing the meal near-horizontally into
-  # the rising gas (KHD US 6,875,267: meal slide + deflector slide through
-  # a wall opening; a manufacturer's video image the user supplied, 16 Nov
-  # 2026). No source publishes its dimensions: all model values, the exit
-  # angle read off that image. The plate starts tangent to the meal pipe's
-  # 60 deg slope lip_clearance below the hole's lowest point (no sliver of
-  # wall between them), turns on one arc to exit_angle above the horizontal
-  # and ends protrusion past the wall; its tail runs on tail along the pipe
-  # slope into the wall so its back end is clear of the vessel.
-  dispersion_plate_exit_angle: {value: 10.0, unit: deg, source: model,  doc: calciner/calciner.md}
-  dispersion_plate_protrusion_over_D_feed: {value: 0.5, unit: "-", source: model, doc: calciner/calciner.md}
-  dispersion_plate_width_over_D_feed: {value: 1.0, unit: "-", source: model, doc: calciner/calciner.md}
-  dispersion_plate_thickness: {value: 0.05, unit: m, source: model,     doc: calciner/calciner.md}
-  dispersion_plate_lip_clearance: {value: 0.05, unit: m, source: model, doc: calciner/calciner.md}
-  dispersion_plate_tail: {value: 0.1, unit: m,     source: model,       doc: calciner/calciner.md}
+
+# Dispersion box (dağıtma kutusu) under a meal pipe (user decision, 28 Nov
+# 2026, from a manufacturer's "Dispersion Box" images): the meal comes down
+# a vertical pipe onto the top of a wedge-shaped box on the vessel's wall;
+# the box's floor is a ramp falling towards the vessel, so the meal slides down
+# it and leaves through the box's open face into the gas. The box is its own
+# volume, outside the equipment and open to it (the CFD fluid has the pipe, the
+# box and the opening; its walls are not modelled). No source publishes its
+# size: model values, read off the images as ratios and applied through the
+# pipe's own D, so one design serves every inlet and identical cyclones share
+# it. It replaces the 60 deg sloped meal pipe at the calciner, C1's chute and
+# the pipes' entries into R2..R4.
+#   width_over_D_feed   box width across the wall (tangential), x the pipe's D
+#   depth_over_D_feed   the outer back face out past the wall (at the pipe's
+#                       side), x the pipe's D; the pipe stands in it
+#   back_height_over_D_feed  the back face's height, x the pipe's D (0: no back
+#                       face, the ramp starts at the top's outer edge, as the
+#                       reference image; a wedge)
+#   floor_slope_deg     the ramp, to the horizontal; the open face's height
+#                       follows (back height + run x tan)
+dispersion_box:
+  width_over_D_feed:   {value: 2.7,  unit: "-",   source: model,        doc: calciner/calciner.md}
+  depth_over_D_feed:   {value: 1.25, unit: "-",   source: model,        doc: calciner/calciner.md}
+  back_height_over_D_feed: {value: 0.0, unit: "-", source: model,       doc: calciner/calciner.md}
+  floor_slope_deg:     {value: 60.0, unit: deg,   source: model,        doc: calciner/calciner.md}
+  pipe_rise:           {value: 1.0,  unit: m,     source: model,        doc: calciner/calciner.md}
 
 gooseneck:
   D_leg:               {value: 3.5,  unit: m,     source: published,    doc: preheater/gooseneck.md}
@@ -870,6 +879,18 @@ meal_route:
   # repose (kiln.repose_angle, 40 deg) and a margin; the
   # pipes the slope rule lays run at meal_slope (60 deg)
   min_slope:           {value: 55.0, unit: deg,   source: model,        doc: plant_topology.md}
+
+# ---------------------------------------------------------------------
+# The tertiary air duct in the plant (plant_geometry.tertiary_air_duct;
+# user, 24 Nov 2026: "TA bağlayalım", route "rise + one straight run
+# along the kiln"): from the hood's tertiary mouth (its face on top of the
+# mouth's vertical run, kiln_flame) through one bend into one straight run
+# to the calciner's tertiary inlet face; the bore the calciner's D_tertiary_air.
+# The bend's centreline radius and the pieces it is drawn with: no source.
+# ---------------------------------------------------------------------
+tertiary_air_duct:
+  bend_R_over_D:       {value: 1.0,  unit: "-",   source: model,        doc: plant_topology.md}
+  bend_pieces:         {value: 4,    unit: "-",   source: model,        doc: plant_topology.md}
 
 # ---------------------------------------------------------------------
 # Layout: where the equipment stands. No source gives any of it; it

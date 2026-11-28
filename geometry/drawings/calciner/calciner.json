@@ -428,19 +428,6 @@
       "short": "D_feed"
     },
     {
-      "key": "calciner.feed_slope",
-      "label": "Meal pipes' slope to the horizontal",
-      "value": 60.0,
-      "unit": "deg",
-      "source": "literature",
-      "status": "Estimated",
-      "doc": "calciner/calciner.md",
-      "inputs": [
-        "cyclone_domain.meal_slope"
-      ],
-      "short": "feed_slope"
-    },
-    {
       "key": "calciner.D_fuel",
       "label": "Fuel pipe diameter (two)",
       "value": 0.2828,
@@ -468,78 +455,65 @@
       "short": "fuel_slope"
     },
     {
-      "key": "calciner.dp_exit",
-      "label": "Dispersion plate exit angle (above horizontal)",
-      "value": 10.0,
-      "unit": "deg",
-      "source": "model",
-      "status": "Estimated",
-      "doc": "calciner/calciner.md",
-      "inputs": [
-        "calciner.dispersion_plate_exit_angle"
-      ],
-      "short": "dp_exit"
-    },
-    {
-      "key": "calciner.dp_radius",
-      "label": "Dispersion plate meal face radius",
-      "value": 0.408060767888084,
+      "key": "calciner.box_width",
+      "label": "Dispersion box width (along the wall)",
+      "value": 2.29095,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "calciner/calciner.md",
       "inputs": [
         "calciner.D_feed",
-        "calciner.dispersion_plate_protrusion_over_D_feed",
-        "calciner.dispersion_plate_exit_angle",
-        "cyclone_domain.meal_slope"
+        "dispersion_box.width_over_D_feed"
       ],
-      "value_mm": 408.060768,
-      "short": "dp_radius"
+      "value_mm": 2290.95,
+      "short": "box_width"
     },
     {
-      "key": "calciner.dp_prot",
-      "label": "Dispersion plate edge past the wall",
-      "value": 0.42425,
+      "key": "calciner.box_back_h",
+      "label": "Dispersion box back face height",
+      "value": 0.0,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "calciner/calciner.md",
       "inputs": [
         "calciner.D_feed",
-        "calciner.dispersion_plate_protrusion_over_D_feed"
+        "dispersion_box.back_height_over_D_feed"
       ],
-      "value_mm": 424.25,
-      "short": "dp_prot"
+      "value_mm": 0.0,
+      "short": "box_back_h"
     },
     {
-      "key": "calciner.dp_width",
-      "label": "Dispersion plate width",
-      "value": 0.8485,
+      "key": "calciner.box_height",
+      "label": "Dispersion box open face height",
+      "value": 2.184568375612202,
       "unit": "m",
       "source": "derived",
       "status": "Estimated",
       "doc": "calciner/calciner.md",
       "inputs": [
         "calciner.D_feed",
-        "calciner.dispersion_plate_width_over_D_feed"
+        "dispersion_box.back_height_over_D_feed",
+        "dispersion_box.floor_slope_deg",
+        "dispersion_box.depth_over_D_feed"
       ],
-      "value_mm": 848.5,
-      "short": "dp_width"
+      "value_mm": 2184.568376,
+      "short": "box_height"
     },
     {
-      "key": "calciner.dp_thick",
-      "label": "Dispersion plate thickness",
-      "value": 0.05,
+      "key": "calciner.box_rise",
+      "label": "Meal pipe's rise over the box",
+      "value": 1.0,
       "unit": "m",
       "source": "model",
       "status": "Estimated",
       "doc": "calciner/calciner.md",
       "inputs": [
-        "calciner.dispersion_plate_thickness"
+        "dispersion_box.pipe_rise"
       ],
-      "value_mm": 50.0,
-      "short": "dp_thick"
+      "value_mm": 1000.0,
+      "short": "box_rise"
     },
     {
       "key": "calciner.volume",
@@ -647,9 +621,7 @@
     "D_TA",
     "ta_x",
     "D_feed",
-    "dp_radius",
-    "dp_thick",
-    "dp_prot"
+    "box_rise"
   ],
   "also_the_sheet_of": []
 }

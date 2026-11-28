@@ -20,7 +20,7 @@ from .cyclone import SOURCE_EN, cell, unit  # noqa: F401  (the sheet's table tex
 DIMENSIONED = (
     "D_throat", "L_throat", "H_cone", "D_vessel", "H_cylinder", "H_vessel",
     "D_leg", "D_fuel", "D_TA", "ta_x", "D_feed",
-    "dp_radius", "dp_thick", "dp_prot",
+    "box_rise",
 )
 
 ALSO = {}
@@ -30,8 +30,8 @@ ORDER = (
     "D_throat", "L_throat", "H_cone", "D_vessel", "H_cylinder", "H_vessel",
     "D_neck", "neck_slope", "neck_piece", "neck_level", "channel", "D_leg", "arm_angle", "arm_run",
     "y_off", "x_leg", "leg_end_z", "width", "top",
-    "D_TA", "ta_y", "ta_z", "ta_x", "D_feed", "feed_slope", "D_fuel", "fuel_slope",
-    "dp_exit", "dp_radius", "dp_prot", "dp_width", "dp_thick",
+    "D_TA", "ta_y", "ta_z", "ta_x", "D_feed", "D_fuel", "fuel_slope",
+    "box_width", "box_back_h", "box_height", "box_rise",
     "volume", "wet_area",
     "u_wall", "u_material", "u_flange", "u_support", "u_burner",
 )
@@ -117,27 +117,20 @@ def params(g, name="calciner"):
 
     d_feed = pv.primary(g, "calciner.D_feed", "Meal pipe diameter (two)", key="calciner.D_feed")
     P["D_feed"] = d_feed
-    P["feed_slope"] = pv.primary(g, "cyclone_domain.meal_slope", "Meal pipes' slope to the horizontal",
-                                 key="calciner.feed_slope")
     P["D_fuel"] = pv.primary(g, "calciner.D_fuel", "Fuel pipe diameter (two)", key="calciner.D_fuel")
     P["fuel_slope"] = pv.primary(g, "calciner.fuel_slope", "Fuel pipes' slope to the horizontal",
                                  key="calciner.fuel_slope")
 
-    # the dispersion plates under the meal holes (model values; the type from KHD US 6,875,267
-    # and a manufacturer's image, calciner.md)
-    dp = pg.calciner_dispersion_plate(g)
-    P["dp_exit"] = pv.primary(g, "calciner.dispersion_plate_exit_angle", "Dispersion plate exit angle (above horizontal)",
-                              key="calciner.dp_exit")
-    dp_prot_k = pv.primary(g, "calciner.dispersion_plate_protrusion_over_D_feed", "Plate protrusion over D_feed")
-    P["dp_prot"] = pv.derived("calciner.dp_prot", "Dispersion plate edge past the wall", dp["protrusion"], "m",
-                              [d_feed, dp_prot_k])
-    P["dp_width"] = pv.derived("calciner.dp_width", "Dispersion plate width", dp["width"], "m",
-                               [d_feed, pv.primary(g, "calciner.dispersion_plate_width_over_D_feed",
-                                                   "Plate width over D_feed")])
-    P["dp_thick"] = pv.primary(g, "calciner.dispersion_plate_thickness", "Dispersion plate thickness",
-                               key="calciner.dp_thick")
-    P["dp_radius"] = pv.derived("calciner.dp_radius", "Dispersion plate meal face radius", dp["R_arc"], "m",
-                                [P["dp_prot"], P["dp_exit"], P["feed_slope"]])
+    # the dispersion boxes under the meal pipes (model values read off a manufacturer's image, calciner.md)
+    mb = inl["meal"]
+    wk = pv.primary(g, "dispersion_box.width_over_D_feed", "Dispersion box width over D_feed")
+    P["box_width"] = pv.derived("calciner.box_width", "Dispersion box width (along the wall)", mb["width"], "m", [d_feed, wk])
+    bhk = pv.primary(g, "dispersion_box.back_height_over_D_feed", "Box back face height over D_feed")
+    P["box_back_h"] = pv.derived("calciner.box_back_h", "Dispersion box back face height", mb["back_h"], "m", [d_feed, bhk])
+    sl = pv.primary(g, "dispersion_box.floor_slope_deg", "Box floor ramp to the horizontal")
+    P["box_height"] = pv.derived("calciner.box_height", "Dispersion box open face height", mb["height"], "m",
+                                 [P["box_back_h"], sl, pv.primary(g, "dispersion_box.depth_over_D_feed", "Box depth over D_feed")])
+    P["box_rise"] = pv.primary(g, "dispersion_box.pipe_rise", "Meal pipe's rise over the box", key="calciner.box_rise")
 
     P["volume"] = pv.derived("calciner.volume", "Volume (cone + cylinder)", cal["vessel_volume"], "m3",
                              [P["D_vessel"], P["H_vessel"], P["D_throat"], cone])

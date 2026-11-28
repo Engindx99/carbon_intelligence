@@ -50,3 +50,8 @@ C1'in toz çıkışı (Ø0.400 m, FLS oranı dust_D/D ≈ 0.092; C2–C5'te ≈ 
 | Toz çıkışındaki kütle akışı (aynı debi) | 178.5 kg/(m² s) | türetilmiş |
 | Toz çıkışı akışı / boru akışı | 2.25 | türetilmiş |
 <!-- END GENERATED -->
+
+## Dağıtma kutusu (28 Kasım 2026)
+
+Bu borunun son koşusu dikeydir ve riser (çözücü çıkış borusu) duvarındaki dağıtma kutusunun üstüne iner; kutu kalsinatördekiyle aynı tek tasarımdır ([calciner.md](../calciner/calciner.md), "Dağıtma kutusu"): üst yüzü yatay, tabanı gövdeye doğru 60° rampa olan kama, genişlik 2.7 × boru çapı, açık yüzü riser'ın kiriş düzleminde, orta yüksekliği alttaki siklonun çatısının `entry_up` üstünde. Kutunun riser eksenine uzaklığı o riser'ın yarıçapına göre değişir; genişlik, derinlik ve boru aynıdır. `plant_geometry.meal_dispersion_boxes()` yerleşimi verir; `meal_pipes` içinde kamanın sınırlayıcı kutusu (`dbox_*`, zarf) olarak gösterilir, kama biçimi montajda yoktur (CFD girdisi değildir). Eğimli son giriş koşusu (60°) kalktı; C4 borusu kalsinatör kutusunun dikey borusuna 0.1 m girer.
+

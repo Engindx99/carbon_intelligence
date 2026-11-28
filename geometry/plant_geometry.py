@@ -266,121 +266,72 @@ def calciner_inlets(g):
     y_end = -(R + v(c["tertiary_air_stub_length"]))     # the face, y
     v_ta = math.pi * r * r * (-y_end) - chord_integral(r, R, x_c)
 
-    rf = 0.5 * v(c["D_feed"])
-    slope = v(g["cyclone_domain"]["meal_slope"])
-    cf, sf = math.cos(math.radians(slope)), math.sin(math.radians(slope))
-    z_wall = (z_c + r + v(c["feed_above_tertiary_air"])
-              + rf / cf + (R - math.sqrt(R * R - rf * rf)) * sf / cf)
+    # the meal: a vertical pipe into a dispersion box on the wall (user 28 Nov
+    # 2026), its bottom feed_above_tertiary_air over the duct's top; the fuel
+    # pipes' axes meet the wall at the box's mid height (coal and meal at one height)
+    box = dispersion_box(g, R, v(c["D_feed"]), z_c + r + v(c["feed_above_tertiary_air"]))
+    z_wall = box["z_centre"]
     depth = v(c["feed_depth"])
+    meal = dict(box, slope=90.0, z_wall=z_wall, hole_bottom=box["z_bottom"],
+                start=(box["rho_pipe"], box["z_top"]), length=box["pipe_rise"])
     return {
         "tertiary_air": {
             "D": 2.0 * r, "x": x_c, "z": z_c, "y_end": y_end, "offset": -x_c,
             "centre": (x_c, y_end, z_c), "direction": (0.0, 1.0, 0.0),
             "top": z_c + r, "volume": v_ta, "end_area": math.pi * r * r,
         },
-        "meal": calciner_pipe(R, rf, slope, z_wall, depth),
+        "meal": meal,
         "fuel": calciner_pipe(R, 0.5 * v(c["D_fuel"]), v(c["fuel_slope"]), z_wall, depth),
     }
 
 
-def _clip_area(poly, x_max):
-    """Area of a closed polygon [(x, z), ...] left of x = x_max
-    (Sutherland-Hodgman against one half-plane, then the shoelace)."""
-    out = []
-    n = len(poly)
-    for i in range(n):
-        p, q = poly[i], poly[(i + 1) % n]
-        pin, qin = p[0] <= x_max, q[0] <= x_max
-        if pin:
-            out.append(p)
-        if pin != qin:
-            t = (x_max - p[0]) / (q[0] - p[0])
-            out.append((x_max, p[1] + t * (q[1] - p[1])))
-    a = 0.0
-    for i in range(len(out)):
-        (x0, z0), (x1, z1) = out[i], out[(i + 1) % len(out)]
-        a += x0 * z1 - x1 * z0
-    return 0.5 * abs(a)
+def dispersion_box(g, wall_R, D, z_bottom):
+    """The dispersion box on a vessel wall of radius wall_R (yaml
+    dispersion_box), for a meal pipe of bore D: a wedge. Its section in the
+    inlet's plane (rho radial out from the vessel axis, z): the top level
+    at z_top, the back face vertical at rho_out = R + depth, back_h high,
+    the floor a ramp falling at floor_slope_deg from the back face's foot
+    down to the chord plane rho_in = sqrt(R^2 - (w/2)^2) (the open face, H
+    high, its bottom at z_bottom); across the wall it is w wide, so its
+    corners meet the cylinder and what is inside the cylinder dissolves in
+    the merge. A vertical pipe of bore D stands on the top face at
+    rho_pipe = rho_out - depth/2 (D clear of the wall), pipe_rise high; the
+    meal enters at its top face (normal +z).
 
-
-def calciner_dispersion_plate(g, n_arc=4000, n_y=400):
-    """The dispersion plate under each meal pipe's hole (calciner.md):
-    a slab of thickness t between two concentric arcs, in the meal
-    pipe's vertical plane (rho = radial out along +-x, z), extruded
-    +-W/2 across it (y).
-
-    In (rho, z) a plate direction at angle phi to the horizontal,
-    inwards, is d = (-cos phi, sin phi); its upper normal n = (sin phi,
-    cos phi). The upper (meal) face starts at A = (R, z_A) along the
-    meal pipe's slope (phi0 = -slope), turns on radius Rc about
-    C = A + Rc n(phi0) to the exit angle phi1, and ends at E, the
-    protrusion past the wall: Rc (sin phi1 - sin phi0) = protrusion. The
-    lower face is the arc of Rc + t about C. The tail runs back from A
-    (and A') by `tail` along -d(phi0), out of the vessel. z_A sits
-    lip_clearance under the hole's lowest point.
-
-    Volumes: the slab's own (closed form: the annular sector plus the
-    tail's rectangle, times W) and the part of it inside the vessel, the
-    fluid the cut removes (rho < sqrt(R^2 - y^2); polygon clip on n_arc
-    arc points, Simpson over y)."""
-    c, cal = g["calciner"], calciner(g)
-    meal = calciner_inlets(g)["meal"]
-    R, D = cal["R"], meal["D"]
-    phi0 = -math.radians(meal["slope"])
-    phi1 = math.radians(v(c["dispersion_plate_exit_angle"]))
-    prot = v(c["dispersion_plate_protrusion_over_D_feed"]) * D
-    W = v(c["dispersion_plate_width_over_D_feed"]) * D
-    t = v(c["dispersion_plate_thickness"])
-    tail = v(c["dispersion_plate_tail"])
-    z_a = meal["hole_bottom"] - v(c["dispersion_plate_lip_clearance"])
-    rc = prot / (math.sin(phi1) - math.sin(phi0))
-
-    def n(phi):
-        return (math.sin(phi), math.cos(phi))
-
-    cx, cz = R + rc * n(phi0)[0], z_a + rc * n(phi0)[1]
-
-    def on(rad, phi):
-        return (cx - rad * n(phi)[0], cz - rad * n(phi)[1])
-
-    back = (math.cos(phi0), -math.sin(phi0))                  # -d(phi0): out and up
-    a, e = on(rc, phi0), on(rc, phi1)
-    a2, e2 = on(rc + t, phi0), on(rc + t, phi1)
-    tt = (a[0] + tail * back[0], a[1] + tail * back[1])
-    tt2 = (a2[0] + tail * back[0], a2[1] + tail * back[1])
-
-    # the profile, closed: tail top -> A -> upper arc -> E -> E' -> lower arc -> A' -> tail bottom
-    poly = [tt]
-    poly += [on(rc, phi0 + (phi1 - phi0) * k / n_arc) for k in range(n_arc + 1)]
-    poly += [on(rc + t, phi1 - (phi1 - phi0) * k / n_arc) for k in range(n_arc + 1)]
-    poly.append(tt2)
-
-    dphi = phi1 - phi0
-    area = 0.5 * dphi * ((rc + t) ** 2 - rc ** 2) + tail * t
-    h = W / n_y
-    inside = 0.0
-    for k in range(n_y + 1):
-        y = -0.5 * W + k * h
-        w = 1.0 if k in (0, n_y) else (4.0 if k % 2 else 2.0)
-        inside += w * _clip_area(poly, math.sqrt(R * R - y * y))
-    inside *= h / 3.0
-
-    z_low = cz - (rc + t)                                      # the lower arc's lowest point (phi = 0 lies on it)
+    Volumes outside the vessel, closed form: with L(y) = rho_out -
+    sqrt(R^2 - y^2) the box's length at y, its height at rho is back_h +
+    (rho_out - rho) tan, so the volume is the integral over the width of
+    back_h L + tan L^2 / 2, and the pipe's pi r^2 L."""
+    b = g["dispersion_box"]
+    w = v(b["width_over_D_feed"]) * D
+    depth = v(b["depth_over_D_feed"]) * D
+    back_h = v(b["back_height_over_D_feed"]) * D
+    tan = math.tan(math.radians(v(b["floor_slope_deg"])))
+    rise = v(b["pipe_rise"])
+    h = 0.5 * w
+    if h >= wall_R:
+        raise ValueError(f"dispersion box width {w:.3f} m does not fit a vessel of radius {wall_R:.3f} m")
+    rho_in = math.sqrt(wall_R * wall_R - h * h)
+    rho_out = wall_R + depth
+    H = back_h + (rho_out - rho_in) * tan
+    rho_p = rho_out - 0.5 * depth                              # the pipe's axis, over the box's outer half
+    r = 0.5 * D
+    if rho_p - r <= wall_R:
+        raise ValueError("the dispersion box's pipe reaches into the vessel")
+    s1 = h * rho_in + wall_R * wall_R * math.asin(h / wall_R)  # integral of sqrt(R^2 - y^2) over -h..h
+    i_l = w * rho_out - s1                                     # integral of L dy
+    i_l2 = w * rho_out ** 2 - 2.0 * rho_out * s1 + (2.0 * wall_R ** 2 * h - 2.0 * h ** 3 / 3.0)   # of L^2 dy
+    v_box = back_h * i_l + 0.5 * tan * i_l2
+    v_pipe = math.pi * r * r * rise
+    z_top = z_bottom + H
     return {
-        "exit_angle": math.degrees(phi1),
-        "R_arc": rc,
-        "thickness": t,
-        "width": W,
-        "protrusion": prot,
-        "tail": tail,
-        "centre": (cx, cz),
-        "A": a, "E": e, "A_low": a2, "E_low": e2, "T": tt, "T_low": tt2,
-        "z_low": z_low,
-        "profile_area": area,
-        "volume": area * W,
-        "inside_vessel": inside,
-        "edge_area": t * W,
-        "pipe_clearance": (meal["z_wall"] - 0.5 * D / math.cos(-phi0) - z_a) * math.cos(phi0),
+        "D": D, "width": w, "depth": depth, "back_h": back_h, "slope_deg": v(b["floor_slope_deg"]),
+        "height": H, "rho_in": rho_in, "rho_out": rho_out, "rho_pipe": rho_p,
+        "z_bottom": z_bottom, "z_top": z_top, "z_centre": z_bottom + 0.5 * H,
+        "z_back_foot": z_top - back_h,
+        "pipe_rise": rise, "z_pipe_top": z_top + rise,
+        "box_volume": v_box, "pipe_volume": v_pipe, "volume": v_box + v_pipe,
+        "end": (rho_p, z_top + rise), "end_area": math.pi * r * r,
     }
 
 
@@ -2396,6 +2347,9 @@ def tower_placement(g):
     # the meal pipes (meal_pipes.SLDPRT, built in the plant frame; meal_routes())
     parts.append({"name": "meal_pipes", "file": "meal_pipes.SLDPRT",
                   "R": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)), "o": (0.0, 0.0, 0.0)})
+    # the tertiary air duct (ta_duct.SLDPRT, the plant frame; tertiary_air_duct())
+    parts.append({"name": "ta_duct", "file": "ta_duct.SLDPRT",
+                  "R": ((1.0, 0.0, 0.0), (0.0, 1.0, 0.0), (0.0, 0.0, 1.0)), "o": (0.0, 0.0, 0.0)})
     # the chamber's stub end (kiln_gas_inlet) is kiln.SLDPRT's back face (kiln_back, z_cfd0)
     se = sec["stub_end"]
     p_ch = (0.0, -se[0], lay["z_chamber_floor"] + se[1])
@@ -2440,21 +2394,29 @@ def meal_routes(g):
         n = math.hypot(*d)
         return (d[0] / n, d[1] / n)
 
+    entry = {}                 # the last into_riser's box (kept on the pipe for the assembly)
+
     def into_riser(name, p0, drop, below, away):
         """p0 the dust outlet; below: the cyclone whose outlet pipe takes
-        the meal; away: the horizontal unit vector the pipe comes in from"""
+        the meal; away: the horizontal unit vector the pipe comes in from.
+        The meal ends in a dispersion box on that pipe's wall (dispersion_box():
+        a cube, its mid height entry_up over the roof below) through a vertical
+        run down onto the box's top face centre."""
         A, rp = cols[below], 0.5 * c[below]["D_vortex"]
-        r = 0.5 * mp[int(name[1])]["D"]
-        side = (A[0] + away[0] * (rp + v(mr["side_L"])), A[1] + away[1] * (rp + v(mr["side_L"])))
-        p1 = (p0[0], p0[1], p0[2] - drop)
-        h = math.hypot(side[0] - p1[0], side[1] - p1[1])
-        p2 = (side[0], side[1], p1[2] - h * ts)
+        D = mp[int(name[1])]["D"]
         z_in = lay["z_roof"][below] + v(mr["entry_up"])
-        p3 = (side[0], side[1], z_in + v(mr["side_L"]) * ts)
+        box = dispersion_box(g, rp, D, 0.0)
+        box = dispersion_box(g, rp, D, z_in - 0.5 * box["height"])
+        pipe = (A[0] + away[0] * box["rho_pipe"], A[1] + away[1] * box["rho_pipe"])
+        p1 = (p0[0], p0[1], p0[2] - drop)
+        h = math.hypot(pipe[0] - p1[0], pipe[1] - p1[1])
+        p2 = (pipe[0], pipe[1], p1[2] - h * ts)
+        p3 = (pipe[0], pipe[1], box["z_top"] - 0.1)          # 0.1 m into the box
         if p3[2] >= p2[2]:
-            raise ValueError(f"meal_routes {name}: no room to drop beside the riser ({p2[2]:.2f} <= {p3[2]:.2f})")
-        p4 = (A[0] + away[0] * (rp - r), A[1] + away[1] * (rp - r), z_in - r * ts)
-        return [p0, p1, p2, p3, p4]
+            raise ValueError(f"meal_routes {name}: no room to drop onto the dispersion box ({p2[2]:.2f} <= {p3[2]:.2f})")
+        entry.clear()
+        entry.update({"box": box, "A": A, "away": away, "R": rp, "z_in": z_in})
+        return [p0, p1, p2, p3]
 
     pipes = []
     # C1: the twin's two C1 (its frame turned as tower_placement turned it)
@@ -2463,7 +2425,7 @@ def meal_routes(g):
         q = tuple(twin["o"][k] + sx * d_c1 * twin["R"][0][k] for k in range(3))
         away = (math.copysign(1.0, q[0] - cols[3][0]), 0.0)
         pipes.append({"name": "C1_out" if away[0] > 0 else "C1_in", "stage": 1, "to": "R2 (C3 outlet pipe)",
-                      "pts": into_riser("C1", q, v(mr["drop"]), 3, away)})
+                      "pts": into_riser("C1", q, v(mr["drop"]), 3, away), "entry": dict(entry)})
     # C2 -> R3 over C4, C3 -> R4 over C5: away from the bend (towards the cyclone above it)
     for n, below, bend_to in ((2, 4, 3), (3, 5, 4)):
         p0 = cols[n] + (lay["z_dust"][n],)
@@ -2481,17 +2443,15 @@ def meal_routes(g):
         if clear <= 0.0:
             raise ValueError(f"meal_routes C{n}: the pipe cuts the riser's roof under it ({clear:.2f} m)")
         pipes.append({"name": f"C{n}", "stage": n, "to": f"R{n + 1} (C{below} outlet pipe)",
-                      "pts": pts, "riser_clearance": clear})
-    # C4 -> the calciner's meal pipe on this side (+x), past its end face by r
+                      "pts": pts, "riser_clearance": clear, "entry": dict(entry)})
+    # C4 -> the calciner's dispersion box on this side (+x): straight down to
+    # 1 m over its vertical pipe's top face, then vertically 0.1 m into that pipe
     p0 = cols[4] + (lay["z_dust"][4],)
     p1 = (p0[0], p0[1], p0[2] - v(mr["c4_drop"]))
     z0 = lay["z_calciner_throat"]
     e = (cal_in["end"][0], 0.0, z0 + cal_in["end"][1])
-    r4 = 0.5 * mp[4]["D"]
-    d = [e[k] - p1[k] for k in range(3)]
-    n_ = math.sqrt(sum(x * x for x in d))
-    pipes.append({"name": "C4", "stage": 4, "to": "calciner meal pipe",
-                  "pts": [p0, p1, tuple(e[k] + r4 * d[k] / n_ for k in range(3))]})
+    pipes.append({"name": "C4", "stage": 4, "to": "calciner dispersion box",
+                  "pts": [p0, p1, (e[0], e[1], e[2] + 1.0), (e[0], e[1], e[2] - 0.1)]})
     # C5 -> the calciner's throat: its wall at mid height, towards C5
     cal = calciner(g)
     p0 = cols[5] + (lay["z_dust"][5],)
@@ -2520,7 +2480,122 @@ def meal_routes(g):
         m = dict(q)
         m["string"] = 2
         m["pts"] = [(-p[0], p[1], p[2]) for p in q["pts"]]
+        if "entry" in q:
+            e_ = q["entry"]
+            m["entry"] = dict(e_, A=(-e_["A"][0], e_["A"][1]), away=(-e_["away"][0], e_["away"][1]))
         out.append(m)
+    return out
+
+
+def tertiary_air_duct(g):
+    """The tertiary air duct as the plant has it (user, 24 Nov 2026: "TA
+    bağlayalım"; route: rise, then one straight run along the kiln), in
+    the plant frame: from the hood's tertiary mouth face (kiln_flame's
+    tertiary_air_out, on top of its vertical run, carried by the
+    kiln_outlet part's placement) through a bend of bend_R_over_D x D in
+    the vertical plane towards the calciner, then straight to the
+    calciner's tertiary inlet face (its stub's end, calciner_inlets()),
+    r on into the stub. The bend's arc drawn as bend_pieces chords. The
+    run's slope is whatever the two ends leave (+ rising to the
+    calciner); its plan angle off the kiln's axis the inlet's x offset."""
+    tp = tower_placement(g)
+    k = next(q for q in tp["parts"] if q["name"] == "kiln_outlet")
+    face = next(f for f in kiln_flame(g)["faces"] if f[0] == "tertiary_air_out")
+    P0 = tuple(k["o"][j] + sum(face[1][i] * k["R"][i][j] for i in range(3)) for j in range(3))
+    n0 = tuple(sum(face[2][i] * k["R"][i][j] for i in range(3)) for j in range(3))
+    if abs(n0[2] - 1.0) > 1e-9:
+        raise ValueError("tertiary_air_duct: the hood's mouth is not vertical")
+    ta = calciner_inlets(g)["tertiary_air"]
+    z0 = layout(g)["z_calciner_throat"]
+    E = (ta["centre"][0], ta["centre"][1], z0 + ta["centre"][2])
+    D = ta["D"]
+    r = 0.5 * D
+    Rb = v(g["tertiary_air_duct"]["bend_R_over_D"]) * D
+    n = int(v(g["tertiary_air_duct"]["bend_pieces"]))
+    hx, hy = E[0] - P0[0], E[1] - P0[1]
+    hn = math.hypot(hx, hy)
+    h = (hx / hn, hy / hn, 0.0)
+    beta = 0.0
+    for _ in range(50):          # the run's slope, from where the bend ends
+        phi = 0.5 * math.pi - beta
+        S = tuple(P0[i] + Rb * (h[i] * (1.0 - math.cos(phi)) + (math.sin(phi) if i == 2 else 0.0)) for i in range(3))
+        beta = math.atan2(E[2] - S[2], math.hypot(E[0] - S[0], E[1] - S[1]))
+    pts = [P0]
+    for j in range(1, n + 1):
+        ps = phi * j / n
+        pts.append(tuple(P0[i] + Rb * (h[i] * (1.0 - math.cos(ps)) + (math.sin(ps) if i == 2 else 0.0)) for i in range(3)))
+    d = tuple(E[i] - S[i] for i in range(3))
+    L = math.sqrt(sum(x * x for x in d))
+    pts.append(tuple(E[i] + r * d[i] / L for i in range(3)))
+    # the run against the calciner's stub axis (+y): the angle it comes in at
+    inc = math.degrees(math.acos(d[1] / L))
+    length = Rb * phi + L
+    return {"D": D, "pts": pts, "start": P0, "end": E, "run_slope_deg": math.degrees(beta),
+            "run_slope_pct": 100.0 * math.tan(beta), "run_L": L, "bend_deg": math.degrees(phi),
+            "plan_deg": math.degrees(math.atan2(-hx, hy)), "inlet_angle_deg": inc,
+            "length": length, "volume": math.pi * r * r * length}
+
+
+def _polyline_bodies(prefix, pts, r, rgb):
+    """Each run of a polyline a cylinder of radius r, lengthened at a bend
+    by r tan(turn / 2) so the two runs close the bend's outside; kinds and
+    fields as cooler_body()."""
+    bodies = []
+    dirs = []
+    for a, b in zip(pts, pts[1:]):
+        d = [b[k] - a[k] for k in range(3)]
+        n = math.sqrt(sum(x * x for x in d))
+        dirs.append((tuple(x / n for x in d), n))
+    for i, (u, n) in enumerate(dirs):
+        e0 = e1 = 0.0
+        if i > 0:
+            cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(dirs[i - 1][0], u))))
+            e0 = r * math.tan(0.5 * math.acos(cosT))
+        if i < len(dirs) - 1:
+            cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(u, dirs[i + 1][0]))))
+            e1 = r * math.tan(0.5 * math.acos(cosT))
+        base = tuple(pts[i][k] - e0 * u[k] for k in range(3))
+        L = n + e0 + e1
+        end = tuple(base[k] + L * u[k] for k in range(3))
+        half = tuple(r * math.sqrt(max(0.0, 1.0 - x * x)) for x in u)
+        lo = tuple(min(p, e) - h for p, e, h in zip(base, end, half))
+        hi = tuple(max(p, e) + h for p, e, h in zip(base, end, half))
+        bodies.append({"name": f"{prefix}_{i + 1}", "kind": "cyl",
+                       "p": base + u + (r, L), "V": math.pi * r * r * L, "box": lo + hi, "rgb": rgb})
+    return bodies
+
+
+def tertiary_air_duct_bodies(g):
+    """ta_duct.bas's bodies: tertiary_air_duct()'s polyline as cylinders."""
+    t = tertiary_air_duct(g)
+    return _polyline_bodies("ta_duct", t["pts"], 0.5 * t["D"], (0.6, 0.2, 0.8))
+
+
+def meal_dispersion_boxes(g):
+    """The dispersion box (dispersion_box(): one design, the pipe's own
+    bore) at each meal pipe's entry into a riser, as meal_routes() lays
+    them (C1 -> R2, C2 -> R3, C3 -> R4, both strings): the cube, axis-
+    aligned (the pipes come in along x or y), from the chord plane out by
+    its edge. C4's and C5's meal goes into the calciner, whose CFD solid
+    carries its boxes."""
+    out = []
+    for q in meal_routes(g):
+        e = q.get("entry")
+        if e is None:
+            continue
+        b = e["box"]
+        ax, ay = e["A"]
+        ux, uy = e["away"]
+        hw = 0.5 * b["width"]
+        lo, hi = b["rho_in"], b["rho_out"]
+        if abs(ux) > 0.5:
+            xs = sorted((ax + ux * lo, ax + ux * hi))
+            ys = (ay - hw, ay + hw)
+        else:
+            ys = sorted((ay + uy * lo, ay + uy * hi))
+            xs = (ax - hw, ax + hw)
+        out.append({"name": f"dbox_{q['name']}_{q['string']}", "box": (xs[0], ys[0], b["z_bottom"], xs[1], ys[1], b["z_top"]),
+                    "V": b["width"] * (b["rho_out"] - b["rho_in"]) * b["height"], "dims": b})
     return out
 
 
@@ -2531,29 +2606,12 @@ def meal_pipe_bodies(g):
     bodies = []
     ORANGE = (0.93, 0.55, 0.13)
     for q in meal_routes(g):
-        r = 0.5 * q["D"]
-        pts = q["pts"]
-        dirs = []
-        for a, b in zip(pts, pts[1:]):
-            d = [b[k] - a[k] for k in range(3)]
-            n = math.sqrt(sum(x * x for x in d))
-            dirs.append((tuple(x / n for x in d), n))
-        for i, (u, n) in enumerate(dirs):
-            e0 = e1 = 0.0
-            if i > 0:
-                cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(dirs[i - 1][0], u))))
-                e0 = r * math.tan(0.5 * math.acos(cosT))
-            if i < len(dirs) - 1:
-                cosT = max(-1.0, min(1.0, sum(x * y for x, y in zip(u, dirs[i + 1][0]))))
-                e1 = r * math.tan(0.5 * math.acos(cosT))
-            base = tuple(pts[i][k] - e0 * u[k] for k in range(3))
-            L = n + e0 + e1
-            end = tuple(base[k] + L * u[k] for k in range(3))
-            half = tuple(r * math.sqrt(max(0.0, 1.0 - x * x)) for x in u)
-            lo = tuple(min(p, e) - h for p, e, h in zip(base, end, half))
-            hi = tuple(max(p, e) + h for p, e, h in zip(base, end, half))
-            bodies.append({"name": f"meal_{q['name']}_{q['string']}_{i + 1}", "kind": "cyl",
-                           "p": base + u + (r, L), "V": math.pi * r * r * L, "box": lo + hi, "rgb": ORANGE})
+        bodies += _polyline_bodies(f"meal_{q['name']}_{q['string']}", q["pts"], 0.5 * q["D"], ORANGE)
+    # a dispersion box at each riser entry (the cube; its open face on the riser's wall)
+    for b in meal_dispersion_boxes(g):
+        x0, y0, z0, x1, y1, z1 = b["box"]
+        bodies.append({"name": b["name"], "kind": "box", "p": (x0, x1, y0, y1, z0, z1), "V": b["V"],
+                       "box": b["box"], "rgb": (0.55, 0.55, 0.6)})
     return bodies
 
 

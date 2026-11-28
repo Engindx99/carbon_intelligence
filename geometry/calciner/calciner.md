@@ -19,11 +19,12 @@ Kaynak: Jiangsu Pengfei 5000 t/d hattı (PF5000, kendisi de çift hatlı); efekt
 | Tersiyer hava kanalı çapı | 2.4393 m | FLS oranıyla türetilmiş |
 | Farin besleme borusu çapı | 0.8485 m | literatür; Fidaros 2007 × √2 |
 | Yakıt borusu çapı | 0.2828 m | literatür; Fidaros 2007 × √2 |
-| Dağıtma plakası çıkış açısı (yatayın üstü) | 10 ° | modelleme; tip: KHD US 6,875,267 + üretici görseli; açı görselden |
-| Dağıtma plakası yay yarıçapı | 0.408 m | çıkıntıdan ve açılardan |
-| Dağıtma plakası duvardan çıkıntısı | 0.424 m | 0.5 × farin borusu çapı (model) |
-| Dağıtma plakası genişliği | 0.8485 m | 1.0 × farin borusu çapı (model) |
-| Dağıtma plakası kalınlığı | 0.05 m | modelleme |
+| Dağıtma kutusu genişliği (duvar boyunca) | 2.291 m | 2.7 × farin borusu çapı (model; görsel oranı) |
+| Dağıtma kutusu arka yüz yüksekliği | 0.000 m | 1.0 × farin borusu çapı (model) |
+| Dağıtma kutusu açık yüz yüksekliği | 2.185 m | arka yükseklik + eğim × koşu |
+| Dağıtma kutusu taban rampası (yatayla) | 60 ° | modelleme; model; görsel |
+| Dağıtma kutusu: dikey farin borusu boyu (kutu üstünden) | 1.000 m | modelleme |
+| Dağıtma kutusu alt kenarı (kalsinatör tabanından) | 10.491 m | tersiyer hava kanalı üstü + 1 m |
 | **Ekipman hacmi (koni + silindir)** | 1009.71 m³ | türetilmiş |
 | **Duvar alanı (silindir + koni + tavan halkası)** | 635.96 m² | türetilmiş |
 <!-- END GENERATED -->
@@ -67,12 +68,11 @@ Koordinatlar: eksen **z**, fırın gazı giriş yüzü (boğazın altı) **z = 0
 | 2 + boyun (üç düz parça) ve düşey kanal | Ø4.950; 1) tavan ortasından 45° yukarı-öne, boy 4.950 (kapağı 2.475 geride, gövdenin içinde; içeride kalan 47.546), 2) yatay 2.475, z 36.630, 3) 45° aşağı-öne 4.950, z 33.130 ile biter; 4) düşey kanal 4.207; mitre birleşimleri; kanalın alt ucu y = −9.660, z 28.923, tepe z 39.105 | 1352.941 (+319.144) |
 | 3a + kol +x | Ø3.5, kanalın alt ucundan x–z düzleminde düşeyden 60° dışa, eğik parça 4.301, mitre ile yatay kol 1.750 (eksen z 26.772), çıkış yüzü x = 5.475 → gas_outlet_1 | 1405.488 (+58.217 − ortak 5.669) |
 | 3b + kol −x | kanalla ortak 5.669, kolların ortak hacmi 4.122, üçünün 0.000 (sayısal, 300³ nokta) → gas_outlet_2 | 1453.914 |
-| 5a / 5b + farin boruları ±x | Ø0.8485, 60°, eksenleri duvarı z 11.385'da keser; deliğin alt kenarı z 10.491, uç yüzleri (±3.870, 0, 12.252) | 1454.487 / 1455.060 (+0.5730 her biri) |
-| 6 + tersiyer hava | Ø2.4393, teğetsel, ekseni y boyunca, x -2.101, z 8.271; üst kenarı z 9.491, yüzü y -6.370 (−y'den, fırına paralel) | 1473.147 (+18.087) |
-| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.385'da keser; uç yüzleri (0, ±4.236, 11.885) | 1473.209 / 1473.272 (+0.0629 her biri) |
-| 8a / 8b − dağıtma plakaları ±x | farin deliğinin en alt noktasının 0.05 altında, duvarda 60° eğimle başlar, R 0.408 yayla +10°'ye döner; kenarı ρ 2.946, z 10.243; en alt noktası z 10.187; genişlik 0.849, kalınlık 0.05; kuyruk 0.1 duvarın içine; akıştan kesilir (katı hacmi 0.0267) | 1473.252 / **1473.232** (−0.0201 her biri) |
+| 5a / 5b + farin dağıtma kutusu ve dikey borusu ±x | Ø0.8485 dikey boru, 1 m, kutunun üst yüzünde; kutu kama: genişlik 2.291, arka yüz ρ 4.431, yüksekliği 0.000; taban 60° rampayla ρ 3.170'e iner (açık yüz 2.185 yüksek, gövdeye açık), z 10.491 .. 12.675; boru ekseni ρ 3.901, üst yüzü (meal_feed) (±3.901, 0, 13.675) | 1457.005 / 1460.096 (+3.0910 her biri: kutu 2.5256, boru 0.5654) |
+| 6 + tersiyer hava | Ø2.4393, teğetsel, ekseni y boyunca, x -2.101, z 8.271; üst kenarı z 9.491, yüzü y -6.370 (−y'den, fırına paralel) | 1478.183 (+18.087) |
+| 7a / 7b + yakıt boruları ±y | Ø0.2828, 30°, eksenleri duvarı z 11.583'da keser; uç yüzleri (0, ±4.236, 12.083) | 1478.246 / 1478.308 (+0.0629 her biri) |
 | **Uyarı: eski CFD sonuçları** | Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı | — |
-| Yeniden koşu: domen | geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py | 1473.232 |
+| Yeniden koşu: domen | geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py | 1478.308 |
 | Yeniden koşu: çıkışlar | gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±5.475, y = −9.660, z 26.772; yatay kol 0.5 çap (1.750), eğik parçadan 30° mitre sonrası | 9.621 m² her biri |
 <!-- END GENERATED -->
 
@@ -112,6 +112,13 @@ Yapım adımları:
 8. sınır yüzlerinin boyanması ve dışa aktarma → `geometry/output/2500/calciner.*`
 
 `calciner_build.log` her çalıştırmada yazılır; `tests/test_plant_geometry.py` ölçüleri, adım hacimlerini ve sınır yüzü alanlarını oradan `plant_geometry.py` ile karşılaştırır.
+
+**Dağıtma kutusu (dispersion box)** (kullanıcı kararı, 28 Kasım 2026; üretici görselleri "Dispersion Box"). Farin dikey bir boruyla iner ve duvara yaslı **kama biçimli** kutunun üst yüzüne düşer; kutunun tabanı gövdeye doğru eğimli bir rampadır, farin rampada kayar ve kutunun gövdeye açık yüzünden gaza çıkar. Üst yüz yatay, rampa üst yüzün dış kenarından başlar (arka yüz yok), kesit üçgen. Aşağıdaki "Farin besleme boruları" paragrafındaki 60° eğimli boru bunun yerine geçti (eski anlatım tarihçe olarak kaldı); 16 Kasım'daki eğimli plaka, bu oturumdaki kemerli plaka ve küp kutu denemeleri kaldırıldı.
+- **Ölçüler.** Yayınlanmış bir ölçü yok; hepsi `model` (`plant_geometry.yaml` → `dispersion_box`), görsel oranları boru çapı D_feed ile ölçeklendi: genişlik 2.7 × D (2.291 m), duvarın dışına derinlik 1.25 × D (1.061 m), arka yüz yüksekliği 0 (kama), rampa yatayla 60° (açık yüz 2.185 m yüksek, kiriş düzleminde), dikey boru üst yüzden 1.0 m yukarı, boru ekseni üst yüzün dış yarısında; kutunun alt kenarı tersiyer hava kanalının üstünden `feed_above_tertiary_air` (1.0 m) yukarıda. Yakıt boruları kutunun orta yüksekliğinde (z 11.583 m) duvarı keser (eskiden 11.49 m).
+- **Kutu ekipmandan ayrı hacim.** Kutu gövdenin dışına doğru hacimlidir: gövdeye bakan yüzü açık, diğer yüzler kapalı; duvar kalınlığı modellenmez (domende yalnız akışkan boşluğu). Açık yüz gövdenin kiriş düzleminde (ρ = √(R² − (w/2)²)) başlar, köşeleri silindire değer; gövdenin içinde kalan kısım birleşimde erir. Dışarıda kalan hacim kapalı formda: L(y) = ρ_arka − √(R² − y²) ile genişlik boyunca ∫(h_arka·L + tan·L²/2) dy (2.526 m³) + boru π r² L (0.565 m³). Makro aynı formülle ölçer (aşama 5a/5b, 0.1 %).
+- **Sınırlar.** `meal_feed_1/2` dikey borunun üst yüzüdür (yatay disk, normal +z, π r² = 0.5654 m²); kutu ve boru duvarları `wall`.
+- **Dahil / hariç.** Dahil: kutunun ve borunun akış hacmi, rampa ve açıklığın gövdeyle birleşimi. Hariç: kutunun katı duvarı, askılar, flanş halkası, kutu içi kemerli plaka (kullanıcının ilk görselindeki kemerli plakanın bu kutunun içinde olup olmadığı belirsiz; modele alınmadı). Etkilenebilecek çıktılar: farinin giriş yüksekliği ve dağılımı, kalma süreleri, basınç düşümü, URANS bölünme oranı. Doğrulama: yalnız geometrik ve hacim kontrolleri; CFD kanıtı yok, geometri bitince topluca yeniden koşulacak.
+- **Katı.** `calciner.bas` aşama 5a/5b; kalsinatör sayfasında detay B (D_feed, boru yükselişi).
 
 ## Gaz-yalnız CFD ve farin kalma süresi (14 Ekim 2026; ESKİ KATIYLA, yeniden koşulacak)
 

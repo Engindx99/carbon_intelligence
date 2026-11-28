@@ -68,6 +68,11 @@ Const RISER_TAPER_DEG              As Double  = 15#          ' [cfd_decision, pr
 Const RISER_IN_CLEAR               As Double  = 0.3          ' [model, preheater/cyclone_C4.md]
 Const RISER_IN_STUB_OVER_D         As Double  = 1#           ' [model, preheater/cyclone_C4.md]
 Const D_RISER_SRC                  As Double  = 3.15         ' R1 inner D = C2's D_x [derived]
+Const BOX_WIDTH_OVER_D             As Double  = 2.7          ' dispersion box width, x the feed pipe's D [model, calciner/calciner.md]
+Const BOX_DEPTH_OVER_D             As Double  = 1.25         ' its back face out past the wall, x D [model, calciner/calciner.md]
+Const BOX_BACK_H_OVER_D            As Double  = 0#           ' its back face's height, x D [model, calciner/calciner.md]
+Const BOX_SLOPE_DEG                As Double  = 60#          ' its floor ramp to the horizontal [model, calciner/calciner.md]
+Const BOX_PIPE_RISE                As Double  = 1#           ' its vertical meal pipe over the box's top [model, calciner/calciner.md]
 Const C1_D_BARREL                  As Double  = 4.32         ' [published, preheater/cyclone_C1.md]
 Const C1_H_BARREL                  As Double  = 6.79         ' [derived_from_reference, preheater/cyclone_C1.md]
 Const C1_H_CONE                    As Double  = 4.65         ' [derived_from_reference, preheater/cyclone_C1.md]
@@ -589,6 +594,19 @@ Dim wRefSet As Boolean
 Dim vEquip As Double, vDuctFree As Double, vPipe As Double, vWall As Double
 Dim vElbow As Double, vLeg As Double
 Dim vRiserBend As Double, vRiser As Double, vFeed As Double
+' C1's dispersion box (user decision, 28 Nov 2026) in place of the sloped chute: a wedge on the
+' riser's -x side at y = yMid: its section in the plane y = yMid (rho radial out from the riser
+' axis towards -x, z) a triangle (or, with a back face, a trapezoid) -- the top level at boxZ1, the
+' floor a ramp falling at BOX_SLOPE_DEG from the top's outer edge (rho = boxRout) to the open face
+' on the chord plane rho = boxRin -- boxW wide across (y); a vertical round meal pipe (D =
+' FEED_W) on its top face at rho = boxRp, its top face the meal_feed. As calciner.bas builds it.
+Dim boxW As Double, boxBackH As Double, boxH As Double, boxTan As Double
+Dim boxRin As Double, boxRout As Double, boxRp As Double
+Dim boxZ0 As Double, boxZ1 As Double, boxZFoot As Double, zPipeTop As Double, boxMidZ As Double
+Dim pipeLen As Double, pipeMidZ As Double, rFeedPipe As Double, vStage10 As Double
+Dim s1 As Double, iL As Double, iL2 As Double
+Dim uSignB As Double, vSignB As Double, uSignP As Double, vSignP As Double
+
 Dim vTransLo As Double, vTransHi As Double, vTransMid As Double
 Dim vStage1 As Double, vStage2 As Double, vStage3 As Double
 Dim vStage4 As Double, vStage5 As Double, vStage6 As Double
@@ -1110,23 +1128,30 @@ Private Sub Derive()
     zFeed = zRiserTop - RISER_ABOVE_FEED
     zRiserBot = zFeed - RISER_BELOW_FEED
 
-    ' The chute starts on the riser's axis, low enough that its axis
-    ' meets the wall at zFeed, and runs FEED_DEPTH past the wall.
-    ' Checked here, not in PreChecks: at 90 deg the lines below divide
-    ' by zero before PreChecks runs.
-    If FEED_SLOPE_DEG < 0# Or FEED_SLOPE_DEG >= 90# Then
-        Fail "FEED_SLOPE_DEG is " & Fmt(FEED_SLOPE_DEG) & "; the chute has to slope between " & _
-             "0 (horizontal) and 90 deg (vertical, which would run along the riser wall)."
+    ' The dispersion box on the riser's -x side (see the Dim above), its mid height at zFeed.
+    ' rho_in = sqrt(r^2 - (w/2)^2) is its open face's chord plane, so its sides meet the cylinder
+    ' (what is inside the riser merges away).
+    rFeedPipe = 0.5 * FEED_W
+    boxW = BOX_WIDTH_OVER_D * FEED_W
+    boxBackH = BOX_BACK_H_OVER_D * FEED_W
+    boxTan = Tan(BOX_SLOPE_DEG * PI / 180#)
+    If 0.5 * boxW >= rRiser Then
+        Fail "the dispersion box (width " & Fmt(boxW) & " m) does not fit on the riser (D " & Fmt(2# * rRiser) & " m)."
     End If
-    thF = FEED_SLOPE_DEG * PI / 180#
-    fx = -Cos(thF): fz = Sin(thF)
-    wx = Sin(thF): wz = Cos(thF)
-    zFeedStart = zFeed - rRiser * (fz / -fx)
-    lFeed = rRiser / -fx + FEED_DEPTH
-    xFeedEnd = xRiser + lFeed * fx
-    zFeedEnd = zFeedStart + lFeed * fz
-    ' the end face's corner furthest out, the lower one
-    xBoxMin = MinD(xFeedEnd - 0.5 * FEED_H * wx, XOutMin())
+    boxRin = Sqr(rRiser * rRiser - 0.25 * boxW * boxW)
+    boxRout = rRiser + BOX_DEPTH_OVER_D * FEED_W
+    boxRp = boxRout - 0.5 * BOX_DEPTH_OVER_D * FEED_W
+    boxH = boxBackH + (boxRout - boxRin) * boxTan
+    boxMidZ = zFeed
+    boxZ0 = zFeed - 0.5 * boxH
+    boxZ1 = zFeed + 0.5 * boxH
+    boxZFoot = boxZ1 - boxBackH
+    zPipeTop = boxZ1 + BOX_PIPE_RISE
+    pipeLen = BOX_PIPE_RISE + 0.1
+    pipeMidZ = boxZ1 + 0.5 * (BOX_PIPE_RISE - 0.1)
+    xFeedEnd = xRiser - boxRp
+    zFeedEnd = zPipeTop
+    xBoxMin = MinD(xRiser - boxRout, XOutMin())
     yBoxMax = MaxD(R, yHi2)                 ' the volute's duct reaches past the barrel
     If yMid + rRiser > yBoxMax Then yBoxMax = yMid + rRiser
 
@@ -1145,10 +1170,13 @@ Private Sub Derive()
     ' The chute starts on the riser's axis and runs out through the
     ' wall. A line of it at (y, w) in its section leaves the riser
     ' where the horizontal reach s cos + w sin equals sqrt(r^2 - y^2);
-    ' the w part is odd across the section and cancels, as it does for
-    ' the duct, so what the merge keeps is the prism less the circular
-    ' segment stretched by 1 / cos. At 0 deg this is a plain stub.
-    vFeed = FEED_H * (FEED_W * lFeed - Segment(rRiser, -0.5 * FEED_W, 0.5 * FEED_W) / -fx)
+    ' what the merge keeps outside the riser: with L(y) = boxRout - sqrt(r^2 - y^2) the box's
+    ' length at y and its height boxBackH + boxTan (boxRout - rho) at rho, the integral over the
+    ' width of boxBackH L + boxTan L^2 / 2; plus the pipe
+    s1 = 0.5 * boxW * boxRin + rRiser * rRiser * ASin(0.5 * boxW / rRiser)
+    iL = boxW * boxRout - s1
+    iL2 = boxW * boxRout * boxRout - 2# * boxRout * s1 + 2# * rRiser * rRiser * 0.5 * boxW - 2# * (0.5 * boxW) ^ 3 / 3#
+    vFeed = boxBackH * iL + 0.5 * boxTan * iL2 + PI * rFeedPipe * rFeedPipe * BOX_PIPE_RISE
 
     vStage1 = vEquip                       ' barrel + cone
     vStage2 = vStage1 + vDuctFree          ' + inlet duct
@@ -1160,7 +1188,8 @@ Private Sub Derive()
     vStage8 = vStage7 + vRiser             ' + straight riser, same second body
     vStage9 = vStage8 + vTransMid          ' + loft joining the two; measured once built
     If RISER_ON Then
-        vFinal = vStage9 + vFeed           ' + meal feed chute; re-based on the measured loft
+        vStage10 = vStage9 + vFeed         ' + dispersion box and meal pipe; re-based on the measured loft
+        vFinal = vStage10
         outName = CYCLONE_NAME & "_riser"
     ElseIf RISER_IN_ON Then
         ' The riser stub, a second body for now, up to the inclined
@@ -1195,18 +1224,6 @@ Private Function SegAntider(ByVal Rr As Double, ByVal y As Double) As Double
     q = Rr * Rr - y * y
     If q < 0# Then q = 0#
     SegAntider = 0.5 * y * Sqr(q) + 0.5 * Rr * Rr * ASin(y / Rr)
-End Function
-
-' How far the feed chute's hole in the riser wall reaches from zFeed.
-' Its edges leave the wall where s cos = sqrt(r^2 - y^2) -+ (H/2) sin,
-' which puts them (H/2) / cos above and below zFeed on the chute's
-' mid-plane; towards the sides the wall curves in, which drops both
-' edges by up to (r - sqrt(r^2 - (W/2)^2)) tan. The upper edge gains
-' nothing from that, the lower one loses it, and this returns the
-' larger reach, the lower one.
-Private Function FeedHoleHalf() As Double
-    FeedHoleHalf = 0.5 * FEED_H / -fx + _
-                   (rRiser - Sqr(rRiser * rRiser - 0.25 * FEED_W * FEED_W)) * (fz / -fx)
 End Function
 
 Private Function ASin(ByVal v As Double) As Double
@@ -1620,36 +1637,14 @@ Private Sub RiserPreChecks()
         Fail "the riser bend rises to z = " & Fmt(zRiserBendTop) & " m, past the start of the " & _
              "outlet bend at z = " & Fmt(zOutletTop) & " m."
     End If
-    ' The chute's hole in the wall reaches at most this far above and
-    ' below zFeed: its section's height, stretched by the slope, plus
-    ' the rise across half its width where the wall curves back.
-    If RISER_ABOVE_FEED <= FeedHoleHalf() Or RISER_BELOW_FEED <= FeedHoleHalf() Then
-        Fail "the feed chute's hole in the riser wall reaches " & Fmt(FeedHoleHalf()) & _
-             " m above and below the feed; it does not fit between the riser's bend and its " & _
-             "inlet face."
+    ' The box has to stand between the riser's bend and its inlet face, its pipe outside the
+    ' cylinder, and all of it clear of the volute's duct and the barrel in x.
+    If RISER_ABOVE_FEED <= 0.5 * boxH Or RISER_BELOW_FEED <= 0.5 * boxH Then
+        Fail "the dispersion box (" & Fmt(boxH) & " m high) does not fit between the riser's bend and its inlet face."
     End If
-    If FEED_W >= 2# * rRiser Then
-        Fail "the feed chute (" & Fmt(FEED_W) & " m wide) does not fit on the riser (D " & _
-             Fmt(2# * rRiser) & " m)."
-    End If
-    ' The end face has to lie wholly outside the riser, or part of the
-    ' meal_feed face is inside it and merges away. Its nearest edge,
-    ' the upper one, reaches in by half the section times the sine.
-    If FEED_DEPTH * -fx <= 0.5 * FEED_H * wx Then
-        Fail "the feed chute's end face reaches back into the riser; FEED_DEPTH must exceed " & _
-             Fmt(0.5 * FEED_H * wx / -fx) & " m at " & Fmt(FEED_SLOPE_DEG) & " deg."
-    End If
-    ' The start face has to lie wholly inside the riser, above its
-    ' inlet face, or the closed-form volume counts a piece that is not
-    ' there. Across it the reach is at most half the section times the
-    ' sine, and half the width across.
-    If Sqr((0.5 * FEED_H * wx) ^ 2 + (0.5 * FEED_W) ^ 2) >= rRiser Then
-        Fail "the feed chute's start face does not fit inside the riser."
-    End If
-    If zFeedStart - 0.5 * FEED_H * wz <= zRiserBot Then
-        Fail "the feed chute starts at z = " & Fmt(zFeedStart - 0.5 * FEED_H * wz) & _
-             " m, below the riser's inlet face at z = " & Fmt(zRiserBot) & " m."
-    End If
+    If boxRp - rFeedPipe <= rRiser Then Fail "the dispersion box's meal pipe reaches into the riser."
+    If BOX_WIDTH_OVER_D <= 0# Or BOX_DEPTH_OVER_D <= 0# Or BOX_BACK_H_OVER_D < 0# Or BOX_PIPE_RISE <= 0# Or _
+       BOX_SLOPE_DEG <= 0# Or BOX_SLOPE_DEG >= 90# Then Fail "the BOX_* sizes have to be positive and the slope between 0 and 90 deg."
     If zRiserBot <= 0# Then
         Fail "the riser's inlet face is at z = " & Fmt(zRiserBot) & " m, at or below the " & _
              "dust outlet."
@@ -1674,7 +1669,7 @@ Private Sub Build()
     Dim planeZ0 As SldWorks.Feature       ' the z = 0 plane
     Dim planeBend As SldWorks.Feature     ' z = zOutletTop: the gooseneck starts and ends here
     Dim planeRiser As SldWorks.Feature    ' z = zRiserTop, where the riser meets its bend
-    Dim planeFeed As SldWorks.Feature     ' y = yMid - FEED_W / 2, the feed chute's side wall
+    Dim planeBoxY As SldWorks.Feature, planePipeZ As SldWorks.Feature   ' y = yMid (the box's section), z = pipe mid height
     Dim planeRoof As SldWorks.Feature     ' z = zRoof, the volute's outline
     Dim planeLeg As SldWorks.Feature      ' x = rBend, where the 90 deg elbow ends
     Dim planeRiserIn As SldWorks.Feature  ' z = zRiBot, the riser inlet's gas inlet face
@@ -1727,7 +1722,8 @@ Private Sub Build()
     End If
     If RISER_ON Then
         Set planeRiser = OffsetPlane(planeZ0, 0#, 0#, zRiserTop, uSignQ, vSignQ)
-        Set planeFeed = OffsetPlane(planeY0, 0#, yMid - 0.5 * FEED_W, 0#, uSignF, vSignF)
+        Set planeBoxY = OffsetPlane(planeY0, 0#, yMid, 0#, uSignB, vSignB)
+        Set planePipeZ = OffsetPlane(planeZ0, 0#, 0#, pipeMidZ, uSignP, vSignP)
     End If
     CalibrateSketchAxes planeX0, 0#, 0#, 0#, uSignX, vSignX
 
@@ -1822,9 +1818,9 @@ Private Sub Build()
         CheckBodies "9  + transition", 1, vStage9, _
                     MinD(xRiser - rRiser, XOutMin()), yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
 
-        '--- 10. meal feed chute out through the riser wall ----------
-        Set f = ExtrudeFeedChute(planeFeed)
-        CheckStage "10 + feed chute", vFinal, _
+        '--- 10. the dispersion box and its vertical meal pipe ------------
+        Set f = AddFeedBox(planeBoxY, planePipeZ)
+        CheckStage "10 + dispersion box", vStage10, _
                    xBoxMin, yLo2, 0#, xBoxMax, yBoxMax, zElbowTop
     End If
 
@@ -3020,129 +3016,95 @@ Private Function LoftTransition() As SldWorks.Feature
     Note "transition loft " & Fmt(got - vStage8) & " m3 (mean of the end prisms " & _
          Fmt(vTransMid) & ", " & Fmt(100# * (got - vStage8 - vTransMid) / vTransMid) & " %)"
     vStage9 = got
-    vFinal = vStage9 + vFeed
+    vStage10 = vStage9 + vFeed
+    vFinal = vStage10
     Set LoftTransition = f
 
 End Function
 
 
-' The meal feed chute. Drawn as its SIDE VIEW -- the rectangle it
-' cuts in the x-z plane, tilted FEED_SLOPE_DEG -- on the plane of its
-' own side wall y = yMid - FEED_W / 2, then extruded straight along y
-' by its width, as the inlet duct is. It starts on the riser's axis,
-' so its lower end lies inside the riser and dissolves in the merge.
-'
-' Extruded the wrong way along y it lands off the riser's middle and
-' cuts a different segment out of it, but only about 0.14 m3 of 250
-' different, under VOL_TOL; so the end face is found and its extent
-' in y read back, which settles it.
-Private Function ExtrudeFeedChute(planeFeed As SldWorks.Feature) As SldWorks.Feature
+' The dispersion box and its vertical meal pipe, united with the body, on the riser's -x side at
+' y = yMid (as calciner.bas AddMealBox): the wedge section (rho, z) on planeBox (y = yMid) -- the
+' open face's bottom (boxRin, boxZ0), the top's outer edge or back face's foot (boxRout, boxZFoot),
+' its top (boxRout, boxZ1) if there is a back face, the top's start (boxRin, boxZ1) -- x = xRiser -
+' rho, extruded mid-plane by boxW; a circle of radius FEED_W/2 at (xRiser - boxRp, yMid) on
+' planePipe, extruded mid-plane by pipeLen (0.1 m of it inside the box). Both planes were made
+' while the part was empty, their sketch axes in uSignB.. / uSignP.. Returns the pipe feature.
+Private Function AddFeedBox(planeBox As SldWorks.Feature, planePipe As SldWorks.Feature) As SldWorks.Feature
 
     Dim sk As SldWorks.Sketch
     Dim skFeat As SldWorks.Feature
-    Dim qx(3) As Double, qz(3) As Double
-    Dim hh As Double, y0 As Double
-    Dim u0 As Double, v0 As Double, u1 As Double, v1 As Double
     Dim f As SldWorks.Feature
-    Dim body As SldWorks.Body2
-    Dim mp As Variant
-    Dim i As Long, j As Long, k As Long
+    Dim cx(3) As Double, cz(3) As Double
+    Dim u(3) As Double, w(3) As Double
+    Dim u0 As Double, w0 As Double
+    Dim i As Long, j As Long, nP As Long
 
-    uSign = uSignF: vSign = vSignF
-
-    hh = 0.5 * FEED_H
-    y0 = yMid - 0.5 * FEED_W
-
-    qx(0) = xRiser - hh * wx:   qz(0) = zFeedStart - hh * wz      ' start, lower edge
-    qx(1) = xFeedEnd - hh * wx: qz(1) = zFeedEnd - hh * wz        ' end, lower edge
-    qx(2) = xFeedEnd + hh * wx: qz(2) = zFeedEnd + hh * wz        ' end, upper edge
-    qx(3) = xRiser + hh * wx:   qz(3) = zFeedStart + hh * wz      ' start, upper edge
-
+    cx(0) = xRiser - boxRin:  cz(0) = boxZ0
+    cx(1) = xRiser - boxRout: cz(1) = boxZFoot
+    If boxBackH > 0.0001 Then
+        cx(2) = xRiser - boxRout: cz(2) = boxZ1
+        cx(3) = xRiser - boxRin:  cz(3) = boxZ1
+        nP = 4
+    Else
+        cx(2) = xRiser - boxRin:  cz(2) = boxZ1
+        nP = 3
+    End If
+    uSign = uSignB: vSign = vSignB
     swModel.ClearSelection2 True
-    planeFeed.Select2 False, 0
+    planeBox.Select2 False, 0
     swSkMgr.InsertSketch True
     Set sk = swSkMgr.ActiveSketch
-    If sk Is Nothing Then Fail "could not open the feed chute sketch."
+    If sk Is Nothing Then Fail "could not open the dispersion box sketch."
     wRefSet = False
-
-    For i = 0 To 3
-        j = (i + 1) Mod 4
-        G2S sk, qx(i), y0, qz(i), u0, v0
-        G2S sk, qx(j), y0, qz(j), u1, v1
-        If swSkMgr.CreateLine(u0, v0, 0#, u1, v1, 0#) Is Nothing Then
-            Fail "CreateLine failed on the feed chute side view."
-        End If
+    For i = 0 To nP - 1
+        G2S sk, cx(i), yMid, cz(i), u(i), w(i)
     Next i
-
+    For i = 0 To nP - 1
+        j = (i + 1) Mod nP
+        If swSkMgr.CreateLine(u(i), w(i), 0#, u(j), w(j), 0#) Is Nothing Then Fail "CreateLine failed on the dispersion box."
+    Next i
     swSkMgr.InsertSketch True
     Set skFeat = LastFeature("ProfileFeature")
+    swModel.ClearSelection2 True
+    skFeat.Select2 False, 0
+    Set f = swFeat.FeatureExtrusion3( _
+        True, False, False, _
+        swEndCondMidPlane, swEndCondBlind, _
+        boxW, 0.01, _
+        False, False, False, False, _
+        0#, 0#, _
+        False, False, False, False, _
+        True, True, True, _
+        swStartSketchPlane, 0#, False)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "the dispersion box could not be extruded."
 
-    For k = 0 To 1
-        swModel.ClearSelection2 True
-        skFeat.Select2 False, 0
-        Set f = swFeat.FeatureExtrusion3( _
-            True, False, (k = 1), _
-            swEndCondBlind, swEndCondBlind, _
-            FEED_W, 0.01, _
-            False, False, False, False, _
-            0#, 0#, _
-            False, False, False, False, _
-            True, True, True, _
-            swStartSketchPlane, 0#, False)
-        swModel.ClearSelection2 True
-
-        If Not f Is Nothing Then
-            Set body = TheBody("10 + feed chute")
-            mp = body.GetMassProperties(1000#)
-            If Abs(mp(3) - vFinal) <= VOL_TOL * vFinal And Not FeedEndFace(body) Is Nothing Then
-                Set ExtrudeFeedChute = f
-                Exit Function
-            End If
-            Note "feed chute extruded the wrong way along y (volume " & Fmt(mp(3)) & _
-                 " m3); reversing"
-            swModel.ClearSelection2 True
-            f.Select2 False, 0
-            swModel.EditDelete
-            swModel.ClearSelection2 True
-            Set f = Nothing
-        End If
-    Next k
-
-    Fail "the feed chute could not be extruded to the right volume in either direction " & _
-         "along y. Expected " & Fmt(vFinal) & " m3 and an end face centred at (" & _
-         Fmt(xFeedEnd) & ", " & Fmt(yMid) & ", " & Fmt(zFeedEnd) & ")."
-
-End Function
-
-
-' The feed chute's end face: the plane face normal to the chute axis
-' through its end centre, spanning the chute's own width in y.
-' Nothing else in the part is normal to that axis; the position and
-' the y span are what tell a chute extruded the wrong way along y.
-Private Function FeedEndFace(body As SldWorks.Body2) As SldWorks.Face2
-
-    Dim faces As Variant
-    Dim surf As SldWorks.Surface
-    Dim p As Variant, bx As Variant
-    Dim i As Long
-
-    faces = body.GetFaces
-    For i = 0 To UBound(faces)
-        Set surf = faces(i).GetSurface
-        If surf.IsPlane Then
-            p = surf.PlaneParams
-            If Abs(p(1)) < DIR_TOL And Abs(Abs(p(0) * fx + p(2) * fz) - 1#) < DIR_TOL Then
-                If Abs((p(3) - xFeedEnd) * fx + (p(5) - zFeedEnd) * fz) < 0.0001 Then
-                    bx = faces(i).GetBox
-                    If Abs(bx(1) - (yMid - 0.5 * FEED_W)) < BOX_TOL And _
-                       Abs(bx(4) - (yMid + 0.5 * FEED_W)) < BOX_TOL Then
-                        Set FeedEndFace = faces(i)
-                        Exit Function
-                    End If
-                End If
-            End If
-        End If
-    Next i
+    uSign = uSignP: vSign = vSignP
+    swModel.ClearSelection2 True
+    planePipe.Select2 False, 0
+    swSkMgr.InsertSketch True
+    Set sk = swSkMgr.ActiveSketch
+    If sk Is Nothing Then Fail "could not open the meal pipe sketch."
+    wRefSet = False
+    G2S sk, xRiser - boxRp, yMid, pipeMidZ, u0, w0
+    If swSkMgr.CreateCircleByRadius(u0, w0, 0#, rFeedPipe) Is Nothing Then Fail "CreateCircleByRadius failed on the meal pipe."
+    swSkMgr.InsertSketch True
+    Set skFeat = LastFeature("ProfileFeature")
+    swModel.ClearSelection2 True
+    skFeat.Select2 False, 0
+    Set f = swFeat.FeatureExtrusion3( _
+        True, False, False, _
+        swEndCondMidPlane, swEndCondBlind, _
+        pipeLen, 0.01, _
+        False, False, False, False, _
+        0#, 0#, _
+        False, False, False, False, _
+        True, True, True, _
+        swStartSketchPlane, 0#, False)
+    swModel.ClearSelection2 True
+    If f Is Nothing Then Fail "the meal pipe could not be extruded."
+    Set AddFeedBox = f
 
 End Function
 
@@ -3692,6 +3654,9 @@ Private Sub TagBoundaryFaces()
                 ElseIf RISER_IN_ON And Abs(pz - zRiBot) < 0.0001 Then
                     Paint face, 0.2, 0.7, 0.35            ' gas inlet, the riser stub's bottom
                     nInlet = nInlet + 1: aInlet = aInlet + face.GetArea
+                ElseIf RISER_ON And Abs(pz - zFeedEnd) < 0.0001 Then
+                    Paint face, 0.6, 0.3, 0.7             ' meal_feed: the vertical pipe's top face, gas wall, DPM injection
+                    nFeed = nFeed + 1: aFeed = aFeed + face.GetArea
                 ElseIf RISER_ON And Abs(pz - zRiserBot) < 0.0001 Then
                     ' The gas enters here now, so it takes the colour
                     ' the inlet face had and Fluent Meshing's naming
@@ -3701,10 +3666,6 @@ Private Sub TagBoundaryFaces()
                 Else
                     Paint face, 0.72, 0.72, 0.72          ' roof, vortex finder rim
                 End If
-            ElseIf RISER_ON And Abs(e1) < DIR_TOL And Abs(Abs(e0 * fx + e2 * fz) - 1#) < DIR_TOL And _
-                   Abs((p(3) - xFeedEnd) * fx + (pz - zFeedEnd) * fz) < 0.0001 Then
-                Paint face, 0.6, 0.3, 0.7                 ' meal_feed: gas wall, DPM injection
-                nFeed = nFeed + 1: aFeed = aFeed + face.GetArea
             ElseIf OUTLET_TURN_DEG = 90# And Abs(e1) < DIR_TOL And Abs(e2) < DIR_TOL And _
                    Abs(p(3) - xGasOut) < 0.0001 Then
                 Paint face, 0.2, 0.45, 0.85               ' gas_outlet, the run's end
@@ -3740,7 +3701,7 @@ Private Sub TagBoundaryFaces()
         End If
         If nInlet <> 1 Then Fail "found " & nInlet & " riser inlet faces, expected 1."
         If nFeed <> 1 Then Fail "found " & nFeed & " feed chute end faces, expected 1."
-        CheckArea "meal_feed", aFeed, FEED_W * FEED_H
+        CheckArea "meal_feed", aFeed, PI * rFeedPipe * rFeedPipe
     ElseIf RISER_IN_ON Then
         If nDuctEnd <> 0 Then
             Fail "found " & nDuctEnd & " faces at the duct's end; the riser inlet's loft did not " & _

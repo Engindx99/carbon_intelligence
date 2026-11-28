@@ -175,30 +175,26 @@ Const CAL_TA_X                     As Double  = -2.10055     ' its axis, x (alon
 Const CAL_TA_Z                     As Double  = 8.270908     ' its axis, z [derived]
 Const CAL_TA_Y                     As Double  = -6.3702      ' its face, y [derived]
 Const CAL_FEED_D                   As Double  = 0.8485       ' meal pipe D [derived]
-Const CAL_FEED_X                   As Double  = 3.8702       ' meal pipe end face centre, x [derived]
-Const CAL_FEED_Z                   As Double  = 12.251519    ' meal pipe end face centre, z [derived]
+Const CAL_FEED_X                   As Double  = 3.900513     ' meal pipe end face centre, x [derived]
+Const CAL_FEED_Z                   As Double  = 13.675127    ' meal pipe end face centre, z [derived]
 Const CAL_FUEL_D                   As Double  = 0.2828       ' fuel pipe D [derived]
 Const CAL_FUEL_Y                   As Double  = 4.236225     ' fuel pipe end face centre, y [derived]
-Const CAL_FUEL_Z                   As Double  = 11.885494    ' fuel pipe end face centre, z [derived]
+Const CAL_FUEL_Z                   As Double  = 12.082843    ' fuel pipe end face centre, z [derived]
 Const CAL_BOX_Y                    As Double  = 4.306925     ' the fuel pipes' far side, y [derived]
-Const CAL_DP_R                     As Double  = 0.408061     ' dispersion plate (+x): the meal face's radius [derived]
-Const CAL_DP_T                     As Double  = 0.05         ' its thickness [derived]
-Const CAL_DP_CX                    As Double  = 3.016809     ' the arcs' centre, x [derived]
-Const CAL_DP_CZ                    As Double  = 10.644589    ' the arcs' centre, z [derived]
-Const CAL_DP_AX                    As Double  = 3.3702       ' the meal face's start on the wall, x [derived]
-Const CAL_DP_AZ                    As Double  = 10.440558    ' the meal face's start on the wall, z [derived]
-Const CAL_DP_EX                    As Double  = 2.94595      ' the meal face's edge, x [derived]
-Const CAL_DP_EZ                    As Double  = 10.242727    ' the meal face's edge, z [derived]
-Const CAL_DP_ELX                   As Double  = 2.937268     ' the lower face's edge, x [derived]
-Const CAL_DP_ELZ                   As Double  = 10.193487    ' the lower face's edge, z [derived]
-Const CAL_DP_ZLOW                  As Double  = 10.186528    ' the lower face's lowest point, z [derived]
-Const CAL_DP_PROT                  As Double  = 0.42425      ' the edge past the wall [derived]
-Const CAL_DP_EXIT                  As Double  = 10#          ' the exit angle above the horizontal, deg [derived]
-Const CAL_DP_SLOPE                 As Double  = 60#          ' the meal pipe's slope, where the plate starts, deg [derived]
+Const CAL_BOX_W                    As Double  = 2.29095      ' dispersion box: width [derived]
+Const CAL_BOX_BACKH                As Double  = 0#           ' its back face's height [derived]
+Const CAL_BOX_H                    As Double  = 2.184568     ' its open face's height [derived]
+Const CAL_BOX_Z0                   As Double  = 10.490558    ' its bottom, z [derived]
+Const CAL_BOX_ZFOOT                As Double  = 12.675127    ' its back face's foot, z [derived]
+Const CAL_BOX_RIN                  As Double  = 3.169564     ' its open face on the chord plane, x [derived]
+Const CAL_BOX_ROUT                 As Double  = 4.430825     ' its back face, x [derived]
+Const CAL_BOX_RP                   As Double  = 3.900513     ' its meal pipe's axis, x [derived]
+Const CAL_BOX_SLOPE                As Double  = 60#          ' its floor ramp, deg [derived]
+Const CAL_BOX_ZPIPE                As Double  = 13.675127    ' the pipe's top face, z [derived]
 Const calciner_TAB_1               As String  = "D_throat~Throat (kiln gas inlet) diameter~3130~mm~derived~Estimated;L_throat~Throat length~3130~mm~derived~Estimated;H_cone~Cone height~3871~mm~derived~Estimated;D_vessel~Vessel inner diameter D~6740~mm~FLS ratio~Estimated;H_cylinder~Cylinder height~26129~mm~derived~Estimated;H_vessel~Vessel height (cone + cylinder)~30000~mm~published~Verified;D_neck~Gooseneck neck diameter (both arms' area)~4950~mm~derived~Estimated;neck_slope~Neck slope~45~deg~model parameter~Estimated;neck_piece~Neck's inclined pieces (2): length~4950~mm~derived~Estimated;neck_level~Neck's level piece: length~2475~mm~derived~Estimated;channel~Vertical channel below the neck: length~4207~mm~derived~Estimated;" ' parameter table rows
 Const calciner_TAB_2               As String  = "D_leg~Gooseneck arm bore~3500~mm~published~Verified;arm_angle~Arm angle to the vertical~60~deg~model parameter~Estimated;arm_run~Arms' level run to the outlet face: length~1750~mm~derived~Estimated;y_off~Channel and arms in front of the vessel axis~9660~mm~derived~Estimated;x_leg~Barrel axis to an arm's outlet face~5475~mm~derived~Estimated;leg_end_z~Throat foot to the arms' level runs' axis (C5's inlet axis)~26772~mm~derived~Estimated;width~Overall width over the arms' outlet faces~10950~mm~derived~Estimated;top~Throat foot to the neck's crown~39105~mm~derived~Estimated;D_TA~Tertiary air duct diameter~2439~mm~FLS ratio~Estimated;" ' parameter table rows
-Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential, x)~2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face (y)~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;feed_slope~Meal pipes' slope to the horizontal~60~deg~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;dp_exit~Dispersion plate exit angle (above horizontal)~10~deg~model parameter~Estimated;dp_radius~Dispersion plate meal face radius~408~mm~derived~Estimated;" ' parameter table rows
-Const calciner_TAB_4               As String  = "dp_prot~Dispersion plate edge past the wall~424~mm~derived~Estimated;dp_width~Dispersion plate width~849~mm~derived~Estimated;dp_thick~Dispersion plate thickness~50~mm~model parameter~Estimated;volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
+Const calciner_TAB_3               As String  = "ta_y~Tertiary air duct axis off the vessel axis (tangential, x)~2101~mm~derived~Estimated;ta_z~Tertiary air duct axis height~8271~mm~derived~Estimated;ta_x~Vessel axis to the duct's face (y)~6370~mm~derived~Estimated;D_feed~Meal pipe diameter (two)~849~mm~literature~Estimated;D_fuel~Fuel pipe diameter (two)~283~mm~literature~Estimated;fuel_slope~Fuel pipes' slope to the horizontal~30~deg~literature~Estimated;box_width~Dispersion box width (along the wall)~2291~mm~derived~Estimated;box_back_h~Dispersion box back face height~0~mm~derived~Estimated;box_height~Dispersion box open face height~2185~mm~derived~Estimated;box_rise~Meal pipe's rise over the box~1000~mm~model parameter~Estimated;" ' parameter table rows
+Const calciner_TAB_4               As String  = "volume~Volume (cone + cylinder)~1009.71~m3~derived~Estimated;wet_area~Wetted area (cylinder, cone, roof ring)~635.96~m2~derived~Estimated;u_wall~Shell / refractory thickness~-~~no source~Unknown;u_material~Material~-~~no source~Unknown;u_flange~Flanges / nozzles / manholes~-~~no source~Unknown;u_support~Supports / hangers~-~~no source~Unknown;u_burner~Burner / fuel inlet fittings~-~~no source~Unknown;" ' parameter table rows
 Const calciner_TAB_5               As String  = ""           ' parameter table rows
 Const calciner_TAB_6               As String  = ""           ' parameter table rows
 Const calciner_TAB_7               As String  = ""           ' parameter table rows
@@ -492,11 +488,7 @@ Const CAL_FRONT_X As Double = 0.33
 Const CAL_LEFT_X  As Double = 0.47
 Const CAL_DET_X   As Double = 0.57
 Const CAL_DET_Y   As Double = 0.18
-' detail C, the dispersion plate at 1:10 (user request, 16 Nov 2026: the plate,
-' 0.42 m, is 2 mm in A-A and 8 mm in detail B): between the plan and detail B
-Const CAL_DETC_X  As Double = 0.4
-Const CAL_DETC_Y  As Double = 0.15
-Const CAL_DETC_D  As Double = 10#
+
 
 ' kiln_wall (1:200): the side view, section A-A along the axis under it,
 ' the end view from the hood (1:50) and detail B of the hood end's wall
@@ -1541,20 +1533,9 @@ Private Sub MakeViewsCalciner()
     AlignHeight vLeft, vSec
     HiddenLinesVisible vLeft
 
-    Set vDet = DetailFrom(vSec, 4.2, 10.4, 3.2, "B")
+    Set vDet = DetailFrom(vSec, CAL_BOX_ROUT - 0.8, 0.5 * (CAL_BOX_Z0 + CAL_BOX_ZPIPE), 2.6, "B")
     Note "views: front " & vFront.Name & ", left " & vLeft.Name & ", detail B " & vDet.Name
     LogMap vLeft, "left", scaleD: LogMap vDet, "detail B", detailD
-
-    ' detail C: the +x dispersion plate, its edge, the wall under it and the
-    ' meal pipe's lower lip; DetailFrom places and scales by the globals, set
-    ' for this one and put back
-    Dim bX As Double, bY As Double, bD As Double
-    bX = detX: bY = detY: bD = detailD
-    detX = CAL_DETC_X: detY = CAL_DETC_Y: detailD = CAL_DETC_D
-    Set vDetC = DetailFrom(vSec, CAL_DP_CX + 0.1, CAL_DP_AZ - 0.05, 0.55, "C")
-    LogMap vDetC, "detail C", detailD
-    detX = bX: detY = bY: detailD = bD
-    Note "views: detail C " & vDetC.Name
 End Sub
 
 
@@ -2507,32 +2488,18 @@ Private Sub DimensionCalciner()
     ' edge, offset by the text point's distance along the pipe's axis
     ' (cos 60, sin 60): 2.3 m of it put the line outside the detail's
     ' circle (run of 16 Nov), so the text sits 0.6 m out along the axis.
+    ' The meal pipe is vertical now (user, 28 Nov 2026), its top face a straight
+    ' edge of the pipe's diameter in this section: the dimension on it, the text
+    ' over it. The pipe's
+    ' side above the box (its rise) is dimensioned beside it.
     DimEdges "D_feed", CAL_FEED_D, vDet, _
-        "line", CAL_FEED_X, 0, CAL_FEED_Z, 0, 0, _
+        "hline", CAL_FEED_X, 0, CAL_FEED_Z, 0, CAL_FEED_Z, _
         "", 0, 0, 0, 0, 0, _
-        CAL_FEED_X + 0.6 * 0.5, 0, CAL_FEED_Z + 0.6 * Sqr(3#) * 0.5
-
-    ' detail C (1:10): the dispersion plate. Its meal face, an arc about
-    ' (CAL_DP_CX, CAL_DP_CZ), picked at its middle, the text over it towards
-    ' the centre; the edge (a straight edge across the plate, CAL_DP_T long),
-    ' the text inside the vessel beside it; the edge past the wall: the wall
-    ' line under the plate to the meal face's corner at the edge (the edge
-    ' itself is 10 deg off the wall: two lines make an angle), horizontally,
-    ' the text under the plate.
-    Dim pm As Double
-    pm = 0.5 * (CAL_DP_EXIT * PI / 180# - (CAL_DP_SLOPE * PI / 180#))
-    DimEdges "dp_radius", CAL_DP_R, vDetC, _
-        "circle", CAL_DP_CX - CAL_DP_R * Sin(pm), 0, CAL_DP_CZ - CAL_DP_R * Cos(pm), CAL_DP_R, CAL_DP_CZ, _
+        CAL_FEED_X, 0, CAL_FEED_Z + 0.5
+    DimEdges "box_rise", CAL_BOX_ZPIPE - (CAL_BOX_Z0 + CAL_BOX_H), vDet, _
+        "vline", CAL_BOX_RP + 0.5 * CAL_FEED_D, 0, 0.5 * (CAL_BOX_Z0 + CAL_BOX_H + CAL_BOX_ZPIPE), CAL_BOX_RP + 0.5 * CAL_FEED_D, 0, _
         "", 0, 0, 0, 0, 0, _
-        CAL_DP_CX - 0.4, 0, CAL_DP_CZ + 0.3
-    DimEdges "dp_thick", CAL_DP_T, vDetC, _
-        "line", 0.5 * (CAL_DP_EX + CAL_DP_ELX), 0, 0.5 * (CAL_DP_EZ + CAL_DP_ELZ), 0, 0, _
-        "", 0, 0, 0, 0, 0, _
-        CAL_DP_ELX - 0.12, 0, CAL_DP_ELZ - 0.03
-    DimEdges "dp_prot", CAL_DP_PROT, vDetC, _
-        "vline", R, 0, CAL_DP_ZLOW - 0.2, R, 0, _
-        "lineend", CAL_DP_EX, 0, CAL_DP_EZ, CAL_DP_ELX, CAL_DP_ELZ, _
-        0.5 * (R + CAL_DP_EX), 0, CAL_DP_ZLOW - 0.22, "h"
+        CAL_BOX_RP + 0.5 * CAL_FEED_D + 0.6, 0, 0.5 * (CAL_BOX_Z0 + CAL_BOX_H + CAL_BOX_ZPIPE)
 
     Note "dimensions: " & nDimsOk & " of " & nDims & " verified"
 End Sub
@@ -2800,8 +2767,8 @@ Private Function PickEdge(v As SldWorks.View, ByVal kind As String, ByVal x As D
     Dim nSeen As Long, nFit As Long
 
     ' kind "lineend": the end vertex at (x, y, z) of the line edge
-    ' through (x, y, z) and (p1, y, p2) (21 Nov 2026: the dispersion
-    ' plate's edge is 10 deg off the wall, so two lines made an angle;
+    ' through (x, y, z) and (p1, y, p2) (21 Nov 2026: an edge slanted
+    ' to the wall line made two lines an angle, not a distance;
     ' the wall line to the edge's corner is the distance)
     If kind = "lineend" Then
         Dim vx As SldWorks.Vertex
@@ -3277,7 +3244,7 @@ Private Sub DrawNotes()
     ElseIf equip = "calciner" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the throat's foot (kiln gas inlet); tertiary air along +y from -y (parallel to the kiln), tangential.", TEXT_H
         LabelPH COL_X0, y + 0.007, "4. One calciner for both strings; the arms end in vertical faces at z = " & Num(CAL_Z_END, 2) & " (CFD outlets, to C5).", TEXT_H
-        LabelPH COL_X0, y + 0.002, "5. Meal pipes +-x at 60 deg, fuel pipes +-y at 30 deg.  Dimensions mm.", TEXT_H
+        LabelPH COL_X0, y + 0.002, "5. Meal: vertical pipes +-x into dispersion boxes, fuel pipes +-y at 30 deg.  Dimensions mm.", TEXT_H
         LabelPH COL_X0, y - 0.003, "6. Source: geometry/plant_geometry.yaml, geometry/calciner/calciner.md", TEXT_H
     ElseIf equip <> "C1_twin" Then
         LabelPH COL_X0, y + 0.012, "3. Frame: z = 0 at the dust outlet; the volute's duct on the +y side, gas into it along +x.", TEXT_H
@@ -3480,9 +3447,9 @@ Private Sub DrawFlowsCalciner()
     ArrowM3 vSec, 0#, 0#, -2.6, 0#, 0#, -0.3
     For i = 0 To 1
         sg = 1# - 2# * i
-        ' the meal pipe's axis rises outward at 60 deg: in towards the vessel
+        ' the meal comes down the vertical pipe into its dispersion box
         fx = CAL_FEED_X: fz = CAL_FEED_Z
-        ArrowM3 vSec, sg * (fx + 1.9 * 0.5), 0#, fz + 1.9 * k, sg * (fx + 0.4 * 0.5), 0#, fz + 0.4 * k
+        ArrowM3 vSec, sg * fx, 0#, fz + 2.2, sg * fx, 0#, fz + 0.4
         ' the gas out of each arm's level run, beyond its outlet face (front view)
         ArrowM3 vFront, sg * (xl - 2.6), -CAL_Y_OFF, ze, sg * (xl + 2.4), -CAL_Y_OFF, ze
     Next i
@@ -3494,8 +3461,8 @@ Private Sub DrawFlowsCalciner()
     LabelM3 vSec, 0.5, 0#, -2.4, "Kiln gas in"
     LabelM3 vFront, xl + 2.6, -CAL_Y_OFF, ze - 0.4, "Gas out (to C5)"
     LabelM3 vFront, -xl - 11.4, -CAL_Y_OFF, ze - 0.4, "Gas out (to C5)"
-    LabelM3 vSec, CAL_FEED_X + 1.5, 0#, CAL_FEED_Z + 2.8, "Meal in"
-    LabelM3 vSec, -CAL_FEED_X - 3.2, 0#, CAL_FEED_Z + 2.8, "Meal in"
+    LabelM3 vSec, CAL_FEED_X + 0.4, 0#, CAL_FEED_Z + 1.8, "Meal in"
+    LabelM3 vSec, -CAL_FEED_X - 3.2, 0#, CAL_FEED_Z + 1.8, "Meal in"
     ' (16 Nov sheet check: the label, 4.0 m long, sat across section A-A's
     ' arrow; now over the duct, outside the vessel, ending before the face's
     ' dimension. "Fuel in" (2.0 m) crossed the pipe and its dimension: now
@@ -3504,19 +3471,6 @@ Private Sub DrawFlowsCalciner()
     ' arrow, right of that line, between section A-A's line and the 2439
     ' dimension's extension line)
     LabelM3 vTop, CAL_TA_X - 5.2, CAL_TA_Y - 2.2, CAL_TA_Z, "Tertiary air in"
-    ' detail C: the meal down the pipe floor onto the plate, and off its edge
-    ' at the exit angle into the vessel
-    UseLayer L_FLOW
-    ArrowM3 vDetC, CAL_DP_AX + 0.35 * Cos((CAL_DP_SLOPE * PI / 180#)), 0#, CAL_DP_AZ + 0.12 + 0.35 * Sin((CAL_DP_SLOPE * PI / 180#)), _
-            CAL_DP_AX + 0.04, 0#, CAL_DP_AZ + 0.12
-    ArrowM3 vDetC, CAL_DP_EX - 0.03 * Cos(CAL_DP_EXIT * PI / 180#), 0#, CAL_DP_EZ + 0.03 + 0.03 * Sin(CAL_DP_EXIT * PI / 180#), _
-            CAL_DP_EX - 0.33 * Cos(CAL_DP_EXIT * PI / 180#), 0#, CAL_DP_EZ + 0.03 + 0.33 * Sin(CAL_DP_EXIT * PI / 180#)
-    UseLayer L_TEXT
-    ' (21 Nov sheet check: both crossed the detail's circle, "Meal in" its
-    ' arrow too: now outside the circle, left of the exit arrow's tip and
-    ' right of the meal arrow's tail)
-    LabelM3 vDetC, CAL_DP_EX - 0.68, 0#, CAL_DP_EZ + 0.17, "Meal out, " & Fmt(CAL_DP_EXIT) & ChrW(176) & " up"
-    LabelM3 vDetC, CAL_DP_AX + 0.2, 0#, CAL_DP_AZ + 0.46, "Meal in"
     LabelM3 vLeft, 0#, CAL_FUEL_Y + 3#, CAL_FUEL_Z - 0.4, "Fuel in"
     ' SolidWorks leaves the scale off this section's label even with the
     ' section's scale set (C1, C4, C5 print it): the second line by hand,

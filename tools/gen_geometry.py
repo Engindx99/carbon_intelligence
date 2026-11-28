@@ -161,6 +161,14 @@ def cyclone_bas(g):
     d = g["cyclone_domain"]
     out = [src(var, d[key]) for key, var in DOMAIN_KEYS]
     out.append(der("D_RISER_SRC", pg.r1_D(g), "R1 inner D = C2's D_x"))
+    b = g["dispersion_box"]
+    out += [
+        src("BOX_WIDTH_OVER_D", b["width_over_D_feed"], "dispersion box width, x the feed pipe's D"),
+        src("BOX_DEPTH_OVER_D", b["depth_over_D_feed"], "its back face out past the wall, x D"),
+        src("BOX_BACK_H_OVER_D", b["back_height_over_D_feed"], "its back face's height, x D"),
+        src("BOX_SLOPE_DEG", b["floor_slope_deg"], "its floor ramp to the horizontal"),
+        src("BOX_PIPE_RISE", b["pipe_rise"], "its vertical meal pipe over the box's top"),
+    ]
     for name in ("C1", "C4", "C5"):
         out += cyclone_case(g, name)
         off = pg.cfd_riser_inlet(g, name)["offset"] if pg.cyclone(g, name)["inlet_riser"] else 0.0
@@ -209,13 +217,11 @@ def calciner_bas(g):
         src("FEED_DEPTH", c["feed_depth"], "meal and fuel pipes past the wall"),
         src("D_FUEL", c["D_fuel"]),
         src("FUEL_SLOPE_DEG", c["fuel_slope"], "below the horizontal"),
-        src("DP_EXIT_DEG", c["dispersion_plate_exit_angle"], "dispersion plate's exit, above the horizontal"),
-        src("DP_PROT_OVER_D", c["dispersion_plate_protrusion_over_D_feed"], "its edge past the wall, x D_FEED"),
-        src("DP_WIDTH_OVER_D", c["dispersion_plate_width_over_D_feed"], "its width, x D_FEED"),
-        src("DP_THICKNESS", c["dispersion_plate_thickness"]),
-        src("DP_LIP_CLEARANCE", c["dispersion_plate_lip_clearance"], "its meal face under the hole's lowest point"),
-        src("DP_TAIL", c["dispersion_plate_tail"], "its tail on into the wall, along the pipe slope"),
-        der("DP_INSIDE_VESSEL", pg.calciner_dispersion_plate(g)["inside_vessel"], "one plate inside the vessel, m3 (the fluid it removes; plant_geometry.py)"),
+        src("BOX_WIDTH_OVER_D", g["dispersion_box"]["width_over_D_feed"], "dispersion box width, x D_FEED (the meal pipe's bore)"),
+        src("BOX_DEPTH_OVER_D", g["dispersion_box"]["depth_over_D_feed"], "its back face out past the wall, x D_FEED"),
+        src("BOX_BACK_H_OVER_D", g["dispersion_box"]["back_height_over_D_feed"], "its back face's height, x D_FEED"),
+        src("BOX_SLOPE_DEG", g["dispersion_box"]["floor_slope_deg"], "its floor ramp to the horizontal"),
+        src("BOX_PIPE_RISE", g["dispersion_box"]["pipe_rise"], "its vertical meal pipe over the box's top"),
         Const("OVERLAP_N", pg.OVERLAP_N, "grid per axis, the bends' shared volume [plant_geometry.py]", "Long"),
         Const("P_ATM", pg.P_ATM, "Pa, the throat's gas [plant_geometry.py]"),
         Const("R_GAS", pg.R_GAS, "J/(mol K) [plant_geometry.py]"),
@@ -497,22 +503,17 @@ def _calciner_sheet_consts(g):
         der("CAL_FUEL_Z", fuel["end"][1], "fuel pipe end face centre, z"),
         der("CAL_BOX_Y", fuel["end"][0] + 0.5 * fuel["D"] * sf, "the fuel pipes' far side, y"),
     ]
-    dp = pg.calciner_dispersion_plate(g)
     out += [
-        der("CAL_DP_R", dp["R_arc"], "dispersion plate (+x): the meal face's radius"),
-        der("CAL_DP_T", dp["thickness"], "its thickness"),
-        der("CAL_DP_CX", dp["centre"][0], "the arcs' centre, x"),
-        der("CAL_DP_CZ", dp["centre"][1], "the arcs' centre, z"),
-        der("CAL_DP_AX", dp["A"][0], "the meal face's start on the wall, x"),
-        der("CAL_DP_AZ", dp["A"][1], "the meal face's start on the wall, z"),
-        der("CAL_DP_EX", dp["E"][0], "the meal face's edge, x"),
-        der("CAL_DP_EZ", dp["E"][1], "the meal face's edge, z"),
-        der("CAL_DP_ELX", dp["E_low"][0], "the lower face's edge, x"),
-        der("CAL_DP_ELZ", dp["E_low"][1], "the lower face's edge, z"),
-        der("CAL_DP_ZLOW", dp["z_low"], "the lower face's lowest point, z"),
-        der("CAL_DP_PROT", dp["protrusion"], "the edge past the wall"),
-        der("CAL_DP_EXIT", dp["exit_angle"], "the exit angle above the horizontal, deg"),
-        der("CAL_DP_SLOPE", pg.calciner_inlets(g)["meal"]["slope"], "the meal pipe's slope, where the plate starts, deg"),
+        der("CAL_BOX_W", meal["width"], "dispersion box: width"),
+        der("CAL_BOX_BACKH", meal["back_h"], "its back face's height"),
+        der("CAL_BOX_H", meal["height"], "its open face's height"),
+        der("CAL_BOX_Z0", meal["z_bottom"], "its bottom, z"),
+        der("CAL_BOX_ZFOOT", meal["z_back_foot"], "its back face's foot, z"),
+        der("CAL_BOX_RIN", meal["rho_in"], "its open face on the chord plane, x"),
+        der("CAL_BOX_ROUT", meal["rho_out"], "its back face, x"),
+        der("CAL_BOX_RP", meal["rho_pipe"], "its meal pipe's axis, x"),
+        der("CAL_BOX_SLOPE", meal["slope_deg"], "its floor ramp, deg"),
+        der("CAL_BOX_ZPIPE", meal["z_pipe_top"], "the pipe's top face, z"),
     ]
     out += _table_consts("calciner", dca.params(g), dca.ORDER)
     return out
@@ -1082,6 +1083,27 @@ def meal_pipes_bas(g):
     return out
 
 
+def ta_duct_bas(g):
+    """ta_duct.bas: the plant's tertiary air duct (plant_geometry.
+    tertiary_air_duct_bodies()) as meal_pipes_bas, joined from TAD_1, TAD_2."""
+    recs = ["|".join([b["name"], b["kind"]] + [_fixed(q) for q in list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])]) + ";"
+            for b in pg.tertiary_air_duct_bodies(g)]
+    chunks, cur = [], ""
+    for rec in recs:
+        if len(cur) + len(rec) > 900:
+            chunks.append(cur)
+            cur = ""
+        cur += rec
+    chunks.append(cur)
+    if len(chunks) > 2:
+        raise ValueError(f"ta_duct: {len(chunks)} chunks, the macro joins 2")
+    chunks += [""] * (2 - len(chunks))
+    out = [der("N_BODIES", len(recs), "bodies in the part")]
+    out += [Const(f"TAD_{i + 1}", c, "plant_geometry.tertiary_air_duct_bodies() bodies", kind="String")
+            for i, c in enumerate(chunks)]
+    return out
+
+
 def plant_assembly_bas(g):
     """plant_assembly.bas: the tower's parts and where each goes
     (plant_geometry.tower_placement()): name|file|R (9, rows)|o (3);
@@ -1266,6 +1288,7 @@ TARGETS = {
     "kiln_rotax.bas": kiln_rotax_bas,
     "cooler_body.bas": cooler_body_bas,
     "meal_pipes.bas": meal_pipes_bas,
+    "ta_duct.bas": ta_duct_bas,
     "plant_assembly.bas": plant_assembly_bas,
     "kiln_burner.bas": kiln_burner_bas,
     "kiln_burner_body.bas": kiln_burner_body_bas,
@@ -1463,7 +1486,7 @@ def _gooseneck_rows(g):
 
 def _calciner_rows(g):
     c, cal = g["calciner"], pg.calciner(g)
-    dp = pg.calciner_dispersion_plate(g)
+    m = pg.calciner_inlets(g)["meal"]
     return [
         row_src("Gövde (shell) çapı", c["D_shell"]),
         row_src("Efektif iç çap", c["D"], note="7.20 × 3.08 / 3.29"),
@@ -1475,12 +1498,12 @@ def _calciner_rows(g):
         row_src("Tersiyer hava kanalı çapı", c["D_tertiary_air"]),
         row_src("Farin besleme borusu çapı", c["D_feed"], note="Fidaros 2007 × √2"),
         row_src("Yakıt borusu çapı", c["D_fuel"], note="Fidaros 2007 × √2"),
-        row_src("Dağıtma plakası çıkış açısı (yatayın üstü)", c["dispersion_plate_exit_angle"],
-                note="tip: KHD US 6,875,267 + üretici görseli; açı görselden"),
-        row_der("Dağıtma plakası yay yarıçapı", dp["R_arc"], "m", 3, "çıkıntıdan ve açılardan"),
-        row_der("Dağıtma plakası duvardan çıkıntısı", dp["protrusion"], "m", 3, "0.5 × farin borusu çapı (model)"),
-        row_der("Dağıtma plakası genişliği", dp["width"], "m", 4, "1.0 × farin borusu çapı (model)"),
-        row_src("Dağıtma plakası kalınlığı", c["dispersion_plate_thickness"]),
+        row_der("Dağıtma kutusu genişliği (duvar boyunca)", m["width"], "m", 3, "2.7 × farin borusu çapı (model; görsel oranı)"),
+        row_der("Dağıtma kutusu arka yüz yüksekliği", m["back_h"], "m", 3, "1.0 × farin borusu çapı (model)"),
+        row_der("Dağıtma kutusu açık yüz yüksekliği", m["height"], "m", 3, "arka yükseklik + eğim × koşu"),
+        row_src("Dağıtma kutusu taban rampası (yatayla)", g["dispersion_box"]["floor_slope_deg"], note="model; görsel"),
+        row_der("Dağıtma kutusu: dikey farin borusu boyu (kutu üstünden)", m["pipe_rise"], "m", 3, "modelleme"),
+        row_der("Dağıtma kutusu alt kenarı (kalsinatör tabanından)", m["z_bottom"], "m", 3, "tersiyer hava kanalı üstü + 1 m"),
         row_der("**Ekipman hacmi (koni + silindir)**", cal["vessel_volume"], "m³", 2),
         row_der("**Duvar alanı (silindir + koni + tavan halkası)**", cal["vessel_wall_area"], "m²", 2),
     ]
@@ -1949,11 +1972,9 @@ def _calciner_cfd(g):
     steps = [cal["v_throat"] + cal["vessel_volume"]]
     ins = pg.calciner_inlets(g)
     ta, meal, fuel = ins["tertiary_air"], ins["meal"], ins["fuel"]
-    dp = pg.calciner_dispersion_plate(g)
     for dv in (v_p1 + v_p2 + v_p3 + v_p4, v_arm - gn["overlap_neck_arm"],
                v_arm - gn["overlap_neck_arm"] - gn["overlap_arms"] + gn["overlap_all"],
-               meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"],
-               -dp["inside_vessel"], -dp["inside_vessel"]):
+               meal["volume"], meal["volume"], ta["volume"], fuel["volume"], fuel["volume"]):
         steps.append(steps[-1] + dv)
     return [
         ("Boğaz", f"Ø{f(cal['D_throat'])}, z 0 .. {f(cal['z_throat_top'])}", f"{cal['v_throat']:.3f}"),
@@ -1970,22 +1991,19 @@ def _calciner_cfd(g):
          f"{steps[2]:.3f} (+{v_arm:.3f} − ortak {gn['overlap_neck_arm']:.3f})"),
         ("3b + kol −x", f"kanalla ortak {gn['overlap_neck_arm']:.3f}, kolların ortak hacmi {gn['overlap_arms']:.3f}, üçünün {gn['overlap_all']:.3f} (sayısal, {pg.OVERLAP_N}³ nokta) → gas_outlet_2",
          f"{steps[3]:.3f}"),
-        ("5a / 5b + farin boruları ±x", f"Ø{meal['D']:g}, {meal['slope']:g}°, eksenleri duvarı z {f(meal['z_wall'])}'da keser; "
-         f"deliğin alt kenarı z {f(meal['hole_bottom'])}, uç yüzleri (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
-         f"{steps[4]:.3f} / {steps[5]:.3f} (+{meal['volume']:.4f} her biri)"),
+        ("5a / 5b + farin dağıtma kutusu ve dikey borusu ±x", f"Ø{meal['D']:g} dikey boru, {meal['pipe_rise']:g} m, kutunun üst yüzünde; kutu kama: genişlik {f(meal['width'])}, "
+         f"arka yüz ρ {f(meal['rho_out'])}, yüksekliği {f(meal['back_h'])}; taban {meal['slope_deg']:g}° rampayla ρ {f(meal['rho_in'])}'e iner (açık yüz {f(meal['height'])} yüksek, gövdeye açık), "
+         f"z {f(meal['z_bottom'])} .. {f(meal['z_top'])}; boru ekseni ρ {f(meal['rho_pipe'])}, üst yüzü (meal_feed) (±{f(meal['end'][0])}, 0, {f(meal['end'][1])})",
+         f"{steps[4]:.3f} / {steps[5]:.3f} (+{meal['volume']:.4f} her biri: kutu {meal['box_volume']:.4f}, boru {meal['pipe_volume']:.4f})"),
         ("6 + tersiyer hava", f"Ø{ta['D']:g}, teğetsel, ekseni y boyunca, x {f(ta['x'])}, z {f(ta['z'])}; üst kenarı z {f(ta['top'])}, "
          f"yüzü y {f(ta['y_end'])} (−y'den, fırına paralel)", f"{steps[6]:.3f} (+{ta['volume']:.3f})"),
         ("7a / 7b + yakıt boruları ±y", f"Ø{fuel['D']:g}, {fuel['slope']:g}°, eksenleri duvarı z {f(fuel['z_wall'])}'da keser; "
          f"uç yüzleri (0, ±{f(fuel['end'][0])}, {f(fuel['end'][1])})",
          f"{steps[7]:.3f} / {steps[8]:.3f} (+{fuel['volume']:.4f} her biri)"),
-        ("8a / 8b − dağıtma plakaları ±x", f"farin deliğinin en alt noktasının {pg.v(g['calciner']['dispersion_plate_lip_clearance']):g} altında, duvarda {meal['slope']:g}° eğimle başlar, "
-         f"R {f(dp['R_arc'])} yayla +{dp['exit_angle']:g}°'ye döner; kenarı ρ {f(dp['E'][0])}, z {f(dp['E'][1])}; en alt noktası z {f(dp['z_low'])}; "
-         f"genişlik {f(dp['width'])}, kalınlık {dp['thickness']:g}; kuyruk {dp['tail']:g} duvarın içine; akıştan kesilir (katı hacmi {dp['volume']:.4f})",
-         f"{steps[9]:.3f} / **{steps[10]:.3f}** (−{dp['inside_vessel']:.4f} her biri)"),
         ("**Uyarı: eski CFD sonuçları**", "Bu belgedeki CFD sonuçları (η, p_CO2, VDZ) 15 Kas 2026 öncesi, doğrudan Y gooseneck'iyle alındı; "
          "kaz boynu + düşey kanal + Y + yatay kollu bu katıyla yeniden koşulmalı", "—"),
         ("Yeniden koşu: domen", "geometry/output/2500/calciner.step; sınır adları ve yüz boyutları geometry/output/2500/calciner_named_selections.py",
-         f"{steps[10]:.3f}"),
+         f"{steps[8]:.3f}"),
         ("Yeniden koşu: çıkışlar", f"gas_outlet_1 / gas_outlet_2: dikey düzlem, x = ±{f(gn['x_leg'])}, y = −{f(gn['y_off'])}, z {f(gn['z_end'])}; "
          f"yatay kol {gn['arm_run'] / gn['D_leg']:g} çap ({f(gn['arm_run'])}), eğik parçadan {90.0 - gn['arm_angle']:g}° mitre sonrası", f"{math.pi * rl * rl:.3f} m² her biri"),
     ]

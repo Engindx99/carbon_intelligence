@@ -312,47 +312,58 @@ class TheLayoutIsTheDrawingsTest(unittest.TestCase):
                 self.assertAlmostEqual(got, want, delta=2e-6)
 
 
-class DispersionPlateGeometryTest(unittest.TestCase):
-    """plant_geometry.calciner_dispersion_plate: the arc meets its ends,
-    the plate clears the meal pipe, the hole, the tertiary air duct and
-    the wall at its edge, and its in-vessel volume is bounded by its own."""
+class DispersionBoxGeometryTest(unittest.TestCase):
+    """plant_geometry.dispersion_box: the wedge and its pipe on a vessel wall,
+    the closed-form volume outside the vessel against numerical integration,
+    clearances, and one design per pipe bore."""
 
     @classmethod
     def setUpClass(cls):
         cls.g = pg.load()
-        cls.dp = pg.calciner_dispersion_plate(cls.g)
         cls.cal = pg.calciner(cls.g)
         cls.meal = pg.calciner_inlets(cls.g)["meal"]
+        cls.b = cls.g["dispersion_box"]
 
-    def test_the_arc_runs_from_the_pipe_slope_to_the_exit(self):
-        dp, R = self.dp, self.cal["R"]
-        cx, cz = dp["centre"]
-        for p, rad in ((dp["A"], dp["R_arc"]), (dp["E"], dp["R_arc"]),
-                       (dp["A_low"], dp["R_arc"] + dp["thickness"]), (dp["E_low"], dp["R_arc"] + dp["thickness"])):
-            self.assertAlmostEqual(math.hypot(p[0] - cx, p[1] - cz), rad, places=12)
-        self.assertAlmostEqual(dp["A"][0], R, places=12)
-        self.assertAlmostEqual(R - dp["E"][0], dp["protrusion"], places=12)
-        # tangent at A along the pipe (down-inward at the slope), at E at the exit angle
-        ta = (dp["A"][1] - cz, -(dp["A"][0] - cx))   # radius rotated: the inward travel direction
-        self.assertAlmostEqual(math.degrees(math.atan2(ta[1], -ta[0])), -self.meal["slope"], places=9)
-        te = (dp["E"][1] - cz, -(dp["E"][0] - cx))
-        self.assertAlmostEqual(math.degrees(math.atan2(te[1], -te[0])), dp["exit_angle"], places=9)
+    def test_the_wedge_and_its_pipe(self):
+        m, R, D = self.meal, self.cal["R"], self.meal["D"]
+        self.assertAlmostEqual(m["width"], 2.7 * D, places=12)
+        self.assertAlmostEqual(m["rho_out"], R + 1.25 * D, places=12)
+        self.assertAlmostEqual(math.hypot(m["rho_in"], 0.5 * m["width"]), R, places=12)   # the open face's corners on the cylinder
+        # the ramp falls at its slope from the back face's foot to the open face
+        run = m["rho_out"] - m["rho_in"]
+        self.assertAlmostEqual((m["z_back_foot"] - m["z_bottom"]) / run, math.tan(math.radians(60.0)), places=12)
+        self.assertAlmostEqual(m["z_top"] - m["z_bottom"], m["back_h"] + run * math.tan(math.radians(60.0)), places=12)
+        self.assertAlmostEqual(m["rho_pipe"], m["rho_out"] - 0.5 * 1.25 * D, places=12)   # on the top face, in its outer half
+        self.assertGreater(m["rho_pipe"] - 0.5 * D, R)                                    # the pipe stands outside the vessel
+        self.assertAlmostEqual(m["z_pipe_top"] - m["z_top"], pg.v(self.b["pipe_rise"]), places=12)
+        self.assertEqual(m["end"], (m["rho_pipe"], m["z_pipe_top"]))
 
-    def test_it_clears_the_pipe_the_duct_and_the_wall(self):
-        dp, R = self.dp, self.cal["R"]
-        self.assertGreater(dp["pipe_clearance"], 0.0)
-        self.assertLess(dp["A"][1], self.meal["hole_bottom"])
-        self.assertGreater(dp["z_low"], pg.calciner_inlets(self.g)["tertiary_air"]["top"])
-        for p in (dp["E"], dp["E_low"]):
-            self.assertLess(math.hypot(p[0], 0.5 * dp["width"]), R)
-        # the tail's end lies outside the vessel, so the plate's back end is in the wall
-        self.assertGreater(min(dp["T"][0], dp["T_low"][0]), R)
+    def test_it_clears_the_tertiary_air_duct_and_stands_over_the_cone(self):
+        m = self.meal
+        self.assertGreater(m["z_bottom"], pg.calciner_inlets(self.g)["tertiary_air"]["top"])
+        self.assertGreater(m["z_bottom"], self.cal["z_cone_top"])
+        self.assertLess(m["z_pipe_top"], self.cal["z_roof"])
 
-    def test_the_volumes(self):
-        dp = self.dp
-        self.assertAlmostEqual(dp["volume"], dp["profile_area"] * dp["width"], places=12)
-        self.assertGreater(dp["inside_vessel"], 0.5 * dp["volume"])
-        self.assertLess(dp["inside_vessel"], dp["volume"])
+    def test_the_volume_outside_the_vessel_is_the_integral(self):
+        m, R = self.meal, self.cal["R"]
+        h, n = 0.5 * m["width"], 200000
+        dy = 2.0 * h / n
+        tan = math.tan(math.radians(60.0))
+        vol = 0.0
+        for k in range(n):
+            y = -h + (k + 0.5) * dy
+            L = m["rho_out"] - math.sqrt(R * R - y * y)
+            vol += (m["back_h"] * L + 0.5 * tan * L * L) * dy
+        self.assertAlmostEqual(m["box_volume"], vol, delta=1e-6)
+        self.assertAlmostEqual(m["volume"], m["box_volume"] + m["pipe_volume"], places=12)
+
+    def test_it_is_one_design_per_inlet_bore(self):
+        R, z, D = self.cal["R"], 3.0, self.meal["D"]
+        self.assertEqual(pg.dispersion_box(self.g, R, D, z), pg.dispersion_box(self.g, R, D, z))
+
+    def test_a_box_that_does_not_fit_is_refused(self):
+        with self.assertRaises(ValueError):
+            pg.dispersion_box(self.g, 1.0, self.meal["D"], 0.0)
 
 
 CALCINER_LOG = REPO_ROOT / "geometry" / "output" / "2500" / "calciner_build.log"
@@ -426,11 +437,16 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
             (z_ta, ta["z"], "tertiary air z"),
             (y_ta, ta["y_end"], "tertiary air face y"),
             (v_ta, ta["volume"], "tertiary air volume"),
-            (self.num(r"meal feed: 2 pipes D # m at # deg, axes meet the wall at z = # m")[2],
-             meal["z_wall"], "meal at the wall"),
-            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[0], meal["end"][0], "meal end x"),
-            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[1], meal["end"][1], "meal end z"),
-            (self.num(r"meal feed: .*?end faces centred \(\+-#, 0, #\), # m3")[2], meal["volume"], "meal volume"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[0], meal["width"], "box width"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[1], meal["rho_out"], "box back rho"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[2], meal["back_h"], "box back height"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[4], meal["rho_in"], "box rho in"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[5], meal["height"], "box height"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[6], meal["z_bottom"], "box bottom z"),
+            (self.num(r"meal feed: 2 dispersion boxes, wedge, width # m, back face rho # m # m high, floor # deg down to the open face at rho # m \(# m high\), z # \.\. # m")[7], meal["z_top"], "box top z"),
+            (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[0], meal["end"][0], "meal end x"),
+            (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[1], meal["end"][1], "meal end z"),
+            (self.num(r"meal feed: .*?top face centred \(\+-#, 0, #\), # m3")[2], meal["volume"], "meal volume"),
             (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[0], fuel["end"][0], "fuel end y"),
             (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[1], fuel["end"][1], "fuel end z"),
             (self.num(r"fuel: .*?end faces centred \(0, \+-#, #\), # m3")[2], fuel["volume"], "fuel volume"),
@@ -470,22 +486,6 @@ class TheCalcinerSolidIsTheSourcesTest(unittest.TestCase):
                 # themselves (calciner.bas' ADD_NOISE floor, 1.5e-5 of the body since 24 Nov 2026): the fuel pipe
                 # read 1.5, 2.9 and 8 % off on three builds
                 self.assertAlmostEqual(got, dv, delta=1e-2 * dv + 1.5e-5 * steps["1 "] * 1.6)
-
-    def test_the_dispersion_plates(self):
-        """Stages 8a / 8b: each plate body to the closed form (0.1 %), the
-        fluid it removes to plant_geometry's integral (the ADD_NOISE floor),
-        the body after it to the running total."""
-        if "dispersion plate" not in self.log:
-            self.skipTest("the build log predates the dispersion plates")
-        dp = pg.calciner_dispersion_plate(self.g)
-        for tag in ("8a", "8b"):
-            with self.subTest(stage=tag):
-                got, want = self.num(rf"stage {tag}[^:\n]*: plate body # m3 \(expected #\)")
-                self.assertAlmostEqual(want, dp["volume"], delta=1e-5)
-                self.assertAlmostEqual(got, dp["volume"], delta=1e-3 * dp["volume"])
-                got, want = self.num(rf"stage {tag}[^:\n]*: removed # m3 of fluid \(expected #\)")
-                self.assertAlmostEqual(want, dp["inside_vessel"], delta=1e-5)
-                self.assertAlmostEqual(got, dp["inside_vessel"], delta=1e-2 * dp["inside_vessel"] + 5e-6 * 1690.0 * 1.6)
 
     def test_the_boundary_faces(self):
         """Each named face found once, with the area of what it is."""
@@ -1883,28 +1883,41 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
                 if q["stage"] > 1:
                     self.assertEqual(q["pts"][0][:2], self.tl["cols"][q["stage"]])
 
-    def test_riser_pipes_enter_over_the_roof_below(self):
+    def test_riser_pipes_drop_onto_a_dispersion_box_over_the_roof_below(self):
         lay = pg.layout(self.g)
         mr = self.g["meal_route"]
         into = {"C1_in": 3, "C1_out": 3, "C2": 4, "C3": 5}
         for q in self.r:
             if q["string"] == 1 and q["name"] in into:
                 b = into[q["name"]]
-                r = 0.5 * q["D"]
-                z_wall = q["pts"][-1][2] + r * math.tan(math.radians(60.0))
-                self.assertAlmostEqual(z_wall, lay["z_roof"][b] + pg.v(mr["entry_up"]), places=9, msg=q["name"])
+                box = q["entry"]["box"]
+                # the box's mid height is entry_up over the roof below, the last run vertical onto its top
+                self.assertAlmostEqual(box["z_centre"], lay["z_roof"][b] + pg.v(mr["entry_up"]), places=9, msg=q["name"])
+                self.assertAlmostEqual(q["pts"][-1][2], box["z_top"] - 0.1, places=9, msg=q["name"])
+                self.assertEqual(q["pts"][-1][:2], q["pts"][-2][:2], q["name"])
                 A = self.tl["cols"][b]
-                rp = 0.5 * pg.cyclone(self.g, f"C{b}")["D_vortex"]
-                self.assertAlmostEqual(math.dist(q["pts"][-1][:2], A), rp - r, places=6, msg=q["name"])
+                self.assertAlmostEqual(math.dist(q["pts"][-1][:2], A), box["rho_pipe"], places=9, msg=q["name"])
+                self.assertAlmostEqual(box["width"], 2.7 * q["D"], places=9, msg=q["name"])
             if q["name"] in ("C2", "C3"):
                 self.assertGreater(q["riser_clearance"], 0.2, q["name"])
+
+    def test_identical_entries_share_one_box_design(self):
+        """C2's and C3's pipes are one design: the same cube and pipe whichever
+        riser (the box's stand-off from the riser's axis follows that riser's
+        radius, so only the width and the rise are compared)."""
+        one = {q["name"]: q for q in self.r if q["string"] == 1}
+        for k in ("width", "pipe_rise", "D"):
+            self.assertAlmostEqual(one["C2"]["entry"]["box"][k], one["C3"]["entry"]["box"][k], places=9, msg=k)
+        self.assertEqual(len(pg.meal_dispersion_boxes(self.g)), 8)             # four entries a string, two strings
 
     def test_c4_and_c5_end_in_their_targets(self):
         lay, sec = pg.layout(self.g), pg.chamber_section(self.g)
         meal = pg.calciner_inlets(self.g)["meal"]
         one = {q["name"]: q for q in self.r if q["string"] == 1}
         e = (meal["end"][0], 0.0, lay["z_calciner_throat"] + meal["end"][1])
-        self.assertAlmostEqual(math.dist(one["C4"]["pts"][-1], e), 0.5 * one["C4"]["D"], places=9)
+        # C4 comes down vertically 0.1 m into the calciner's box pipe (its top face is `e`)
+        self.assertAlmostEqual(math.dist(one["C4"]["pts"][-1], e), 0.1, places=9)
+        self.assertEqual(one["C4"]["pts"][-1][:2], e[:2])
         # C5 into the calciner's throat (user, 24 Nov 2026), its wall at mid height
         cal = pg.calciner(self.g)
         p = one["C5"]["pts"][-1]

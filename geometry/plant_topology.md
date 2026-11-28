@@ -204,7 +204,7 @@ Değerler (çizimin bütün sayısal Const'ları; çizim kendi Const'larını ke
 | `GN_ROOT_FWD` | 0.184956 | plant_geometry.yaml |
 | `GN_OUT_AT_H` | 0.788074238954 | plant_geometry.yaml |
 | `CALC_TA_Z` | 8.270908 | plant_geometry.yaml |
-| `CALC_FEED_Z` | 11.385494 | plant_geometry.yaml |
+| `CALC_FEED_Z` | 11.582843 | plant_geometry.yaml |
 | `TA_D` | 2.4393 | plant_geometry.yaml |
 | `MEAL_SLOPE_DEG` | 60 | plant_geometry.yaml |
 | `KILN_D` | 4.8 | plant_geometry.yaml |
