@@ -1059,12 +1059,12 @@ def cooler_body_bas(g):
     return out
 
 
-MLP_CHUNKS = 12
+MLP_CHUNKS = 20
 
 
 def meal_pipes_bas(g):
     """meal_pipes.bas: the tower's meal pipes (plant_geometry.meal_pipe_bodies(),
-    from meal_routes()) as cooler_body_bas, joined from MLP_1 .. MLP_12."""
+    from meal_routes()) as cooler_body_bas, joined from MLP_1 .. MLP_20."""
     recs = ["|".join([b["name"], b["kind"]] + [_fixed(q) for q in list(b["p"]) + [b["V"]] + list(b["box"]) + list(b["rgb"])]) + ";"
             for b in pg.meal_pipe_bodies(g)]
     chunks, cur = [], ""

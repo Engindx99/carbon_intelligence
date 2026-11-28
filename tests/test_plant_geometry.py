@@ -1898,7 +1898,10 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
                 self.assertAlmostEqual(q["pts"][-1][2], box["z_top"] - 0.1, places=9, msg=q["name"])
                 self.assertEqual(q["pts"][-1][:2], q["pts"][-2][:2], q["name"])
                 A = self.tl["cols"][b]
-                self.assertAlmostEqual(math.dist(q["pts"][-1][:2], A), box["rho_pipe"], places=9, msg=q["name"])
+                # the pipe stands on the top face, on its outer half, up to the face's edge (the lane clear of the elbow)
+                stand = math.dist(q["pts"][-1][:2], A)
+                self.assertGreaterEqual(stand, box["rho_pipe"] - 1e-9, q["name"])
+                self.assertLessEqual(stand, box["rho_out"] - 0.5 * q["D"] + 0.02 + 1e-9, q["name"])
                 self.assertAlmostEqual(box["width"], pg.v(self.g["dispersion_box"]["width_over_D_feed"]) * q["D"], places=9, msg=q["name"])
             if q["name"] in ("C2", "C3"):
                 self.assertGreater(q["riser_clearance"], 0.2, q["name"])
@@ -1920,12 +1923,12 @@ class TheMealPipesFallInTheTowerTest(unittest.TestCase):
         # C4 comes down vertically 0.1 m into the calciner's box pipe (its top face is `e`)
         self.assertAlmostEqual(math.dist(one["C4"]["pts"][-1], e), 0.1, places=9)
         self.assertEqual(one["C4"]["pts"][-1][:2], e[:2])
-        # C5 onto a dispersion box on the calciner's throat wall (user, 28 Nov 2026), at mid height
+        # C5 onto a dispersion box on the calciner's throat wall (user, 28 Nov 2026), c5_box_below_mid under mid height
         cal = pg.calciner(self.g)
         q = one["C5"]
         box = q["entry"]["box"]
         z0 = lay["z_calciner_throat"]
-        self.assertAlmostEqual(box["z_centre"], z0 + 0.5 * cal["z_throat_top"], places=9)
+        self.assertAlmostEqual(box["z_centre"], z0 + 0.5 * cal["z_throat_top"] - pg.v(self.g["meal_route"]["c5_box_below_mid"]), places=9)
         self.assertAlmostEqual(math.hypot(*q["pts"][-1][:2]), box["rho_pipe"], places=9)
         self.assertAlmostEqual(q["pts"][-1][2], box["z_top"] - 0.1, places=9)
         self.assertGreater(box["z_bottom"], z0)

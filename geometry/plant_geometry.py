@@ -2217,7 +2217,16 @@ def tower_layout(g):
         raise ValueError(f"tower_layout: C5's duct from the arm's face would be {L_in:.2f} m")
     if 2.0 * x5 - c5["D_barrel"] < gap:
         raise ValueError("tower_layout: the two strings' C5 stand closer than the gap")
-    cols = {5: (x5, y5), 4: (x5, y4), 3: (x5, y5), 2: (x5, y4)}
+    # user 28 Nov 2026: C3 and C2, each with its riser, turned about its own axis so a dust outlet is not
+    # over the elbow of the riser below it. A cyclone's riser stands on the axis of the cyclone below, so the
+    # turn swings the cyclone round that axis: C3 about C4's axis by tower_swing_deg (R4's elbow is then not
+    # under C3's outlet), C2 about C3's by tower_swing_c2_deg (R3's, which now leans with C3)
+    off = lay["column_offset"]
+    s3 = math.radians(v(g["layout"]["tower_swing_deg"]))
+    s2 = math.radians(v(g["layout"]["tower_swing_c2_deg"]))
+    c3 = (x5 + off * math.sin(s3), y4 - off * math.cos(s3))
+    c2 = (c3[0] - off * math.sin(s2), c3[1] + off * math.cos(s2))
+    cols = {5: (x5, y5), 4: (x5, y4), 3: c3, 2: c2}
     return {"cols": cols, "x": x5, "y_arm": y_arm, "yd": yd, "c5_duct_L": L_in,
             "clear_c5": math.hypot(x5, y5) - R - 0.5 * c5["D_barrel"],
             "clear_c4": math.hypot(x5, y4) - R - 0.5 * c4["D_barrel"]}
@@ -2396,62 +2405,119 @@ def meal_routes(g):
 
     entry = {}                 # the last into_riser's box (kept on the pipe for the assembly)
 
-    def into_riser(name, p0, drop, below, away):
+    def into_riser(name, p0, drop, below, want_x=None):
         """p0 the dust outlet; below: the cyclone whose outlet pipe takes
-        the meal; away: the horizontal unit vector the pipe comes in from.
+        the meal; want_x: the x side (+-1) of the riser the pipe comes down on (None: the side the dust outlet is on).
         The meal ends in a dispersion box on that pipe's wall (dispersion_box():
         a cube, its mid height entry_up over the roof below) through a vertical
         run down onto the box's top face centre."""
         A, rp = cols[below], 0.5 * c[below]["D_vortex"]
         D = mp[int(name[1])]["D"]
+        # user 28 Nov 2026: the meal pipe passes the riser's side face (across the elbow's duct direction),
+        # neither the elbow's side nor its back: away = that side's unit vector on the x side asked for
+        part_el = next(q for q in tp["parts"] if q["name"] == f"C{below - 1}_1")
+        e_el = (part_el["R"][0][0], part_el["R"][0][1])
+        away = (-e_el[1], e_el[0])
+        toward = (away[0] * (p0[0] - A[0]) + away[1] * (p0[1] - A[1])) if want_x is None else away[0] * want_x
+        if toward < 0.0:
+            away = (-away[0], -away[1])
         z_in = lay["z_roof"][below] + v(mr["entry_up"])
         box = dispersion_box(g, rp, D, 0.0)
         box = dispersion_box(g, rp, D, z_in - 0.5 * box["height"])
         pipe = (A[0] + away[0] * box["rho_pipe"], A[1] + away[1] * box["rho_pipe"])
+        # the elbow of the riser R(below-1) above the pipe (its sides D / width0 wide, down to its seam
+        # `drop` under the roof of C(below-1)): the meal pipe comes down outboard of it by riser_clear
+        # (user 28 Nov 2026: the pipes touched the elbows), then in to the box under the seam
+        rs_el = lay["riser"][below - 1]
+        z_seam = lay["z_roof"][below - 1] - rs_el["drop"]
+        r_p = 0.5 * D
+        clr = v(mr["riser_clear"])
+        # the elbow's inclined duct in plan: a strip hw wide along the duct's axis (the cyclone C(below-1)'s
+        # level-duct direction in the plant frame) from the riser's axis to its barrel; and that barrel
+        part = next(q for q in tp["parts"] if q["name"] == f"C{below - 1}_1")
+        e_d = (part["R"][0][0], part["R"][0][1])
+        hw = 0.5 * max(rs_el["width0"], 2.0 * rp)
+        s_len = rs_el["run"] + rs_el["level"] + 0.5 * c[below - 1]["D_barrel"]
+        barrel = cols[below - 1]
+        Rb = 0.5 * c[below - 1]["D_barrel"]
+
+        def free(t):
+            qx, qy = A[0] + away[0] * t, A[1] + away[1] * t
+            sd = max(0.0, min(s_len, (qx - A[0]) * e_d[0] + (qy - A[1]) * e_d[1]))
+            dd = math.hypot(qx - A[0] - sd * e_d[0], qy - A[1] - sd * e_d[1])
+            return dd >= hw + r_p + clr and math.hypot(qx - barrel[0], qy - barrel[1]) >= Rb + r_p + clr
+
+        qx, qy = p0[0] - A[0], p0[1] - A[1]
+        sd0 = max(0.0, min(s_len, qx * e_d[0] + qy * e_d[1]))
+        if want_x is None and math.hypot(qx - sd0 * e_d[0], qy - sd0 * e_d[1]) < hw + r_p:
+            raise ValueError(f"meal_routes {name}: the dust outlet's pipe starts over the riser's elbow duct "
+                             f"(turn the cyclones further: layout.tower_swing_deg / tower_swing_c2_deg)")
+        far = box["rho_pipe"]
+        while not free(far):
+            far += 0.01
+            if far > rp + 8.0:
+                raise ValueError(f"meal_routes {name}: no clear lane past the riser's elbow")
         p1 = (p0[0], p0[1], p0[2] - drop)
+        pts_t = []
+        # fewest bends (user 28 Nov 2026): the pipe stands on the box's top face where the clear lane is, when
+        # that lane is on the face (its outer edge), so one slanted run and one vertical run; only a lane
+        # beyond the face needs the way back in
+        if far <= box["rho_out"] - r_p + 0.02:                    # (a pipe flush with the face, to 2 cm)
+            pipe = (A[0] + away[0] * far, A[1] + away[1] * far)
+            far = box["rho_pipe"]
+        if far > box["rho_pipe"] + 1e-9:
+            far_xy = (A[0] + away[0] * far, A[1] + away[1] * far)
+            h_far = math.hypot(far_xy[0] - p1[0], far_xy[1] - p1[1])
+            z_a = p1[2] - h_far * ts
+            z_b = min(z_a, z_seam - clr)                           # the vertical run ends under the elbow's seam
+            z_c = z_b - (far - box["rho_pipe"]) * ts                # then in at the meal slope to the box's pipe
+            z_end = box["z_top"] - 0.1
+            if z_c <= z_end + 0.2:
+                raise ValueError(f"meal_routes {name}: no room to clear the riser's elbow and drop onto the box "
+                                 f"(far {far:.2f}, run to it {h_far:.2f} m ends at z {z_a:.2f}, elbow seam clear {z_b:.2f}, "
+                                 f"back in to {z_c:.2f}, box top {z_end:.2f})")
+            pts_t = [(far_xy[0], far_xy[1], z_a)]
+            if z_b < z_a - 1e-9:
+                pts_t.append((far_xy[0], far_xy[1], z_b))
+            pts_t.append((pipe[0], pipe[1], z_c))
         h = math.hypot(pipe[0] - p1[0], pipe[1] - p1[1])
         p2 = (pipe[0], pipe[1], p1[2] - h * ts)
         p3 = (pipe[0], pipe[1], box["z_top"] - 0.1)          # 0.1 m into the box
-        if p3[2] >= p2[2]:
+        if not pts_t and p3[2] >= p2[2]:
             raise ValueError(f"meal_routes {name}: no room to drop onto the dispersion box ({p2[2]:.2f} <= {p3[2]:.2f})")
         entry.clear()
-        entry.update({"box": box, "A": A, "away": away, "R": rp, "z_in": z_in})
-        return [p0, p1, p2, p3]
+        entry.update({"box": box, "A": A, "away": away, "R": rp, "z_in": z_in, "toward_bend": away[0] * e_el[0] + away[1] * e_el[1]})
+        return [p0, p1] + (pts_t if pts_t else [p2]) + [p3]
 
     pipes = []
     # C1: the twin's two C1 (its frame turned as tower_placement turned it)
     d_c1 = 0.5 * tw["spacing"]
     for sx in (-1.0, 1.0):
         q = tuple(twin["o"][k] + sx * d_c1 * twin["R"][0][k] for k in range(3))
-        away = (math.copysign(1.0, q[0] - cols[3][0]), 0.0)
-        pipes.append({"name": "C1_out" if away[0] > 0 else "C1_in", "stage": 1, "to": "R2 (C3 outlet pipe)",
-                      "pts": into_riser("C1", q, v(mr["drop"]), 3, away), "entry": dict(entry)})
+        side = math.copysign(1.0, q[0] - cols[3][0])
+        pipes.append({"name": "C1_out" if side > 0 else "C1_in", "stage": 1, "to": "R2 (C3 outlet pipe)",
+                      "pts": into_riser("C1", q, v(mr["drop"]), 3, side), "entry": dict(entry)})
     # C2 -> R3 over C4, C3 -> R4 over C5: away from the bend (towards the cyclone above it)
     for n, below, bend_to in ((2, 4, 3), (3, 5, 4)):
         p0 = cols[n] + (lay["z_dust"][n],)
-        u = unit(cols[below], cols[bend_to])
-        pts = into_riser(f"C{n}", p0, v(mr["drop_over_riser"]), below, (-u[0], -u[1]))
-        # over the riser R(n+1) under it: its inclined roof rises towards
-        # the bend at riser_duct_slope_deg from its top on the axis
-        # (drop_top under C(n+1)'s roof), lowest at the riser's back edge;
-        # the pipe's underside (r / cos slope below its axis) clear of it
+        pts = into_riser(f"C{n}", p0, v(mr["drop_over_riser"]), below)
+        # the dust outlet is off the riser by the swing: its pipe never crosses the riser's roof; the
+        # clearance kept is the outlet pipe's wall to the riser's wall, in plan
         rs = lay["riser"][n + 1]
-        top = lay["z_roof"][n + 1] - rs["drop_top"]
-        tr = math.tan(math.radians(v(g["cyclone_domain"]["riser_duct_slope_deg"])))
-        rp, rm = 0.5 * rs["D"], 0.5 * mp[n]["D"]
-        clear = min(pts[1][2] - h * ts - rm / math.cos(slope) - (top - h * tr) for h in (0.0, rp))
-        if clear <= 0.0:
-            raise ValueError(f"meal_routes C{n}: the pipe cuts the riser's roof under it ({clear:.2f} m)")
+        clear = math.hypot(p0[0] - cols[below][0], p0[1] - cols[below][1]) - 0.5 * rs["D"] - 0.5 * mp[n]["D"]
+        if clear < v(mr["riser_clear"]):
+            raise ValueError(f"meal_routes C{n}: the dust outlet's pipe is {clear:.2f} m off the riser under it, "
+                             f"under riser_clear (turn C{n} further: layout.tower_swing_deg)")
         pipes.append({"name": f"C{n}", "stage": n, "to": f"R{n + 1} (C{below} outlet pipe)",
                       "pts": pts, "riser_clearance": clear, "entry": dict(entry)})
     # C4 -> the calciner's dispersion box on this side (+x): straight down to
-    # 1 m over its vertical pipe's top face, then vertically 0.1 m into that pipe
+    # c4_entry_run over its vertical pipe's top face, then vertically 0.1 m into that pipe
     p0 = cols[4] + (lay["z_dust"][4],)
     p1 = (p0[0], p0[1], p0[2] - v(mr["c4_drop"]))
     z0 = lay["z_calciner_throat"]
     e = (cal_in["end"][0], 0.0, z0 + cal_in["end"][1])
     pipes.append({"name": "C4", "stage": 4, "to": "calciner dispersion box",
-                  "pts": [p0, p1, (e[0], e[1], e[2] + 1.0), (e[0], e[1], e[2] - 0.1)]})
+                  "pts": [p0, p1, (e[0], e[1], e[2] + v(mr["c4_entry_run"])), (e[0], e[1], e[2] - 0.1)]})
     # C5 -> the calciner's throat: a dispersion box on its wall at mid height, towards C5
     # (user 28 Nov 2026: every meal inlet gets the box); the pipe ends in a vertical run onto it
     cal = calciner(g)
@@ -2459,7 +2525,7 @@ def meal_routes(g):
     p1 = (p0[0], p0[1], p0[2] - v(mr["c5_drop"]))
     u = unit((0.0, 0.0), cols[5])
     r5 = 0.5 * mp[5]["D"]
-    z_mid = z0 + 0.5 * cal["z_throat_top"]
+    z_mid = z0 + 0.5 * cal["z_throat_top"] - v(mr["c5_box_below_mid"])
     box = dispersion_box(g, cal["r_throat"], mp[5]["D"], 0.0)
     box = dispersion_box(g, cal["r_throat"], mp[5]["D"], z_mid - 0.5 * box["height"])
     P = (box["rho_pipe"] * u[0], box["rho_pipe"] * u[1])
